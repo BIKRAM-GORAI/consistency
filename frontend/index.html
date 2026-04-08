@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="description" content="Daily Consistency Tracker — Track your daily habits, maintain streaks, and manage long-term goals with clarity." />
+  <title>Consistency Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Ambient background orbs -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">⚡</span>
+      <span class="brand-name">Consistency is the Key</span>
+    </div>
+
+    <div class="nav-streak" id="nav-streak">
+      <span class="streak-fire">🔥</span>
+      <span class="streak-count" id="streak-display">0</span>
+      <span class="streak-label">day streak</span>
+    </div>
+
+    <div class="nav-actions">
+      <button class="nav-btn active" id="btn-home" onclick="showPage('home')">
+        <span>📅</span><span class="btn-text"> Daily</span>
+      </button>
+      <button class="nav-btn" id="btn-goals" onclick="showPage('goals')">
+        <span>🎯</span><span class="btn-text"> Goals</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== HOME PAGE ===== -->
+  <main class="page active" id="page-home">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Daily Cards</h1>
+        <p class="page-subtitle" id="today-date-display"></p>
+      </div>
+      <div class="header-motivation" id="motivation-chip">
+        <span class="motivation-icon">💪</span>
+        <span class="motivation-text">Keep pushing!</span>
+      </div>
+    </div>
+
+    <!-- Cards Container -->
+    <div class="cards-container" id="cards-container">
+      <div class="loading-spinner" id="loading-days">
+        <div class="spinner-ring"></div>
+        <p>Loading your journey...</p>
+      </div>
+    </div>
+
+    <!-- Add Day Floating Button -->
+    <div class="add-day-section" id="add-day-section">
+      <button class="add-day-btn" id="add-day-btn" onclick="openAddDayModal()" title="Add new day card">
+        <span class="plus-icon">＋</span>
+      </button>
+      <p class="add-day-hint">New Day Card</p>
+    </div>
+  </main>
+
+  <!-- ===== GOALS PAGE ===== -->
+  <main class="page" id="page-goals">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Long-Term Goals</h1>
+        <p class="page-subtitle">Stay focused on what matters most</p>
+      </div>
+      <button class="btn-primary ripple" onclick="openAddGoalModal()" id="add-goal-header-btn">
+        <span>＋</span> Add Goal
+      </button>
+    </div>
+
+    <div class="goals-container" id="goals-container">
+      <div class="loading-spinner" id="loading-goals">
+        <div class="spinner-ring"></div>
+        <p>Loading your goals...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== MODAL: Add New Day ===== -->
+  <div class="modal-overlay" id="modal-add-day" onclick="closeModalOnOverlay(event, 'modal-add-day')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📅 New Day Card</h2>
+        <button class="modal-close" onclick="closeModal('modal-add-day')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="day-date-input">Date</label>
+          <input type="date" id="day-date-input" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Categories &amp; Tasks</label>
+          <div id="categories-builder"></div>
+          <button class="btn-ghost ripple" onclick="addCategoryField()" id="add-category-btn">
+            <span>＋</span> Add Category
+          </button>
+        </div>
+        <div class="form-group">
+          <label for="day-summary-input">Summary / Notes (optional)</label>
+          <textarea id="day-summary-input" class="form-control" rows="3" placeholder="Write a brief summary for this day..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-add-day')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitAddDay()" id="submit-day-btn">Create Card</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Add New Goal ===== -->
+  <div class="modal-overlay" id="modal-add-goal" onclick="closeModalOnOverlay(event, 'modal-add-goal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎯 New Goal</h2>
+        <button class="modal-close" onclick="closeModal('modal-add-goal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="goal-title-input">Goal Title</label>
+          <input type="text" id="goal-title-input" class="form-control" placeholder="e.g. Learn TypeScript, Run a 5K..." />
+        </div>
+        <div class="form-group">
+          <label for="goal-deadline-input">Deadline</label>
+          <input type="date" id="goal-deadline-input" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Subtasks</label>
+          <div id="goal-tasks-builder"></div>
+          <button class="btn-ghost ripple" onclick="addGoalTaskField()" id="add-goal-task-btn">
+            <span>＋</span> Add Subtask
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-add-goal')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitAddGoal()" id="submit-goal-btn">Create Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Add Category to Existing Day ===== -->
+  <div class="modal-overlay" id="modal-add-category" onclick="closeModalOnOverlay(event, 'modal-add-category')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📂 Add Category</h2>
+        <button class="modal-close" onclick="closeModal('modal-add-category')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-cat-name">Category Name</label>
+          <input type="text" id="new-cat-name" class="form-control" placeholder="e.g. Work, Fitness, Learning..." />
+        </div>
+        <div class="form-group">
+          <label>Tasks</label>
+          <div id="new-cat-tasks-builder"></div>
+          <button class="btn-ghost ripple" onclick="addNewCatTaskField()" id="add-new-cat-task-btn">
+            <span>＋</span> Add Task
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-add-category')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitAddCategory()" id="submit-cat-btn">Add Category</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toast-icon">✅</span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
