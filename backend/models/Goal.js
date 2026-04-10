@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
 // Subtask schema for a goal
 const GoalTaskSchema = new mongoose.Schema({
@@ -16,6 +17,12 @@ const GoalTaskSchema = new mongoose.Schema({
 // Goal schema
 const GoalSchema = new mongoose.Schema(
   {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     title: {
       type: String,
       required: true,

@@ -1,12 +1,15 @@
 const Goal = require('../models/Goal');
 
 /**
- * GET /api/goals
- * Retrieve all goals sorted by deadline ascending
+ * GET /api/goals?userId=...
+ * Retrieve all goals for a user sorted by deadline ascending
  */
 const getAllGoals = async (req, res) => {
   try {
-    const goals = await Goal.find().sort({ deadline: 1 });
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const goals = await Goal.find({ userId }).sort({ deadline: 1 });
     res.json(goals);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -15,12 +18,14 @@ const getAllGoals = async (req, res) => {
 
 /**
  * POST /api/goals
- * Create a new long-term goal
+ * Create a new long-term goal for a user
  */
 const createGoal = async (req, res) => {
   try {
-    const { title, deadline, tasks } = req.body;
-    const goal = new Goal({ title, deadline, tasks: tasks || [] });
+    const { userId, title, deadline, tasks } = req.body;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const goal = new Goal({ userId, title, deadline, tasks: tasks || [] });
     const saved = await goal.save();
     res.status(201).json(saved);
   } catch (error) {

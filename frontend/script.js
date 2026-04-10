@@ -5,6 +5,15 @@
 
 const API = '';  // Same origin
 
+// ── Auth ───────────────────────────────────────────────────
+const userId   = localStorage.getItem('userId')   || '';
+const userName = localStorage.getItem('userName') || 'User';
+
+function logout() {
+  localStorage.clear();
+  window.location.replace('landing.html');
+}
+
 // ── State ──────────────────────────────────────────────────
 let allDays  = [];
 let allGoals = [];
@@ -157,7 +166,7 @@ async function apiFetch(url, options = {}) {
 // ── Days ───────────────────────────────────────────────────
 async function loadDays() {
   try {
-    allDays = await apiFetch(`${API}/api/days`);
+    allDays = await apiFetch(`${API}/api/days?userId=${encodeURIComponent(userId)}`);
     renderDays();
     updateStreak();
   } catch (err) {
@@ -497,7 +506,7 @@ async function submitAddDay() {
   try {
     const newDay = await apiFetch(`${API}/api/days`, {
       method: 'POST',
-      body: JSON.stringify({ date, categories, summary }),
+      body: JSON.stringify({ userId, date, categories, summary }),
     });
     allDays.push(newDay);
     allDays.sort((a, b) => a.date.localeCompare(b.date));
@@ -581,7 +590,7 @@ async function loadGoals() {
   const container = document.getElementById('goals-container');
   container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
-    allGoals = await apiFetch(`${API}/api/goals`);
+    allGoals = await apiFetch(`${API}/api/goals?userId=${encodeURIComponent(userId)}`);
     renderGoals();
   } catch (err) {
     container.innerHTML = `<p style="color:#ef4444;text-align:center">Failed to load goals.</p>`;
@@ -795,7 +804,7 @@ async function submitAddGoal() {
   try {
     const newGoal = await apiFetch(`${API}/api/goals`, {
       method: 'POST',
-      body: JSON.stringify({ title, deadline, tasks }),
+      body: JSON.stringify({ userId, title, deadline, tasks }),
     });
     allGoals.push(newGoal);
     allGoals.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
@@ -864,6 +873,12 @@ document.addEventListener('DOMContentLoaded', () => {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
   }
+
+  // Populate user chip in navbar
+  const chipName   = document.getElementById('user-chip-name');
+  const chipAvatar = document.getElementById('user-chip-avatar');
+  if (chipName)   chipName.textContent   = userName;
+  if (chipAvatar) chipAvatar.textContent = userName.charAt(0).toUpperCase();
 
   // Random motivation chip
   const chip = document.getElementById('motivation-chip');

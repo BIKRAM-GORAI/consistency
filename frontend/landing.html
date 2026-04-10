@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Consistency Tracker — Track your daily habits, build streaks, and crush your long-term goals. Built for you and your friends." />
+  <title>Consistency Tracker — Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Landing-specific styles ── */
+    .landing-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .landing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #a78bfa;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeSlideDown 0.6s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    .landing-badge-dot {
+      width: 7px;
+      height: 7px;
+      background: #8b5cf6;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #8b5cf6;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.7; }
+    }
+
+    .landing-hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(36px, 8vw, 74px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -2px;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+      animation: fadeSlideDown 0.7s 0.1s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    .landing-hero-title .grad-word {
+      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .landing-subtitle {
+      font-size: clamp(15px, 3vw, 19px);
+      color: #94a3b8;
+      max-width: 520px;
+      margin: 20px auto 48px;
+      line-height: 1.65;
+      font-weight: 400;
+      animation: fadeSlideDown 0.7s 0.2s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    .landing-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeSlideDown 0.7s 0.3s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    .btn-landing-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 36px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+      border: none;
+      border-radius: 9999px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.35), 0 4px 16px rgba(0,0,0,0.4);
+      letter-spacing: 0.2px;
+    }
+
+    .btn-landing-primary:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 50px rgba(139, 92, 246, 0.55), 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .btn-landing-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 36px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 9999px;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+      backdrop-filter: blur(12px);
+      letter-spacing: 0.2px;
+    }
+
+    .btn-landing-secondary:hover {
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(139, 92, 246, 0.45);
+      transform: translateY(-3px);
+      box-shadow: 0 0 24px rgba(139, 92, 246, 0.2);
+    }
+
+    /* Feature pills */
+    .landing-features {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 60px;
+      animation: fadeSlideDown 0.7s 0.45s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      transition: 0.2s;
+    }
+
+    .feature-pill:hover {
+      background: rgba(139,92,246,0.08);
+      border-color: rgba(139,92,246,0.25);
+      color: #f1f5f9;
+      transform: translateY(-2px);
+    }
+
+    .feature-pill-icon { font-size: 16px; }
+
+    /* Footer note */
+    .landing-footer-note {
+      margin-top: 52px;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 500;
+      animation: fadeSlideDown 0.7s 0.55s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient background orbs -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="landing-wrap">
+    <div class="landing-badge">
+      <span class="landing-badge-dot"></span>
+      Your personal consistency hub
+    </div>
+
+    <h1 class="landing-hero-title">
+      Build habits.<br><span class="grad-word">Track progress.</span><br>Stay consistent.
+    </h1>
+
+    <p class="landing-subtitle">
+      A clean, private space for you and your friends to log daily tasks, maintain streaks, and manage long-term goals — each on their own account.
+    </p>
+
+    <div class="landing-actions">
+      <a href="auth.html?tab=login" class="btn-landing-primary" id="btn-go-login">
+        ⚡ Login
+      </a>
+      <a href="auth.html?tab=register" class="btn-landing-secondary" id="btn-go-register">
+        ✨ Create Account
+      </a>
+    </div>
+
+    <div class="landing-features">
+      <div class="feature-pill"><span class="feature-pill-icon">🔥</span> Streak Tracking</div>
+      <div class="feature-pill"><span class="feature-pill-icon">📅</span> Daily Cards</div>
+      <div class="feature-pill"><span class="feature-pill-icon">🎯</span> Long-Term Goals</div>
+      <div class="feature-pill"><span class="feature-pill-icon">🔒</span> Private Accounts</div>
+    </div>
+
+    <p class="landing-footer-note">Consistency is the key ⚡</p>
+  </div>
+
+  <script>
+    // If already logged in, go straight to the app
+    if (localStorage.getItem('userId')) {
+      window.location.replace('index.html');
+    }
+  </script>
+</body>
+</html>

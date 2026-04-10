@@ -9,6 +9,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Auth guard — redirect to landing if not logged in
+    if (!localStorage.getItem('userId')) {
+      window.location.replace('landing.html');
+    }
+  </script>
 </head>
 <body>
 
@@ -38,6 +44,16 @@
       </button>
       <button class="nav-btn" id="btn-goals" onclick="showPage('goals')">
         <span>🎯</span><span class="btn-text"> Goals</span>
+      </button>
+    </div>
+
+    <div class="nav-user-area">
+      <div class="nav-user-chip" id="nav-user-chip">
+        <span class="user-chip-avatar" id="user-chip-avatar">?</span>
+        <span class="user-chip-name" id="user-chip-name">User</span>
+      </div>
+      <button class="nav-logout-btn" id="nav-logout-btn" onclick="logout()" title="Logout">
+        <span>⏻</span>
       </button>
     </div>
   </nav>
