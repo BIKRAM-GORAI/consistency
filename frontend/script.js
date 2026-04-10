@@ -147,6 +147,12 @@ function showPage(page) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
   document.getElementById(`btn-${page}`).classList.add('active');
+
+  // Sync bottom nav bar active state (mobile)
+  document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
+  const bnavBtn = document.getElementById(`bnav-${page}`);
+  if (bnavBtn) bnavBtn.classList.add('active');
+
   if (page === 'goals') loadGoals();
 }
 

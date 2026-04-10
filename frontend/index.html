@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Daily Consistency Tracker — Track your daily habits, maintain streaks, and manage long-term goals with clarity." />
   <title>Consistency Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -196,6 +196,22 @@
       </div>
     </div>
   </div>
+
+  <!-- Mobile bottom navigation bar (shown only on ≤768px via CSS) -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
+    <button class="bottom-nav-btn active" id="bnav-home" onclick="showPage('home')">
+      <span class="bnav-icon">📅</span>
+      <span>Daily</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-goals" onclick="showPage('goals')">
+      <span class="bnav-icon">🎯</span>
+      <span>Goals</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-logout" onclick="logout()">
+      <span class="bnav-icon">⏻</span>
+      <span>Logout</span>
+    </button>
+  </nav>
 
   <!-- Toast notification -->
   <div class="toast" id="toast">

@@ -1302,66 +1302,281 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 /* ============================================================
-   RESPONSIVE — Mobile First
+   RESPONSIVE — Comprehensive Mobile-First
    ============================================================ */
 
-/* Small phones (≤ 360px) */
-@media (max-width: 360px) {
-  .brand-name { display: none; }
-  .nav-streak { padding: 5px 10px; }
-  .streak-label { display: none; }
-  .btn-text { display: none; }
-  .nav-btn { padding: 7px 10px; }
+/* ── Bottom Nav Bar (mobile only) ── */
+.bottom-nav {
+  display: none;
 }
 
-/* Phones (≤ 480px) */
-@media (max-width: 480px) {
-  .navbar { padding: 0 14px; gap: 8px; }
-  .streak-label { display: none; }
-
-  .page { padding: 20px 12px 100px; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .page-title { font-size: 24px; }
-  .header-motivation { align-self: flex-start; }
-
-  .day-card, .goal-card { padding: 16px 14px; border-radius: var(--r-md); }
-  .card-date { font-size: 14px; }
-
-  .modal { border-radius: var(--r-lg); }
-  .modal-body { padding: 16px; gap: 14px; }
-  .modal-header, .modal-footer { padding: 14px 16px; }
-  .modal-footer { flex-wrap: wrap; }
-  .modal-footer .btn-primary,
-  .modal-footer .btn-ghost { flex: 1; justify-content: center; }
-
-  .btn-primary { font-size: 13px; padding: 9px 16px; }
-  .btn-ghost { font-size: 13px; padding: 8px 14px; }
-
-  .goal-header { flex-direction: column; }
-  .goal-meta { flex-direction: row; align-items: center; flex-wrap: wrap; }
+/* ── Safe area support for notched phones ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
 }
 
-/* Tablets (≤ 768px) */
+/* ============================================================
+   ≤ 768px  (phones + small tablets)
+   ============================================================ */
 @media (max-width: 768px) {
-  .page { padding: 24px 14px 100px; }
-  .page-header { margin-bottom: 24px; }
+
+  /* Navbar — keep it slim */
+  .navbar {
+    padding: 0 14px;
+    height: 58px;
+    gap: 8px;
+  }
+
+  /* Hide nav action buttons — replaced by bottom bar */
+  .nav-actions { display: none; }
+
+  /* Hide streak label on narrow screens */
+  .streak-label { display: none; }
+
+  /* Shrink streak pill */
+  .nav-streak { padding: 5px 10px; }
+
+  /* Hide user name chip text — keep only avatar + logout */
+  .user-chip-name { display: none; }
+  .nav-user-chip { padding: 5px; border-radius: 50%; }
+
+  /* ── Bottom navigation bar ── */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 300;
+    background: rgba(7, 8, 15, 0.88);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid var(--glass-border);
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.45);
+    padding: 8px 16px;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bottom-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: var(--r-md);
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: var(--t) var(--ease);
+    letter-spacing: 0.3px;
+  }
+
+  .bottom-nav-btn .bnav-icon {
+    font-size: 20px;
+    line-height: 1;
+    transition: transform var(--t) var(--ease);
+  }
+
+  .bottom-nav-btn:active .bnav-icon { transform: scale(0.88); }
+
+  .bottom-nav-btn.active {
+    color: var(--violet-lt);
+    background: rgba(139,92,246,0.10);
+  }
+
+  .bottom-nav-btn.active .bnav-icon {
+    filter: drop-shadow(0 0 6px var(--violet));
+  }
+
+  /* Pages: push content above bottom bar */
+  .page { padding: 20px 14px 110px; }
+  .page-header { margin-bottom: 22px; }
+
+  /* Cards */
   .cards-container { gap: 14px; }
   .goals-container { gap: 14px; }
-  .add-goal-header-btn { padding: 8px 14px; font-size: 13px; }
+  .day-card, .goal-card { padding: 16px 14px; border-radius: var(--r-md); }
+
+  /* Goal header stacking */
+  .goal-header { flex-direction: column; gap: 8px; }
+  .goal-meta { flex-direction: row; align-items: center; flex-wrap: wrap; }
+
+  /* Page header */
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .header-motivation { align-self: flex-start; }
+
+  /* Add-goal button full width on small */
+  #add-goal-header-btn { padding: 8px 14px; font-size: 13px; }
+
+  /* Buttons */
+  .btn-primary { font-size: 13px; padding: 9px 16px; }
+  .btn-ghost   { font-size: 13px; padding: 8px 14px; }
+
+  /* Modal — slide up from bottom on mobile */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    max-width: 100%;
+    max-height: 92vh;
+    width: 100%;
+    /* drag handle visual cue */
+    padding-top: 6px;
+  }
+
+  /* Drag handle pill */
+  .modal::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--glass-border);
+    border-radius: var(--r-full);
+    margin: 0 auto 10px;
+    flex-shrink: 0;
+  }
+
+  .modal-header { padding: 12px 18px 14px; }
+  .modal-body   { padding: 16px 18px; gap: 14px; }
+  .modal-footer {
+    padding: 14px 18px;
+    flex-wrap: wrap;
+    /* keep above OS home bar */
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .modal-footer .btn-primary,
+  .modal-footer .btn-ghost { flex: 1; justify-content: center; min-width: 0; }
+
+  /* Forms inside modals */
+  .form-control { font-size: 16px; } /* prevents iOS auto-zoom */
+
+  /* Toast — full width on mobile */
+  .toast {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    white-space: normal;
+    text-align: center;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Category builder */
+  .cat-top-row { flex-wrap: wrap; }
+
+  /* Summary content */
+  .summary-content.expanded { max-height: 600px; }
+
+  /* Add-day section */
+  .add-day-section { padding: 20px 0 8px; }
 }
 
-/* Large screens */
+/* ============================================================
+   ≤ 480px  (small phones)
+   ============================================================ */
+@media (max-width: 480px) {
+  .navbar { height: 54px; }
+
+  .brand-name {
+    font-size: 13px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .streak-count { font-size: 17px; }
+
+  .nav-logout-btn { width: 30px; height: 30px; font-size: 13px; }
+
+  /* Tighter page padding */
+  .page { padding: 16px 12px 110px; }
+
+  /* Cards */
+  .day-card, .goal-card { padding: 14px 12px; }
+
+  .card-date { font-size: 14px; }
+  .progress-track { height: 7px; }
+
+  /* Category header */
+  .category-header { padding: 8px 12px; }
+  .task-item { padding: 8px 12px; gap: 9px; }
+
+  /* Bigger checkbox tap target */
+  .task-checkbox { width: 20px; height: 20px; }
+
+  /* Add category btn */
+  .btn-add-cat { padding: 6px 14px; font-size: 11px; }
+
+  /* Modal */
+  .modal-header h2 { font-size: 15px; }
+  .modal-body { gap: 12px; }
+}
+
+/* ============================================================
+   ≤ 360px  (very small phones)
+   ============================================================ */
+@media (max-width: 360px) {
+  /* Hide brand name entirely */
+  .brand-name { display: none; }
+
+  /* Nav streak: icon + number only */
+  .nav-streak { padding: 5px 9px; }
+
+  /* Page */
+  .page { padding: 14px 10px 106px; }
+
+  /* Even smaller text */
+  .page-title { font-size: clamp(18px, 6vw, 22px); }
+
+  /* Task text */
+  .task-title { font-size: 13px; }
+
+  /* Feature pills on landing */
+  .feature-pill { font-size: 11px; padding: 8px 12px; }
+}
+
+/* ============================================================
+   ≥ 769px  (tablets & up — restore normal navbar + hide bottom bar)
+   ============================================================ */
+@media (min-width: 769px) {
+  .bottom-nav { display: none !important; }
+  .nav-actions { display: flex; }
+}
+
+/* ============================================================
+   ≥ 860px  (large desktop)
+   ============================================================ */
 @media (min-width: 860px) {
-  .page { padding: 40px 24px 120px; }
+  .page   { padding: 40px 24px 120px; }
   .navbar { padding: 0 32px; }
 }
 
-/* Touch device active states */
+/* ============================================================
+   Touch device active states  (no hover support)
+   ============================================================ */
 @media (hover: none) {
   .day-card:active, .goal-card:active {
-    transform: scale(0.99);
+    transform: scale(0.985);
     box-shadow: var(--shadow-card);
   }
-  .btn-primary:active { opacity: 0.85; }
-  .add-day-btn:active { transform: scale(0.95); }
+  .btn-primary:active  { opacity: 0.82; transform: scale(0.97); }
+  .btn-ghost:active    { opacity: 0.82; }
+  .add-day-btn:active  { transform: scale(0.90); }
+  .nav-btn:active      { opacity: 0.7; }
+  .bottom-nav-btn:active { background: rgba(139,92,246,0.14); }
+
+  /* Remove hover-only transforms that feel odd on touch */
+  .day-card:hover, .goal-card:hover { transform: none; }
+  .btn-primary:hover, .btn-ghost:hover { transform: none; }
 }

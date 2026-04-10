@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Consistency Tracker — Track your daily habits, build streaks, and crush your long-term goals. Built for you and your friends." />
   <title>Consistency Tracker — Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -186,6 +186,49 @@
     @keyframes fadeSlideDown {
       from { opacity: 0; transform: translateY(-16px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 480px) {
+      .landing-wrap { padding: 32px 16px; }
+
+      .landing-badge { font-size: 11px; padding: 5px 13px; }
+
+      .landing-hero-title {
+        font-size: clamp(30px, 9vw, 52px);
+        letter-spacing: -1px;
+      }
+
+      .landing-subtitle {
+        font-size: 15px;
+        margin: 16px auto 36px;
+      }
+
+      .landing-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .btn-landing-primary,
+      .btn-landing-secondary {
+        justify-content: center;
+        padding: 13px 24px;
+        font-size: 14px;
+      }
+
+      .landing-features { gap: 8px; margin-top: 40px; }
+      .feature-pill { font-size: 12px; padding: 8px 14px; }
+
+      .landing-footer-note { margin-top: 36px; }
+    }
+
+    @media (max-width: 360px) {
+      .landing-hero-title {
+        font-size: clamp(26px, 10vw, 38px);
+        letter-spacing: -0.5px;
+      }
+      .feature-pill { font-size: 11px; padding: 7px 10px; }
     }
   </style>
 </head>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Login or create your Consistency Tracker account." />
   <title>Consistency Tracker — Sign In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -234,6 +234,30 @@
     }
 
     .auth-back-link:hover { color: #a78bfa; }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 480px) {
+      .auth-wrap { padding: 24px 14px; }
+
+      .auth-card {
+        padding: 28px 20px;
+        border-radius: 20px;
+      }
+
+      .auth-brand-name { font-size: 16px; }
+      .auth-title      { font-size: 20px; }
+      .auth-subtitle   { font-size: 12px; }
+
+      /* Prevent iOS auto-zoom on focus */
+      .auth-input { font-size: 16px; }
+
+      .auth-tab { font-size: 13px; padding: 8px 12px; }
+    }
+
+    @media (max-width: 360px) {
+      .auth-card { padding: 22px 16px; border-radius: 16px; }
+      .auth-title { font-size: 18px; }
+    }
   </style>
 </head>
 <body>
