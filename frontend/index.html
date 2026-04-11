@@ -280,6 +280,63 @@
   </div>
 
 
+  <!-- ===== MODAL: Edit Category (today's card only) ===== -->
+  <div class="modal-overlay" id="modal-edit-category" onclick="closeModalOnOverlay(event, 'modal-edit-category')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>✏️ Edit Category</h2>
+        <button class="modal-close" onclick="closeModal('modal-edit-category')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-cat-name">Category Name</label>
+          <input type="text" id="edit-cat-name" class="form-control" placeholder="e.g. Work, Fitness, Learning..." />
+        </div>
+        <div class="form-group">
+          <label>Tasks</label>
+          <div id="edit-cat-tasks-builder"></div>
+          <button class="btn-ghost ripple" onclick="addEditCatTaskField()" id="add-edit-cat-task-btn">
+            <span>＋</span> Add Task
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-category')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitEditCategory()" id="submit-edit-cat-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Edit Goal (before deadline only) ===== -->
+  <div class="modal-overlay" id="modal-edit-goal" onclick="closeModalOnOverlay(event, 'modal-edit-goal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>✏️ Edit Goal</h2>
+        <button class="modal-close" onclick="closeModal('modal-edit-goal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-goal-title">Goal Title</label>
+          <input type="text" id="edit-goal-title" class="form-control" placeholder="e.g. Learn TypeScript, Run a 5K..." />
+        </div>
+        <div class="form-group">
+          <p id="edit-goal-deadline-display" class="form-hint" style="margin-top:4px;font-weight:500;"></p>
+        </div>
+        <div class="form-group">
+          <label>Subtasks</label>
+          <div id="edit-goal-tasks-builder"></div>
+          <button class="btn-ghost ripple" onclick="addEditGoalTaskField()" id="add-edit-goal-task-btn">
+            <span>＋</span> Add Subtask
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-goal')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitEditGoal()" id="submit-edit-goal-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile bottom navigation bar (shown only on ≤768px via CSS) -->
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
     <button class="bottom-nav-btn active" id="bnav-home" onclick="showPage('home')">

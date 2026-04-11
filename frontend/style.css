@@ -1975,4 +1975,48 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     padding: 10px 20px;
   }
 }
+/* ============================================================
+   EDIT FEATURE STYLES
+   ============================================================ */
 
+/* Right-side cluster in category header: count + edit btn */
+.category-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Small pencil edit button inside category header */
+.btn-edit-cat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--violet-lt);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--t) var(--ease);
+  flex-shrink: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  opacity: 0.75;
+}
+
+.btn-edit-cat:hover {
+  opacity: 1;
+  background: rgba(139, 92, 246, 0.22);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.25);
+  transform: scale(1.1);
+}
+
+/* form-hint paragraph (re-used for deadline display in edit-goal modal) */
+.form-hint {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}

@@ -20,6 +20,11 @@ let allDays  = [];
 let allGoals = [];
 let activeDayIdForCategory = null;
 
+// Edit-modal state
+let editingDayId  = null;
+let editingCatId  = null;
+let editingGoalId = null;
+
 // ── Mobile detection ───────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
 
@@ -305,11 +310,17 @@ function buildDayCard(day) {
     }
 
     const completedCount = cat.tasks.filter(t => t.completed).length;
+    const editCatBtn = isToday
+      ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category">✏️</button>`
+      : '';
     categoriesHTML += `
       <div class="category-block">
         <div class="category-header">
           <span class="category-name">${escHtml(cat.name)}</span>
-          <span class="category-count">${completedCount}/${cat.tasks.length}</span>
+          <div class="category-header-right">
+            <span class="category-count">${completedCount}/${cat.tasks.length}</span>
+            ${editCatBtn}
+          </div>
         </div>
         <div class="tasks-list">${tasksHTML || '<p style="padding:8px 14px;font-size:13px;color:var(--text-3)">No tasks added.</p>'}</div>
       </div>`;
@@ -639,6 +650,175 @@ async function submitAddCategory() {
   }
 }
 
+// ── Edit Category (today's card only) ────────────────────
+function openEditCategoryModal(dayId, catId) {
+  const day = allDays.find(d => d._id === dayId);
+  if (!day || day.date !== todayStr()) {
+    showToast('You can only edit today\'s card.', 'warn');
+    return;
+  }
+  const cat = day.categories.find(c => c._id === catId);
+  if (!cat) return;
+
+  editingDayId = dayId;
+  editingCatId = catId;
+
+  document.getElementById('edit-cat-name').value = cat.name;
+  const builder = document.getElementById('edit-cat-tasks-builder');
+  builder.innerHTML = '';
+  for (const task of cat.tasks) {
+    addEditCatTaskField(task.title, task._id, task.completed);
+  }
+  if (!cat.tasks.length) addEditCatTaskField();
+  openModal('modal-edit-category');
+}
+
+function addEditCatTaskField(title = '', taskId = '', completed = false) {
+  const builder = document.getElementById('edit-cat-tasks-builder');
+  const row = document.createElement('div');
+  row.className = 'task-input-row';
+  row.dataset.taskId   = taskId;
+  row.dataset.completed = completed ? 'true' : 'false';
+  row.innerHTML = `
+    <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(title)}" />
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+  `;
+  builder.appendChild(row);
+}
+
+async function submitEditCategory() {
+  const dayId   = editingDayId;
+  const catId   = editingCatId;
+  const catName = document.getElementById('edit-cat-name').value.trim();
+  if (!catName) { showToast('Category name is required.', 'warn'); return; }
+
+  const day = allDays.find(d => d._id === dayId);
+  if (!day) return;
+  const origCat = day.categories.find(c => c._id === catId);
+
+  const taskRows = document.querySelectorAll('#edit-cat-tasks-builder .task-input-row');
+  const newTasks = [];
+  for (const row of taskRows) {
+    const title = row.querySelector('input').value.trim();
+    if (!title) continue;
+    const tId  = row.dataset.taskId;
+    const existing = origCat ? origCat.tasks.find(t => t._id === tId) : null;
+    newTasks.push({ ...(tId ? { _id: tId } : {}), title, completed: existing ? existing.completed : false });
+  }
+
+  const updatedCategories = day.categories.map(cat =>
+    String(cat._id) === String(catId)
+      ? { ...cat, name: catName, tasks: newTasks }
+      : cat
+  );
+
+  const btn = document.getElementById('submit-edit-cat-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  try {
+    const updatedDay = await apiFetch(`${API}/api/days/${dayId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ categories: updatedCategories }),
+    });
+    const idx = allDays.findIndex(d => d._id === dayId);
+    if (idx !== -1) allDays[idx] = updatedDay;
+    closeModal('modal-edit-category');
+    const oldCard = document.getElementById(`day-card-${dayId}`);
+    if (oldCard) {
+      const newCard = buildDayCard(updatedDay);
+      if (window.gsap) gsap.set(newCard, { opacity: 0, y: 10 });
+      oldCard.replaceWith(newCard);
+      if (window.gsap) gsap.to(newCard, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'all' });
+      requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`pct-fill-${dayId}`, calcProgress(updatedDay.categories))));
+    }
+    showToast('Category updated!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+}
+
+// ── Edit Goal (before deadline only) ──────────────────────
+function openEditGoalModal(goalId) {
+  const goal = allGoals.find(g => g._id === goalId);
+  if (!goal || daysLeft(goal.deadline) < 0) {
+    showToast('This goal is overdue and can no longer be edited.', 'warn');
+    return;
+  }
+
+  editingGoalId = goalId;
+  document.getElementById('edit-goal-title').value = goal.title;
+  document.getElementById('edit-goal-deadline-display').textContent =
+    `📅 Deadline: ${formatDisplayDate(goal.deadline.split('T')[0])}`;
+
+  const builder = document.getElementById('edit-goal-tasks-builder');
+  builder.innerHTML = '';
+  for (const task of goal.tasks) {
+    addEditGoalTaskField(task.title, task._id, task.completed);
+  }
+  if (!goal.tasks.length) addEditGoalTaskField();
+  openModal('modal-edit-goal');
+}
+
+function addEditGoalTaskField(title = '', taskId = '', completed = false) {
+  const builder = document.getElementById('edit-goal-tasks-builder');
+  const row = document.createElement('div');
+  row.className = 'task-input-row';
+  row.dataset.taskId    = taskId;
+  row.dataset.completed = completed ? 'true' : 'false';
+  row.innerHTML = `
+    <input type="text" class="form-control" placeholder="Subtask title..." value="${escHtml(title)}" />
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+  `;
+  builder.appendChild(row);
+}
+
+async function submitEditGoal() {
+  const goalId = editingGoalId;
+  const title  = document.getElementById('edit-goal-title').value.trim();
+  if (!title) { showToast('Goal title is required.', 'warn'); return; }
+
+  const goal = allGoals.find(g => g._id === goalId);
+  if (!goal) return;
+
+  const taskRows = document.querySelectorAll('#edit-goal-tasks-builder .task-input-row');
+  const newTasks = [];
+  for (const row of taskRows) {
+    const t = row.querySelector('input').value.trim();
+    if (!t) continue;
+    const tId  = row.dataset.taskId;
+    const existing = goal.tasks.find(tk => tk._id === tId);
+    newTasks.push({ ...(tId ? { _id: tId } : {}), title: t, completed: existing ? existing.completed : false });
+  }
+
+  const btn = document.getElementById('submit-edit-goal-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  try {
+    const updated = await apiFetch(`${API}/api/goals/${goalId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ title, tasks: newTasks }),
+    });
+    const idx = allGoals.findIndex(g => g._id === goalId);
+    if (idx !== -1) allGoals[idx] = updated;
+    closeModal('modal-edit-goal');
+    const oldCard = document.getElementById(`goal-card-${goalId}`);
+    if (oldCard) {
+      const newCard = buildGoalCard(updated);
+      if (window.gsap) gsap.set(newCard, { opacity: 0, y: 10 });
+      oldCard.replaceWith(newCard);
+      if (window.gsap) gsap.to(newCard, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'all' });
+      requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`gpct-fill-${goalId}`, calcProgress([{ tasks: updated.tasks }]))));
+    }
+    showToast('Goal updated!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+}
+
 // ── Goals ──────────────────────────────────────────────────
 async function loadGoals() {
   const container = document.getElementById('goals-container');
@@ -741,6 +921,7 @@ function buildGoalCard(goal) {
     </div>
 
     <div class="goal-actions">
+      ${dl >= 0 ? `<button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;">✏️ Edit</button>` : ''}
       <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')">🗑 Delete</button>
     </div>
   `;
@@ -1254,7 +1435,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       ['modal-add-day', 'modal-add-goal', 'modal-add-category',
-       'modal-create-group', 'modal-join-group', 'modal-member-tasks'].forEach(id => {
+       'modal-create-group', 'modal-join-group', 'modal-member-tasks',
+       'modal-edit-category', 'modal-edit-goal'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.classList.contains('open')) closeModal(id);
       });
