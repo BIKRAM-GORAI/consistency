@@ -4,9 +4,10 @@ const cors    = require('cors');
 const path    = require('path');
 const connectDB = require('./config/db');
 
-const authRoutes = require('./routes/authRoutes');
-const dayRoutes  = require('./routes/dayRoutes');
-const goalRoutes = require('./routes/goalRoutes');
+const authRoutes  = require('./routes/authRoutes');
+const dayRoutes   = require('./routes/dayRoutes');
+const goalRoutes  = require('./routes/goalRoutes');
+const groupRoutes = require('./routes/groupRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -19,9 +20,10 @@ app.use(cors());
 app.use(express.json());
 
 // ── API Routes ─────────────────────────────────────────────
-app.use('/api/auth',  authRoutes);
-app.use('/api/days',  dayRoutes);
-app.use('/api/goals', goalRoutes);
+app.use('/api/auth',   authRoutes);
+app.use('/api/days',   dayRoutes);
+app.use('/api/goals',  goalRoutes);
+app.use('/api/groups', groupRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

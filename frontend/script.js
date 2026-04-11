@@ -1,6 +1,7 @@
 /* ============================================================
    CONSISTENCY TRACKER — Frontend Script
    GSAP-powered animations · Ripple effects · Smooth UX
+   Groups feature · Mobile-optimised
    ============================================================ */
 
 const API = '';  // Same origin
@@ -18,6 +19,9 @@ function logout() {
 let allDays  = [];
 let allGoals = [];
 let activeDayIdForCategory = null;
+
+// ── Mobile detection ───────────────────────────────────────
+const isMobile = () => window.innerWidth <= 768;
 
 // ── Motivation quotes ──────────────────────────────────────
 const MOTIVATIONS = [
@@ -145,15 +149,19 @@ function escHtml(str) {
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`page-${page}`).classList.add('active');
-  document.getElementById(`btn-${page}`).classList.add('active');
+
+  const pageEl = document.getElementById(`page-${page}`);
+  const btnEl  = document.getElementById(`btn-${page}`);
+  if (pageEl) pageEl.classList.add('active');
+  if (btnEl)  btnEl.classList.add('active');
 
   // Sync bottom nav bar active state (mobile)
   document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
   const bnavBtn = document.getElementById(`bnav-${page}`);
   if (bnavBtn) bnavBtn.classList.add('active');
 
-  if (page === 'goals') loadGoals();
+  if (page === 'goals')  loadGoals();
+  if (page === 'groups') loadGroups();
 }
 
 // ── API ────────────────────────────────────────────────────
@@ -220,32 +228,47 @@ function renderDays() {
     return;
   }
 
-  // Build all cards first
+  // Build all cards first using a fragment (no layout thrash)
   const fragment = document.createDocumentFragment();
   for (const day of allDays) {
     fragment.appendChild(buildDayCard(day));
   }
   container.appendChild(fragment);
 
-  // GSAP stagger entrance animation
+  // ── Mobile-aware GSAP entrance ──────────────────────────
+  // On mobile: single quick fade-in (no stagger = no lag)
+  // On desktop: original elegant stagger
   if (window.gsap) {
-    gsap.from('.day-card', {
-      opacity: 0,
-      y: 30,
-      duration: 0.5,
-      stagger: 0.08,
-      ease: 'power3.out',
-      clearProps: 'all',
-    });
+    if (isMobile()) {
+      gsap.from('.day-card', {
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.out',
+        clearProps: 'all',
+      });
+    } else {
+      gsap.from('.day-card', {
+        opacity: 0,
+        y: 30,
+        duration: 0.5,
+        stagger: 0.08,
+        ease: 'power3.out',
+        clearProps: 'all',
+      });
+    }
   }
 
-  // Auto scroll to latest card
-  setTimeout(() => {
-    const cards = container.querySelectorAll('.day-card');
-    if (cards.length) {
-      cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, 200);
+  // ── Auto-scroll only on desktop ─────────────────────────
+  // On mobile this causes the crawl effect (scroll fighting GSAP),
+  // so we skip it entirely on touch screens.
+  if (!isMobile()) {
+    setTimeout(() => {
+      const cards = container.querySelectorAll('.day-card');
+      if (cards.length) {
+        cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 300);
+  }
 }
 
 function buildDayCard(day) {
@@ -338,7 +361,8 @@ function buildDayCard(day) {
     </div>
   `;
 
-  // Animate progress bar in after card is inserted into DOM
+  // Animate progress bar after card is inserted into DOM
+  // Using double-rAF to guarantee the element is painted before animating
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       animateProgressBar(`pct-fill-${day._id}`, pct);
@@ -517,7 +541,31 @@ async function submitAddDay() {
     allDays.push(newDay);
     allDays.sort((a, b) => a.date.localeCompare(b.date));
     closeModal('modal-add-day');
-    renderDays();
+
+    // ── On mobile, just prepend the card without re-rendering all cards
+    //    (avoids the GSAP stagger lag when the modal closes)
+    if (isMobile()) {
+      const container = document.getElementById('cards-container');
+      // Remove empty state if present
+      const emptyState = container.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+
+      const newCard = buildDayCard(newDay);
+      // Start invisible, then fade in — no translateY to avoid bounce
+      newCard.style.opacity = '0';
+      container.appendChild(newCard);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          newCard.style.transition = 'opacity 0.25s ease';
+          newCard.style.opacity = '1';
+          // Clean up inline style after transition
+          setTimeout(() => { newCard.style.transition = ''; newCard.style.opacity = ''; }, 300);
+        });
+      });
+    } else {
+      renderDays();
+    }
+
     updateStreak();
     showToast('Day card created!', 'success');
   } catch (err) {
@@ -824,6 +872,303 @@ async function submitAddGoal() {
   }
 }
 
+// ══════════════════════════════════════════════════════════
+//  GROUPS
+// ══════════════════════════════════════════════════════════
+
+let allGroups = [];
+
+async function loadGroups() {
+  const container = document.getElementById('groups-container');
+  container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading groups...</p></div>`;
+  try {
+    allGroups = await apiFetch(`${API}/api/groups/mine?userId=${encodeURIComponent(userId)}`);
+    renderGroups();
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load groups.</p>`;
+  }
+}
+
+function renderGroups() {
+  const container = document.getElementById('groups-container');
+  container.innerHTML = '';
+
+  // Separate my owned team from joined groups
+  const myTeam       = allGroups.find(g => String(g.owner._id || g.owner) === String(userId));
+  const joinedGroups = allGroups.filter(g => String(g.owner._id || g.owner) !== String(userId));
+
+  // ── My Team section ───────────────────────────────────
+  const myTeamSection = document.createElement('div');
+  myTeamSection.className = 'groups-section';
+
+  if (myTeam) {
+    myTeamSection.innerHTML = `
+      <div class="groups-section-header">
+        <h2 class="groups-section-title">👑 My Team</h2>
+      </div>
+      <div class="group-card my-team-card">
+        <div class="group-card-top">
+          <div class="group-name-wrap">
+            <span class="group-emoji">⚡</span>
+            <span class="group-name">${escHtml(myTeam.name)}</span>
+          </div>
+          <div class="team-code-wrap">
+            <span class="team-code-label">Join Code</span>
+            <button class="team-code-pill" onclick="copyTeamCode('${myTeam.code}')" title="Click to copy">
+              <span class="team-code-text">${myTeam.code}</span>
+              <span class="team-code-copy">📋</span>
+            </button>
+          </div>
+        </div>
+        <p class="group-meta">${myTeam.members.length} member${myTeam.members.length !== 1 ? 's' : ''}</p>
+        <div class="members-row" id="members-row-${myTeam._id}">
+          ${buildMembersHTML(myTeam.members, myTeam._id)}
+        </div>
+      </div>
+    `;
+  } else {
+    myTeamSection.innerHTML = `
+      <div class="groups-section-header">
+        <h2 class="groups-section-title">👑 My Team</h2>
+      </div>
+      <div class="group-empty-card">
+        <span class="group-empty-icon">🏗️</span>
+        <p>You haven't created a team yet.</p>
+        <button class="btn-primary ripple" onclick="openCreateGroupModal()" id="create-team-btn">
+          ＋ Create a Team
+        </button>
+      </div>
+    `;
+  }
+  container.appendChild(myTeamSection);
+
+  // ── Divider ───────────────────────────────────────────
+  const divider = document.createElement('hr');
+  divider.className = 'groups-divider';
+  container.appendChild(divider);
+
+  // ── Joined Groups section ─────────────────────────────
+  const joinedSection = document.createElement('div');
+  joinedSection.className = 'groups-section';
+
+  const joinedHeader = `
+    <div class="groups-section-header">
+      <h2 class="groups-section-title">🔗 Joined Teams</h2>
+      <button class="btn-ghost ripple groups-join-btn" onclick="openJoinGroupModal()">
+        <span>＋</span> Join a Team
+      </button>
+    </div>
+  `;
+
+  if (!joinedGroups.length) {
+    joinedSection.innerHTML = joinedHeader + `
+      <div class="group-empty-card">
+        <span class="group-empty-icon">👫</span>
+        <p>You haven't joined any teams yet.<br>Ask a friend for their team code!</p>
+      </div>
+    `;
+  } else {
+    let groupsHTML = joinedHeader + '<div class="groups-list">';
+    for (const group of joinedGroups) {
+      groupsHTML += `
+        <div class="group-card" id="group-card-${group._id}">
+          <div class="group-card-top">
+            <div class="group-name-wrap">
+              <span class="group-emoji">👥</span>
+              <span class="group-name">${escHtml(group.name)}</span>
+            </div>
+            <span class="group-owner-badge">by ${escHtml(group.owner.name || 'Unknown')}</span>
+          </div>
+          <p class="group-meta">${group.members.length} member${group.members.length !== 1 ? 's' : ''}</p>
+          <div class="members-row">
+            ${buildMembersHTML(group.members, group._id)}
+          </div>
+        </div>
+      `;
+    }
+    groupsHTML += '</div>';
+    joinedSection.innerHTML = groupsHTML;
+  }
+  container.appendChild(joinedSection);
+
+  // GSAP entrance
+  if (window.gsap) {
+    gsap.from('.group-card, .group-empty-card', {
+      opacity: 0,
+      y: 20,
+      duration: 0.45,
+      stagger: 0.07,
+      ease: 'power2.out',
+      clearProps: 'all',
+    });
+  }
+}
+
+function buildMembersHTML(members, groupId) {
+  if (!members || !members.length) return '<p class="no-members">No members yet.</p>';
+
+  return members.map(member => {
+    const memberId   = member._id || member;
+    const memberName = member.name || 'Unknown';
+    const initial    = memberName.charAt(0).toUpperCase();
+    const isSelf     = String(memberId) === String(userId);
+
+    return `
+      <div class="member-pill">
+        <div class="member-avatar" style="background:${memberAvatarColor(memberName)}">${initial}</div>
+        <span class="member-name">${escHtml(memberName)}${isSelf ? ' (you)' : ''}</span>
+        ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escHtml(memberName)}')">View Tasks</button>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+/** Deterministic color from name so the same person always gets the same hue */
+function memberAvatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 65%, 45%)`;
+}
+
+function copyTeamCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    showToast(`Code "${code}" copied to clipboard!`, 'success');
+  }).catch(() => {
+    showToast(`Your code: ${code}`, 'info');
+  });
+}
+
+// ── Create Group Modal ─────────────────────────────────────
+function openCreateGroupModal() {
+  document.getElementById('group-name-input').value = '';
+  openModal('modal-create-group');
+}
+
+async function submitCreateGroup() {
+  const name = document.getElementById('group-name-input').value.trim();
+  if (!name) { showToast('Team name is required.', 'warn'); return; }
+
+  const btn = document.getElementById('submit-create-group-btn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+
+  try {
+    const group = await apiFetch(`${API}/api/groups/create`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, name }),
+    });
+    closeModal('modal-create-group');
+    showToast(`Team "${group.name}" created! Code: ${group.code}`, 'success');
+    loadGroups(); // refresh
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Team';
+  }
+}
+
+// ── Join Group Modal ───────────────────────────────────────
+function openJoinGroupModal() {
+  document.getElementById('join-code-input').value = '';
+  openModal('modal-join-group');
+}
+
+async function submitJoinGroup() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (!code || code.length !== 6) { showToast('Please enter a valid 6-character code.', 'warn'); return; }
+
+  const btn = document.getElementById('submit-join-group-btn');
+  btn.disabled = true; btn.textContent = 'Joining...';
+
+  try {
+    const group = await apiFetch(`${API}/api/groups/join`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, code }),
+    });
+    closeModal('modal-join-group');
+    showToast(`Joined "${group.name}"! 🎉`, 'success');
+    loadGroups(); // refresh
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Join Team';
+  }
+}
+
+// ── Member Tasks Modal (read-only) ─────────────────────────
+async function openMemberTasks(memberId, memberName) {
+  const titleEl = document.getElementById('member-tasks-title');
+  const bodyEl  = document.getElementById('member-tasks-body');
+
+  titleEl.textContent = `📋 ${memberName}'s Tasks`;
+  bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+  openModal('modal-member-tasks');
+
+  try {
+    const days = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(memberId)}`);
+
+    if (!days.length) {
+      bodyEl.innerHTML = `
+        <div class="empty-state" style="padding:40px 0">
+          <span class="empty-icon">📭</span>
+          <h3>No cards yet</h3>
+          <p>${escHtml(memberName)} hasn't created any day cards yet.</p>
+        </div>`;
+      return;
+    }
+
+    // Sort newest-first for the viewer
+    const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
+
+    let html = '<div class="member-days-list">';
+    for (const day of sorted) {
+      const pct = calcProgress(day.categories);
+      const { total, completed } = countTasks(day.categories);
+
+      let catsHTML = '';
+      for (const cat of day.categories) {
+        const catCompleted = cat.tasks.filter(t => t.completed).length;
+        let tasksHTML = '';
+        for (const task of cat.tasks) {
+          const lockClass = task.completed ? 'locked-complete' : 'locked-incomplete';
+          tasksHTML += `
+            <div class="task-item ${lockClass}">
+              <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled />
+              <span class="task-title">${escHtml(task.title)}</span>
+            </div>`;
+        }
+        catsHTML += `
+          <div class="category-block">
+            <div class="category-header">
+              <span class="category-name">${escHtml(cat.name)}</span>
+              <span class="category-count">${catCompleted}/${cat.tasks.length}</span>
+            </div>
+            <div class="tasks-list">${tasksHTML || '<p style="padding:8px 14px;font-size:13px;color:var(--text-3)">No tasks.</p>'}</div>
+          </div>`;
+      }
+
+      html += `
+        <div class="member-day-card">
+          <div class="member-day-header">
+            <div>
+              <span class="card-date">${formatDisplayDate(day.date)}</span>
+              <span class="card-day-name">${getDayName(day.date)}</span>
+            </div>
+            <span class="member-day-progress" style="color:${progressColor(pct)}">${pct}% · ${completed}/${total}</span>
+          </div>
+          <div class="progress-track" style="margin:8px 0 12px">
+            <div class="progress-fill ${progressClass(pct)}" style="width:${pct}%"></div>
+          </div>
+          <div class="categories-list">${catsHTML || '<p style="color:var(--text-3);font-size:14px">No categories.</p>'}</div>
+        </div>`;
+    }
+    html += '</div>';
+    bodyEl.innerHTML = html;
+  } catch (err) {
+    bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load tasks.</p>`;
+  }
+}
+
 // ── Modal helpers ──────────────────────────────────────────
 function openModal(id) {
   const overlay = document.getElementById(id);
@@ -837,11 +1182,15 @@ function openModal(id) {
 
   overlay.classList.add('open');
 
+  // Defer the GSAP tween by one rAF so the browser finishes the
+  // display:flex paint before animating — prevents the "invisible flash" on mobile
   if (window.gsap) {
-    gsap.fromTo(modalEl,
-      { opacity: 0, y: 28, scale: 0.94 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.38, ease: 'back.out(1.5)', clearProps: 'all' }
-    );
+    requestAnimationFrame(() => {
+      gsap.fromTo(modalEl,
+        { opacity: 0, y: 28, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: 'back.out(1.4)', clearProps: 'all' }
+      );
+    });
   }
 }
 
@@ -904,11 +1253,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // Escape key closes modals
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['modal-add-day', 'modal-add-goal', 'modal-add-category'].forEach(id => {
-        if (document.getElementById(id).classList.contains('open')) closeModal(id);
+      ['modal-add-day', 'modal-add-goal', 'modal-add-category',
+       'modal-create-group', 'modal-join-group', 'modal-member-tasks'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.classList.contains('open')) closeModal(id);
       });
     }
   });
+
+  // Auto-uppercase the join code input as user types
+  const joinCodeInput = document.getElementById('join-code-input');
+  if (joinCodeInput) {
+    joinCodeInput.addEventListener('input', () => {
+      const pos = joinCodeInput.selectionStart;
+      joinCodeInput.value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      joinCodeInput.setSelectionRange(pos, pos);
+    });
+  }
 
   loadDays();
 });

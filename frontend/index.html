@@ -45,6 +45,9 @@
       <button class="nav-btn" id="btn-goals" onclick="showPage('goals')">
         <span>🎯</span><span class="btn-text"> Goals</span>
       </button>
+      <button class="nav-btn" id="btn-groups" onclick="showPage('groups')">
+        <span>👥</span><span class="btn-text"> Groups</span>
+      </button>
     </div>
 
     <div class="nav-user-area">
@@ -104,6 +107,24 @@
       <div class="loading-spinner" id="loading-goals">
         <div class="spinner-ring"></div>
         <p>Loading your goals...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== GROUPS PAGE ===== -->
+  <main class="page" id="page-groups">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Groups</h1>
+        <p class="page-subtitle">Create a team or join your friends</p>
+      </div>
+    </div>
+
+    <!-- Groups content will be rendered by JS -->
+    <div id="groups-container">
+      <div class="loading-spinner" id="loading-groups">
+        <div class="spinner-ring"></div>
+        <p>Loading groups...</p>
       </div>
     </div>
   </main>
@@ -197,6 +218,61 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: Create Group ===== -->
+  <div class="modal-overlay" id="modal-create-group" onclick="closeModalOnOverlay(event, 'modal-create-group')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>👥 Create a Team</h2>
+        <button class="modal-close" onclick="closeModal('modal-create-group')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="group-name-input">Team Name</label>
+          <input type="text" id="group-name-input" class="form-control" placeholder="e.g. Study Squad, Gym Crew..." />
+        </div>
+        <p class="form-hint">A unique 6-character join code will be generated automatically. Share it with friends so they can join your team.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-create-group')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitCreateGroup()" id="submit-create-group-btn">Create Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Join Group ===== -->
+  <div class="modal-overlay" id="modal-join-group" onclick="closeModalOnOverlay(event, 'modal-join-group')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔗 Join a Team</h2>
+        <button class="modal-close" onclick="closeModal('modal-join-group')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="join-code-input">Team Code</label>
+          <input type="text" id="join-code-input" class="form-control join-code-input" placeholder="Enter 6-character code..." maxlength="6" autocomplete="off" autocapitalize="characters" />
+        </div>
+        <p class="form-hint">Ask your team owner for their unique 6-character code.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-join-group')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitJoinGroup()" id="submit-join-group-btn">Join Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Member Tasks (read-only) ===== -->
+  <div class="modal-overlay" id="modal-member-tasks" onclick="closeModalOnOverlay(event, 'modal-member-tasks')">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2 id="member-tasks-title">👤 Member Tasks</h2>
+        <button class="modal-close" onclick="closeModal('modal-member-tasks')">✕</button>
+      </div>
+      <div class="modal-body" id="member-tasks-body">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile bottom navigation bar (shown only on ≤768px via CSS) -->
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
     <button class="bottom-nav-btn active" id="bnav-home" onclick="showPage('home')">
@@ -206,6 +282,10 @@
     <button class="bottom-nav-btn" id="bnav-goals" onclick="showPage('goals')">
       <span class="bnav-icon">🎯</span>
       <span>Goals</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')">
+      <span class="bnav-icon">👥</span>
+      <span>Groups</span>
     </button>
     <button class="bottom-nav-btn" id="bnav-logout" onclick="logout()">
       <span class="bnav-icon">⏻</span>
