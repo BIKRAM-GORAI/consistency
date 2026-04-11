@@ -270,8 +270,15 @@
       <div class="modal-body" id="member-tasks-body">
         <!-- Populated by JS -->
       </div>
+      <!-- Sticky close footer — always visible on mobile even when scrolled deep -->
+      <div class="modal-footer member-tasks-footer">
+        <button class="btn-member-close ripple" onclick="closeModal('modal-member-tasks')">
+          <span>←</span> Close
+        </button>
+      </div>
     </div>
   </div>
+
 
   <!-- Mobile bottom navigation bar (shown only on ≤768px via CSS) -->
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
