@@ -2020,3 +2020,72 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   color: var(--text-2);
   line-height: 1.5;
 }
+
+/* ============================================================
+   INLINE "NEW DAY CARD" BUTTON (top of cards-container)
+   ============================================================ */
+.add-day-inline-row {
+  display: flex;
+  justify-content: flex-start;
+  padding: 2px 0 4px;
+}
+
+.add-day-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 22px;
+  border-radius: var(--r-full);
+  background: var(--grad-primary);
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.2px;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), opacity 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-day-inline-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.55);
+}
+
+.add-day-inline-btn:active {
+  transform: scale(0.97);
+}
+
+.add-day-inline-btn .plus-icon {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+/* ============================================================
+   MEMBER STREAK BADGE (modal title)
+   ============================================================ */
+.member-streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 3px 11px;
+  border-radius: var(--r-full);
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--amber);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.member-streak-zero {
+  background: rgba(71, 85, 105, 0.18);
+  border-color: rgba(71, 85, 105, 0.35);
+  color: var(--text-3);
+}

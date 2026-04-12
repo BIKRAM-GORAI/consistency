@@ -220,22 +220,34 @@ function renderDays() {
   const container = document.getElementById('cards-container');
   container.innerHTML = '';
 
+  // ── "New Day Card" button always pinned at the top ──────
+  const addBtnRow = document.createElement('div');
+  addBtnRow.className = 'add-day-inline-row';
+  addBtnRow.innerHTML = `
+    <button class="add-day-inline-btn ripple" onclick="openAddDayModal()" id="add-day-inline-btn">
+      <span class="plus-icon">＋</span>
+      <span>New Day Card</span>
+    </button>`;
+  container.appendChild(addBtnRow);
+
   if (!allDays.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">📅</span>
-        <h3>No days yet</h3>
-        <p>Click the + button below to start your first day card.</p>
-      </div>`;
+    const emptyEl = document.createElement('div');
+    emptyEl.className = 'empty-state';
+    emptyEl.innerHTML = `
+      <span class="empty-icon">📅</span>
+      <h3>No days yet</h3>
+      <p>Click the button above to start your first day card.</p>`;
+    container.appendChild(emptyEl);
     if (window.gsap) {
       gsap.from('.empty-state', { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' });
     }
     return;
   }
 
-  // Build all cards first using a fragment (no layout thrash)
+  // Sort newest-first then build all cards (no layout thrash)
+  const sorted = [...allDays].sort((a, b) => b.date.localeCompare(a.date));
   const fragment = document.createDocumentFragment();
-  for (const day of allDays) {
+  for (const day of sorted) {
     fragment.appendChild(buildDayCard(day));
   }
   container.appendChild(fragment);
@@ -261,18 +273,6 @@ function renderDays() {
         clearProps: 'all',
       });
     }
-  }
-
-  // ── Auto-scroll only on desktop ─────────────────────────
-  // On mobile this causes the crawl effect (scroll fighting GSAP),
-  // so we skip it entirely on touch screens.
-  if (!isMobile()) {
-    setTimeout(() => {
-      const cards = container.querySelectorAll('.day-card');
-      if (cards.length) {
-        cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
-    }, 300);
   }
 }
 
@@ -550,11 +550,10 @@ async function submitAddDay() {
       body: JSON.stringify({ userId, date, categories, summary }),
     });
     allDays.push(newDay);
-    allDays.sort((a, b) => a.date.localeCompare(b.date));
     closeModal('modal-add-day');
 
-    // ── On mobile, just prepend the card without re-rendering all cards
-    //    (avoids the GSAP stagger lag when the modal closes)
+    // ── On mobile, just prepend the new card (newest-first) without
+    //    re-rendering all cards (avoids GSAP stagger lag on modal close)
     if (isMobile()) {
       const container = document.getElementById('cards-container');
       // Remove empty state if present
@@ -564,7 +563,13 @@ async function submitAddDay() {
       const newCard = buildDayCard(newDay);
       // Start invisible, then fade in — no translateY to avoid bounce
       newCard.style.opacity = '0';
-      container.appendChild(newCard);
+      // Insert right after the inline add-button row (index 1)
+      const addRow = container.querySelector('.add-day-inline-row');
+      if (addRow && addRow.nextSibling) {
+        container.insertBefore(newCard, addRow.nextSibling);
+      } else {
+        container.appendChild(newCard);
+      }
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           newCard.style.transition = 'opacity 0.25s ease';
@@ -1281,12 +1286,19 @@ async function openMemberTasks(memberId, memberName) {
   const titleEl = document.getElementById('member-tasks-title');
   const bodyEl  = document.getElementById('member-tasks-body');
 
-  titleEl.textContent = `📋 ${memberName}'s Tasks`;
+  titleEl.innerHTML = `📋 ${escHtml(memberName)}'s Tasks`;
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   openModal('modal-member-tasks');
 
   try {
     const days = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(memberId)}`);
+
+    // Calculate member's streak and update the modal title
+    const memberStreak = calculateStreak(days);
+    const streakBadge = memberStreak > 0
+      ? ` <span class="member-streak-badge">🔥 ${memberStreak} day streak</span>`
+      : ` <span class="member-streak-badge member-streak-zero">🌱 No streak yet</span>`;
+    titleEl.innerHTML = `📋 ${escHtml(memberName)}'s Tasks${streakBadge}`;
 
     if (!days.length) {
       bodyEl.innerHTML = `
@@ -1428,7 +1440,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.gsap) {
     gsap.from('.navbar', { y: -64, opacity: 0, duration: 0.6, ease: 'power3.out' });
     gsap.from('.page-header', { opacity: 0, y: 20, duration: 0.6, delay: 0.2, ease: 'power2.out' });
-    gsap.from('.add-day-section', { opacity: 0, y: 20, duration: 0.5, delay: 0.4, ease: 'power2.out' });
   }
 
   // Escape key closes modals
