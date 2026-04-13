@@ -239,6 +239,26 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: Edit Group ===== -->
+  <div class="modal-overlay" id="modal-edit-group" onclick="closeModalOnOverlay(event, 'modal-edit-group')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>✏️ Edit Team</h2>
+        <button class="modal-close" onclick="closeModal('modal-edit-group')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-group-name-input">Team Name</label>
+          <input type="text" id="edit-group-name-input" class="form-control" placeholder="New team name..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-group')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitEditGroup()" id="submit-edit-group-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: Join Group ===== -->
   <div class="modal-overlay" id="modal-join-group" onclick="closeModalOnOverlay(event, 'modal-join-group')">
     <div class="modal">

@@ -1079,50 +1079,57 @@ function renderGroups() {
   const container = document.getElementById('groups-container');
   container.innerHTML = '';
 
-  // Separate my owned team from joined groups
-  const myTeam       = allGroups.find(g => String(g.owner._id || g.owner) === String(userId));
+  // Separate my owned teams from joined groups
+  const myTeams      = allGroups.filter(g => String(g.owner._id || g.owner) === String(userId));
   const joinedGroups = allGroups.filter(g => String(g.owner._id || g.owner) !== String(userId));
 
-  // ── My Team section ───────────────────────────────────
+  // ── My Teams section ──────────────────────────────────
   const myTeamSection = document.createElement('div');
   myTeamSection.className = 'groups-section';
 
-  if (myTeam) {
-    myTeamSection.innerHTML = `
-      <div class="groups-section-header">
-        <h2 class="groups-section-title">👑 My Team</h2>
-      </div>
-      <div class="group-card my-team-card">
-        <div class="group-card-top">
-          <div class="group-name-wrap">
-            <span class="group-emoji">⚡</span>
-            <span class="group-name">${escHtml(myTeam.name)}</span>
+  const myTeamHeader = `
+    <div class="groups-section-header">
+      <h2 class="groups-section-title">👑 My Teams</h2>
+      <button class="btn-ghost ripple groups-join-btn" onclick="openCreateGroupModal()">
+        <span>＋</span> Create a Team
+      </button>
+    </div>
+  `;
+
+  if (myTeams.length > 0) {
+    let teamsHTML = myTeamHeader + '<div class="groups-list">';
+    for (const myTeam of myTeams) {
+      teamsHTML += `
+        <div class="group-card my-team-card">
+          <div class="group-card-top">
+            <div class="group-name-wrap">
+              <span class="group-emoji">⚡</span>
+              <span class="group-name">${escHtml(myTeam.name)}</span>
+              <button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${myTeam._id}', '${escHtml(myTeam.name)}')">✏️</button>
+              <button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${myTeam._id}')">🗑️</button>
+            </div>
+            <div class="team-code-wrap">
+              <span class="team-code-label">Join Code</span>
+              <button class="team-code-pill" onclick="copyTeamCode('${myTeam.code}')" title="Click to copy">
+                <span class="team-code-text">${myTeam.code}</span>
+                <span class="team-code-copy">📋</span>
+              </button>
+            </div>
           </div>
-          <div class="team-code-wrap">
-            <span class="team-code-label">Join Code</span>
-            <button class="team-code-pill" onclick="copyTeamCode('${myTeam.code}')" title="Click to copy">
-              <span class="team-code-text">${myTeam.code}</span>
-              <span class="team-code-copy">📋</span>
-            </button>
+          <p class="group-meta">${myTeam.members.length} member${myTeam.members.length !== 1 ? 's' : ''}</p>
+          <div class="members-row" id="members-row-${myTeam._id}">
+            ${buildMembersHTML(myTeam.members, myTeam._id, true)}
           </div>
         </div>
-        <p class="group-meta">${myTeam.members.length} member${myTeam.members.length !== 1 ? 's' : ''}</p>
-        <div class="members-row" id="members-row-${myTeam._id}">
-          ${buildMembersHTML(myTeam.members, myTeam._id)}
-        </div>
-      </div>
-    `;
+      `;
+    }
+    teamsHTML += '</div>';
+    myTeamSection.innerHTML = teamsHTML;
   } else {
-    myTeamSection.innerHTML = `
-      <div class="groups-section-header">
-        <h2 class="groups-section-title">👑 My Team</h2>
-      </div>
+    myTeamSection.innerHTML = myTeamHeader + `
       <div class="group-empty-card">
         <span class="group-empty-icon">🏗️</span>
         <p>You haven't created a team yet.</p>
-        <button class="btn-primary ripple" onclick="openCreateGroupModal()" id="create-team-btn">
-          ＋ Create a Team
-        </button>
       </div>
     `;
   }
@@ -1167,7 +1174,10 @@ function renderGroups() {
           </div>
           <p class="group-meta">${group.members.length} member${group.members.length !== 1 ? 's' : ''}</p>
           <div class="members-row">
-            ${buildMembersHTML(group.members, group._id)}
+            ${buildMembersHTML(group.members, group._id, false)}
+          </div>
+          <div style="margin-top:12px;text-align:right;">
+            <button class="btn-ghost ripple" style="color:#ef4444;font-size:13px;padding:6px 12px;" onclick="leaveGroup('${group._id}')">🚪 Leave Team</button>
           </div>
         </div>
       `;
@@ -1190,7 +1200,7 @@ function renderGroups() {
   }
 }
 
-function buildMembersHTML(members, groupId) {
+function buildMembersHTML(members, groupId, isOwner = false) {
   if (!members || !members.length) return '<p class="no-members">No members yet.</p>';
 
   return members.map(member => {
@@ -1199,11 +1209,16 @@ function buildMembersHTML(members, groupId) {
     const initial    = memberName.charAt(0).toUpperCase();
     const isSelf     = String(memberId) === String(userId);
 
+    const removeBtn = (isOwner && !isSelf) 
+      ? `<button class="member-view-btn ripple" style="background:rgba(239,68,68,0.15);color:#fca5a5;margin-left:4px;" onclick="removeMember('${groupId}', '${memberId}', '${escHtml(memberName)}')">Remove</button>`
+      : '';
+
     return `
       <div class="member-pill">
         <div class="member-avatar" style="background:${memberAvatarColor(memberName)}">${initial}</div>
         <span class="member-name">${escHtml(memberName)}${isSelf ? ' (you)' : ''}</span>
         ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escHtml(memberName)}')">View Tasks</button>` : ''}
+        ${removeBtn}
       </div>
     `;
   }).join('');
@@ -1278,6 +1293,79 @@ async function submitJoinGroup() {
     showToast(err.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Join Team';
+  }
+}
+
+// ── Manage Groups ──────────────────────────────────────────
+let editingGroupId = null;
+
+function openEditGroupModal(id, name) {
+  editingGroupId = id;
+  document.getElementById('edit-group-name-input').value = name;
+  openModal('modal-edit-group');
+}
+
+async function submitEditGroup() {
+  const name = document.getElementById('edit-group-name-input').value.trim();
+  if (!name) { showToast('Team name is required.', 'warn'); return; }
+
+  const btn = document.getElementById('submit-edit-group-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  try {
+    await apiFetch(`${API}/api/groups/${editingGroupId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ userId, name }),
+    });
+    closeModal('modal-edit-group');
+    showToast('Team name updated!', 'success');
+    loadGroups();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+}
+
+async function deleteGroup(groupId) {
+  if (!confirm('Are you sure you want to completely delete this team? This action is permanent.')) return;
+  try {
+    await apiFetch(`${API}/api/groups/${groupId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ userId }),
+    });
+    showToast('Team deleted.', 'info');
+    loadGroups();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function leaveGroup(groupId) {
+  if (!confirm('Are you sure you want to leave this team?')) return;
+  try {
+    await apiFetch(`${API}/api/groups/${groupId}/remove-member`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, targetUserId: userId }),
+    });
+    showToast('You left the team.', 'info');
+    loadGroups();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function removeMember(groupId, memberId, memberName) {
+  if (!confirm(`Remove ${memberName} from the team?`)) return;
+  try {
+    await apiFetch(`${API}/api/groups/${groupId}/remove-member`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, targetUserId: memberId }),
+    });
+    showToast(`${memberName} was removed.`, 'info');
+    loadGroups();
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }
 
@@ -1447,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       ['modal-add-day', 'modal-add-goal', 'modal-add-category',
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
-       'modal-edit-category', 'modal-edit-goal'].forEach(id => {
+       'modal-edit-category', 'modal-edit-goal', 'modal-edit-group'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.classList.contains('open')) closeModal(id);
       });

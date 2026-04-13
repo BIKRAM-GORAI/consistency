@@ -39,14 +39,6 @@ const createGroup = async (req, res) => {
       return res.status(400).json({ message: 'userId and name are required.' });
     }
 
-    // Enforce one-group-per-owner rule
-    const existing = await Group.findOne({ owner: userId });
-    if (existing) {
-      return res.status(400).json({
-        message: 'You already own a team. You cannot create another one.',
-        group: existing,
-      });
-    }
 
     const code  = await makeUniqueCode();
     const group = new Group({
@@ -147,4 +139,91 @@ const memberDays = async (req, res) => {
   }
 };
 
-module.exports = { createGroup, joinGroup, myGroups, groupMembers, memberDays };
+/**
+ * PUT /api/groups/:groupId
+ * Body: { userId, name }
+ * Edits the group name (owner only).
+ */
+const editGroup = async (req, res) => {
+  try {
+    const { userId, name } = req.body;
+    if (!userId || !name) return res.status(400).json({ message: 'userId and name are required.' });
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    if (String(group.owner) !== String(userId)) {
+      return res.status(403).json({ message: 'Only the owner can edit the group.' });
+    }
+
+    group.name = name;
+    await group.save();
+    
+    const populated = await Group.findById(group._id).populate('members', 'name email').populate('owner', 'name email');
+    res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * DELETE /api/groups/:groupId
+ * Body: { userId }
+ * Deletes the group entirely (owner only).
+ */
+const deleteGroup = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ message: 'userId is required.' });
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    if (String(group.owner) !== String(userId)) {
+      return res.status(403).json({ message: 'Only the owner can delete the group.' });
+    }
+
+    await Group.findByIdAndDelete(req.params.groupId);
+    res.json({ message: 'Group deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * POST /api/groups/:groupId/remove-member
+ * Body: { userId, targetUserId }
+ * Removes a member. Owner can remove anyone. A user can remove themselves.
+ */
+const removeMember = async (req, res) => {
+  try {
+    const { userId, targetUserId } = req.body;
+    if (!userId || !targetUserId) return res.status(400).json({ message: 'userId and targetUserId are required.' });
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    // Check permissions
+    const isOwnerRequesting = String(group.owner) === String(userId);
+    const isSelfLeaving = String(userId) === String(targetUserId);
+
+    if (!isOwnerRequesting && !isSelfLeaving) {
+      return res.status(403).json({ message: 'You do not have permission to remove this member.' });
+    }
+
+    // Owner cannot be removed or leave
+    if (String(group.owner) === String(targetUserId)) {
+      return res.status(400).json({ message: 'The owner cannot leave or be removed from the group. Delete the group instead.' });
+    }
+
+    group.members = group.members.filter(m => String(m) !== String(targetUserId));
+    await group.save();
+
+    const populated = await Group.findById(group._id).populate('members', 'name email').populate('owner', 'name email');
+    res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+module.exports = { createGroup, joinGroup, myGroups, groupMembers, memberDays, editGroup, deleteGroup, removeMember };

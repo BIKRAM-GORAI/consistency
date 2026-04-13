@@ -17,4 +17,13 @@ router.get('/:groupId/members', ctrl.groupMembers);
 // Read-only: fetch another member's day cards
 router.get('/member-days', ctrl.memberDays);
 
+// Edit a group (owner only)
+router.put('/:groupId', ctrl.editGroup);
+
+// Delete a group (owner only)
+router.delete('/:groupId', ctrl.deleteGroup);
+
+// Remove a member or leave a group
+router.post('/:groupId/remove-member', ctrl.removeMember);
+
 module.exports = router;
