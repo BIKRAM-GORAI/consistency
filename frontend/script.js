@@ -868,31 +868,57 @@ function renderGoals() {
 }
 
 function buildGoalCard(goal) {
-  const pct = calcProgress([{ tasks: goal.tasks }]);
-  const dl  = daysLeft(goal.deadline);
+  const pct        = calcProgress([{ tasks: goal.tasks }]);
+  const dl         = daysLeft(goal.deadline);
+  const isComplete = pct === 100;
 
-  let dlClass = 'days-safe';
-  let dlText  = `${dl} days left`;
-  if (dl < 0)        { dlClass = 'days-overdue'; dlText = `⚠️ Overdue by ${Math.abs(dl)}d`; }
-  else if (dl <= 2)  { dlClass = 'days-danger';  dlText = `🚨 ${dl}d left!`; }
-  else if (dl <= 5)  { dlClass = 'days-warn';    dlText = `⏰ ${dl} days left`; }
+  // ── Badge logic ──
+  let dlClass, dlText;
+  if (isComplete) {
+    dlClass = 'days-completed';
+    // Use the deadline date as a proxy for "completed by" date
+    // (we don't have a separate completedAt field)
+    dlText  = '✅ Completed!';
+  } else if (dl < 0) {
+    dlClass = 'days-overdue';
+    dlText  = `⚠️ Overdue by ${Math.abs(dl)}d`;
+  } else if (dl <= 2) {
+    dlClass = 'days-danger';
+    dlText  = `🚨 ${dl}d left!`;
+  } else if (dl <= 5) {
+    dlClass = 'days-warn';
+    dlText  = `⏰ ${dl} days left`;
+  } else {
+    dlClass = 'days-safe';
+    dlText  = `${dl} days left`;
+  }
 
   const card = document.createElement('div');
-  card.className = 'goal-card';
+  card.className = isComplete ? 'goal-card goal-completed' : 'goal-card';
   card.id = `goal-card-${goal._id}`;
 
   let tasksHTML = '';
   for (const task of goal.tasks) {
     const doneStyle = task.completed ? 'text-decoration:line-through;color:var(--lt-green);' : '';
+    // Completed goals: checkboxes are locked (read-only)
+    const checkboxAttrs = isComplete
+      ? `checked disabled`
+      : `${task.completed ? 'checked' : ''} onchange="toggleGoalTask('${goal._id}','${task._id}',this.checked)"`;
     tasksHTML += `
       <div class="task-item">
         <input type="checkbox" class="task-checkbox"
-          ${task.completed ? 'checked' : ''}
-          onchange="toggleGoalTask('${goal._id}','${task._id}',this.checked)"
+          ${checkboxAttrs}
           id="gtask-${task._id}" />
         <label class="task-title" for="gtask-${task._id}" style="${doneStyle}">${escHtml(task.title)}</label>
       </div>`;
   }
+
+  // Show actions only when not completed
+  const actionsHTML = isComplete ? '' : `
+    <div class="goal-actions">
+      ${dl >= 0 ? `<button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;">✏️ Edit</button>` : ''}
+      <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')">🗑 Delete</button>
+    </div>`;
 
   card.innerHTML = `
     <div class="goal-header">
@@ -925,10 +951,7 @@ function buildGoalCard(goal) {
       </div>
     </div>
 
-    <div class="goal-actions">
-      ${dl >= 0 ? `<button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;">✏️ Edit</button>` : ''}
-      <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')">🗑 Delete</button>
-    </div>
+    ${actionsHTML}
   `;
 
   return card;
@@ -959,6 +982,20 @@ async function toggleGoalTask(goalId, taskId, checked) {
       method: 'PUT',
       body: JSON.stringify({ tasks: goal.tasks }),
     });
+
+    // If now 100% complete, re-render the card to apply green theme
+    const pct = calcProgress([{ tasks: goal.tasks }]);
+    if (pct === 100) {
+      const oldCard = document.getElementById(`goal-card-${goalId}`);
+      if (oldCard) {
+        const newCard = buildGoalCard(goal);
+        if (window.gsap) gsap.set(newCard, { opacity: 0, scale: 0.97 });
+        oldCard.replaceWith(newCard);
+        if (window.gsap) gsap.to(newCard, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)', clearProps: 'all' });
+        requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`gpct-fill-${goalId}`, 100)));
+        showToast('🎉 Goal completed! Amazing work!', 'success');
+      }
+    }
   } catch (err) {
     task.completed = !checked;
     if (label) { label.style.textDecoration = !checked ? 'line-through' : 'none'; label.style.color = !checked ? 'var(--lt-green)' : ''; }

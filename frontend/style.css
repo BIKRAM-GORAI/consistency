@@ -179,11 +179,11 @@ body {
 .nav-btn.active {
   background: var(--black);
   color: var(--yellow);
-  box-shadow: 3px 3px 0 var(--yellow);
+  box-shadow: 3px 3px 0 #ffffff;
 }
 
 .nav-btn.active:hover {
-  box-shadow: 5px 5px 0 var(--yellow);
+  box-shadow: 5px 5px 0 #ffffff;
 }
 
 /* User area */
@@ -867,10 +867,11 @@ body {
   text-transform: uppercase;
 }
 
-.days-safe    { background: var(--teal); color: var(--black); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); }
-.days-warn    { background: var(--amber); color: var(--black); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); }
-.days-danger  { background: var(--coral); color: #fff; border-color: var(--black); box-shadow: 2px 2px 0 var(--black); }
-.days-overdue { background: var(--red); color: #fff; border-color: var(--black); box-shadow: 2px 2px 0 var(--black); animation: urgentPulse 1.4s ease infinite; }
+.days-safe      { background: var(--teal); color: var(--black); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); }
+.days-warn      { background: var(--amber); color: var(--black); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); }
+.days-danger    { background: var(--coral); color: #fff; border-color: var(--black); box-shadow: 2px 2px 0 var(--black); }
+.days-overdue   { background: var(--red); color: #fff; border-color: var(--black); box-shadow: 2px 2px 0 var(--black); animation: urgentPulse 1.4s ease infinite; }
+.days-completed { background: #22C55E; color: #fff; border-color: var(--black); box-shadow: 2px 2px 0 var(--black); font-size: 12px; }
 
 @keyframes urgentPulse {
   0%, 100% { opacity: 1; }
@@ -878,6 +879,32 @@ body {
 }
 
 .goal-deadline { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Completed goal card theme ── */
+.goal-card.goal-completed {
+  background: #f0fdf4;
+  border-color: #16a34a;
+  box-shadow: 4px 4px 0 #16a34a;
+}
+
+.goal-card.goal-completed::before {
+  background: #22C55E;
+}
+
+.goal-card.goal-completed:hover {
+  box-shadow: 6px 6px 0 #16a34a;
+}
+
+.goal-card.goal-completed .goal-title {
+  color: #15803d;
+}
+
+.goal-card.goal-completed .task-checkbox:disabled {
+  opacity: 0.8;
+  cursor: default;
+  background: #bbf7d0;
+  border-color: #16a34a;
+}
 
 .goal-actions {
   display: flex;
