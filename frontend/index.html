@@ -43,6 +43,9 @@
       <button class="nav-btn" id="btn-groups" onclick="showPage('groups')">
         <span>👥</span><span class="btn-text"> Groups</span>
       </button>
+      <button class="nav-btn" id="btn-achievements" onclick="showPage('achievements')">
+        <span>🏆</span><span class="btn-text"> Wins</span>
+      </button>
     </div>
 
     <div class="nav-user-area">
@@ -120,6 +123,22 @@
       <div class="loading-spinner" id="loading-groups">
         <div class="spinner-ring"></div>
         <p>Loading groups...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== ACHIEVEMENTS PAGE ===== -->
+  <main class="page" id="page-achievements">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">🏆 Wins &amp; Achievements</h1>
+        <p class="page-subtitle">Every win counts — big or small</p>
+      </div>
+    </div>
+    <div id="achievements-container">
+      <div class="loading-spinner" id="loading-achievements">
+        <div class="spinner-ring"></div>
+        <p>Loading achievements...</p>
       </div>
     </div>
   </main>
@@ -280,12 +299,15 @@
     <div class="modal modal-wide">
       <div class="modal-header">
         <h2 id="member-tasks-title">👤 Member Tasks</h2>
-        <button class="modal-close" onclick="closeModal('modal-member-tasks')">✕</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-view-ach-all" id="btn-view-member-achievements" onclick="openMemberAllAchievements()" title="View all achievements">🏆 Wins</button>
+          <button class="modal-close" onclick="closeModal('modal-member-tasks')">✕</button>
+        </div>
       </div>
       <div class="modal-body" id="member-tasks-body">
         <!-- Populated by JS -->
       </div>
-      <!-- Sticky close footer — always visible on mobile even when scrolled deep -->
+      <!-- Sticky close footer -->
       <div class="modal-footer member-tasks-footer">
         <button class="btn-member-close ripple" onclick="closeModal('modal-member-tasks')">
           <span>←</span> Close
@@ -366,11 +388,81 @@
       <span class="bnav-icon">👥</span>
       <span>Groups</span>
     </button>
+    <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
+      <span class="bnav-icon">🏆</span>
+      <span>Wins</span>
+    </button>
     <button class="bottom-nav-btn" id="bnav-logout" onclick="logout()">
       <span class="bnav-icon">🚪</span>
       <span>Logout</span>
     </button>
   </nav>
+
+  <!-- ===== MODAL: Add Achievement ===== -->
+  <div class="modal-overlay" id="modal-add-achievement" onclick="closeModalOnOverlay(event, 'modal-add-achievement')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🏆 Log Achievement</h2>
+        <button class="modal-close" onclick="closeModal('modal-add-achievement')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ach-no-progress-label">
+          <span>ℹ️</span> Achievements do not affect the daily progress bar
+        </div>
+        <div class="form-group">
+          <label for="ach-title-input">Achievement Title <span style="color:var(--red)">*</span></label>
+          <input type="text" id="ach-title-input" class="form-control" placeholder="e.g. Finished a course, PR at the gym..." />
+        </div>
+        <div class="form-group">
+          <label for="ach-desc-input">Description (optional)</label>
+          <textarea id="ach-desc-input" class="form-control" rows="3" placeholder="Add more context about this win..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Proof / Reference Links (optional)</label>
+          <div id="ach-links-builder"></div>
+          <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;margin-top:6px;" onclick="addAchLinkField('ach-links-builder')" id="add-ach-link-btn">️＋ Add Link</button>
+          <p class="form-hint" id="ach-link-warning" style="display:none;color:var(--coral);">⚠️ One or more links don't look valid — they will still be saved if you confirm.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-add-achievement')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitAddAchievement()" id="submit-ach-btn">Save Achievement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Edit Achievement ===== -->
+  <div class="modal-overlay" id="modal-edit-achievement" onclick="closeModalOnOverlay(event, 'modal-edit-achievement')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>✏️ Edit Achievement</h2>
+        <button class="modal-close" onclick="closeModal('modal-edit-achievement')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ach-no-progress-label">
+          <span>ℹ️</span> Achievements do not affect the daily progress bar
+        </div>
+        <div class="form-group">
+          <label for="edit-ach-title">Achievement Title <span style="color:var(--red)">*</span></label>
+          <input type="text" id="edit-ach-title" class="form-control" placeholder="e.g. Finished a course, PR at the gym..." />
+        </div>
+        <div class="form-group">
+          <label for="edit-ach-desc">Description (optional)</label>
+          <textarea id="edit-ach-desc" class="form-control" rows="3" placeholder="Add more context..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Proof / Reference Links (optional)</label>
+          <div id="edit-ach-links-builder"></div>
+          <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;margin-top:6px;" onclick="addAchLinkField('edit-ach-links-builder')" id="add-edit-ach-link-btn">️＋ Add Link</button>
+          <p class="form-hint" id="edit-ach-link-warning" style="display:none;color:var(--coral);">⚠️ One or more links don't look valid — they will still be saved if you confirm.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-achievement')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitEditAchievement()" id="submit-edit-ach-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast notification -->
   <div class="toast" id="toast">

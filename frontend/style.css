@@ -1939,3 +1939,339 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-color: #ccc;
   color: var(--text-light);
 }
+
+/* ── Always-visible "Log Win" row at bottom of every day card ── */
+.ach-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #d4ccbc;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   ACHIEVEMENTS — INLINE SECTION (on day cards)
+   ============================================================ */
+
+/* Row that wraps multiple proof link buttons */
+.ach-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* "🏆 Wins" button in member-tasks modal header */
+.btn-view-ach-all {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--black);
+  background: var(--amber);
+  border: var(--border-2);
+  border-radius: var(--r-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: var(--t) var(--ease);
+  white-space: nowrap;
+}
+
+.btn-view-ach-all:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+.achievements-section {
+  margin-top: 16px;
+  padding: 14px 14px 10px;
+  background: #fffbf0;
+  border: 2px solid var(--amber);
+  border-radius: var(--r-sm);
+  box-shadow: 3px 3px 0 var(--amber);
+}
+
+.achievements-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.achievements-section-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--black);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  flex: 1;
+}
+
+.ach-no-progress-note {
+  font-size: 10px;
+  font-weight: 700;
+  color: #888;
+  background: #f0ece4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+/* "Log Win" button — amber accent */
+.btn-add-ach {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--black);
+  background: var(--amber);
+  border: var(--border-2);
+  border-radius: var(--r-sm);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: var(--t) var(--ease);
+  white-space: nowrap;
+}
+
+.btn-add-ach:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+/* Empty state inside achievement section */
+.ach-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* Each achievement item row */
+.achievement-item {
+  padding: 10px 0;
+  border-top: 1px dashed #e0d8c8;
+}
+
+.achievement-item:first-of-type { border-top: none; }
+
+.achievement-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.achievement-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--black);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.achievement-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ach-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.ach-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--black);
+  background: var(--teal);
+  border: var(--border-2);
+  border-radius: 4px;
+  padding: 3px 10px;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: var(--t) var(--ease);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ach-link:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+  background: var(--lime);
+}
+
+/* Small edit / delete buttons on achievement items */
+.btn-edit-ach,
+.btn-del-ach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: var(--border-2);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 12px;
+  transition: var(--t) var(--ease);
+  box-shadow: 1px 1px 0 var(--black);
+}
+
+.btn-edit-ach:hover {
+  background: var(--purple);
+  color: #fff;
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.btn-del-ach:hover {
+  background: var(--red);
+  color: #fff;
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+/* ============================================================
+   ACHIEVEMENTS — FULL PAGE CARDS (🏆 Wins tab)
+   ============================================================ */
+.achievement-page-card {
+  position: relative;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--r-md);
+  padding: 20px 20px 18px 26px;
+  box-shadow: var(--shadow);
+  transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+  overflow: hidden;
+}
+
+/* Amber left accent bar */
+.achievement-page-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 6px;
+  background: var(--amber);
+  border-radius: var(--r-md) 0 0 var(--r-md);
+}
+
+.achievement-page-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ach-page-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ach-date-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--black);
+  background: var(--amber);
+  border: var(--border-2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.ach-page-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(15px, 3.5vw, 18px);
+  font-weight: 800;
+  color: var(--black);
+}
+
+.ach-page-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ach-page-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.ach-page-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--black);
+  background: var(--teal);
+  border: var(--border-2);
+  border-radius: 6px;
+  padding: 5px 14px;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 var(--black);
+  transition: var(--t) var(--ease);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ach-page-link:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--black);
+  background: var(--lime);
+}
+
+/* ============================================================
+   ACHIEVEMENT MODAL — Info label
+   ============================================================ */
+.ach-no-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fffbf0;
+  border: 2px solid var(--amber);
+  border-radius: var(--r-sm);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a5c00;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ============================================================
+   ACHIEVEMENTS — MOBILE RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .achievements-section { padding: 12px 10px 8px; }
+  .achievements-section-header { gap: 6px; }
+  .ach-no-progress-note { font-size: 9px; padding: 2px 6px; }
+  .achievement-item-title { font-size: 12px; }
+  .ach-page-title { font-size: 15px; }
+  .ach-page-link, .ach-link { font-size: 11px; padding: 4px 10px; }
+}

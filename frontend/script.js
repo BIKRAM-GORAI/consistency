@@ -25,6 +25,11 @@ let editingDayId  = null;
 let editingCatId  = null;
 let editingGoalId = null;
 
+// Achievement state
+let allAchievements          = [];
+let activeDayIdForAchievement = null;
+let editingAchievementId     = null;
+
 // ── Mobile detection ───────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
 
@@ -165,8 +170,9 @@ function showPage(page) {
   const bnavBtn = document.getElementById(`bnav-${page}`);
   if (bnavBtn) bnavBtn.classList.add('active');
 
-  if (page === 'goals')  loadGoals();
-  if (page === 'groups') loadGroups();
+  if (page === 'goals')        loadGoals();
+  if (page === 'groups')       loadGroups();
+  if (page === 'achievements') loadAchievements();
 }
 
 // ── API ────────────────────────────────────────────────────
@@ -370,6 +376,12 @@ function buildDayCard(day) {
     <div class="summary-content" id="summary-content-${day._id}">
       <div class="summary-inner">${summaryInner}</div>
     </div>
+
+    <!-- Always-visible Log Win button -->
+    <div class="ach-add-row">
+      <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')">🏆 Log a Acheivement</button>
+      <span class="ach-no-progress-note">doesn't affect progress</span>
+    </div>
   `;
 
   // Animate progress bar after card is inserted into DOM
@@ -379,6 +391,9 @@ function buildDayCard(day) {
       animateProgressBar(`pct-fill-${day._id}`, pct);
     });
   });
+
+  // Load achievements for this card asynchronously (non-blocking)
+  loadDayAchievements(day._id, card);
 
   return card;
 }
@@ -1414,6 +1429,8 @@ async function openMemberTasks(memberId, memberName) {
   titleEl.innerHTML = `📋 ${escHtml(memberName)}'s Tasks`;
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   openModal('modal-member-tasks');
+  _currentMemberId   = memberId;
+  _currentMemberName = memberName;
 
   try {
     const days = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(memberId)}`);
@@ -1466,7 +1483,7 @@ async function openMemberTasks(memberId, memberName) {
       }
 
       html += `
-        <div class="member-day-card">
+        <div class="member-day-card" data-day-id="${day._id}">
           <div class="member-day-header">
             <div>
               <span class="card-date">${formatDisplayDate(day.date)}</span>
@@ -1482,8 +1499,371 @@ async function openMemberTasks(memberId, memberName) {
     }
     html += '</div>';
     bodyEl.innerHTML = html;
+
+    // Inject achievements per day asynchronously
+    for (const day of sorted) {
+      (async () => {
+        try {
+          const achs = await apiFetch(`${API}/api/achievements/day/${day._id}`);
+          if (!achs.length) return;
+          const dayCard = bodyEl.querySelector(`[data-day-id="${day._id}"]`);
+          if (!dayCard) return;
+          let achHtml = `<div class="achievements-section" style="margin-top:10px;"><div class="achievements-section-header"><span class="achievements-section-label">🏆 Wins</span></div>`;
+          for (const a of achs) {
+            const linksHTML = buildLinksHTML(a.links || []);
+            const descHTML  = a.description ? `<p class="ach-desc">${escHtml(a.description)}</p>` : '';
+            achHtml += `<div class="achievement-item"><span class="achievement-item-title">🎖️ ${escHtml(a.title)}</span>${descHTML}<div class="ach-links-row">${linksHTML}</div></div>`;
+          }
+          achHtml += '</div>';
+          dayCard.insertAdjacentHTML('beforeend', achHtml);
+        } catch (_) {}
+      })();
+    }
   } catch (err) {
     bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load tasks.</p>`;
+  }
+}
+
+/** Open a panel showing all achievements for the current member */
+async function openMemberAllAchievements() {
+  if (!_currentMemberId) return;
+  const bodyEl = document.getElementById('member-tasks-body');
+  const titleEl = document.getElementById('member-tasks-title');
+  titleEl.innerHTML = `🏆 ${escHtml(_currentMemberName)}'s Achievements`;
+  bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+  try {
+    const achs = await apiFetch(`${API}/api/achievements/user/${_currentMemberId}`);
+    if (!achs.length) {
+      bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0"><span class="empty-icon">🏆</span><h3>No achievements yet</h3><p>${escHtml(_currentMemberName)} hasn't logged any wins yet.</p></div>`;
+      return;
+    }
+    let html = '<div class="member-days-list">';
+    for (const a of achs) {
+      const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
+      const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';
+      html += `
+        <div class="achievement-page-card">
+          <div class="ach-page-top">
+            <div>
+              <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
+              <h3 class="ach-page-title">🎖️ ${escHtml(a.title)}</h3>
+            </div>
+          </div>
+          ${descHTML}
+          <div class="ach-links-row">${linksHTML}</div>
+        </div>`;
+    }
+    html += '</div>';
+    bodyEl.innerHTML = html;
+  } catch (err) {
+    bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load achievements.</p>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  ACHIEVEMENTS
+// ══════════════════════════════════════════════════════════
+
+// Track which memberId is currently open in the member-tasks modal
+let _currentMemberId   = null;
+let _currentMemberName = null;
+
+// ── Inline day card: load + render achievements ────────────
+async function loadDayAchievements(dayId, cardEl) {
+  try {
+    const achievements = await apiFetch(`${API}/api/achievements/day/${dayId}`);
+    renderDayAchievements(dayId, achievements, cardEl);
+  } catch (_) {
+    // silently fail — achievements are supplementary
+  }
+}
+
+/** Build HTML for a list of links (used in both inline and page cards) */
+function buildLinksHTML(links, cls = 'ach-link') {
+  if (!links || !links.length) return '';
+  return links.map((l, i) =>
+    `<a class="${cls}" href="${escHtml(l)}" target="_blank" rel="noopener noreferrer">🔗 Link ${links.length > 1 ? i + 1 : 'Proof'}</a>`
+  ).join('');
+}
+
+function renderDayAchievements(dayId, achievements, cardEl) {
+  // Remove any existing section first
+  const existing = cardEl.querySelector('.achievements-section');
+  if (existing) existing.remove();
+
+  if (achievements.length === 0) return;
+
+  const section = document.createElement('div');
+  section.className = 'achievements-section';
+
+  let html = `<div class="achievements-section-header"><span class="achievements-section-label">🏆 Wins Logged</span></div>`;
+
+  for (const a of achievements) {
+    const linksHTML = buildLinksHTML(a.links || []);
+    const descHTML  = a.description ? `<p class="ach-desc">${escHtml(a.description)}</p>` : '';
+    html += `
+      <div class="achievement-item" id="ach-item-${a._id}">
+        <div class="achievement-item-top">
+          <span class="achievement-item-title">🎖️ ${escHtml(a.title)}</span>
+          <div class="achievement-item-actions">
+            <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit">✏️</button>
+            <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', '${dayId}')" title="Delete">🗑</button>
+          </div>
+        </div>
+        ${descHTML}
+        <div class="ach-links-row">${linksHTML}</div>
+      </div>`;
+  }
+
+  section.innerHTML = html;
+  const addRow = cardEl.querySelector('.ach-add-row');
+  if (addRow) cardEl.insertBefore(section, addRow);
+  else cardEl.appendChild(section);
+}
+
+// ── Achievements Page ──────────────────────────────────────
+async function loadAchievements() {
+  const container = document.getElementById('achievements-container');
+  container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+  try {
+    allAchievements = await apiFetch(`${API}/api/achievements?userId=${encodeURIComponent(userId)}`);
+    renderAchievements();
+  } catch (err) {
+    container.innerHTML = `<p style="color:#ef4444;text-align:center">Failed to load achievements.</p>`;
+  }
+}
+
+function renderAchievements() {
+  const container = document.getElementById('achievements-container');
+  container.innerHTML = '';
+
+  if (!allAchievements.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🏆</span>
+        <h3>No achievements yet</h3>
+        <p>Log your first win from any Daily Card!</p>
+      </div>`;
+    if (window.gsap) gsap.from('.empty-state', { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' });
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const a of allAchievements) fragment.appendChild(buildAchievementPageCard(a));
+  container.appendChild(fragment);
+
+  if (window.gsap) {
+    gsap.from('.achievement-page-card', { opacity: 0, y: 30, duration: 0.5, stagger: 0.07, ease: 'power3.out', clearProps: 'all' });
+  }
+}
+
+function buildAchievementPageCard(a) {
+  const card = document.createElement('div');
+  card.className = 'achievement-page-card';
+  card.id = `ach-page-${a._id}`;
+
+  const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
+  const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';
+
+  card.innerHTML = `
+    <div class="ach-page-top">
+      <div>
+        <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
+        <h3 class="ach-page-title">🎖️ ${escHtml(a.title)}</h3>
+      </div>
+      <div class="ach-page-actions">
+        <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit">✏️</button>
+        <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', null)" title="Delete">🗑</button>
+      </div>
+    </div>
+    ${descHTML}
+    <div class="ach-links-row">${linksHTML}</div>
+  `;
+  return card;
+}
+
+// ── Dynamic link builder (shared by add + edit modals) ─────────
+function addAchLinkField(builderId, value = '') {
+  const builder = document.getElementById(builderId);
+  if (!builder) return;
+  const row = document.createElement('div');
+  row.className = 'task-input-row';
+  row.innerHTML = `
+    <input type="url" class="form-control" placeholder="https://..." value="${escHtml(value)}" />
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+  `;
+  builder.appendChild(row);
+}
+
+function getLinksFromBuilder(builderId) {
+  const builder = document.getElementById(builderId);
+  if (!builder) return [];
+  return Array.from(builder.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean);
+}
+
+/** Check all links in a builder and return true if any is invalid */
+function hasInvalidLinks(builderId) {
+  return getLinksFromBuilder(builderId).some(l => {
+    try { new URL(/^https?:\/\//i.test(l) ? l : `https://${l}`); return false; }
+    catch (_) { return true; }
+  });
+}
+
+// ── Add Achievement ────────────────────────────────────────
+let _achAddLinkPending = false;
+
+function openAddAchievementModal(dayId) {
+  activeDayIdForAchievement = dayId;
+  _achAddLinkPending = false;
+  document.getElementById('ach-title-input').value = '';
+  document.getElementById('ach-desc-input').value  = '';
+  document.getElementById('ach-links-builder').innerHTML = '';
+  addAchLinkField('ach-links-builder'); // start with one empty row
+  document.getElementById('ach-link-warning').style.display = 'none';
+  const btn = document.getElementById('submit-ach-btn');
+  btn.textContent = 'Save Achievement';
+  openModal('modal-add-achievement');
+}
+
+async function submitAddAchievement() {
+  const title = document.getElementById('ach-title-input').value.trim();
+  const desc  = document.getElementById('ach-desc-input').value.trim();
+  const links = getLinksFromBuilder('ach-links-builder');
+
+  if (!title) { showToast('Achievement title is required.', 'warn'); return; }
+
+  const warnEl = document.getElementById('ach-link-warning');
+  const btn    = document.getElementById('submit-ach-btn');
+
+  if (links.length > 0 && hasInvalidLinks('ach-links-builder') && !_achAddLinkPending) {
+    warnEl.style.display = 'block';
+    _achAddLinkPending = true;
+    btn.textContent = '⚠️ Confirm & Save';
+    return;
+  }
+  warnEl.style.display = 'none';
+  _achAddLinkPending = false;
+
+  const dayId = activeDayIdForAchievement;
+  const day   = allDays.find(d => d._id === dayId);
+  const date  = day ? day.date : todayStr();
+
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  try {
+    const newAch = await apiFetch(`${API}/api/achievements`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, dayId, date, title, description: desc, links }),
+    });
+    allAchievements.unshift(newAch);
+    closeModal('modal-add-achievement');
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      const dayAchs = await apiFetch(`${API}/api/achievements/day/${dayId}`);
+      renderDayAchievements(dayId, dayAchs, cardEl);
+    }
+    showToast('Achievement logged! 🎉', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Achievement';
+  }
+}
+
+// ── Edit Achievement ───────────────────────────────────────
+let _achEditLinkPending = false;
+
+function openEditAchievementModal(achId) {
+  const a = allAchievements.find(x => x._id === achId);
+  editingAchievementId = achId;
+  _achEditLinkPending = false;
+
+  document.getElementById('edit-ach-title').value = a ? a.title       : '';
+  document.getElementById('edit-ach-desc').value  = a ? a.description : '';
+
+  // Populate multi-link builder with existing links
+  const builder = document.getElementById('edit-ach-links-builder');
+  builder.innerHTML = '';
+  const existingLinks = a ? (a.links || []) : [];
+  if (existingLinks.length > 0) {
+    existingLinks.forEach(l => addAchLinkField('edit-ach-links-builder', l));
+  } else {
+    addAchLinkField('edit-ach-links-builder'); // one empty row
+  }
+
+  document.getElementById('edit-ach-link-warning').style.display = 'none';
+  const btn = document.getElementById('submit-edit-ach-btn');
+  btn.textContent = 'Save Changes';
+  openModal('modal-edit-achievement');
+}
+
+async function submitEditAchievement() {
+  const title = document.getElementById('edit-ach-title').value.trim();
+  const desc  = document.getElementById('edit-ach-desc').value.trim();
+  const links = getLinksFromBuilder('edit-ach-links-builder');
+
+  if (!title) { showToast('Title is required.', 'warn'); return; }
+
+  const warnEl = document.getElementById('edit-ach-link-warning');
+  const btn    = document.getElementById('submit-edit-ach-btn');
+  if (links.length > 0 && hasInvalidLinks('edit-ach-links-builder') && !_achEditLinkPending) {
+    warnEl.style.display = 'block';
+    _achEditLinkPending = true;
+    btn.textContent = '⚠️ Confirm & Save';
+    return;
+  }
+  warnEl.style.display = 'none';
+  _achEditLinkPending = false;
+
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  try {
+    const updated = await apiFetch(`${API}/api/achievements/${editingAchievementId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ title, description: desc, links }),
+    });
+    const idx = allAchievements.findIndex(x => x._id === editingAchievementId);
+    if (idx !== -1) allAchievements[idx] = updated;
+    closeModal('modal-edit-achievement');
+    const cardEl = document.getElementById(`day-card-${updated.dayId}`);
+    if (cardEl) {
+      const dayAchs = await apiFetch(`${API}/api/achievements/day/${updated.dayId}`);
+      renderDayAchievements(updated.dayId, dayAchs, cardEl);
+    }
+    if (document.getElementById('page-achievements').classList.contains('active')) {
+      renderAchievements();
+    }
+    showToast('Achievement updated!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+}
+
+// ── Delete Achievement ─────────────────────────────────────
+async function deleteAchievement(achId, dayId) {
+  if (!confirm('Delete this achievement? This cannot be undone.')) return;
+  try {
+    await apiFetch(`${API}/api/achievements/${achId}`, { method: 'DELETE' });
+    allAchievements = allAchievements.filter(x => x._id !== achId);
+
+    // Remove from inline card if dayId is known
+    const knownDayId = dayId || allAchievements.find(x => x._id === achId)?.dayId;
+    if (knownDayId) {
+      const cardEl = document.getElementById(`day-card-${knownDayId}`);
+      if (cardEl) {
+        const dayAchs = await apiFetch(`${API}/api/achievements/day/${knownDayId}`);
+        renderDayAchievements(knownDayId, dayAchs, cardEl);
+      }
+    }
+    // If achievements page is open, re-render it
+    if (document.getElementById('page-achievements').classList.contains('active')) {
+      renderAchievements();
+    }
+    showToast('Achievement deleted.', 'info');
+  } catch (err) {
+    showToast('Failed to delete achievement.', 'error');
   }
 }
 
@@ -1572,7 +1952,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       ['modal-add-day', 'modal-add-goal', 'modal-add-category',
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
-       'modal-edit-category', 'modal-edit-goal', 'modal-edit-group'].forEach(id => {
+       'modal-edit-category', 'modal-edit-goal', 'modal-edit-group',
+       'modal-add-achievement', 'modal-edit-achievement'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.classList.contains('open')) closeModal(id);
       });
