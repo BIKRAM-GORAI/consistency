@@ -2275,3 +2275,91 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   .ach-page-title { font-size: 15px; }
   .ach-page-link, .ach-link { font-size: 11px; padding: 4px 10px; }
 }
+
+/* ============================================================
+   ACHIEVEMENT PRIVACY BANNER
+   ============================================================ */
+.ach-privacy-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.ach-privacy-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ach-privacy-icon { font-size: 22px; flex-shrink: 0; line-height: 1; }
+.ach-privacy-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--black);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+.ach-privacy-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+/* ============================================================
+   TOGGLE SWITCH  (reusable component)
+   ============================================================ */
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle-switch input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-track {
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  background: #ccc;
+  border: 2px solid var(--black);
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.2s;
+  box-shadow: 2px 2px 0 var(--black);
+}
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--black);
+  transition: left 0.2s;
+}
+.toggle-switch input:checked + .toggle-track {
+  background: var(--lime);
+}
+.toggle-switch input:checked + .toggle-track .toggle-thumb {
+  left: 22px;
+}
+.toggle-switch input:disabled + .toggle-track {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+@media (max-width: 480px) {
+  .ach-privacy-banner { flex-wrap: wrap; gap: 10px; }
+  .ach-privacy-title  { font-size: 12px; }
+}

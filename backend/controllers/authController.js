@@ -50,4 +50,41 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy };
+
+/**
+ * GET /api/auth/:userId/achievements-privacy
+ * Returns { achievementsPublic: Boolean }
+ */
+async function getAchievementPrivacy(req, res) {
+  try {
+    const user = await User.findById(req.params.userId).select('achievementsPublic');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    // Existing users have no field yet — treat as true (public)
+    res.json({ achievementsPublic: user.achievementsPublic !== false });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/auth/:userId/achievements-privacy
+ * Body: { achievementsPublic: Boolean }
+ */
+async function setAchievementPrivacy(req, res) {
+  try {
+    const { achievementsPublic } = req.body;
+    if (typeof achievementsPublic !== 'boolean') {
+      return res.status(400).json({ message: 'achievementsPublic must be a boolean' });
+    }
+    const updated = await User.findByIdAndUpdate(
+      req.params.userId,
+      { achievementsPublic },
+      { new: true }
+    ).select('achievementsPublic');
+    if (!updated) return res.status(404).json({ message: 'User not found' });
+    res.json({ achievementsPublic: updated.achievementsPublic });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}

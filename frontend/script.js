@@ -26,9 +26,10 @@ let editingCatId  = null;
 let editingGoalId = null;
 
 // Achievement state
-let allAchievements          = [];
+let allAchievements           = [];
 let activeDayIdForAchievement = null;
-let editingAchievementId     = null;
+let editingAchievementId      = null;
+let achievementsPublic        = true; // mirrors the DB setting
 
 // ── Mobile detection ───────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
@@ -1532,7 +1533,19 @@ async function openMemberAllAchievements() {
   titleEl.innerHTML = `🏆 ${escHtml(_currentMemberName)}'s Achievements`;
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
-    const achs = await apiFetch(`${API}/api/achievements/user/${_currentMemberId}`);
+    let achs = [];
+    try {
+      const resp = await fetch(`${API}/api/achievements/user/${_currentMemberId}`);
+      if (resp.status === 403) {
+        bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0">
+          <span class="empty-icon">\uD83D\uDD12</span>
+          <h3>Achievements are Private</h3>
+          <p>${escHtml(_currentMemberName)} has chosen to hide their achievements.</p>
+        </div>`;
+        return;
+      }
+      achs = await resp.json();
+    } catch (_) {}
     if (!achs.length) {
       bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0"><span class="empty-icon">🏆</span><h3>No achievements yet</h3><p>${escHtml(_currentMemberName)} hasn't logged any wins yet.</p></div>`;
       return;
@@ -1571,7 +1584,8 @@ let _currentMemberName = null;
 // ── Inline day card: load + render achievements ────────────
 async function loadDayAchievements(dayId, cardEl) {
   try {
-    const achievements = await apiFetch(`${API}/api/achievements/day/${dayId}`);
+    // Pass ?own=1 so the backend bypasses the privacy check for the owner
+    const achievements = await apiFetch(`${API}/api/achievements/day/${dayId}?own=1`);
     renderDayAchievements(dayId, achievements, cardEl);
   } catch (_) {
     // silently fail — achievements are supplementary
@@ -1626,7 +1640,12 @@ async function loadAchievements() {
   const container = document.getElementById('achievements-container');
   container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
-    allAchievements = await apiFetch(`${API}/api/achievements?userId=${encodeURIComponent(userId)}`);
+    const [privacyRes, achs] = await Promise.all([
+      apiFetch(`${API}/api/auth/${userId}/achievements-privacy`),
+      apiFetch(`${API}/api/achievements?userId=${encodeURIComponent(userId)}`),
+    ]);
+    achievementsPublic = privacyRes.achievementsPublic !== false;
+    allAchievements    = achs;
     renderAchievements();
   } catch (err) {
     container.innerHTML = `<p style="color:#ef4444;text-align:center">Failed to load achievements.</p>`;
@@ -1636,6 +1655,24 @@ async function loadAchievements() {
 function renderAchievements() {
   const container = document.getElementById('achievements-container');
   container.innerHTML = '';
+
+  // ─ Privacy toggle banner ─────────────────────────────────────────────
+  const privacyBanner = document.createElement('div');
+  privacyBanner.className = 'ach-privacy-banner';
+  privacyBanner.innerHTML = `
+    <div class="ach-privacy-info">
+      <span class="ach-privacy-icon" id="ach-privacy-icon">${achievementsPublic ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDD12'}</span>
+      <div>
+        <p class="ach-privacy-title">Achievement Visibility</p>
+        <p class="ach-privacy-label" id="ach-privacy-label">${achievementsPublic ? 'Visible to group members' : 'Hidden from group members'}</p>
+      </div>
+    </div>
+    <label class="toggle-switch" title="Toggle achievement visibility">
+      <input type="checkbox" id="ach-privacy-toggle" ${achievementsPublic ? 'checked' : ''} onchange="toggleAchievementPrivacy()" />
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+    </label>
+  `;
+  container.appendChild(privacyBanner);
 
   if (!allAchievements.length) {
     container.innerHTML = `
@@ -1654,6 +1691,33 @@ function renderAchievements() {
 
   if (window.gsap) {
     gsap.from('.achievement-page-card', { opacity: 0, y: 30, duration: 0.5, stagger: 0.07, ease: 'power3.out', clearProps: 'all' });
+  }
+}
+
+async function toggleAchievementPrivacy() {
+  const newVal   = !achievementsPublic;
+  const toggleEl = document.getElementById('ach-privacy-toggle');
+  const iconEl   = document.getElementById('ach-privacy-icon');
+  const labelEl  = document.getElementById('ach-privacy-label');
+  if (toggleEl) toggleEl.disabled = true;
+  try {
+    const res = await apiFetch(`${API}/api/auth/${userId}/achievements-privacy`, {
+      method: 'PATCH',
+      body: JSON.stringify({ achievementsPublic: newVal }),
+    });
+    achievementsPublic = res.achievementsPublic;
+    if (toggleEl) { toggleEl.checked = achievementsPublic; toggleEl.disabled = false; }
+    if (iconEl)   iconEl.textContent  = achievementsPublic ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDD12';
+    if (labelEl)  labelEl.textContent = achievementsPublic ? 'Visible to group members' : 'Hidden from group members';
+    showToast(
+      achievementsPublic
+        ? '\uD83D\uDC41\uFE0F Achievements visible to your groups'
+        : '\uD83D\uDD12 Achievements hidden from group members',
+      'info'
+    );
+  } catch (err) {
+    if (toggleEl) { toggleEl.checked = achievementsPublic; toggleEl.disabled = false; }
+    showToast('Failed to update privacy setting.', 'error');
   }
 }
 

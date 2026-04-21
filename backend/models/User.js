@@ -19,6 +19,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // Privacy toggle: when false, other group members cannot see this user's achievements
+    achievementsPublic: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
