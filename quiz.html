@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Exam Prep - 50 Questions</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #22c55e;
+            --error: #ef4444;
+            --bg: #f8fafc;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .quiz-container {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .score-box {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .question-text {
+            font-size: 1.15rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-weight: 600;
+            white-space: pre-line;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .option:hover:not(.disabled) {
+            background-color: #f1f5f9;
+            border-color: var(--primary);
+        }
+
+        .option.correct {
+            background-color: #dcfce7;
+            border-color: var(--success);
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .option.wrong {
+            background-color: #fee2e2;
+            border-color: var(--error);
+            color: #991b1b;
+        }
+
+        .option.disabled {
+            cursor: default;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        button {
+            padding: 12px 30px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+        }
+
+        #result-screen {
+            text-align: center;
+            display: none;
+        }
+
+        .match-text {
+            font-style: italic;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-ui">
+        <div class="header">
+            <span id="progress">Question 1 of 50</span>
+            <span class="score-box">Score: <span id="score">0</span></span>
+        </div>
+
+        <div class="question-text" id="question">Loading...</div>
+        <div class="options-container" id="options"></div>
+        
+        <div class="controls">
+            <button id="next-btn" onclick="nextQuestion()">Next Question</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>Assignment Review Complete!</h2>
+        <p style="font-size: 1.8rem;">Final Score: <span id="final-score">0</span> / 50</p>
+        <button style="display: inline-block; margin-top: 20px;" onclick="location.reload()">Try Again</button>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    // WEEK 1
+    { q: "Which of these is NOT an impact of changing technology (digitization) in the contemporary workplace?", opts: ["Virtual Workplace", "Flexible work arrangements", "Worklife personal balance", "Increased accountability"], a: "Increased accountability" },
+    { q: "Which of the following level of managers need 'Human skills' the most?", opts: ["Top Managers", "Middle Managers", "Lower-level managers", "All of these"], a: "Middle Managers" },
+    { q: "Consider these statements:\ni) Mainstream approach of management is high on materialism and individualism\nii) Multi-stream approach of management is low on materialism and individualism", opts: ["Both i) and ii) are true", "Only i) is true", "Only ii) is true", "Neither i) nor ii) is true"], a: "Both i) and ii) are true" },
+    { q: "True or False: 'Enterprises need to either be totally centralized or decentralized depending on the type of industry'", opts: ["False, because there should be an equal balance between centralization and decentralization.", "True, because the appropriateness of centralization or decentralization depends on the type of industry.", "False, because centralization or decentralization do not play an important role", "Neither true nor false"], a: "False, because there should be an equal balance between centralization and decentralization." },
+    { q: "Which of the following is NOT a stage of the organizational life cycle?", opts: ["Transformation", "Decline", "Initiation", "Maturity"], a: "Transformation" },
+    { q: "Why did Xerox adopt the model of knowledge management?", opts: ["To survive in a competitive business environment", "Because it had reached its maturity phase", "It was a part of their sustainable business model", "All of these"], a: "All of these" },
+    { q: "Why did the concepts such as 'Customer is the King' and 'Innovation' emerge in management?", opts: ["Because of the shift of business environment from stability to competition.", "Shift from localized to liberalized/globalized", "Shift from manual to digitization", "Shift from small scale to large scale"], a: "Because of the shift of business environment from stability to competition." },
+    { q: "What are the two most important qualities which organizations require to survive in a turbulent and dynamic business environment?", opts: ["Innovation and Creativity", "Competitiveness and Creativity", "Competitiveness and Agility", "None of these"], a: "Innovation and Creativity" },
+    { q: "Which of the following statements are correct regarding management functions (Planning, Organizing, Leading, Controlling)?", opts: ["Only i) and ii)", "Only ii), iii) and iv)", "Only i), iii) and iv)", "Only iv)"], a: "Only i), iii) and iv)" },
+    { q: "There is no direct correlation between productive workers and customer satisfaction.", opts: ["True", "False, because there is a direct correlation between productive workers and customer satisfaction", "Neither true nor false", "Either true or false"], a: "False, because there is a direct correlation between productive workers and customer satisfaction" },
+    
+    // WEEK 2
+    { q: "Who is the father of 'scientific management'?", opts: ["Frederick Winslow Taylor", "Henri Fayol", "Peter Drucker", "Abraham Maslow"], a: "Frederick Winslow Taylor" },
+    { q: "Which of the following is NOT an example of early management?", opts: ["Egyptian Pyramids and the Great Wall of China", "Industrial Revolution", "Division of Labor", "Moving towards the Renaissance"], a: "Moving towards the Renaissance" },
+    { q: "Fill in the blank: 'Queue management such as in Whole Foods... is an example of _________'.", opts: ["Scientific Management", "Quantitative Management", "Both of these", "None of these"], a: "Quantitative Management" },
+    { q: "Which of the following is one of the PESTLE factors?", opts: ["Personnel factors", "Transformational factors", "Legal factors", "Structural factors"], a: "Legal factors" },
+    { q: "Which of the following is NOT a criticism for the classical management perspective?", opts: ["Unappreciative of social context", "Not demonstrating the importance of personnel selection and training.", "Not acknowledging variance among individuals", "Regarding workers as uninformed"], a: "Not demonstrating the importance of personnel selection and training." },
+    { q: "Match the features of bureaucracy (Career orientation, Division of labor, Authority Hierarchy, Formal Selection):", opts: ["i-D; ii-A; iii-C; iv-B", "i-B; ii-A; iii-D; iv-C", "i-A; ii-B; iii-C; iv-D", "i-D; ii-B; iii-D; iv-C"], a: "i-D; ii-A; iii-C; iv-B" },
+    { q: "Rank the needs from bottom to top in Maslow's Needs Hierarchy:\ni) Safety, ii) Physiological, iii) Belongingness, iv) Esteem", opts: ["ii) -> i) -> iii) -> iv)", "i) -> ii) -> iii) -> iv)", "iv) -> iii) -> i) -> ii)", "ii) -> iv) -> i) -> iii)"], a: "ii) -> i) -> iii) -> iv)" },
+    { q: "Which of the following statements about Theory X and Theory Y is NOT true?", opts: ["Theory X assumes that bright people's potential remains unutilized...", "Theory X assumes that people prefer to be directed", "Theory Y assumes that people seek responsibility", "Theory Y assumes that people do not dislike work"], a: "Theory X assumes that bright people's potential remains unutilized under most organizational conditions" },
+    { q: "In case of business organization, if the system does not receive fresh inputs and energy from the environment, what would happen?", opts: ["Entropy", "Maturity", "Synergy", "Synthesis"], a: "Entropy" },
+    { q: "Which contributions did Frank and Lilian Gilbreth make towards scientific management?", opts: ["Time and motion studies", "Micro chronometer", "Elimination of hand and body motions", "All of these"], a: "All of these" },
+
+    // WEEK 3
+    { q: "In the context of business environment, what do we mean by the phrase 'pluralistic society'?", opts: ["Multiple global policy making societies", "Multiple businesses at once", "Multiple interests of stakeholders", "All of these"], a: "Multiple interests of stakeholders" },
+    { q: "XZY is a small company... In a task/specific business environment for XZY, who is the customer?", opts: ["Retail Shops", "XZY", "Small Farmers", "Camlin"], a: "Retail Shops" },
+    { q: "Which of these is NOT an element of Industry Analysis?", opts: ["Overall attractiveness of the industry", "Critical factors for success", "Underlying forces in the industry", "Stakeholders from supply chain in the industry"], a: "Stakeholders from supply chain in the industry" },
+    { q: "Match (Tangible, Intangible, Human, Resource-based view):", opts: ["i-B; ii-C; iii-A; iv-D", "i-D; ii-C; iii-A; iv-B", "i-B; ii-A; iii-C; iv-D", "i-D; ii-C; iii-B; iv-A"], a: "i-B; ii-C; iii-A; iv-D" },
+    { q: "Match (Formulation, Selection, Objectives, Situational Analysis):", opts: ["i-C; ii-A; iii-C; iv-D", "i-B; ii-C; iii-D; iv-A", "i-D; ii-C; iii-B; iv-A", "i-A; ii-B; iii-D; iv-C"], a: "i-B; ii-C; iii-D; iv-A" },
+    { q: "In Porter's five forces model, exactly which threat is being referred to?", opts: ["Threat of low purchasing capacity", "Threat of low supply", "Threat of high prices", "Threat of substitute products"], a: "Threat of substitute products" },
+    { q: "Which of the following is the stability type of corporate strategy?", opts: ["Expanding through current businesses", "Addressing declining performance", "Continuing doing what the organization is currently doing", "Expanding through new businesses"], a: "Continuing doing what the organization is currently doing" },
+    { q: "Tata motors decide to manufacture 800 SUV per month... Which functional strategy would they need?", opts: ["Planning Strategy", "Production Strategy", "Training Strategy", "None of these"], a: "Production Strategy" },
+    { q: "Consider: I. Business model focuses on customer value. II. Business model focuses on money making.", opts: ["Both I and II are false", "I is true but II is false", "I is false but II is true", "Both I and II are true"], a: "Both I and II are true" },
+    { q: "Which of the following is NOT a step in the process of strategic management?", opts: ["Invest in L & D of employees", "Doing an internal analysis", "Doing an external analysis", "Implement strategies"], a: "Invest in L & D of employees" },
+
+    // WEEK 4
+    { q: "Which descriptions explain why environmental scanning is important?", opts: ["Only i)", "Only ii) and iv)", "Only i), ii) and iii)", "Only i), ii) and iv)"], a: "Only i), ii) and iv)" },
+    { q: "80% of what managers need to know about competitors comes from:", opts: ["Business models, strategists, HR", "Employees, suppliers and customers", "Suppliers and customers", "Employees and competitors"], a: "Employees, suppliers and customers" },
+    { q: "P&G talking to a competitor's employees is an example of:", opts: ["Competitive Edge", "Knowledge Management", "Best Practices", "Corporate Espionage"], a: "Corporate Espionage" },
+    { q: "Chronological recruitment steps: i) Recruiting, ii) Selection tools, iii) Application, iv) Planning, v) Final Selection, vi) Employee", opts: ["i, ii, iii, iv, v, vi", "iv, i, iii, ii, v, vi", "iv, iii, ii, i, v, vi", "iv, i, ii, iii, v, vi"], a: "iv, i, iii, ii, v, vi" },
+    { q: "Which statement about scenario planning is false?", opts: ["Identifies potential events", "Facilitates stories", "It predicts unexpected random scenarios which can be avoided", "Useful in planning"], a: "It predicts unexpected random scenarios which can be avoided" },
+    { q: "Which about Benchmarking is NOT true?", opts: ["Helps mark obsolete practices to revive them", "Technique for assessing environment", "Analyze and copy methods", "Search for best practices"], a: "Helps mark obsolete practices to revive them" },
+    { q: "Which is NOT a qualitative technique of forecasting?", opts: ["Only i), ii) and iv)", "Only ii) and iv)", "Only i) and iv)", "Only i) and ii)"], a: "Only i) and iv)" },
+    { q: "Budgeting for raw materials to manufacture glass bottles is:", opts: ["Fixed- Expense budget", "Variable- Cash budget", "Fixed- Revenue Budget", "Variable- Profit budget"], a: "Fixed- Expense budget" },
+    { q: "Consider: I. Benchmarking is learning from best. II. Japanese Copiers learned from Xerox.", opts: ["Both I and II are true", "Both I and II are false", "Only I is true and II is false", "Only II is true and I is false"], a: "Only I is true and II is false" },
+    { q: "Scheduling technique using a bar graph with time horizontal and activities vertical:", opts: ["FW Taylor", "Henri Gantt", "Henri Fayol", "Gilbreths"], a: "Henri Gantt" },
+
+    // WEEK 5
+    { q: "Process of organizing and interpreting sensory impressions:", opts: ["Sensitization", "Perception", "Interpretation", "Observation"], a: "Perception" },
+    { q: "Consider: I. Stereotypes lead to mental models. II. Mental models play a role in decisions.", opts: ["Both I and II are true", "Both I and II are false", "Only I is true", "Only I is false and II is true"], a: "Only I is false and II is true" },
+    { q: "Manager fires employee for his own blunder. This is:", opts: ["Shifting blame", "Fundamental attribution error", "Self-serving bias", "All of these"], a: "Self-serving bias" },
+    { q: "Which is NOT a step in the decision-making process?", opts: ["Evaluation", "Allocation of weights", "Development of alternatives", "Gathering inputs from customers"], a: "Gathering inputs from customers" },
+    { q: "Success depends 50% taste, 25% packaging... This step is:", opts: ["Identifying problem", "Allocation of weights to criteria", "Analyzing alternatives", "Evaluation"], a: "Allocation of weights to criteria" },
+    { q: "Match (Programmed, Non-programmed, Upper management, Lower management):", opts: ["i-C; ii-D; iii-A; iv-B", "i-B; ii-D; iii-A; iv-C", "i-C; ii-A; iii-B; iv-D", "i-A; ii-C; iii-D; iv-B"], a: "i-C; ii-D; iii-A; iv-B" },
+    { q: "Food delivery fails to deliver on time. This problem is:", opts: ["Structured problem", "Unstructured problem", "A mix", "None"], a: "Structured problem" },
+    { q: "Immersion, digestion, incubation, illumination, verification proposer:", opts: ["Carl Jung", "Graham Wallas", "James Young", "Drucker"], a: "James Young" },
+    { q: "Match (Formal, Informal, Committee, Team):", opts: ["i-C, ii-D, iii-A, iv-B", "i-D, ii-B, iii-A, iv-D", "i-C, ii-D, iii-B, iv-A", "i-D, ii-B, iii-D, iv-A"], a: "i-C, ii-D, iii-A, iv-B" },
+    { q: "Which is NOT true for a virtual team?", opts: ["Not same location", "Don't report to you", "May not work for your org", "Members need not have complementary set of skills"], a: "Members need not have complementary set of skills" }
+];
+
+let currentIndex = 0;
+let score = 0;
+let canAnswer = true;
+
+const qText = document.getElementById('question');
+const optContainer = document.getElementById('options');
+const scoreDisplay = document.getElementById('score');
+const progressDisplay = document.getElementById('progress');
+const nextBtn = document.getElementById('next-btn');
+
+function initQuiz() {
+    canAnswer = true;
+    nextBtn.style.display = 'none';
+    const data = quizData[currentIndex];
+    
+    progressDisplay.innerText = `Question ${currentIndex + 1} of 50`;
+    qText.innerText = data.q;
+    optContainer.innerHTML = '';
+    
+    data.opts.forEach(o => {
+        const btn = document.createElement('div');
+        btn.className = 'option';
+        btn.innerText = o;
+        btn.onclick = () => checkAnswer(btn, o, data.a);
+        optContainer.appendChild(btn);
+    });
+}
+
+function checkAnswer(btn, selected, correct) {
+    if (!canAnswer) return;
+    canAnswer = false;
+    
+    if (selected === correct || selected.includes(correct) || correct.includes(selected)) {
+        btn.classList.add('correct');
+        score++;
+        scoreDisplay.innerText = score;
+    } else {
+        btn.classList.add('wrong');
+        // Show correct answer
+        Array.from(optContainer.children).forEach(child => {
+            if (child.innerText === correct || child.innerText.includes(correct) || correct.includes(child.innerText)) {
+                child.classList.add('correct');
+            }
+        });
+    }
+    
+    Array.from(optContainer.children).forEach(c => c.classList.add('disabled'));
+    nextBtn.style.display = 'block';
+}
+
+function nextQuestion() {
+    currentIndex++;
+    if (currentIndex < quizData.length) {
+        initQuiz();
+    } else {
+        document.getElementById('quiz-ui').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = score;
+    }
+}
+
+initQuiz();
+</script>
+</body>
+</html>

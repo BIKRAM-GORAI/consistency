@@ -7,202 +7,410 @@
   <title>Consistency Tracker — Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    /* ── Landing-specific styles ── */
-    .landing-wrap {
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #faf7f2;
+      --black:     #0a0a0a;
+      --yellow:    #FFD60A;
+      --pink:      #FF3EA5;
+      --teal:      #00C9A7;
+      --coral:     #FF6B35;
+      --purple:    #7B5EA7;
+      --lime:      #B5FF4D;
+      --border:    3px solid #0a0a0a;
+      --shadow:    4px 4px 0px #0a0a0a;
+      --shadow-lg: 6px 6px 0px #0a0a0a;
+    }
+
+    html, body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--black);
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Top Navbar ── */
+    .landing-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      background: var(--yellow);
+      border-bottom: var(--border);
+      box-shadow: 0 4px 0 var(--black);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .landing-nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 18px;
+      color: var(--black);
+      text-transform: uppercase;
+      letter-spacing: -0.3px;
+    }
+
+    .landing-nav-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: var(--border);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-nav-ghost {
+      background: #fff;
+      color: var(--black);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .btn-nav-ghost:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+
+    .btn-nav-solid {
+      background: var(--black);
+      color: var(--yellow);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .btn-nav-solid:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 var(--black);
+    }
+
+    /* ── Main wrap ── */
+    .landing-wrap {
+      position: relative;
+      min-height: calc(100vh - 64px);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      position: relative;
-      z-index: 1;
-      padding: 40px 20px;
+      padding: 60px 24px 80px;
       text-align: center;
+      overflow: hidden;
     }
 
+    /* ── Decorative geometric shapes ── */
+    .shape {
+      position: absolute;
+      border: var(--border);
+      pointer-events: none;
+    }
+    .shape-1 {
+      width: 90px; height: 90px;
+      background: var(--yellow);
+      top: 8%; left: 4%;
+      border-radius: 6px;
+      transform: rotate(15deg);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .shape-2 {
+      width: 60px; height: 60px;
+      background: var(--pink);
+      top: 18%; right: 6%;
+      border-radius: 50%;
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .shape-3 {
+      width: 50px; height: 50px;
+      background: var(--teal);
+      bottom: 22%; left: 8%;
+      border-radius: 6px;
+      transform: rotate(-12deg);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .shape-4 {
+      width: 80px; height: 80px;
+      background: var(--coral);
+      bottom: 15%; right: 5%;
+      border-radius: 50%;
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .shape-5 {
+      width: 40px; height: 40px;
+      background: var(--lime);
+      top: 50%; left: 3%;
+      border-radius: 4px;
+      transform: rotate(8deg);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .shape-6 {
+      width: 55px; height: 55px;
+      background: var(--purple);
+      top: 60%; right: 3%;
+      border-radius: 6px;
+      transform: rotate(-20deg);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .shape-7 {
+      width: 30px; height: 100px;
+      background: var(--yellow);
+      top: 5%; right: 20%;
+      border-radius: 4px;
+      transform: rotate(25deg);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .shape-8 {
+      width: 70px; height: 30px;
+      background: var(--teal);
+      bottom: 8%; left: 25%;
+      border-radius: 4px;
+      transform: rotate(-8deg);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+
+    /* ── Badge ── */
     .landing-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(139, 92, 246, 0.12);
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 9999px;
-      padding: 6px 16px;
+      background: var(--teal);
+      border: var(--border);
+      border-radius: 4px;
+      padding: 6px 18px;
       font-size: 12px;
-      font-weight: 700;
-      color: #a78bfa;
-      letter-spacing: 0.5px;
+      font-weight: 900;
+      color: var(--black);
+      letter-spacing: 1px;
       text-transform: uppercase;
       margin-bottom: 28px;
-      animation: fadeSlideDown 0.6s cubic-bezier(0.4,0,0.2,1) both;
+      box-shadow: var(--shadow);
+      animation: fadeUp 0.5s ease both;
     }
 
     .landing-badge-dot {
-      width: 7px;
-      height: 7px;
-      background: #8b5cf6;
+      width: 8px;
+      height: 8px;
+      background: var(--black);
       border-radius: 50%;
-      box-shadow: 0 0 8px #8b5cf6;
-      animation: pulse-dot 1.5s ease-in-out infinite;
+      border: 2px solid var(--black);
+      animation: blink 1.5s ease-in-out infinite;
     }
 
-    @keyframes pulse-dot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.7; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
     }
 
+    /* ── Hero Title ── */
     .landing-hero-title {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(36px, 8vw, 74px);
-      font-weight: 800;
-      line-height: 1.08;
-      letter-spacing: -2px;
-      color: #f1f5f9;
-      margin-bottom: 8px;
-      animation: fadeSlideDown 0.7s 0.1s cubic-bezier(0.4,0,0.2,1) both;
+      font-size: clamp(42px, 9vw, 88px);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -3px;
+      color: var(--black);
+      margin-bottom: 12px;
+      animation: fadeUp 0.55s 0.1s ease both;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
     }
 
-    .landing-hero-title .grad-word {
-      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .landing-hero-title .highlight {
+      display: inline-block;
+      background: var(--yellow);
+      border: var(--border);
+      border-radius: 6px;
+      padding: 0 12px;
+      box-shadow: var(--shadow);
+      line-height: 1.1;
     }
 
+    .landing-hero-title .highlight-pink {
+      display: inline-block;
+      background: var(--pink);
+      color: #fff;
+      border: var(--border);
+      border-radius: 6px;
+      padding: 0 12px;
+      box-shadow: var(--shadow);
+      line-height: 1.1;
+    }
+
+    /* ── Subtitle ── */
     .landing-subtitle {
-      font-size: clamp(15px, 3vw, 19px);
-      color: #94a3b8;
+      font-size: clamp(15px, 3vw, 18px);
+      color: #444;
       max-width: 520px;
-      margin: 20px auto 48px;
+      margin: 24px auto 44px;
       line-height: 1.65;
-      font-weight: 400;
-      animation: fadeSlideDown 0.7s 0.2s cubic-bezier(0.4,0,0.2,1) both;
+      font-weight: 500;
+      animation: fadeUp 0.55s 0.2s ease both;
+      position: relative;
+      z-index: 1;
     }
 
+    /* ── CTA Buttons ── */
     .landing-actions {
       display: flex;
       gap: 16px;
       justify-content: center;
       flex-wrap: wrap;
-      animation: fadeSlideDown 0.7s 0.3s cubic-bezier(0.4,0,0.2,1) both;
+      animation: fadeUp 0.55s 0.3s ease both;
+      position: relative;
+      z-index: 1;
     }
 
     .btn-landing-primary {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 36px;
-      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
-      border: none;
-      border-radius: 9999px;
-      color: #fff;
+      padding: 16px 40px;
+      background: var(--black);
+      border: var(--border);
+      border-radius: 6px;
+      color: var(--yellow);
       font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 900;
       cursor: pointer;
       text-decoration: none;
-      transition: 0.25s cubic-bezier(0.4,0,0.2,1);
-      box-shadow: 0 0 30px rgba(139, 92, 246, 0.35), 0 4px 16px rgba(0,0,0,0.4);
-      letter-spacing: 0.2px;
+      box-shadow: var(--shadow-lg);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
 
     .btn-landing-primary:hover {
-      transform: translateY(-3px) scale(1.03);
-      box-shadow: 0 0 50px rgba(139, 92, 246, 0.55), 0 8px 24px rgba(0,0,0,0.5);
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0 var(--black);
     }
 
     .btn-landing-secondary {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 36px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 9999px;
-      color: #f1f5f9;
+      padding: 16px 40px;
+      background: #fff;
+      border: var(--border);
+      border-radius: 6px;
+      color: var(--black);
       font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
       text-decoration: none;
-      transition: 0.25s cubic-bezier(0.4,0,0.2,1);
-      backdrop-filter: blur(12px);
-      letter-spacing: 0.2px;
+      box-shadow: var(--shadow);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
 
     .btn-landing-secondary:hover {
-      background: rgba(255, 255, 255, 0.11);
-      border-color: rgba(139, 92, 246, 0.45);
-      transform: translateY(-3px);
-      box-shadow: 0 0 24px rgba(139, 92, 246, 0.2);
+      transform: translate(-2px, -2px);
+      box-shadow: var(--shadow-lg);
+      background: var(--pink);
+      color: #fff;
     }
 
-    /* Feature pills */
+    /* ── Feature Pills ── */
     .landing-features {
       display: flex;
       gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-top: 60px;
-      animation: fadeSlideDown 0.7s 0.45s cubic-bezier(0.4,0,0.2,1) both;
+      margin-top: 64px;
+      animation: fadeUp 0.55s 0.45s ease both;
+      position: relative;
+      z-index: 1;
     }
 
     .feature-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
+      background: #fff;
+      border: var(--border);
+      border-radius: 6px;
       padding: 10px 18px;
       font-size: 13px;
-      color: #94a3b8;
-      font-weight: 500;
-      backdrop-filter: blur(10px);
-      transition: 0.2s;
+      color: var(--black);
+      font-weight: 800;
+      box-shadow: var(--shadow-sm, 3px 3px 0 var(--black));
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
 
+    .feature-pill:nth-child(1) { background: var(--yellow); }
+    .feature-pill:nth-child(2) { background: var(--lime); }
+    .feature-pill:nth-child(3) { background: var(--pink); color: #fff; }
+    .feature-pill:nth-child(4) { background: var(--teal); }
+
     .feature-pill:hover {
-      background: rgba(139,92,246,0.08);
-      border-color: rgba(139,92,246,0.25);
-      color: #f1f5f9;
-      transform: translateY(-2px);
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--black);
     }
 
     .feature-pill-icon { font-size: 16px; }
 
-    /* Footer note */
+    /* ── Footer note ── */
     .landing-footer-note {
       margin-top: 52px;
-      font-size: 12px;
-      color: #475569;
-      font-weight: 500;
-      animation: fadeSlideDown 0.7s 0.55s cubic-bezier(0.4,0,0.2,1) both;
+      font-size: 13px;
+      color: #888;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      animation: fadeUp 0.55s 0.55s ease both;
+      position: relative;
+      z-index: 1;
     }
 
-    @keyframes fadeSlideDown {
-      from { opacity: 0; transform: translateY(-16px); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     /* ── Mobile responsive ── */
-    @media (max-width: 480px) {
-      .landing-wrap { padding: 32px 16px; }
+    @media (max-width: 768px) {
+      .landing-nav { padding: 0 16px; }
+      .landing-nav-brand { font-size: 15px; }
+      .btn-nav { padding: 7px 14px; font-size: 13px; }
 
-      .landing-badge { font-size: 11px; padding: 5px 13px; }
+      .shape-1 { width: 60px; height: 60px; top: 3%; left: 2%; }
+      .shape-2 { width: 40px; height: 40px; top: 6%; right: 3%; }
+      .shape-3 { width: 35px; height: 35px; }
+      .shape-4 { width: 50px; height: 50px; }
+      .shape-5, .shape-6, .shape-7, .shape-8 { display: none; }
 
       .landing-hero-title {
-        font-size: clamp(30px, 9vw, 52px);
-        letter-spacing: -1px;
+        font-size: clamp(36px, 10vw, 58px);
+        letter-spacing: -2px;
       }
 
-      .landing-subtitle {
-        font-size: 15px;
-        margin: 16px auto 36px;
-      }
+      .landing-subtitle { font-size: 15px; margin: 16px auto 36px; }
+    }
+
+    @media (max-width: 480px) {
+      .landing-wrap { padding: 40px 16px 60px; }
 
       .landing-actions {
         flex-direction: column;
@@ -213,20 +421,19 @@
       .btn-landing-primary,
       .btn-landing-secondary {
         justify-content: center;
-        padding: 13px 24px;
+        padding: 14px 24px;
         font-size: 14px;
       }
 
       .landing-features { gap: 8px; margin-top: 40px; }
       .feature-pill { font-size: 12px; padding: 8px 14px; }
-
       .landing-footer-note { margin-top: 36px; }
     }
 
     @media (max-width: 360px) {
       .landing-hero-title {
-        font-size: clamp(26px, 10vw, 38px);
-        letter-spacing: -0.5px;
+        font-size: clamp(30px, 11vw, 40px);
+        letter-spacing: -1.5px;
       }
       .feature-pill { font-size: 11px; padding: 7px 10px; }
     }
@@ -234,21 +441,38 @@
 </head>
 <body>
 
-  <!-- Ambient background orbs -->
-  <div class="bg-orbs" aria-hidden="true">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
+  <!-- Top Navbar -->
+  <nav class="landing-nav">
+    <div class="landing-nav-brand">
+      <span>⚡</span>
+      <span>Consistency</span>
+    </div>
+    <div class="landing-nav-actions">
+      <a href="auth.html?tab=login" class="btn-nav btn-nav-ghost" id="nav-login-btn">Login</a>
+      <a href="auth.html?tab=register" class="btn-nav btn-nav-solid" id="nav-register-btn">Sign Up</a>
+    </div>
+  </nav>
 
+  <!-- Decorative Shapes -->
   <div class="landing-wrap">
+    <div class="shape shape-1" aria-hidden="true"></div>
+    <div class="shape shape-2" aria-hidden="true"></div>
+    <div class="shape shape-3" aria-hidden="true"></div>
+    <div class="shape shape-4" aria-hidden="true"></div>
+    <div class="shape shape-5" aria-hidden="true"></div>
+    <div class="shape shape-6" aria-hidden="true"></div>
+    <div class="shape shape-7" aria-hidden="true"></div>
+    <div class="shape shape-8" aria-hidden="true"></div>
+
     <div class="landing-badge">
       <span class="landing-badge-dot"></span>
       Your personal consistency hub
     </div>
 
     <h1 class="landing-hero-title">
-      Build habits.<br><span class="grad-word">Track progress.</span><br>Stay consistent.
+      Build<br>
+      <span class="highlight">Habits.</span><br>
+      <span class="highlight-pink">Stay</span> Consistent.
     </h1>
 
     <p class="landing-subtitle">

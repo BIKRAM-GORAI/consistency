@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principles of Management - Mock Exam 3</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 850px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
+        .quiz-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); }
+        h1 { color: #202124; text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #5f6368; margin-bottom: 30px; font-weight: 500; font-size: 1.1em; }
+        .question { margin-bottom: 30px; padding: 25px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #ffffff; transition: transform 0.2s; }
+        .question:hover { border-color: #1a73e8; }
+        .question-text { font-size: 1.15em; font-weight: 600; color: #2c3e50; margin-bottom: 15px; }
+        .metadata { font-size: 0.85em; color: #6c757d; margin-bottom: 15px; display: block; border-left: 3px solid #dee2e6; padding-left: 10px; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option { padding: 14px 18px; border: 1px solid #ced4da; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; background: #fff; }
+        .option:hover { background-color: #f1f3f4; border-color: #1a73e8; }
+        .selected { background-color: #e8f0fe !important; border-color: #1a73e8 !important; box-shadow: 0 0 0 1px #1a73e8; }
+        .correct { background-color: #e6f4ea !important; border-color: #34a853 !important; color: #137333; font-weight: bold; }
+        .incorrect { background-color: #fce8e6 !important; border-color: #d93025 !important; color: #a50e0e; }
+        #submit-btn { display: block; width: 100%; padding: 20px; background: #1a73e8; color: white; border: none; border-radius: 10px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 40px; box-shadow: 0 4px 6px rgba(26,115,232,0.3); }
+        #submit-btn:hover { background: #1557b0; }
+        #result { margin-top: 30px; padding: 25px; border-radius: 10px; font-size: 1.4em; font-weight: bold; text-align: center; display: none; background-color: #e8f0fe; color: #1a73e8; border: 2px solid #1a73e8; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>Principles of Management</h1>
+    <div class="subtitle">Mock Exam 3 | Course ID: noc26_mg72</div>
+    <div id="quiz"></div>
+    <button id="submit-btn">Check My Score</button>
+    <div id="result"></div>
+</div>
+
+<script>
+const quizData = [
+    { q: "Q1. What is the definition of 'Efficiency' according to the lecture notes?", a: "B", options: { A: "Attaining organizational goals.", B: "'Doing things right.' Getting the most output for the least amount of input.", C: "Focusing on the successful achievement of desired outcomes.", D: "Coordinating and overseeing the work of others." }, meta: "Source: Lecture_W1L18 | Difficulty: Easy" },
+    { q: "Q2. Which managerial skill is considered crucial for Top Managers for strategic decision-making and setting the company's vision?", a: "C", options: { A: "Technical Skills", B: "Human Skills", C: "Conceptual Skills", D: "Interpersonal Skills" }, meta: "Source: Lecture_W1L19 | Difficulty: Easy" },
+    { q: "Q3. Which management approach emphasizes responsibility toward all stakeholders, not just profit maximization?", a: "C", options: { A: "Mainstream Management", B: "Traditional Management", C: "Multistream Management", D: "Shareholder-centric Management" }, meta: "Source: Lecture_W1L20 | Difficulty: Medium" },
+    { q: "Q4. The shift from a 'push' strategy to a 'pull' strategy is a key takeaway from which lecture?", a: "D", options: { A: "Lecture_W1L18", B: "Lecture_W1L19", C: "Lecture_W1L20", D: "Lecture_W1L21" }, meta: "Source: Lecture_W1L21 | Difficulty: Hard" },
+    { q: "Q5. According to Trait Theory, which of the following is NOT one of the seven key traits associated with leadership emergence?", a: "C", options: { A: "Drive", B: "Desire to Lead", C: "Humility", D: "Self-Confidence" }, meta: "Source: Lecture_W10L82 | Difficulty: Easy" },
+    { q: "Q6. In Fiedler's Contingency Model, if a leader is ineffective, the solution is to either change the leader or re-engineer the situation, because the leader's core style is considered:", a: "C", options: { A: "Flexible", B: "Adaptable", C: "Fixed", D: "Situational" }, meta: "Source: Lecture_W10L83 | Difficulty: Medium" },
+    { q: "Q7. Which leadership style is focused on development, vision, and empowerment, and is critical for navigating change?", a: "D", options: { A: "Transactional Leadership", B: "Charismatic Leadership", C: "Laissez-Faire Leadership", D: "Transformational Leadership" }, meta: "Source: Lecture_W10L84 | Difficulty: Hard" },
+    { q: "Q8. Which type of power is influence based on desirable personal traits or resources, leading others to admire you?", a: "C", options: { A: "Coercive Power", B: "Reward Power", C: "Referent Power", D: "Legitimate Power" }, meta: "Source: Lecture_W10L85 | Difficulty: Easy" },
+    { q: "Q9. According to the Shannon-Weaver Model, what is the term for anything that interferes with the transmission or understanding of a message?", a: "C", options: { A: "Feedback", B: "Channel", C: "Noise", D: "Encoding" }, meta: "Source: Lecture_W11L88 | Difficulty: Medium" },
+    { q: "Q10. Which communication barrier arises from issues related to the meaning of words, language, and symbols?", a: "C", options: { A: "Socio-Psychological Barrier", B: "Physical Barrier", C: "Semantic Barrier", D: "Organizational Barrier" }, meta: "Source: Lecture_W11L89 | Difficulty: Medium" },
+    { q: "Q11. According to Transactional Analysis (TA), which ego state is described as the rational, objective, and logical state?", a: "B", options: { A: "Parent Ego State", B: "Adult Ego State", C: "Child Ego State", D: "Free Child Ego State" }, meta: "Source: Lecture_W11L90 | Difficulty: Easy" },
+    { q: "Q12. Which formal small-group network results in fast communication and high member satisfaction?", a: "C", options: { A: "Chain Network", B: "Wheel Network", C: "All-Channel Network", D: "Star Network" }, meta: "Source: Lecture_W11L91 | Difficulty: Medium" },
+    { q: "Q13. In a low-context culture, which communication style is typically valued for its efficiency and clarity?", a: "C", options: { A: "Indirect Communication", B: "High-Context Communication", C: "Direct Communication", D: "Relationship-based Communication" }, meta: "Source: Lecture_W11L92 | Difficulty: Hard" },
+    { q: "Q14. What is the definition of 'Organizational Change' according to the lecture notes?", a: "B", options: { A: "The study of how organizations function.", B: "The process of moving an organization from its present state to a desired future state to increase effectiveness.", C: "The formal system of task and authority.", D: "The set of shared values and beliefs." }, meta: "Source: Lecture_W12L95 | Difficulty: Easy" },
+    { q: "Q15. According to Greiner's Model, which crisis arises when top management feels they are losing control as autonomous divisions pursue their own objectives?", a: "C", options: { A: "Crisis of Leadership", B: "Crisis of Autonomy", C: "Crisis of Control", D: "Crisis of Red Tape" }, meta: "Source: Lecture_W12L96 | Difficulty: Medium" },
+    { q: "Q16. A company that proactively transforms its business model *before* it's necessary engages in which type of change?", a: "C", options: { A: "Fine-Tuning", B: "Adaptation", C: "Frame-Bending", D: "Frame-Breaking" }, meta: "Source: Lecture_W12L97 | Difficulty: Hard" },
+    { q: "Q17. What is the tendency of an established organization to maintain the status quo and resist change?", a: "B", options: { A: "Forces for Change", B: "Organizational Inertia", C: "Resistance to Change", D: "Managing Resistance" }, meta: "Source: Lecture_W12L98 | Difficulty: Easy" },
+    { q: "Q18. According to Lewin's 3-Step Model, which stage involves creating the motivation for change by challenging the status quo?", a: "C", options: { A: "Changing", B: "Refreezing", C: "Unfreezing", D: "Adapting" }, meta: "Source: Lecture_W12L99 | Difficulty: Medium" },
+    { q: "Q19. Which OD technique involves a positive, strength-based approach rather than focusing on problems?", a: "D", options: { A: "Sensitivity Training", B: "Process Consultation", C: "Organizational Mirroring", D: "Appreciative Inquiry" }, meta: "Source: Lecture_W12L100 | Difficulty: Hard" },
+    { q: "Q20. What is defined as a new idea applied to initiating or improving a product, process, or service?", a: "B", options: { A: "Creativity", B: "Innovation", C: "Double-Loop Learning", D: "Systems Thinking" }, meta: "Source: Lecture_W12L101 | Difficulty: Easy" },
+    { q: "Q21. Which was a primary criticism of Frederick Taylor's Scientific Management?", a: "B", options: { A: "Overemphasized social context.", B: "Did not appreciate social context or workers' higher needs.", C: "Failed to systematically select workers.", D: "Did not introduce performance-based pay." }, meta: "Source: Lecture_W2L24 | Difficulty: Medium" },
+    { q: "Q22. Max Weber's bureaucracy aimed to move towards what?", a: "B", options: { A: "Individual productivity focus.", B: "Rational-legal authority, formal rules, and impersonality.", C: "Social and psychological factors.", D: "Machine metaphor efficiency." }, meta: "Source: Lecture_W2L25 | Difficulty: Hard" },
+    { q: "Q23. The Hawthorne Studies primarily demonstrated that which factors had a greater impact on productivity than physical conditions?", a: "C", options: { A: "Economic incentives", B: "Scientific methods", C: "Social and psychological factors", D: "Strict supervision" }, meta: "Source: Lecture_W2L26 | Difficulty: Easy" },
+    { q: "Q24. Which approach argues that organizational performance depends on a logical fit between management and the specific situation?", a: "D", options: { A: "Systems Approach", B: "Quantitative Perspective", C: "TQM", D: "Contingency Approach" }, meta: "Source: Lecture_W2L27 | Difficulty: Medium" },
+    { q: "Q25. In the planning process, what is the next logical step after setting objectives and developing premises?", a: "B", options: { A: "Implementing the Plan", B: "Identifying Alternative Courses of Action", C: "Follow-Up Action", D: "Selecting the Best Alternative" }, meta: "Source: Lecture_W3L30 | Difficulty: Hard" },
+    { q: "Q26. What is the term for broad forces often analyzed using a PESTEL framework?", a: "C", options: { A: "Task Environment", B: "Internal Environment", C: "General Environment", D: "Specific Environment" }, meta: "Source: Lecture_W3L31 | Difficulty: Easy" },
+    { q: "Q27. According to RBV, what does the 'I' in V.R.I.N. criteria stand for?", a: "C", options: { A: "Important", B: "Innovative", C: "Imperfectly Imitable", D: "Integrated" }, meta: "Source: Lecture_W3L32 | Difficulty: Medium" },
+    { q: "Q28. In the BCG Matrix, which business units are 'Cash Cows'?", a: "D", options: { A: "Stars", B: "Question Marks", C: "Dogs", D: "Mature, successful businesses that generate more cash than they consume." }, meta: "Source: Lecture_W3L33 | Difficulty: Hard" },
+    { q: "Q29. Which type of strategy defines how a company will compete against rivals in a specific market?", a: "C", options: { A: "Corporate Strategy", B: "Functional Strategy", C: "Competitive Strategy", D: "Business Model" }, meta: "Source: Lecture_W3L34 | Difficulty: Medium" },
+    { q: "Q30. Which forecasting technique applies mathematical rules to past data to predict future outcomes?", a: "C", options: { A: "Delphi Method", B: "Jury of Executive Opinion", C: "Time Series Analysis", D: "Salesforce Composite" }, meta: "Source: Lecture_W4L37 | Difficulty: Medium" }
+];
+
+const quizContainer = document.getElementById('quiz');
+const submitBtn = document.getElementById('submit-btn');
+const resultContainer = document.getElementById('result');
+
+function buildQuiz() {
+    quizData.forEach((item, index) => {
+        const qDiv = document.createElement('div');
+        qDiv.classList.add('question');
+        qDiv.innerHTML = `
+            <div class="question-text">${item.q}</div>
+            <span class="metadata">${item.meta}</span>
+            <div class="options" data-index="${index}">
+                ${Object.entries(item.options).map(([key, val]) => `
+                    <div class="option" data-key="${key}">${key}) ${val}</div>
+                `).join('')}
+            </div>
+        `;
+        quizContainer.appendChild(qDiv);
+    });
+
+    document.querySelectorAll('.option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            const parent = this.parentElement;
+            parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+}
+
+function showResults() {
+    let score = 0;
+    const questions = document.querySelectorAll('.question');
+
+    quizData.forEach((item, index) => {
+        const selected = questions[index].querySelector('.selected');
+        const options = questions[index].querySelectorAll('.option');
+        
+        options.forEach(opt => {
+            const optKey = opt.getAttribute('data-key');
+            if (optKey === item.a) {
+                opt.classList.add('correct');
+            }
+            if (selected && selected === opt && optKey !== item.a) {
+                opt.classList.add('incorrect');
+            }
+        });
+
+        if (selected && selected.getAttribute('data-key') === item.a) {
+            score++;
+        }
+    });
+
+    resultContainer.style.display = 'block';
+    resultContainer.innerHTML = `Exam Completed!<br>Final Score: ${score} / ${quizData.length} (${Math.round((score/quizData.length)*100)}%)`;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+buildQuiz();
+submitBtn.addEventListener('click', showResults);
+</script>
+
+</body>
+</html>

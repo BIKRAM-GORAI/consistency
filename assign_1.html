@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principles of Management - Assignment (Week 1)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f0f7ff; }
+        .quiz-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #0056b3; text-align: center; margin-bottom: 10px; border-bottom: 3px solid #0056b3; padding-bottom: 10px; }
+        h2 { color: #0056b3; border-left: 5px solid #0056b3; padding-left: 15px; margin-top: 40px; background: #e7f1ff; padding-top: 5px; padding-bottom: 5px; }
+        .question { margin-bottom: 30px; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; background-color: #fff; }
+        .question-text { font-size: 1.05em; font-weight: 600; color: #212529; margin-bottom: 15px; white-space: pre-wrap; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px 15px; border: 2px solid #dee2e6; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background: white; }
+        .option:hover { background-color: #f8f9fa; border-color: #0056b3; }
+        .selected { background-color: #e7f1ff !important; border-color: #0056b3 !important; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; font-weight: bold; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        #submit-btn { display: block; width: 100%; padding: 20px; background: #0056b3; color: white; border: none; border-radius: 8px; font-size: 1.25em; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        #submit-btn:hover { background: #004494; }
+        #result { margin-top: 30px; padding: 25px; border-radius: 8px; font-size: 1.5em; font-weight: bold; text-align: center; display: none; background-color: #fff; border: 3px solid #0056b3; color: #212529; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>Principles of Management Practice</h1>
+    <p style="text-align: center; font-weight: bold;">Assignment Unit: Week 1</p>
+
+    <div id="quiz"></div>
+    <button id="submit-btn">Check Week 1 Results</button>
+    <div id="result"></div>
+</div>
+
+<script>
+const quizData = [
+    { 
+        section: "Week 1: Assignment 1",
+        q: "1) Which of these is NOT an impact of changing technology (digitization) in the contemporary workplace?", 
+        a: "D", 
+        options: { 
+            A: "Virtual Workplace", 
+            B: "Flexible work arrangements", 
+            C: "Worklife personal balance", 
+            D: "Increased accountability" 
+        } 
+    },
+    { 
+        q: "2) Which of the following level of managers need “Human skills” the most?", 
+        a: "B", 
+        options: { 
+            A: "Top Managers", 
+            B: "Middle Managers", 
+            C: "Lower-level managers", 
+            D: "All of these" 
+        } 
+    },
+    { 
+        q: "3) Consider these statements:\ni) Mainstream approach of management is high on materialism and individualism\nii) Multi-stream approach of management is low on materialism and individualism", 
+        a: "A", 
+        options: { 
+            A: "Both i) and ii) are true", 
+            B: "Only i) is true", 
+            C: "Only ii) is true", 
+            D: "Neither i) nor ii) is true" 
+        } 
+    },
+    { 
+        q: "4) True or False:\n“Enterprises need to either be totally centralized or decentralized depending on the type of industry”", 
+        a: "A", 
+        options: { 
+            A: "False, because there should be an equal balance between centralization and decentralization.", 
+            B: "True, because the appropriateness of centralization or decentralization depends on the type of industry.", 
+            C: "False, because centralization or decentralization do not play an important role in enterprise", 
+            D: "Neither true nor false" 
+        } 
+    },
+    { 
+        q: "5) Which of the following is NOT a stage of the organizational life cycle.", 
+        a: "A", 
+        options: { 
+            A: "Transformation", 
+            B: "Decline", 
+            C: "Initiation", 
+            D: "Maturity" 
+        } 
+    },
+    { 
+        q: "6) Why did Xerox adopt the model of knowledge management?", 
+        a: "D", 
+        options: { 
+            A: "To survive in a competitive business environment", 
+            B: "Because it had reached its maturity phase", 
+            C: "It was a part of their sustainable business model", 
+            D: "All of these" 
+        } 
+    },
+    { 
+        q: "7) Why did the concepts such as \"Customer is the King\" and \"Innovation\" emerge in management?", 
+        a: "A", 
+        options: { 
+            A: "Because of the shift of business environment from stability to competition.", 
+            B: "Because of the shift of business environment from being localized to being liberalized, privatized and globalized.", 
+            C: "Because of the shift of business environment from manually managing industries towards digitization of industries.", 
+            D: "Because of the shift of business environment from small scale operations to large scale operations." 
+        } 
+    },
+    { 
+        q: "8) What are the two most important qualities which organizations require to survive in a turbulent and dynamic business environment?", 
+        a: "A", 
+        options: { 
+            A: "Innovation and Creativity", 
+            B: "Competitiveness and Creativity", 
+            C: "Competitiveness and Agility", 
+            D: "None of these" 
+        } 
+    },
+    { 
+        q: "9) Which of the following statements are correct:\ni) Planning function of the management is concerned with identifying and fine tuning at goals and strategies at the time of strategic change, among other things.\nii) Organizing function of the management is concerned with HR planning and organizing employee recreational activities, among other things.\niii) Leading function of the management is concerned with liaisons and networking with competitors, suppliers and customers, among other things.\niv) Controlling function of the management ensures that members’ actions are consistent with organizational values and standards", 
+        a: "C", 
+        options: { 
+            A: "Only i) and ii)", 
+            B: "Only ii), iii) and iv)", 
+            C: "Only i), iii) and iv)", 
+            D: "Only iv)" 
+        } 
+    },
+    { 
+        q: "10) There is no direct correlation between productive workers and customer satisfaction.", 
+        a: "B", 
+        options: { 
+            A: "True, because there is no correlation between productive workers and customer satisfaction", 
+            B: "False, because there is a direct correlation between productive workers and customer satisfaction", 
+            C: "Neither true nor false", 
+            D: "Either true nor false" 
+        } 
+    }
+];
+
+const quizContainer = document.getElementById('quiz');
+const submitBtn = document.getElementById('submit-btn');
+const resultContainer = document.getElementById('result');
+
+function buildQuiz() {
+    quizData.forEach((item, index) => {
+        if (item.section) {
+            const h2 = document.createElement('h2');
+            h2.innerText = item.section;
+            quizContainer.appendChild(h2);
+        }
+        
+        const qDiv = document.createElement('div');
+        qDiv.classList.add('question');
+        qDiv.innerHTML = `
+            <div class="question-text">${item.q}</div>
+            <div class="options" data-index="${index}">
+                ${Object.entries(item.options).map(([key, val]) => `
+                    <div class="option" data-key="${key}"><strong>${key})</strong> ${val}</div>
+                `).join('')}
+            </div>
+        `;
+        quizContainer.appendChild(qDiv);
+    });
+
+    document.querySelectorAll('.option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            const parent = this.parentElement;
+            parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+}
+
+function showResults() {
+    let score = 0;
+    const questions = document.querySelectorAll('.question');
+
+    quizData.forEach((item, index) => {
+        const selected = questions[index].querySelector('.selected');
+        const options = questions[index].querySelectorAll('.option');
+        
+        options.forEach(opt => {
+            const optKey = opt.getAttribute('data-key');
+            if (optKey === item.a) {
+                opt.classList.add('correct');
+            }
+            if (selected && selected === opt && optKey !== item.a) {
+                opt.classList.add('incorrect');
+            }
+        });
+
+        if (selected && selected.getAttribute('data-key') === item.a) {
+            score++;
+        }
+    });
+
+    resultContainer.style.display = 'block';
+    resultContainer.innerHTML = `Week 1 Practice Complete!<br>Final Score: ${score} / ${quizData.length}`;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+buildQuiz();
+submitBtn.addEventListener('click', showResults);
+</script>
+
+</body>
+</html>

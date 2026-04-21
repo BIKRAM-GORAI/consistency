@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principles of Management - Assignments (Weeks 2-4)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
+        .quiz-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; border-bottom: 3px solid #27ae60; padding-bottom: 10px; }
+        h2 { color: #27ae60; border-left: 5px solid #27ae60; padding-left: 15px; margin-top: 40px; background: #e8f5e9; padding-top: 5px; padding-bottom: 5px; }
+        .question { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fff; }
+        .question-text { font-size: 1.05em; font-weight: 600; color: #2c3e50; margin-bottom: 15px; white-space: pre-wrap; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px 15px; border: 2px solid #dee2e6; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background: white; }
+        .option:hover { background-color: #f1f8e9; border-color: #27ae60; }
+        .selected { background-color: #e8f5e9 !important; border-color: #27ae60 !important; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; font-weight: bold; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        #submit-btn { display: block; width: 100%; padding: 20px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        #submit-btn:hover { background: #219150; }
+        #result { margin-top: 30px; padding: 25px; border-radius: 8px; font-size: 1.5em; font-weight: bold; text-align: center; display: none; background-color: #fff; border: 3px solid #27ae60; color: #2c3e50; }
+        table { border-collapse: collapse; margin: 10px 0; font-size: 0.9em; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>Principles of Management Practice</h1>
+    <p style="text-align: center; font-weight: bold;">Assignment Units: Week 2, Week 3, and Week 4</p>
+
+    <div id="quiz"></div>
+    <button id="submit-btn">Check All Answers</button>
+    <div id="result"></div>
+</div>
+
+<script>
+const quizData = [
+    // WEEK 4
+    { 
+        section: "Week 4: Assignment 4",
+        q: "4) Chronologically arrange the following steps in the recruitment process:\ni) Recruiting: building a pool of candidates\nii) Using selection tools for screening\niii) Applicants completing the application forms\niv) Employment planning and forecasting\nv) Interviewing final candidates for final selection\nvi) Candidate becomes an employee", 
+        a: "B", 
+        options: { 
+            A: "i, ii, iii, iv, v, vi", 
+            B: "iv, i, iii, ii, v, vi", 
+            C: "iv, iii, ii, i, v, vi", 
+            D: "iv, i, ii, iii, v, vi" 
+        } 
+    },
+    { 
+        q: "5) Which of the following statements about scenario planning is false?", 
+        a: "C", 
+        options: { 
+            A: "It identifies the potential unexpected events", 
+            B: "It facilitates creating stories of possible future scenarios", 
+            C: "It predicts unexpected random scenarios which can be avoided", 
+            D: "It is useful in planning for anticipated events" 
+        } 
+    },
+    { 
+        q: "6) Which of the following statements about Benchmarking is not true?", 
+        a: "A", 
+        options: { 
+            A: "It helps in marking the business practices that are obsolete in order to revive them", 
+            B: "It is a technique for assessing the environment", 
+            C: "It is done to analyze and copy the methods of various leaders in the field", 
+            D: "It is the search for the best practices among businesses for superior performance" 
+        } 
+    },
+    { 
+        q: "7) Which of the following is NOT a qualitative technique of forecasting:\ni) Regression\nii) Delphi Method\niii) Consumer Market Survey\niv) Time Series", 
+        a: "C", 
+        options: { 
+            A: "Only i), ii) and iv)", 
+            B: "Only ii) and iv)", 
+            C: "Only i) and iv)", 
+            D: "Only i) and ii)" 
+        } 
+    },
+    { 
+        q: "8) A business organization allocated certain amount for procurement of raw material to manufacture glass bottles. What type of budgeting would this be?", 
+        a: "A", 
+        options: { 
+            A: "Fixed- Expense budget", 
+            B: "Variable- Cash budget", 
+            C: "Fixed- Revenue Budget", 
+            D: "Variable- Profit budget" 
+        } 
+    },
+    { 
+        q: "9) Consider the following statements:\nI. Benchmarking is the method of making something better by learning from the best practices, techniques, methods, etc., by observation of the performance.\nII. Japanese Copier manufactures sent a team of their executives to the U.S. to learn efficiency from the much famed and successful company, Xerox.", 
+        a: "C", 
+        options: { 
+            A: "Both I and II are true", 
+            B: "Both I and II are false", 
+            C: "Only I is true and II is false", 
+            D: "Only II is true and I is false" 
+        } 
+    },
+    { 
+        q: "10) Who gave the scheduling technique which looks like a bar graph with time on the horizontal axis and activities to be scheduled on a vertical axis, and what is that technique called?", 
+        a: "B", 
+        options: { 
+            A: "FW Taylor- Taylor's Paradigm", 
+            B: "Henri Gantt- Gantt Chart", 
+            C: "Henri Fayol- Load Chart", 
+            D: "Frank and Lillian Gilbreth- Time and motion graph" 
+        } 
+    },
+
+    // WEEK 3
+    { 
+        section: "Week 3: Assignment 3",
+        q: "1) In the context of business environment, what do we mean by the phrase “pluralistic society?”", 
+        a: "C", 
+        options: { 
+            A: "Multiple global policy making societies", 
+            B: "Multiple businesses at once", 
+            C: "Multiple interests of stakeholders", 
+            D: "All of these" 
+        } 
+    },
+    { 
+        q: "2) XZY is a small company that procures biodegradable waste from small farmers; manufacturing and selling paper made from that waste to retail shops nearby. Because of their low-cost production and environmentally friendly product, their popularity has increased in the area. A nearby Camlin wholesaler has reported decrease in their paper sales.\nIn a task/specific business environment for XZY, who is the customer?", 
+        a: "A", 
+        options: { 
+            A: "Retail Shops", 
+            B: "XZY", 
+            C: "Small Farmers", 
+            D: "Camlin" 
+        } 
+    },
+    { 
+        q: "3) Which of these is NOT an element of Industry Analysis?", 
+        a: "D", 
+        options: { 
+            A: "Overall attractiveness of the industry", 
+            B: "Critical factors that determine a company's success within the industry", 
+            C: "Underlying forces at work in the industry", 
+            D: "Stakeholders from supply chain in the industry" 
+        } 
+    },
+    { 
+        q: "4) Match the following:\ni) Tangible Resource   A) Skilled Software engineer\nii) Intangible Resource B) Warehouse\niii) Human Resource     C) Brand name\niv) Resource-based view of the firm D) Operation and Performance", 
+        a: "A", 
+        options: { 
+            A: "i-B; ii-C; iii-A; iv-D", 
+            B: "i-D; ii-C; iii-A, iv-B", 
+            C: "i-B; ii-A; iii-C; iv-D", 
+            D: "i-D; ii-C; iii-B; iv-A" 
+        } 
+    },
+    { 
+        q: "5) Match the following:\ni) Formulation of strategic alternatives | A) External, Internal and Industry\nii) Selection of strategy | B) Evaluate backups to formulate strategy\niii) Setting long-term quantitative objectives or goals | C) Fit between environment and strategic intent of the organization\niv) Situational analysis | D) Quantitative, understandable, challenging, obtainable and time bound", 
+        a: "B", 
+        options: { 
+            A: "i-C; ii-A; iii-C; iv-D", 
+            B: "i-B; ii-C; iii-D; iv-A", 
+            C: "i-D; ii-C; iii-B; iv-A", 
+            D: "i-A; ii-B; iii-D; iv-C" 
+        } 
+    },
+    { 
+        q: "6) In Porter's five forces model, exactly which threat is being referred to?", 
+        a: "D", 
+        options: { 
+            A: "Threat of low purchasing capacity of the customers", 
+            B: "Threat of low supply", 
+            C: "Threat of high prices of products", 
+            D: "Threat of substitute products" 
+        } 
+    },
+    { 
+        q: "7) Which of the following is the stability type of corporate strategy?", 
+        a: "C", 
+        options: { 
+            A: "Expanding though current businesses", 
+            B: "Addressing declining performance of the organization", 
+            C: "Continuing doing what the organization is currently doing", 
+            D: "Expanding through new businesses" 
+        } 
+    },
+    { 
+        q: "8) Tata motors decide to manufacture 800 SUV per month out of their production unit based in Noida. Which of the following functional strategies would they need?", 
+        a: "B", 
+        options: { 
+            A: "Planning Strategy", 
+            B: "Production Strategy", 
+            C: "Training Strategy", 
+            D: "None of these" 
+        } 
+    },
+    { 
+        q: "9) Consider the statements I and II\nI. Business model focuses on whether customers will value what the company is providing\nII. Business model focuses on whether the company will make money doing that", 
+        a: "D", 
+        options: { 
+            A: "Both I and II are false", 
+            B: "I is true but II is false", 
+            C: "I is false but II is true", 
+            D: "Both I and II are true" 
+        } 
+    },
+    { 
+        q: "10) Which of the following is NOT a step in the process of strategic management?", 
+        a: "A", 
+        options: { 
+            A: "Invest in L & D of employees", 
+            B: "Doing an internal analysis", 
+            C: "Doing an external analysis", 
+            D: "Implement strategies" 
+        } 
+    },
+
+    // WEEK 2
+    { 
+        section: "Week 2: Assignment 2",
+        q: "1) Who is the father of \"scientific management\"?", 
+        a: "A", 
+        options: { 
+            A: "Frederick Winslow Taylor", 
+            B: "Henri Fayol", 
+            C: "Peter Drucker", 
+            D: "Abraham Maslow" 
+        } 
+    },
+    { 
+        q: "2) Which of the following is NOT an example of early management?", 
+        a: "D", 
+        options: { 
+            A: "Egyptian Pyramids and the Great Wall of China", 
+            B: "Industrial Revolution", 
+            C: "Division of Labor", 
+            D: "Moving towards the Renaissance" 
+        } 
+    },
+    { 
+        q: "3) Fill in the blank:\n“Queue management such as in Whole Foods, a US-based supermarket, which led to shorter waiting time for the customers is an example of ____________________.”", 
+        a: "B", 
+        options: { 
+            A: "Scientific Management", 
+            B: "Quantitative Management", 
+            C: "Both of these", 
+            D: "None of these" 
+        } 
+    },
+    { 
+        q: "4) Which of the following is one of the PESTLE factors?", 
+        a: "C", 
+        options: { 
+            A: "Personnel factors", 
+            B: "Transformational factors", 
+            C: "Legal factors", 
+            D: "Structural factors" 
+        } 
+    },
+    { 
+        q: "5) Which of the following is NOT a criticism for the classical management perspective?", 
+        a: "B", 
+        options: { 
+            A: "Unappreciative of the social context of work and higher needs of the workers.", 
+            B: "Not demonstrating the importance of personnel selection and training.", 
+            C: "Not acknowledging the variance among individuals.", 
+            D: "Regarding workers as uninformed and ignoring their ideas and suggestions." 
+        } 
+    },
+    { 
+        q: "6) Match the features of bureaucracy with their correct attributes:\ni) Career orientation | A) Simple, routine and well-defined tasks\nii) Division of labor | B) Selection on basis of technical qualification\niii) Authority Hierarchy | C) Clean chain of command\niv) Formal Selection | D) Managers are not owners of the units they manage", 
+        a: "A", 
+        options: { 
+            A: "i-D; ii-A; iii-C; iv-B", 
+            B: "i-B; ii-A; iii-D; iv-C", 
+            C: "i-A; ii-b; iii-C; iv-D", 
+            D: "i-D; ii-B; iii-D; iv-C" 
+        } 
+    },
+    { 
+        q: "7) Rank the needs from bottom to top in the Maslow’s Needs Hierarchy:\ni) Safety\nii) Physiological\niii) Belongingness\niv) Esteem", 
+        a: "A", 
+        options: { 
+            A: "ii) → i) → iii) → iv)", 
+            B: "i) → ii) → iii) → iv)", 
+            C: "iv) → iii) → ii) → i)", 
+            D: "iii) → iv) → ii) → i)" 
+        } 
+    },
+    { 
+        q: "8) Which of the following statements about Theory X and Theory Y is NOT true?", 
+        a: "A", 
+        options: { 
+            A: "Theory X assumes that bright people's potential remains unutilized under most organizational conditions", 
+            B: "Theory X assumes that people prefer to be directed", 
+            C: "Theory Y assumes that people seek and accept responsibility under favorable conditions", 
+            D: "Theory Y assumes that people do not dislike work" 
+        } 
+    },
+    { 
+        q: "9) In case of business organization, if the system does not receive fresh inputs and energy from the environment, what would happen?", 
+        a: "A", 
+        options: { 
+            A: "Entropy", 
+            B: "Maturity", 
+            C: "Synergy", 
+            D: "Synthesis" 
+        } 
+    },
+    { 
+        q: "10) Which contributions did Frank and Lilian Gilbreth make towards scientific management?", 
+        a: "D", 
+        options: { 
+            A: "Time and motion studies", 
+            B: "Micro chronometer", 
+            C: "Elimination of hand and body motions", 
+            D: "All of these" 
+        } 
+    }
+];
+
+const quizContainer = document.getElementById('quiz');
+const submitBtn = document.getElementById('submit-btn');
+const resultContainer = document.getElementById('result');
+
+function buildQuiz() {
+    quizData.forEach((item, index) => {
+        if (item.section) {
+            const h2 = document.createElement('h2');
+            h2.innerText = item.section;
+            quizContainer.appendChild(h2);
+        }
+        
+        const qDiv = document.createElement('div');
+        qDiv.classList.add('question');
+        qDiv.innerHTML = `
+            <div class="question-text">${item.q}</div>
+            <div class="options" data-index="${index}">
+                ${Object.entries(item.options).map(([key, val]) => `
+                    <div class="option" data-key="${key}"><strong>${key})</strong> ${val}</div>
+                `).join('')}
+            </div>
+        `;
+        quizContainer.appendChild(qDiv);
+    });
+
+    document.querySelectorAll('.option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            const parent = this.parentElement;
+            parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+}
+
+function showResults() {
+    let score = 0;
+    const questions = document.querySelectorAll('.question');
+
+    quizData.forEach((item, index) => {
+        const selected = questions[index].querySelector('.selected');
+        const options = questions[index].querySelectorAll('.option');
+        
+        options.forEach(opt => {
+            const optKey = opt.getAttribute('data-key');
+            if (optKey === item.a) {
+                opt.classList.add('correct');
+            }
+            if (selected && selected === opt && optKey !== item.a) {
+                opt.classList.add('incorrect');
+            }
+        });
+
+        if (selected && selected.getAttribute('data-key') === item.a) {
+            score++;
+        }
+    });
+
+    resultContainer.style.display = 'block';
+    resultContainer.innerHTML = `Set Complete!<br>Final Score: ${score} / ${quizData.length} (${Math.round((score/quizData.length)*100)}%)`;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+buildQuiz();
+submitBtn.addEventListener('click', showResults);
+</script>
+
+</body>
+</html>

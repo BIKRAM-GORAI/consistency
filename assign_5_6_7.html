@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principles of Management - Assignments (Weeks 5-7)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f0f4f8; }
+        .quiz-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; border-bottom: 3px solid #e67e22; padding-bottom: 10px; }
+        h2 { color: #e67e22; border-left: 5px solid #e67e22; padding-left: 15px; margin-top: 40px; background: #fff3e0; padding-top: 5px; padding-bottom: 5px; }
+        .question { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fff; }
+        .question-text { font-size: 1.05em; font-weight: 600; color: #34495e; margin-bottom: 15px; white-space: pre-wrap; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px 15px; border: 2px solid #dee2e6; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background: white; }
+        .option:hover { background-color: #f8f9fa; border-color: #e67e22; }
+        .selected { background-color: #fff3e0 !important; border-color: #e67e22 !important; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; font-weight: bold; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        #submit-btn { display: block; width: 100%; padding: 20px; background: #e67e22; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        #submit-btn:hover { background: #d35400; }
+        #result { margin-top: 30px; padding: 25px; border-radius: 8px; font-size: 1.5em; font-weight: bold; text-align: center; display: none; background-color: #fff; border: 3px solid #e67e22; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>Principles of Management Practice</h1>
+    <p style="text-align: center; font-weight: bold;">Assignment Units: Week 5, Week 6, and Week 7</p>
+
+    <div id="quiz"></div>
+    <button id="submit-btn">Evaluate My Answers</button>
+    <div id="result"></div>
+</div>
+
+<script>
+const quizData = [
+    // WEEK 7
+    { 
+        section: "Week 7: Assignment 7",
+        q: "1) According to the Blake & Mouton Managerial Grid, which leadership style scores high concern for people and high concern for production?", 
+        a: "C", 
+        options: { 
+            A: "Impoverished Management", 
+            B: "Country Club Management", 
+            C: "Team Management", 
+            D: "Authority—Compliance Management" 
+        } 
+    },
+    { 
+        q: "2) According to the Blake & Mouton Managerial Grid, identify the leadership style:\n“A manager who balances concern for people and concern for production, but does not excel in either.”", 
+        a: "B", 
+        options: { 
+            A: "Impoverished Management", 
+            B: "Middle-of-the-Road Management", 
+            C: "Authority—Compliance Management", 
+            D: "Team Management" 
+        } 
+    },
+    { 
+        q: "3) In the Blake & Mouton Managerial Grid, the “1,9” style is best described as:", 
+        a: "A", 
+        options: { 
+            A: "Country Club Management", 
+            B: "Team Management", 
+            C: "Authority—Compliance Management", 
+            D: "Middle-of-the-Road Management" 
+        } 
+    },
+    { 
+        q: "4) A leader who prioritizes a pleasant work environment and avoids conflict, sometimes at the cost of productivity, represents which leadership style?", 
+        a: "C", 
+        options: { 
+            A: "Team Management", 
+            B: "Impoverished Management", 
+            C: "Country Club Management", 
+            D: "Authority—Compliance Management" 
+        } 
+    },
+    { 
+        q: "5) According to the Blake & Mouton Managerial Grid, a manager who emphasizes teamwork, mutual trust, and high productivity follows which style?", 
+        a: "A", 
+        options: { 
+            A: "Team Management", 
+            B: "Authority—Compliance Management", 
+            C: "Impoverished Management", 
+            D: "Country Club Management" 
+        } 
+    },
+    { 
+        q: "6) If subordinates were highly experienced and tasks routine, what would be the best span of control?", 
+        a: "C", 
+        options: { 
+            A: "Very narrow", 
+            B: "Narrow", 
+            C: "Wide", 
+            D: "No span required" 
+        } 
+    },
+    { 
+        q: "7) A company operates in Asia, Europe, and North America, and each region has its own HR, marketing, and operations teams. This company is using which departmentation method?", 
+        a: "C", 
+        options: { 
+            A: "Product Departmentation", 
+            B: "Functional Departmentation", 
+            C: "Geographic Departmentation", 
+            D: "Customer Departmentation" 
+        } 
+    },
+    { 
+        q: "8) A supervisor offers extra paid leave for meeting sales targets. This is an example of:", 
+        a: "D", 
+        options: { 
+            A: "Referent power", 
+            B: "Legitimate power", 
+            C: "Coercive power", 
+            D: "Reward power" 
+        } 
+    },
+    { 
+        q: "9) The concept of 'Employee Empowerment' implies that:", 
+        a: "B", 
+        options: { 
+            A: "Decision-making authority is restricted only to top management", 
+            B: "Employees and teams are entrusted with autonomy to make work-related decisions", 
+            C: "Employees are excluded from planning and policy formulation", 
+            D: "Employees function only under close supervision" 
+        } 
+    },
+    { 
+        q: "10) “Employees and management share decision-making authority” refers to which level?", 
+        a: "A", 
+        options: { 
+            A: "Joint decision-making", 
+            B: "Informal participation", 
+            C: "Mandatory participation", 
+            D: "Consultation" 
+        } 
+    },
+
+    // WEEK 6
+    { 
+        section: "Week 6: Assignment 6",
+        q: "1) What is the correct full form of the acronym SMART goals?", 
+        a: "A", 
+        options: { 
+            A: "Specific, Measurable, Achievable, Relevant, Time-bound", 
+            B: "Sustainable, Measurable, Actual, Reasonable, Time-bound", 
+            C: "Specific, Measurable, Actual, Reasonable, Time-bound", 
+            D: "Sustainable, Measurable, Achievable, Relevant, Time-bound" 
+        } 
+    },
+    { 
+        q: "2) Which of the following is an input in the MBO systems approach?", 
+        a: "D", 
+        options: { 
+            A: "Goal integration", 
+            B: "Products", 
+            C: "Services", 
+            D: "Capital" 
+        } 
+    },
+    { 
+        q: "3) Consider the following statements:\ni. KRAs are the factors which help in driving a company to deliver value to customers.\nii. KRAs effectively help in increasing engagement and driving growth.\niii. KRAs are not related to the employee engagement of the organization.\niv. Each KRA has additional layers to achieve KRA metric.", 
+        a: "A", 
+        options: { 
+            A: "Only i, ii and iv are correct", 
+            B: "Only ii, iii and iv are correct", 
+            C: "Only iii and iv are correct", 
+            D: "Only i, ii and iii are correct" 
+        } 
+    },
+    { 
+        q: "4) Fill in the blanks:\nIn a performance management model, reward systems, goal setting and performance appraisal- all three affect __________ and __________ performance.", 
+        a: "B", 
+        options: { 
+            A: "Employee and organization", 
+            B: "Individual and group", 
+            C: "Top level and bottom level", 
+            D: "Actual and potential" 
+        } 
+    },
+    { 
+        q: "5) Match the following:\ni. Geocentric\nii. Ethnocentric\niii. Polycentric\niv. Parochialism\n\nA. Practices from home-origin location are the best\nB. Ignoring others values and cultures\nC. Combining practices from different locations\nD. Respecting and seeking guidance from host country", 
+        a: "D", 
+        options: { 
+            A: "i-C, ii-A, iii-D, iv-B", 
+            B: "i-A, ii-B, iii-C, iv-D", 
+            C: "i-D, ii-C, iii-B, iv-A", 
+            D: "i-C, ii-A, iii-B, iv-D" 
+        } 
+    },
+    { 
+        q: "6) What is another term for a transnational organization?", 
+        a: "B", 
+        options: { 
+            A: "Global organization", 
+            B: "Borderless organization", 
+            C: "MNC", 
+            D: "All are synonymous" 
+        } 
+    },
+    { 
+        q: "7) Which of the following is NOT a characteristic of a strategic alliance?", 
+        a: "D", 
+        options: { 
+            A: "Partnership between an organization and foreign country", 
+            B: "Resource and knowledge to develop new products is shared", 
+            C: "Building new production facility in foreign country", 
+            D: "Setting up an independent and separate office in foreign country" 
+        } 
+    },
+    { 
+        q: "8) Which of the following is NOT a dimension of Hofstede’s Five Dimensions of National Culture?", 
+        a: "A", 
+        options: { 
+            A: "Global-Local", 
+            B: "Individualistic-Collectivistic", 
+            C: "High power distance-Low power distance", 
+            D: "Achievement-Nurturing" 
+        } 
+    },
+    { 
+        q: "9) Match the following:\ni. Autocratic Manager\nii. Consultative Manager\niii. Persuasive Manager\niv. Democratic Manager\n\nA. Need inputs from experts\nB. Employees can engage in decision making\nC. Unilateral and faster decisions\nD. Employees interest taken into account", 
+        a: "D", 
+        options: { 
+            A: "i-C, ii-D, iii-A, iv-B", 
+            B: "i-D, ii-C, iii-B, iv-A", 
+            C: "i-A, ii-D, iii-C, iv-B", 
+            D: "i-C, ii-A, iii-B, iv-D" 
+        } 
+    },
+    { 
+        q: "10) In which of the following styles, leader acts as a group member?", 
+        a: "B", 
+        options: { 
+            A: "Indian", 
+            B: "Japanese", 
+            C: "Chinese", 
+            D: "American" 
+        } 
+    },
+
+    // WEEK 5
+    { 
+        section: "Week 5: Assignment 5",
+        q: "1) A process by which individuals organize and interpret their sensory impressions to give meaning to their surroundings is called __________.", 
+        a: "B", 
+        options: { 
+            A: "Sensitization", 
+            B: "Perception", 
+            C: "Interpretation", 
+            D: "Observation" 
+        } 
+    },
+    { 
+        q: "2) Consider the following statements:\nI. Managers' stereotypes help in leading to mental models\nII. Mental models play a vital role in taking decisions and actions to implement policies and programs", 
+        a: "D", 
+        options: { 
+            A: "Both I and II are true", 
+            B: "Both I and II are false", 
+            C: "Only I is true and II is false", 
+            D: "Only I is false and II is true" 
+        } 
+    },
+    { 
+        q: "3) A senior manager is given an award for leading his team which he gladly accepts, citing his hard work, sincerity and diligence. A few days later, one of the junior employees missed a deadline to file a report of monthly expenses as the senior manager misplaced the related documents. After the senior manager comes to know that the report has not been filed, he fires the junior employee citing his incompetence, disregarding his own blunder. What is going on in this scenario?", 
+        a: "C", 
+        options: { 
+            A: "Shifting the blame", 
+            B: "Fundamental attribution error", 
+            C: "Self-serving bias", 
+            D: "All of these" 
+        } 
+    },
+    { 
+        q: "4) Which of the following is NOT a step in the decision-making process?", 
+        a: "D", 
+        options: { 
+            A: "Evaluation of decision effectiveness", 
+            B: "Allocation of weights to criteria", 
+            C: "Development of alternatives", 
+            D: "Gathering inputs from customers" 
+        } 
+    },
+    { 
+        q: "5) A noodles manufacturer states that the success of his products would depend 50% on the taste, 25% on the packaging 15% on who the brand ambassador is and 10% on the pricing. The manufacturer takes their decisions based on this. What step of decision making does this scenario describe?", 
+        a: "B", 
+        options: { 
+            A: "Identifying the problem", 
+            B: "Allocation of weights to criteria", 
+            C: "Analyzing alternatives", 
+            D: "Evaluation of decision effectiveness" 
+        } 
+    },
+    { 
+        q: "6) Match the following:\ni. Programmed decisions\nii. Non-programmed decisions\niii. Upper level management\niv. Lower level management\n\nA. Judgment and creativity\nB. Programmed decisions\nC. Procedures, rules and policies\nD. Non-programmed decisions", 
+        a: "A", 
+        options: { 
+            A: "i-C; ii-A; iii-D; iv-B", 
+            B: "i-B; ii-D; iii-A; iv-C", 
+            C: "i-C; ii-A; iii-B; iv-D", 
+            D: "i-A; ii-C; iii-D; iv-B" 
+        } 
+    },
+    { 
+        q: "7) A quick food delivery service provider fails to deliver to the customer on time because of which the customer wants to cancel the order and refund. What kind of a problem is this?", 
+        a: "A", 
+        options: { 
+            A: "Structured problem", 
+            B: "Unstructured problem", 
+            C: "A mix of both", 
+            D: "None of these" 
+        } 
+    },
+    { 
+        q: "8) The creative process talking about immersion, digestion, incubation, illumination and verification was proposed by which theorist?", 
+        a: "C", 
+        options: { 
+            A: "Carl Jung", 
+            B: "Graham Wallas", 
+            C: "James Young", 
+            D: "P. F. Drucker" 
+        } 
+    },
+    { 
+        q: "9) Match the following:\ni) Formal Group\nii) Informal Group\niii) Committee\niv) Team\n\nA. Can be formal, informal, permanent or temporary\nB. Skills, common purpose, mutual accountability\nC. Command and Task Groups\nD. Interest and Friendship Groups", 
+        a: "C", 
+        options: { 
+            A: "i-C, ii-D, iii-A, iv-B", 
+            B: "i-D, ii-B, iii-A, iv-D", 
+            C: "i-C, ii-D, iii-B, iv-A", 
+            D: "i-D, ii-B, iii-D, iv-A" 
+        } 
+    },
+    { 
+        q: "10) Which is not true for a virtual team:", 
+        a: "D", 
+        options: { 
+            A: "Members are not in the same location", 
+            B: "Members don't report to you", 
+            C: "Members may not work for your organization", 
+            D: "Members need not have complementary set of skills" 
+        } 
+    }
+];
+
+const quizContainer = document.getElementById('quiz');
+const submitBtn = document.getElementById('submit-btn');
+const resultContainer = document.getElementById('result');
+
+function buildQuiz() {
+    quizData.forEach((item, index) => {
+        if (item.section) {
+            const h2 = document.createElement('h2');
+            h2.innerText = item.section;
+            quizContainer.appendChild(h2);
+        }
+        
+        const qDiv = document.createElement('div');
+        qDiv.classList.add('question');
+        qDiv.innerHTML = `
+            <div class="question-text">${item.q}</div>
+            <div class="options" data-index="${index}">
+                ${Object.entries(item.options).map(([key, val]) => `
+                    <div class="option" data-key="${key}"><strong>${key})</strong> ${val}</div>
+                `).join('')}
+            </div>
+        `;
+        quizContainer.appendChild(qDiv);
+    });
+
+    document.querySelectorAll('.option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            const parent = this.parentElement;
+            parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+}
+
+function showResults() {
+    let score = 0;
+    const questions = document.querySelectorAll('.question');
+
+    quizData.forEach((item, index) => {
+        const selected = questions[index].querySelector('.selected');
+        const options = questions[index].querySelectorAll('.option');
+        
+        options.forEach(opt => {
+            const optKey = opt.getAttribute('data-key');
+            if (optKey === item.a) {
+                opt.classList.add('correct');
+            }
+            if (selected && selected === opt && optKey !== item.a) {
+                opt.classList.add('incorrect');
+            }
+        });
+
+        if (selected && selected.getAttribute('data-key') === item.a) {
+            score++;
+        }
+    });
+
+    resultContainer.style.display = 'block';
+    resultContainer.innerHTML = `Set Complete!<br>Accuracy: ${score} / ${quizData.length} (${Math.round((score/quizData.length)*100)}%)`;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+buildQuiz();
+submitBtn.addEventListener('click', showResults);
+</script>
+
+</body>
+</html>

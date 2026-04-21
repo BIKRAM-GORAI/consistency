@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principles of Management - Assignments (Weeks 8-10)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; }
+        .quiz-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #2980b9; border-left: 5px solid #3498db; padding-left: 15px; margin-top: 40px; background: #ecf0f1; padding-top: 5px; padding-bottom: 5px; }
+        .question { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fff; }
+        .question-text { font-size: 1.05em; font-weight: 600; color: #34495e; margin-bottom: 15px; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option { padding: 12px 15px; border: 2px solid #bdc3c7; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background: white; }
+        .option:hover { background-color: #f1f2f6; border-color: #3498db; }
+        .selected { background-color: #d1ecf1 !important; border-color: #3498db !important; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; font-weight: bold; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        #submit-btn { display: block; width: 100%; padding: 20px; background: #3498db; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        #submit-btn:hover { background: #2980b9; }
+        #result { margin-top: 30px; padding: 25px; border-radius: 8px; font-size: 1.5em; font-weight: bold; text-align: center; display: none; background-color: #fff; border: 3px solid #3498db; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>Principles of Management Practice</h1>
+    <p style="text-align: center; font-weight: bold;">Assignment Units: Week 8, Week 9, and Week 10</p>
+
+    <div id="quiz"></div>
+    <button id="submit-btn">Finish and Review Answers</button>
+    <div id="result"></div>
+</div>
+
+<script>
+const quizData = [
+    // WEEK 10 (Screenshots 1-3)
+    { 
+        section: "Week 10: Assignment 10",
+        q: "1) A project manager with a strong task-oriented leadership style is assigned to a project where tasks are clearly defined and the leader has strong authority. The team performs exceptionally well under this arrangement. According to Fiedler's theory, this effectiveness is mainly due to:", 
+        a: "A", 
+        options: { 
+            A: "A good match between the leader's style and situational factors", 
+            B: "The leader's ability to change leadership style", 
+            C: "High follower motivation", 
+            D: "Flexible organizational culture" 
+        } 
+    },
+    { 
+        q: "2) Contingency theory states that leadership effectiveness depends on:", 
+        a: "B", 
+        options: { 
+            A: "A universal leadership style", 
+            B: "Environmental and situational variables", 
+            C: "Only follower maturity", 
+            D: "Only task complexity" 
+        } 
+    },
+    { 
+        q: "3) According to Path—Goal Theory, directive leadership is most suitable when the task is:", 
+        a: "B", 
+        options: { 
+            A: "Intrinsically satisfying", 
+            B: "Highly unstructured", 
+            C: "Highly structured", 
+            D: "Boring but clear" 
+        } 
+    },
+    { 
+        q: "4) Participative leadership involves:", 
+        a: "B", 
+        options: { 
+            A: "Setting tough goals", 
+            B: "Consulting employees in decisions", 
+            C: "Monitoring rule deviations", 
+            D: "Ignoring employees' opinions" 
+        } 
+    },
+    { 
+        q: "5) A project leader works with a team where relations are very good, tasks are unstructured, and position power is moderate. According to Fiedler, which leadership style is most appropriate?", 
+        a: "A", 
+        options: { 
+            A: "Relationship-oriented leadership", 
+            B: "Task-oriented leadership", 
+            C: "Transactional leadership", 
+            D: "Situationally flexible leadership" 
+        } 
+    },
+    { 
+        q: "6) Adding more similar tasks and responsibilities at the same hierarchical level to an employee's job is known as:", 
+        a: "A", 
+        options: { 
+            A: "Job Enlargement", 
+            B: "Job Enrichment", 
+            C: "Job Evaluation", 
+            D: "Job Rotation" 
+        } 
+    },
+    { 
+        q: "7) In the control process, correcting deviations from set standards is known as ________.", 
+        a: "B", 
+        options: { 
+            A: "Reporting", 
+            B: "Taking Corrective Action", 
+            C: "Measurement", 
+            D: "Standard Setting" 
+        } 
+    },
+    { 
+        q: "8) The technique of increasing task variety by adding more activities at the same organizational level is called:", 
+        a: "C", 
+        options: { 
+            A: "Job Enrichment", 
+            B: "Job Rotation", 
+            C: "Job Enlargement", 
+            D: "Job Evaluation" 
+        } 
+    },
+    { 
+        q: "9) Breaking down organizational work into distinct units or sections and assigning them to groups is called:", 
+        a: "D", 
+        options: { 
+            A: "Delegation", 
+            B: "Centralization", 
+            C: "Staffing", 
+            D: "Departmentation" 
+        } 
+    },
+    { 
+        q: "10) Which management function focuses on measuring actual results, comparing them with planned targets, and taking corrective action?", 
+        a: "D", 
+        options: { 
+            A: "Planning", 
+            B: "Organizing", 
+            C: "Directing", 
+            D: "Controlling" 
+        } 
+    },
+
+    // WEEK 9 (Screenshots 4-6)
+    { 
+        section: "Week 9: Assignment 9",
+        q: "1) To achieve quarterly targets, a regional sales head works directly with frontline sales supervisors. This relationship represents:", 
+        a: "A", 
+        options: { 
+            A: "Vertical coordination", 
+            B: "Horizontal coordination", 
+            C: "External coordination", 
+            D: "Functional coordination" 
+        } 
+    },
+    { 
+        q: "2) Career counseling primarily assists employees by:", 
+        a: "B", 
+        options: { 
+            A: "Helping them plan personal finances", 
+            B: "Addressing work-related challenges and career concerns", 
+            C: "Guaranteeing promotions", 
+            D: "Resolving disciplinary issues" 
+        } 
+    },
+    { 
+        q: "3) He/ She enjoys analytical problem-solving, but his role involves repetitive administrative tasks. Over time, he feels disengaged and considers leaving the organization. This situation is BEST explained by:", 
+        a: "A", 
+        options: { 
+            A: "Mismatch between personal interests and job role", 
+            B: "Ineffective performance evaluation", 
+            C: "Absence of career counseling", 
+            D: "Lack of monetary incentives" 
+        } 
+    },
+    { 
+        q: "4) Reciprocal coordination is used when:", 
+        a: "A", 
+        options: { 
+            A: "Output of one unit becomes input of another and flows back cyclically", 
+            B: "All decisions are centralized", 
+            C: "No coordination is needed", 
+            D: "Units operate independently" 
+        } 
+    },
+    { 
+        q: "5) Which level of management primarily requires tactical and administrative skills to translate organizational strategies into action plans?", 
+        a: "D", 
+        options: { 
+            A: "Top management", 
+            B: "Lower management", 
+            C: "Supervisory level", 
+            D: "Middle management" 
+        } 
+    },
+    { 
+        q: "6) The primary purpose of career counseling is to assist employees in:", 
+        a: "A", 
+        options: { 
+            A: "Identifying and resolving work-related and career concerns", 
+            B: "Handling formal complaints", 
+            C: "Securing immediate promotions", 
+            D: "Managing personal finances" 
+        } 
+    },
+    { 
+        q: "7) Alan prefers analytical and creative tasks, but his role mainly involves repetitive clerical work. Over time, he feels disengaged and starts looking for other job opportunities. Which career planning concept BEST explains this situation?", 
+        a: "D", 
+        options: { 
+            A: "Ineffective performance appraisal", 
+            B: "Absence of career counseling", 
+            C: "Inadequate compensation structure", 
+            D: "Mismatch between individual abilities and job demands" 
+        } 
+    },
+    { 
+        q: "8) Which statement is TRUE about contemporary career planning?", 
+        a: "C", 
+        options: { 
+            A: "It is solely the organization's responsibility", 
+            B: "It is solely the employee's responsibility", 
+            C: "It is a shared responsibility between employee and organization", 
+            D: "It depends only on industry type" 
+        } 
+    },
+    { 
+        q: "9) Which managerial behavior is LEAST supportive of effective coordination?", 
+        a: "C", 
+        options: { 
+            A: "Active listening", 
+            B: "Empathy toward subordinates", 
+            C: "Avoiding communication across departments", 
+            D: "Encouraging shared goals" 
+        } 
+    },
+    { 
+        q: "10) The head of a manufacturing firm regularly interacts with environmental regulators to ensure the company complies with new pollution control norms. This situation best illustrates:", 
+        a: "B", 
+        options: { 
+            A: "Functional integration", 
+            B: "External coordination", 
+            C: "Departmental coordination", 
+            D: "Vertical coordination" 
+        } 
+    },
+
+    // WEEK 8 (Screenshots 7-9)
+    { 
+        section: "Week 8: Assignment 8",
+        q: "1) Which management function focuses on placing the right people in the right jobs through recruitment, selection, training, and development?", 
+        a: "C", 
+        options: { 
+            A: "Planning", 
+            B: "Organising", 
+            C: "Staffing", 
+            D: "Controlling" 
+        } 
+    },
+    { 
+        q: "2) Recruitment is best defined as the process of:", 
+        a: "A", 
+        options: { 
+            A: "Attracting potential applicants for available jobs", 
+            B: "Choosing the most suitable candidate", 
+            C: "Training employees after selection", 
+            D: "Evaluating employee performance" 
+        } 
+    },
+    { 
+        q: "3) The primary objective of organizational socialization is to:", 
+        a: "A", 
+        options: { 
+            A: "Improve employee adjustment and retention", 
+            B: "Reduce training costs", 
+            C: "Eliminate performance appraisal", 
+            D: "Increase competition among employees" 
+        } 
+    },
+    { 
+        q: "4) A newly recruited engineer realizes that the actual job demands differ from what was communicated during recruitment. She seeks guidance from colleagues to adapt to the work culture. Which stage of socialization is she experiencing?", 
+        a: "A", 
+        options: { 
+            A: "Encounter", 
+            B: "Pre-arrival", 
+            C: "Metamorphosis", 
+            D: "Separation" 
+        } 
+    },
+    { 
+        q: "5) Which strategy emphasizes continuing current operations without major expansion or retrenchment?", 
+        a: "A", 
+        options: { 
+            A: "Stability strategy", 
+            B: "Growth strategy", 
+            C: "Retrenchment strategy", 
+            D: "Diversification strategy" 
+        } 
+    },
+    { 
+        q: "6) Performance management is described as:", 
+        a: "A", 
+        options: { 
+            A: "A continuous, integrated process of identifying, measuring, and developing performance aligned with organizational goals", 
+            B: "A yearly evaluation conducted by HR managers", 
+            C: "A method to eliminate the need for formal appraisals", 
+            D: "A system focusing mainly on employee traits" 
+        } 
+    },
+    { 
+        q: "7) An employee is rewarded with additional pay based on the number of units produced beyond the standard output. This compensation method is known as:", 
+        a: "A", 
+        options: { 
+            A: "Piece-rate incentive", 
+            B: "Merit pay", 
+            C: "Profit sharing", 
+            D: "Indirect compensation" 
+        } 
+    },
+    { 
+        q: "8) Which of the following combinations BEST represents the foundation of the Behaviorally Anchored Rating Scale?", 
+        a: "A", 
+        options: { 
+            A: "Behavioral statements and rating dimensions", 
+            B: "Quantitative targets and incentives", 
+            C: "Essay reports and supervisor opinions", 
+            D: "Ranking procedures and forced distribution" 
+        } 
+    },
+    { 
+        q: "9) Which performance appraisal method involves systematic documentation of significant employee behaviors over a period of time?", 
+        a: "A", 
+        options: { 
+            A: "Critical Incidents Method", 
+            B: "Forced Distribution", 
+            C: "Trait Rating Scale", 
+            D: "Ranking Method" 
+        } 
+    },
+    { 
+        q: "10) A firm decides to maintain its present market position and focus on operational efficiency rather than entering new markets or launching new products. This approach reflects a:", 
+        a: "A", 
+        options: { 
+            A: "Stability strategy", 
+            B: "Renewal strategy", 
+            C: "Horizontal integration strategy", 
+            D: "Growth strategy" 
+        } 
+    }
+];
+
+const quizContainer = document.getElementById('quiz');
+const submitBtn = document.getElementById('submit-btn');
+const resultContainer = document.getElementById('result');
+
+function buildQuiz() {
+    quizData.forEach((item, index) => {
+        if (item.section) {
+            const h2 = document.createElement('h2');
+            h2.innerText = item.section;
+            quizContainer.appendChild(h2);
+        }
+        
+        const qDiv = document.createElement('div');
+        qDiv.classList.add('question');
+        qDiv.innerHTML = `
+            <div class="question-text">${item.q}</div>
+            <div class="options" data-index="${index}">
+                ${Object.entries(item.options).map(([key, val]) => `
+                    <div class="option" data-key="${key}">${key}) ${val}</div>
+                `).join('')}
+            </div>
+        `;
+        quizContainer.appendChild(qDiv);
+    });
+
+    document.querySelectorAll('.option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            const parent = this.parentElement;
+            parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+}
+
+function showResults() {
+    let score = 0;
+    const questions = document.querySelectorAll('.question');
+
+    quizData.forEach((item, index) => {
+        const selected = questions[index].querySelector('.selected');
+        const options = questions[index].querySelectorAll('.option');
+        
+        options.forEach(opt => {
+            const optKey = opt.getAttribute('data-key');
+            if (optKey === item.a) {
+                opt.classList.add('correct');
+            }
+            if (selected && selected === opt && optKey !== item.a) {
+                opt.classList.add('incorrect');
+            }
+        });
+
+        if (selected && selected.getAttribute('data-key') === item.a) {
+            score++;
+        }
+    });
+
+    resultContainer.style.display = 'block';
+    resultContainer.innerHTML = `Quiz Completed!<br>Your Total Score: ${score} / ${quizData.length} (${Math.round((score/quizData.length)*100)}%)`;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+buildQuiz();
+submitBtn.addEventListener('click', showResults);
+</script>
+
+</body>
+</html>
