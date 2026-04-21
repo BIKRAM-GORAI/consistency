@@ -179,7 +179,11 @@ body {
 .nav-btn.active {
   background: var(--black);
   color: var(--yellow);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 3px 3px 0 var(--yellow);
+}
+
+.nav-btn.active:hover {
+  box-shadow: 5px 5px 0 var(--yellow);
 }
 
 /* User area */
@@ -925,7 +929,7 @@ body {
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: transform var(--t), box-shadow var(--t);
-  box-shadow: var(--shadow);
+  box-shadow: 4px 4px 0 var(--yellow);
   overflow: hidden;
   white-space: nowrap;
   text-transform: uppercase;
@@ -934,10 +938,10 @@ body {
 
 .btn-primary:hover {
   transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 6px 6px 0 var(--yellow);
 }
 
-.btn-primary:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--black); }
+.btn-primary:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--yellow); }
 
 .btn-ghost {
   position: relative;
@@ -1042,13 +1046,14 @@ body {
   justify-content: center;
   transition: var(--t) var(--ease);
   flex-shrink: 0;
-  box-shadow: 2px 2px 0 var(--black);
+  box-shadow: 2px 2px 0 var(--yellow);
 }
 
 .modal-close:hover {
   background: var(--red);
   color: #fff;
   transform: rotate(90deg);
+  box-shadow: 3px 3px 0 var(--yellow);
 }
 
 .modal-body {
@@ -1776,17 +1781,17 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   overflow: hidden;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  box-shadow: var(--shadow);
+  box-shadow: 4px 4px 0 var(--yellow);
 }
 
 .btn-member-close:hover {
   transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 6px 6px 0 var(--yellow);
 }
 
 .btn-member-close:active {
   transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--black);
+  box-shadow: 2px 2px 0 var(--yellow);
 }
 
 @media (min-width: 769px) {
