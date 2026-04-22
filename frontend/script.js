@@ -110,13 +110,28 @@ function progressColor(pct) {
 }
 
 function calculateStreak(days) {
-  if (!days.length) return 0;
+  if (!days.length) return { count: 0, todayDone: false };
   const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
   const today = todayStr();
   let streak = 0;
   let checkDate = today;
+  let todayDone = false;
+
+  // Check if today has any tasks completed
+  const todayDay = sorted.find(d => d.date === today);
+  if (todayDay && countTasks(todayDay.categories).completed > 0) {
+    todayDone = true;
+  } else {
+    // Start counting from yesterday since today is pending
+    const [y, m, d] = checkDate.split('-').map(Number);
+    const prev = new Date(y, m-1, d-1);
+    checkDate = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+  }
+
   for (const day of sorted) {
-    if (day.date !== checkDate) break;
+    if (day.date > checkDate) continue;
+    if (day.date < checkDate) break;
+
     const { completed } = countTasks(day.categories);
     if (completed > 0) {
       streak++;
@@ -125,7 +140,7 @@ function calculateStreak(days) {
       checkDate = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
     } else break;
   }
-  return streak;
+  return { count: streak, todayDone };
 }
 
 /** Enhanced toast with GSAP */
@@ -203,8 +218,14 @@ async function loadDays() {
 }
 
 function updateStreak() {
-  const streak = calculateStreak(allDays);
+  const { count: streak, todayDone } = calculateStreak(allDays);
   const el = document.getElementById('streak-display');
+  const fireEl = document.querySelector('.streak-fire');
+
+  // Show exclamation mark if streak > 0 but today is not done yet
+  if (fireEl) {
+    fireEl.textContent = (streak > 0 && !todayDone) ? '❕' : '🔥';
+  }
 
   // Animate streak number with GSAP counter
   if (window.gsap) {
@@ -214,8 +235,8 @@ function updateStreak() {
       ease: 'power2.out',
       onUpdate() { el.textContent = Math.round(this.targets()[0].val); },
     });
-    // Pulse the streak pill
-    if (streak > 0) {
+    // Pulse the streak pill if streak > 0 and today is complete
+    if (streak > 0 && todayDone) {
       gsap.fromTo('#nav-streak', { scale: 1 }, { scale: 1.06, duration: 0.2, yoyo: true, repeat: 1, ease: 'power1.inOut' });
     }
   } else {
@@ -286,6 +307,7 @@ function renderDays() {
 function buildDayCard(day) {
   const today   = todayStr();
   const isToday = day.date === today;
+  const isFuture = day.date > today;
   const pct     = calcProgress(day.categories);
 
   const card = document.createElement('div');
@@ -350,7 +372,7 @@ function buildDayCard(day) {
         <span class="card-date">${formatDisplayDate(day.date)}</span>
         <span class="card-day-name">${getDayName(day.date)}</span>
       </div>
-      <span class="card-badge ${isToday ? 'badge-today' : 'badge-past'}">${isToday ? '✨ Today' : 'Past'}</span>
+      <span class="card-badge ${isToday ? 'badge-today' : (isFuture ? 'badge-future' : 'badge-past')}">${isToday ? '✨ Today' : (isFuture ? '⏳ Future' : 'Past')}</span>
     </div>
 
     <div class="progress-section">
@@ -1437,10 +1459,13 @@ async function openMemberTasks(memberId, memberName) {
     const days = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(memberId)}`);
 
     // Calculate member's streak and update the modal title
-    const memberStreak = calculateStreak(days);
+    const streakInfo = calculateStreak(days);
+    const memberStreak = streakInfo.count;
+    const isTodayDone = streakInfo.todayDone;
+    const icon = isTodayDone ? '🔥' : (memberStreak > 0 ? '❕' : '🌱');
     const streakBadge = memberStreak > 0
-      ? ` <span class="member-streak-badge">🔥 ${memberStreak} day streak</span>`
-      : ` <span class="member-streak-badge member-streak-zero">🌱 No streak yet</span>`;
+      ? ` <span class="member-streak-badge">${icon} ${memberStreak} day streak</span>`
+      : ` <span class="member-streak-badge member-streak-zero">${icon} No streak yet</span>`;
     titleEl.innerHTML = `📋 ${escHtml(memberName)}'s Tasks${streakBadge}`;
 
     if (!days.length) {

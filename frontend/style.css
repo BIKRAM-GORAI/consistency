@@ -442,6 +442,13 @@ body {
   border-color: #ccc;
 }
 
+.badge-future {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
 /* ============================================================
    PROGRESS BARS
    ============================================================ */
