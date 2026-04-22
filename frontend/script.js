@@ -1530,7 +1530,9 @@ async function openMemberAllAchievements() {
   if (!_currentMemberId) return;
   const bodyEl = document.getElementById('member-tasks-body');
   const titleEl = document.getElementById('member-tasks-title');
-  titleEl.innerHTML = `🏆 ${escHtml(_currentMemberName)}'s Achievements`;
+  titleEl.innerHTML = `<button id="btn-back-to-tasks" style="background:var(--bg-card);border:var(--border-2);border-radius:var(--r-sm);padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;margin-right:8px;box-shadow:2px 2px 0 var(--black);font-family:'Inter',sans-serif;text-transform:uppercase;color:var(--text);" title="Back to daily tasks">← Back</button>🏆 ${escHtml(_currentMemberName)}'s Achievements`;
+  const backBtn = document.getElementById('btn-back-to-tasks');
+  if (backBtn) backBtn.addEventListener('click', () => openMemberTasks(_currentMemberId, _currentMemberName));
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
     let achs = [];
