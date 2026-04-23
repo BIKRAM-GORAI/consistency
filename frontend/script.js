@@ -2008,6 +2008,32 @@ function closeModal(id) {
 
 function closeModalOnOverlay(e, id) { if (e.target === e.currentTarget) closeModal(id); }
 
+// ── Profile & Settings ─────────────────────────────────────
+async function openProfileModal() {
+  openModal('modal-profile');
+  try {
+    const res = await apiFetch(`${API}/api/auth/${userId}/settings`);
+    const toggle = document.getElementById('email-notif-toggle');
+    if (toggle) toggle.checked = res.emailNotifications;
+  } catch (err) {
+    console.error('Failed to load profile settings:', err);
+  }
+}
+
+async function toggleEmailNotifications(checked) {
+  try {
+    await apiFetch(`${API}/api/auth/${userId}/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify({ emailNotifications: checked })
+    });
+    showToast('Email preferences updated', 'success');
+  } catch (err) {
+    const toggle = document.getElementById('email-notif-toggle');
+    if (toggle) toggle.checked = !checked;
+    showToast('Failed to update preferences', 'error');
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Today's date subtitle
@@ -2041,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Escape key closes modals
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['modal-add-day', 'modal-add-goal', 'modal-add-category',
+      ['modal-profile', 'modal-add-day', 'modal-add-goal', 'modal-add-category',
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
        'modal-edit-category', 'modal-edit-goal', 'modal-edit-group',
        'modal-add-achievement', 'modal-edit-achievement'].forEach(id => {

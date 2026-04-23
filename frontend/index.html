@@ -51,7 +51,7 @@
     </div>
 
     <div class="nav-user-area">
-      <div class="nav-user-chip" id="nav-user-chip">
+      <div class="nav-user-chip" id="nav-user-chip" onclick="openProfileModal()" style="cursor: pointer;" title="Profile & Settings">
         <span class="user-chip-avatar" id="user-chip-avatar">?</span>
         <span class="user-chip-name" id="user-chip-name">User</span>
       </div>
@@ -458,6 +458,29 @@
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-edit-achievement')">Cancel</button>
         <button class="btn-primary ripple" onclick="submitEditAchievement()" id="submit-edit-ach-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Profile & Settings ===== -->
+  <div class="modal-overlay" id="modal-profile" onclick="closeModalOnOverlay(event, 'modal-profile')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ Profile &amp; Settings</h2>
+        <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0;">
+          <label style="margin:0; font-weight: 500;">Email Reminders</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="email-notif-toggle" onchange="toggleEmailNotifications(this.checked)" />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <p class="form-hint">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-profile')">Close</button>
       </div>
     </div>
   </div>

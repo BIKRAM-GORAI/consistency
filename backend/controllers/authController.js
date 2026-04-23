@@ -44,13 +44,15 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    user.lastActiveAt = new Date();
+    await user.save();
+
     res.json({ _id: user._id, name: user.name, email: user.email });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy };
 
 /**
  * GET /api/auth/:userId/achievements-privacy
@@ -88,3 +90,42 @@ async function setAchievementPrivacy(req, res) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 }
+
+/**
+ * GET /api/auth/:userId/settings
+ */
+async function getProfileSettings(req, res) {
+  try {
+    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ 
+      emailNotifications: user.emailNotifications !== false,
+      achievementsPublic: user.achievementsPublic !== false
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/auth/:userId/settings
+ */
+async function setProfileSettings(req, res) {
+  try {
+    const { emailNotifications } = req.body;
+    if (typeof emailNotifications !== 'boolean') {
+      return res.status(400).json({ message: 'emailNotifications must be a boolean' });
+    }
+    const updated = await User.findByIdAndUpdate(
+      req.params.userId,
+      { emailNotifications },
+      { new: true }
+    ).select('emailNotifications');
+    if (!updated) return res.status(404).json({ message: 'User not found' });
+    res.json({ emailNotifications: updated.emailNotifications });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings };

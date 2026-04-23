@@ -24,6 +24,18 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    currentStreak: {
+      type: Number,
+      default: 0,
+    },
+    lastActiveAt: {
+      type: Date,
+      default: Date.now,
+    },
+    emailNotifications: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

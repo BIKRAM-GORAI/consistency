@@ -11,5 +11,15 @@
       "src": "/(.*)",
       "dest": "backend/server.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/streak-reminders",
+      "schedule": "30 13 * * *"
+    },
+    {
+      "path": "/api/cron/inactive-reminders",
+      "schedule": "30 6 * * *"
+    }
   ]
 }

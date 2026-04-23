@@ -1,4 +1,61 @@
 const Day = require('../models/Day');
+const User = require('../models/User');
+
+// Helper to count completed tasks
+function countTasks(categories) {
+  let completed = 0;
+  for (const cat of categories) {
+    for (const task of cat.tasks) {
+      if (task.completed) completed++;
+    }
+  }
+  return completed;
+}
+
+// Helper to calculate streak logic same as frontend
+function calculateStreak(days) {
+  if (!days.length) return 0;
+  
+  const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
+  
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  
+  let streak = 0;
+  let checkDate = today;
+
+  const todayDay = sorted.find(d => d.date === today);
+  if (todayDay && countTasks(todayDay.categories) > 0) {
+    // Today is done, it counts towards streak
+  } else {
+    const [y, m, dayNum] = checkDate.split('-').map(Number);
+    const prev = new Date(y, m-1, dayNum-1);
+    checkDate = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+  }
+
+  for (const day of sorted) {
+    if (day.date > checkDate) continue;
+    if (day.date < checkDate) break;
+
+    const completed = countTasks(day.categories);
+    if (completed > 0) {
+      streak++;
+      const [y, m, dayNum] = checkDate.split('-').map(Number);
+      const prev = new Date(y, m-1, dayNum-1);
+      checkDate = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+    } else break;
+  }
+  return streak;
+}
+
+async function updateUserStreakAndActivity(userId) {
+  const days = await Day.find({ userId });
+  const currentStreak = calculateStreak(days);
+  await User.findByIdAndUpdate(userId, { 
+    currentStreak,
+    lastActiveAt: new Date()
+  });
+}
 
 /**
  * GET /api/days?userId=...
@@ -50,6 +107,9 @@ const createDay = async (req, res) => {
 
     const day = new Day({ userId, date, categories: categories || [], summary: summary || '' });
     const saved = await day.save();
+    
+    await updateUserStreakAndActivity(userId);
+    
     res.status(201).json(saved);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -68,6 +128,9 @@ const updateDay = async (req, res) => {
       { new: true, runValidators: true }
     );
     if (!updated) return res.status(404).json({ message: 'Day not found' });
+    
+    await updateUserStreakAndActivity(updated.userId);
+    
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
