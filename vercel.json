@@ -15,11 +15,11 @@
   "crons": [
     {
       "path": "/api/cron/streak-reminders",
-      "schedule": "30 13 * * *"
+      "schedule": "15 13 * * *"
     },
     {
       "path": "/api/cron/inactive-reminders",
-      "schedule": "30 6 * * *"
+      "schedule": "30 14 * * 3"
     }
   ]
 }
