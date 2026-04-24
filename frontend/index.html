@@ -469,18 +469,61 @@
         <h2>⚙️ Profile &amp; Settings</h2>
         <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
       </div>
-      <div class="modal-body">
-        <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0;">
-          <label style="margin:0; font-weight: 500;">Email Reminders</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="email-notif-toggle" onchange="toggleEmailNotifications(this.checked)" />
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </label>
+      <div class="modal-body" id="profile-modal-body">
+        <div class="form-group">
+          <label for="profile-email">Email (Read Only)</label>
+          <input type="email" id="profile-email" class="form-control" readonly style="background: #f5f5f5; color: #666; cursor: not-allowed;" />
         </div>
-        <p class="form-hint">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+        <div class="form-group">
+          <label for="profile-username">Username</label>
+          <input type="text" id="profile-username" class="form-control" placeholder="Choose a unique username" />
+          <p class="form-hint" id="profile-username-hint">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br>⚠️ Username can be set only once.</p>
+          <!-- <p class="form-hint" id="profile-username-warning"  style="display:none; color:var(--coral); font-weight:600;">⚠️ You can only set your username once.</p> -->
+        </div>
+        
+        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
+          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase;" onclick="togglePasswordSection()" id="toggle-pwd-btn">
+            <span>🔒 Change Password</span>
+            <span id="toggle-pwd-icon">▼</span>
+          </button>
+          
+          <div id="password-change-section" style="display:none; margin-top:16px; padding:16px; background:#fafafa; border-radius:8px; border:1px solid #eee;">
+            <div class="form-group">
+              <label for="profile-old-password">Current Password</label>
+              <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
+            </div>
+            <div class="form-group" style="margin-top: 16px;">
+              <label for="profile-new-password">New Password</label>
+              <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
+            </div>
+            <div class="form-group" style="margin-top: 16px;">
+              <label for="profile-confirm-password">Confirm New Password</label>
+              <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
+            </div>
+            <div style="display:flex; justify-content:center; margin-top: 20px;">
+              <button class="btn-primary ripple" style="padding:8px 24px; font-size:14px;" onclick="submitPasswordChange()" id="submit-pwd-btn">Update Password</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">Preferences</h3>
+          
+          <div style="padding: 16px; background: #f9f8f6; border-radius: 8px; border: 1px solid #e5e5e5;">
+            <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <label style="margin:0; font-weight: 600; color: var(--black);">Email Reminders</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="email-notif-toggle" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost ripple" onclick="closeModal('modal-profile')">Close</button>
+        <button class="btn-ghost ripple" onclick="closeModal('modal-profile')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitProfileSettings()" id="submit-profile-btn">Save Changes</button>
       </div>
     </div>
   </div>

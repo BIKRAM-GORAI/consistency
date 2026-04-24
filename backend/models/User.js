@@ -7,6 +7,15 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      minlength: 4,
+      maxlength: 20,
+      match: [/^[!-~]+$/, 'Username can only contain alphanumeric and special characters (no spaces)'],
+    },
     email: {
       type: String,
       required: true,

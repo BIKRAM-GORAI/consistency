@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://consistency-daily.vercel.app/sitemap.xml

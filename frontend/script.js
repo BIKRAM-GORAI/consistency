@@ -2011,26 +2011,138 @@ function closeModalOnOverlay(e, id) { if (e.target === e.currentTarget) closeMod
 // ── Profile & Settings ─────────────────────────────────────
 async function openProfileModal() {
   openModal('modal-profile');
+  // Clear sensitive fields
+  document.getElementById('profile-old-password').value = '';
+  document.getElementById('profile-new-password').value = '';
+  document.getElementById('profile-confirm-password').value = '';
+  
+  // Reset password collapse section
+  const pwdSection = document.getElementById('password-change-section');
+  if (pwdSection) pwdSection.style.display = 'none';
+  const pwdIcon = document.getElementById('toggle-pwd-icon');
+  if (pwdIcon) pwdIcon.textContent = '▼';
+
   try {
     const res = await apiFetch(`${API}/api/auth/${userId}/settings`);
+    document.getElementById('profile-email').value = res.email || '';
+    
+    const unameInput = document.getElementById('profile-username');
+    const unameHint = document.getElementById('profile-username-hint');
+    const unameWarn = document.getElementById('profile-username-warning');
+    
+    unameInput.value = res.username || '';
+    if (res.username) {
+      unameInput.readOnly = true;
+      unameInput.style.background = '#f5f5f5';
+      unameInput.style.color = '#666';
+      unameInput.style.cursor = 'not-allowed';
+      if(unameHint) unameHint.style.display = 'none';
+      if(unameWarn) unameWarn.style.display = 'block';
+    } else {
+      unameInput.readOnly = false;
+      unameInput.style.background = '#fff';
+      unameInput.style.color = 'var(--black)';
+      unameInput.style.cursor = 'text';
+      if(unameHint) unameHint.style.display = 'block';
+      if(unameWarn) unameWarn.style.display = 'none';
+    }
+
     const toggle = document.getElementById('email-notif-toggle');
     if (toggle) toggle.checked = res.emailNotifications;
   } catch (err) {
     console.error('Failed to load profile settings:', err);
+    showToast('Failed to load profile', 'error');
   }
 }
 
-async function toggleEmailNotifications(checked) {
+function togglePasswordSection() {
+  const sec = document.getElementById('password-change-section');
+  const icon = document.getElementById('toggle-pwd-icon');
+  if (sec.style.display === 'none') {
+    sec.style.display = 'block';
+    icon.textContent = '▲';
+  } else {
+    sec.style.display = 'none';
+    icon.textContent = '▼';
+  }
+}
+
+async function submitProfileSettings() {
+  const usernameInput = document.getElementById('profile-username');
+  const username = usernameInput.value.trim();
+  const emailNotifications = document.getElementById('email-notif-toggle').checked;
+
+  if (username && !usernameInput.readOnly) {
+    const usernameRegex = /^[!-~]{4,20}$/;
+    if (!usernameRegex.test(username)) {
+      showToast('Username must be 4-20 chars, alphanumeric/special, no spaces.', 'warn');
+      return;
+    }
+  }
+
+  const btn = document.getElementById('submit-profile-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const payload = { emailNotifications };
+    if (!usernameInput.readOnly && username) {
+      payload.username = username;
+    }
+
+    const res = await apiFetch(`${API}/api/auth/${userId}/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+    
+    showToast('Profile updated successfully!', 'success');
+    closeModal('modal-profile');
+  } catch (err) {
+    showToast(err.message || 'Failed to update profile', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+}
+
+async function submitPasswordChange() {
+  const oldPassword = document.getElementById('profile-old-password').value;
+  const newPassword = document.getElementById('profile-new-password').value;
+  const confirmPassword = document.getElementById('profile-confirm-password').value;
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    showToast('Please fill all password fields.', 'warn');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('New passwords do not match.', 'warn');
+    return;
+  }
+  if (newPassword.length < 5) {
+    showToast('New password must be at least 5 characters.', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('submit-pwd-btn');
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+
   try {
     await apiFetch(`${API}/api/auth/${userId}/settings`, {
       method: 'PATCH',
-      body: JSON.stringify({ emailNotifications: checked })
+      body: JSON.stringify({ oldPassword, newPassword })
     });
-    showToast('Email preferences updated', 'success');
+    showToast('Password updated successfully!', 'success');
+    
+    document.getElementById('profile-old-password').value = '';
+    document.getElementById('profile-new-password').value = '';
+    document.getElementById('profile-confirm-password').value = '';
+    togglePasswordSection(); // collapse it
   } catch (err) {
-    const toggle = document.getElementById('email-notif-toggle');
-    if (toggle) toggle.checked = !checked;
-    showToast('Failed to update preferences', 'error');
+    showToast(err.message || 'Failed to update password', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Update Password';
   }
 }
 

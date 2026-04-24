@@ -6,10 +6,10 @@ const User = require('../models/User');
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, username } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
+    if (!name || !email || !password || !username) {
+      return res.status(400).json({ message: 'Name, username, email, and password are required' });
     }
 
     // Check if email already taken
@@ -18,7 +18,13 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'An account with this email already exists' });
     }
 
-    const user = new User({ name, email: email.toLowerCase().trim(), password });
+    // Check if username already taken
+    const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
+    if (existingUser) {
+      return res.status(400).json({ message: 'This username is already taken' });
+    }
+
+    const user = new User({ name, username: username.toLowerCase().trim(), email: email.toLowerCase().trim(), password });
     const saved = await user.save();
 
     res.status(201).json({ _id: saved._id, name: saved.name, email: saved.email });
@@ -96,9 +102,11 @@ async function setAchievementPrivacy(req, res) {
  */
 async function getProfileSettings(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic');
+    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic email username');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ 
+      email: user.email,
+      username: user.username || '',
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false
     });
@@ -112,18 +120,52 @@ async function getProfileSettings(req, res) {
  */
 async function setProfileSettings(req, res) {
   try {
-    const { emailNotifications } = req.body;
-    if (typeof emailNotifications !== 'boolean') {
-      return res.status(400).json({ message: 'emailNotifications must be a boolean' });
+    const { emailNotifications, username, oldPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let updates = {};
+
+    if (typeof emailNotifications === 'boolean') {
+      updates.emailNotifications = emailNotifications;
     }
-    const updated = await User.findByIdAndUpdate(
-      req.params.userId,
-      { emailNotifications },
-      { new: true }
-    ).select('emailNotifications');
-    if (!updated) return res.status(404).json({ message: 'User not found' });
-    res.json({ emailNotifications: updated.emailNotifications });
+
+    if (username !== undefined && username !== user.username) {
+      if (user.username) {
+        return res.status(400).json({ message: 'Username cannot be changed once set' });
+      }
+      if (username !== '') {
+        const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
+        if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+          return res.status(400).json({ message: 'This username is already taken' });
+        }
+        updates.username = username.toLowerCase().trim();
+      }
+    }
+
+    if (newPassword) {
+      if (user.password !== oldPassword) {
+        return res.status(400).json({ message: 'Incorrect current password' });
+      }
+      updates.password = newPassword;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      Object.assign(user, updates);
+      await user.save();
+    }
+    
+    res.json({ 
+      emailNotifications: user.emailNotifications, 
+      username: user.username,
+      message: 'Profile updated successfully'
+    });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 }
