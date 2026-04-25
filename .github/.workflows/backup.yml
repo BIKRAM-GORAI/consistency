@@ -1,0 +1,32 @@
+name: MongoDB Backup
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MongoDB Database Tools
+        run: |
+          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+          sudo apt install ./mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+
+      - name: Run mongodump
+        run: |
+          mongodump --uri="${{ secrets.MONGO_URI }}" --out=backup
+
+      - name: Zip backup
+        run: zip -r backup.zip backup
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mongodb-backup
+          path: backup.zip
