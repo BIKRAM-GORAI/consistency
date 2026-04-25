@@ -440,6 +440,298 @@
       }
       .feature-pill { font-size: 11px; padding: 7px 10px; }
     }
+
+    /* ── About Section ── */
+    .landing-about {
+      padding: 80px 24px;
+      background: var(--bg);
+      border-top: var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .landing-section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(32px, 6vw, 48px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -1.5px;
+      margin-bottom: 32px;
+      position: relative;
+      display: inline-block;
+      color: var(--black);
+    }
+    .landing-section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; left: -5px; width: calc(100% + 10px); height: 12px;
+      background: var(--teal);
+      z-index: -1;
+      border-radius: 2px;
+    }
+    .about-list {
+      list-style: none;
+      max-width: 650px;
+      text-align: left;
+      font-size: 17px;
+      line-height: 1.8;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .about-list li {
+      position: relative;
+      padding-left: 36px;
+      font-weight: 700;
+      color: var(--black);
+    }
+    .about-list li::before {
+      content: '⚡';
+      position: absolute;
+      left: 0; top: 0;
+      font-size: 20px;
+    }
+
+    /* ── Screenshots ── */
+    .landing-screenshots {
+      padding: 80px 24px;
+      background: var(--yellow);
+      border-top: var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screenshots-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 24px;
+      width: 100%;
+      max-width: 1200px;
+      margin-top: 40px;
+    }
+    .screenshot-card {
+      border: var(--border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 0;
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.2s, box-shadow 0.2s;
+      flex: 1 1 300px;
+      max-width: 600px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .screenshot-card:hover {
+      transform: translate(-4px, -4px);
+      box-shadow: 8px 8px 0 var(--black);
+    }
+    .screenshot-img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: var(--bg-muted, #f0ece4);
+      min-height: 200px;
+      object-fit: cover;
+      border: none;
+      border-radius: 0;
+    }
+
+    /* ── Lightbox Modal ── */
+    .lightbox-modal {
+      display: none; 
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(10, 10, 10, 0.85);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+    .lightbox-modal.show {
+      display: flex;
+      opacity: 1;
+    }
+    .lightbox-content {
+      position: relative;
+      max-width: 85vw;
+      max-height: 85vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox-img {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border: var(--border);
+      border-radius: 8px;
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+      background: #fff;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -16px; right: -16px;
+      width: 40px; height: 40px;
+      background: var(--red);
+      color: #fff;
+      border: 3px solid var(--black);
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--black);
+      z-index: 10000;
+    }
+    .lightbox-close:hover {
+      transform: scale(1.1);
+    }
+
+    /* ── Upcoming Features ── */
+    .landing-upcoming {
+      padding: 80px 24px;
+      background: var(--purple);
+      border-top: var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .upcoming-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 40px;
+      max-width: 900px;
+    }
+    .upcoming-card {
+      background: #fff;
+      border: var(--border);
+      border-radius: 6px;
+      padding: 16px 24px;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .upcoming-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--black);
+    }
+    .upcoming-icon { font-size: 20px; }
+
+    /* ── Team / Contact ── */
+    .landing-team {
+      padding: 80px 24px;
+      background: var(--bg);
+      border-top: var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .team-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 40px;
+      max-width: 1000px;
+    }
+    .team-card {
+      background: #fff;
+      border: var(--border);
+      border-radius: 8px;
+      padding: 32px 24px;
+      width: 280px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.2s;
+    }
+    .team-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .team-role {
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      background: var(--pink);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 2px solid var(--black);
+      box-shadow: 2px 2px 0 var(--black);
+      letter-spacing: 0.5px;
+    }
+    .team-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--black);
+    }
+    .team-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .btn-team {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--black);
+      text-decoration: none;
+      text-transform: uppercase;
+      background: var(--bg);
+      box-shadow: 2px 2px 0 var(--black);
+      transition: all 0.15s;
+    }
+    .btn-team:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .btn-email { background: var(--teal); }
+    .btn-ig { background: var(--purple); color: #fff; }
+    .btn-github { background: var(--black); color: #fff; }
+
+    /* ── Footer ── */
+    .landing-footer {
+      padding: 32px 24px;
+      background: var(--black);
+      color: #fff;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -501,7 +793,119 @@
     <p class="landing-footer-note">Consistency is the key ⚡</p>
   </div>
 
+  <!-- About Section -->
+  <section class="landing-about">
+    <h2 class="landing-section-title">About Us</h2>
+    <ul class="about-list">
+      <li><strong>Track Your Daily Habits:</strong> Stay consistent every single day by logging your daily routines and checking them off with a satisfying click.</li>
+      <li><strong>Build Unbreakable Streaks:</strong> Watch your streaks grow and maintain your momentum with visual progress tracking that keeps you accountable.</li>
+      <li><strong>Crush Long-Term Goals:</strong> Break down massive goals into actionable subtasks, track deadlines, and monitor your journey to success.</li>
+      <li><strong>Compete with Friends:</strong> Create private groups, share your wins, see who has the longest streak, and hold each other accountable.</li>
+      <li><strong>Celebrate Your Wins:</strong> Log your daily achievements to reflect on how far you've come and never lose sight of your progress.</li>
+    </ul>
+  </section>
+
+  <!-- Screenshots Section -->
+  <section class="landing-screenshots">
+    <h2 class="landing-section-title" style="background:#fff; padding:0 14px; border:var(--border); box-shadow:var(--shadow);">See it in action</h2>
+    <div class="screenshots-grid">
+      <div class="screenshot-card"><img src="/about1.png" alt="App Screenshot 1" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about1.png</text></svg>'"></div>
+      <div class="screenshot-card"><img src="/about2.png" alt="App Screenshot 2" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about2.png</text></svg>'"></div>
+      <div class="screenshot-card"><img src="/about3.png" alt="App Screenshot 3" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about3.png</text></svg>'"></div>
+      <div class="screenshot-card"><img src="/about4.png" alt="App Screenshot 4" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about4.png</text></svg>'"></div>
+      <div class="screenshot-card"><img src="/about5.png" alt="App Screenshot 5" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about5.png</text></svg>'"></div>
+    </div>
+  </section>
+
+  <!-- Upcoming Features Section -->
+  <section class="landing-upcoming">
+    <h2 class="landing-section-title" style="color:#fff;">Upcoming Features</h2>
+    <div class="upcoming-grid">
+      <div class="upcoming-card"><span class="upcoming-icon">👥</span> Add Friends</div>
+      <div class="upcoming-card"><span class="upcoming-icon">🏆</span> Leaderboards & Challenges</div>
+      <div class="upcoming-card"><span class="upcoming-icon">🌍</span> Public Groups</div>
+      <div class="upcoming-card"><span class="upcoming-icon">⚔️</span> Group Competitions</div>
+      <div class="upcoming-card"><span class="upcoming-icon">🏅</span> Streak Badges</div>
+      <div class="upcoming-card"><span class="upcoming-icon">🎨</span> Shareable Stats & Stickers</div>
+      <div class="upcoming-card"><span class="upcoming-icon">💬</span> Live Group Chat</div>
+      <div class="upcoming-card"><span class="upcoming-icon">📝</span> Comments on Daily Cards</div>
+      <div class="upcoming-card"><span class="upcoming-icon">🔒</span> Advanced Privacy Controls</div>
+    </div>
+  </section>
+
+  <!-- Team / Contact Section -->
+  <section class="landing-team">
+    <h2 class="landing-section-title">The Team</h2>
+    <div class="team-grid">
+      
+      <!-- Contributor 1 -->
+      <div class="team-card">
+        <span class="team-role" style="background:var(--lime); color:var(--black);">Ideas & Tweaks</span>
+        <h3 class="team-name">DEBJEET DEY</h3>
+        <div class="team-links">
+          <a href="mailto:gamingwithdeoxy@example.com" class="btn-team btn-email">📧 Email Me</a>
+          <a href="https://www.instagram.com/deyxop/" target="_blank" class="btn-team btn-ig">📸 Instagram</a>
+          <a href="https://github.com/demo1" target="_blank" class="btn-team btn-github">💻 GitHub</a>
+        </div>
+      </div>
+
+      
+      <!-- Lead Dev -->
+      <div class="team-card">
+        <span class="team-role" style="background:var(--pink);">Lead Developer</span>
+        <h3 class="team-name">Bikram Gorai</h3>
+        <div class="team-links">
+          <a href="mailto:bikram77620@gmail.com" class="btn-team btn-email">📧 Email Me</a>
+          <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig">📸 Instagram</a>
+          <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github">💻 GitHub</a>
+        </div>
+      </div>
+
+
+      <!-- Contributor 2 -->
+      <div class="team-card">
+        <span class="team-role" style="background:var(--lime); color:var(--black);">Ideas & Tweaks</span>
+        <h3 class="team-name">ABHISHEK ADHIKARI</h3>
+        <div class="team-links">
+          <a href="mailto:demo2@example.com" class="btn-team btn-email">📧 Email Me</a>
+          <a href="https://www.instagram.com/mx.editts/" target="_blank" class="btn-team btn-ig">📸 Instagram</a>
+          <a href="https://github.com/demo2" target="_blank" class="btn-team btn-github">💻 GitHub</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    &copy; <span id="year"></span> Consistency Daily. All rights reserved by the owner.
+  </footer>
+
+  <!-- Lightbox Modal -->
+  <div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox()">
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+      <img id="lightbox-img" class="lightbox-img" src="" alt="Expanded Screenshot">
+    </div>
+  </div>
+
   <script>
+    function openLightbox(src) {
+      const modal = document.getElementById('lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      img.src = src;
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox-modal');
+      modal.classList.remove('show');
+      document.body.style.overflow = '';
+      setTimeout(() => { document.getElementById('lightbox-img').src = ''; }, 300);
+    }
+
+    document.getElementById('year').textContent = new Date().getFullYear();
     // If already logged in, go straight to the app
     if (localStorage.getItem('userId')) {
       window.location.replace('index.html');
