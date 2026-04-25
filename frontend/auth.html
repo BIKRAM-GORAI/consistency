@@ -528,6 +528,7 @@
         localStorage.setItem('userId', data._id);
         localStorage.setItem('userName', data.name);
         localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('userProfilePicture', data.profilePicture || '');
 
         window.location.replace('index.html');
       } catch (err) {
@@ -606,6 +607,7 @@
         localStorage.setItem('userId', data._id);
         localStorage.setItem('userName', data.name);
         localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('userProfilePicture', data.profilePicture || '');
 
         setTimeout(() => window.location.replace('index.html'), 800);
 

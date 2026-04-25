@@ -9,6 +9,7 @@ const API = '';  // Same origin
 // ── Auth ───────────────────────────────────────────────────
 const userId   = localStorage.getItem('userId')   || '';
 const userName = localStorage.getItem('userName') || 'User';
+let userProfilePicture = localStorage.getItem('userProfilePicture') || '';
 
 function logout() {
   localStorage.clear();
@@ -178,6 +179,16 @@ function escHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function escJs(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // ── Page switch ────────────────────────────────────────────
@@ -1225,7 +1236,7 @@ function renderGroups() {
             <div class="group-name-wrap">
               <span class="group-emoji">⚡</span>
               <span class="group-name">${escHtml(myTeam.name)}</span>
-              <button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${myTeam._id}', '${escHtml(myTeam.name)}')">✏️</button>
+              <button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${myTeam._id}', '${escJs(myTeam.name)}')">✏️</button>
               <button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${myTeam._id}')">🗑️</button>
             </div>
             <div class="team-code-wrap">
@@ -1328,16 +1339,23 @@ function buildMembersHTML(members, groupId, isOwner = false) {
     const memberName = member.name || 'Unknown';
     const initial    = memberName.charAt(0).toUpperCase();
     const isSelf     = String(memberId) === String(userId);
+    const profilePic = member.profilePicture;
 
     const removeBtn = (isOwner && !isSelf) 
-      ? `<button class="member-view-btn ripple" style="background:rgba(239,68,68,0.15);color:#fca5a5;margin-left:4px;" onclick="removeMember('${groupId}', '${memberId}', '${escHtml(memberName)}')">Remove</button>`
+      ? `<button class="member-view-btn ripple" style="background:rgba(239,68,68,0.15);color:#fca5a5;margin-left:4px;" onclick="removeMember('${groupId}', '${memberId}', '${escJs(memberName)}')">Remove</button>`
       : '';
+
+    const avatarContent = profilePic 
+      ? `<img class="member-avatar-img" src="${profilePic}" />`
+      : initial;
+
+    const avatarClick = profilePic ? `onclick="openLightbox('${profilePic}')"` : '';
 
     return `
       <div class="member-pill">
-        <div class="member-avatar" style="background:${memberAvatarColor(memberName)}">${initial}</div>
+        <div class="member-avatar" style="background:${memberAvatarColor(memberName)}" ${avatarClick}>${avatarContent}</div>
         <span class="member-name">${escHtml(memberName)}${isSelf ? ' (you)' : ''}</span>
-        ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escHtml(memberName)}')">View Tasks</button>` : ''}
+        ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escJs(memberName)}')">View Tasks</button>` : ''}
         ${removeBtn}
       </div>
     `;
@@ -2067,6 +2085,19 @@ async function openProfileModal() {
   const pwdIcon = document.getElementById('toggle-pwd-icon');
   if (pwdIcon) pwdIcon.textContent = '▼';
 
+  const avatarImg = document.getElementById('profile-avatar-img');
+  const avatarInit = document.getElementById('profile-avatar-initial');
+  if (userProfilePicture) {
+    avatarImg.src = userProfilePicture;
+    avatarImg.style.display = 'block';
+    avatarInit.style.display = 'none';
+  } else {
+    avatarImg.src = '';
+    avatarImg.style.display = 'none';
+    avatarInit.style.display = 'block';
+    avatarInit.textContent = userName.charAt(0).toUpperCase();
+  }
+
   try {
     const res = await apiFetch(`${API}/api/auth/${userId}/settings`);
     document.getElementById('profile-email').value = res.email || '';
@@ -2462,9 +2493,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Populate user chip in navbar
   const chipName   = document.getElementById('user-chip-name');
-  const chipAvatar = document.getElementById('user-chip-avatar');
   if (chipName)   chipName.textContent   = userName;
-  if (chipAvatar) chipAvatar.textContent = userName.charAt(0).toUpperCase();
+  updateNavAvatar();
 
   // Random motivation chip
   const chip = document.getElementById('motivation-chip');
@@ -2507,3 +2537,121 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDays();
   loadTemplates();
 });
+
+// ── Profile Picture Upload (Canvas Compression) ───────────────────
+async function handleProfilePictureSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('File is too large. Max 5MB.', 'warn');
+    event.target.value = '';
+    return;
+  }
+
+  showToast('Compressing and uploading image...', 'info');
+
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = (e) => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Compress to 70% quality
+      canvas.toBlob(async (blob) => {
+        const formData = new FormData();
+        formData.append('image', blob, 'profile.jpg');
+
+        try {
+          const res = await fetch(`${API}/api/auth/${userId}/profile-picture`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || 'Failed to upload profile picture');
+          }
+
+          const data = await res.json();
+          userProfilePicture = data.profilePicture;
+          localStorage.setItem('userProfilePicture', userProfilePicture);
+
+          // Update UI
+          const avatarImg = document.getElementById('profile-avatar-img');
+          const avatarInit = document.getElementById('profile-avatar-initial');
+          avatarImg.src = userProfilePicture;
+          avatarImg.style.display = 'block';
+          avatarInit.style.display = 'none';
+
+          updateNavAvatar();
+
+          showToast('Profile picture updated!', 'success');
+        } catch (error) {
+          showToast(error.message, 'error');
+        } finally {
+          event.target.value = '';
+        }
+      }, 'image/jpeg', 0.7);
+    };
+  };
+}
+
+function updateNavAvatar() {
+  const chipAvatar = document.getElementById('user-chip-avatar');
+  const chipImg = document.getElementById('user-chip-img');
+  
+  if (userProfilePicture) {
+    chipImg.src = userProfilePicture;
+    chipImg.style.display = 'block';
+    chipImg.onclick = (e) => { e.stopPropagation(); openLightbox(userProfilePicture); };
+    if (chipAvatar) chipAvatar.style.display = 'none';
+  } else {
+    chipImg.src = '';
+    chipImg.style.display = 'none';
+    chipImg.onclick = null;
+    if (chipAvatar) {
+      chipAvatar.style.display = 'flex';
+      chipAvatar.textContent = userName.charAt(0).toUpperCase();
+    }
+  }
+}
+
+// ── Lightbox ────────────────────────────────────────────────
+function openLightbox(url) {
+  const overlay = document.getElementById('lightbox-modal');
+  const img = document.getElementById('lightbox-img');
+  img.src = url;
+  overlay.classList.add('open');
+}
+
+function closeLightbox(event, force = false) {
+  if (force || event.target === event.currentTarget) {
+    const overlay = document.getElementById('lightbox-modal');
+    overlay.classList.remove('open');
+    setTimeout(() => { document.getElementById('lightbox-img').src = ''; }, 300);
+  }
+}

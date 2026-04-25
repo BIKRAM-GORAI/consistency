@@ -23,6 +23,14 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
+    profilePicture: {
+      type: String,
+      default: '',
+    },
+    profilePictureId: {
+      type: String,
+      default: '',
+    },
     // Plain text password — simple personal project, no encryption needed
     password: {
       type: String,

@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { cloudinary } = require('../config/cloudinary');
 
 /**
  * POST /api/auth/register
@@ -27,7 +28,7 @@ const register = async (req, res) => {
     const user = new User({ name, username: username.toLowerCase().trim(), email: email.toLowerCase().trim(), password });
     const saved = await user.save();
 
-    res.status(201).json({ _id: saved._id, name: saved.name, email: saved.email });
+    res.status(201).json({ _id: saved._id, name: saved.name, email: saved.email, profilePicture: saved.profilePicture });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -53,7 +54,7 @@ const login = async (req, res) => {
     user.lastActiveAt = new Date();
     await user.save();
 
-    res.json({ _id: user._id, name: user.name, email: user.email });
+    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -102,11 +103,12 @@ async function setAchievementPrivacy(req, res) {
  */
 async function getProfileSettings(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic email username');
+    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic email username profilePicture');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ 
       email: user.email,
       username: user.username || '',
+      profilePicture: user.profilePicture || '',
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false
     });
@@ -170,4 +172,30 @@ async function setProfileSettings(req, res) {
   }
 }
 
-module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings };
+/**
+ * POST /api/auth/:userId/profile-picture
+ */
+async function uploadProfilePicture(req, res) {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    if (user.profilePictureId) {
+      await cloudinary.uploader.destroy(user.profilePictureId);
+    }
+
+    user.profilePicture = req.file.path;
+    user.profilePictureId = req.file.filename;
+    await user.save();
+
+    res.json({ profilePicture: user.profilePicture, message: 'Profile picture updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture };

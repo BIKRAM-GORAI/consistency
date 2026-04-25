@@ -49,7 +49,7 @@ const createGroup = async (req, res) => {
     });
 
     const saved = await group.save();
-    const populated = await Group.findById(saved._id).populate('members', 'name email');
+    const populated = await Group.findById(saved._id).populate('members', 'name email profilePicture');
     res.status(201).json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -82,7 +82,7 @@ const joinGroup = async (req, res) => {
     group.members.push(userId);
     await group.save();
 
-    const populated = await Group.findById(group._id).populate('members', 'name email');
+    const populated = await Group.findById(group._id).populate('members', 'name email profilePicture');
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -99,8 +99,8 @@ const myGroups = async (req, res) => {
     if (!userId) return res.status(400).json({ message: 'userId is required.' });
 
     const groups = await Group.find({ members: userId })
-      .populate('members', 'name email')
-      .populate('owner', 'name email')
+      .populate('members', 'name email profilePicture')
+      .populate('owner', 'name email profilePicture')
       .sort({ createdAt: -1 });
 
     res.json(groups);
@@ -115,7 +115,7 @@ const myGroups = async (req, res) => {
  */
 const groupMembers = async (req, res) => {
   try {
-    const group = await Group.findById(req.params.groupId).populate('members', 'name email');
+    const group = await Group.findById(req.params.groupId).populate('members', 'name email profilePicture');
     if (!group) return res.status(404).json({ message: 'Group not found.' });
     res.json(group.members);
   } catch (err) {
@@ -159,7 +159,7 @@ const editGroup = async (req, res) => {
     group.name = name;
     await group.save();
     
-    const populated = await Group.findById(group._id).populate('members', 'name email').populate('owner', 'name email');
+    const populated = await Group.findById(group._id).populate('members', 'name email profilePicture').populate('owner', 'name email profilePicture');
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -219,7 +219,7 @@ const removeMember = async (req, res) => {
     group.members = group.members.filter(m => String(m) !== String(targetUserId));
     await group.save();
 
-    const populated = await Group.findById(group._id).populate('members', 'name email').populate('owner', 'name email');
+    const populated = await Group.findById(group._id).populate('members', 'name email profilePicture').populate('owner', 'name email profilePicture');
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
