@@ -15,6 +15,7 @@
   --bg-card:   #ffffff;
   --bg-input:  #ffffff;
   --bg-muted:  #f0ece4;
+  --graph-empty: #ebedf0;
 
   /* ── Text ── */
   --text:      #0a0a0a;
@@ -65,6 +66,7 @@
   --bg-card:   #3a3a3a;
   --bg-input:  #444444;
   --bg-muted:  #222222;
+  --graph-empty: #e8e4d9;
 
   --text:      #f0f0f0;
   --text-muted:#d0d0d0;
@@ -2503,3 +2505,9 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   box-shadow: 3px 3px 0 var(--black) !important;
 }
 
+.toast.graph {
+  background: var(--yellow) !important;
+  color: var(--black) !important;
+  border-color: var(--black) !important;
+  white-space: pre-line !important;
+}

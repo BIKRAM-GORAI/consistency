@@ -41,6 +41,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isPublicProfile: {
+      type: Boolean,
+      default: true,
+    },
     currentStreak: {
       type: Number,
       default: 0,

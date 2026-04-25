@@ -103,14 +103,15 @@ async function setAchievementPrivacy(req, res) {
  */
 async function getProfileSettings(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic email username profilePicture');
+    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ 
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',
       emailNotifications: user.emailNotifications !== false,
-      achievementsPublic: user.achievementsPublic !== false
+      achievementsPublic: user.achievementsPublic !== false,
+      isPublicProfile: user.isPublicProfile !== false
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -122,7 +123,7 @@ async function getProfileSettings(req, res) {
  */
 async function setProfileSettings(req, res) {
   try {
-    const { emailNotifications, username, oldPassword, newPassword } = req.body;
+    const { emailNotifications, isPublicProfile, username, oldPassword, newPassword } = req.body;
     
     const user = await User.findById(req.params.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -131,6 +132,9 @@ async function setProfileSettings(req, res) {
 
     if (typeof emailNotifications === 'boolean') {
       updates.emailNotifications = emailNotifications;
+    }
+    if (typeof isPublicProfile === 'boolean') {
+      updates.isPublicProfile = isPublicProfile;
     }
 
     if (username !== undefined && username !== user.username) {
@@ -160,6 +164,7 @@ async function setProfileSettings(req, res) {
     
     res.json({ 
       emailNotifications: user.emailNotifications, 
+      isPublicProfile: user.isPublicProfile,
       username: user.username,
       message: 'Profile updated successfully'
     });

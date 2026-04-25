@@ -163,6 +163,8 @@ function showToast(msg, type = 'info') {
   iconEl.textContent = icons[type] || icons.info;
   msgEl.textContent  = msg;
 
+  toast.className = 'toast';
+  if (type === 'graph') toast.classList.add('graph');
   toast.classList.add('show');
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => toast.classList.remove('show'), 3200);
@@ -2125,6 +2127,8 @@ async function openProfileModal() {
 
     const toggle = document.getElementById('email-notif-toggle');
     if (toggle) toggle.checked = res.emailNotifications;
+    const publicToggle = document.getElementById('public-profile-toggle');
+    if (publicToggle) publicToggle.checked = res.isPublicProfile !== false;
   } catch (err) {
     console.error('Failed to load profile settings:', err);
     showToast('Failed to load profile', 'error');
@@ -2147,6 +2151,7 @@ async function submitProfileSettings() {
   const usernameInput = document.getElementById('profile-username');
   const username = usernameInput.value.trim();
   const emailNotifications = document.getElementById('email-notif-toggle').checked;
+  const isPublicProfile = document.getElementById('public-profile-toggle').checked;
 
   if (username && !usernameInput.readOnly) {
     const usernameRegex = /^[!-~]{4,20}$/;
@@ -2161,7 +2166,7 @@ async function submitProfileSettings() {
   btn.textContent = 'Saving...';
 
   try {
-    const payload = { emailNotifications };
+    const payload = { emailNotifications, isPublicProfile };
     if (!usernameInput.readOnly && username) {
       payload.username = username;
     }
@@ -2627,7 +2632,7 @@ function updateNavAvatar() {
   if (userProfilePicture) {
     chipImg.src = userProfilePicture;
     chipImg.style.display = 'block';
-    chipImg.onclick = (e) => { e.stopPropagation(); openLightbox(userProfilePicture); };
+    
     if (chipAvatar) chipAvatar.style.display = 'none';
   } else {
     chipImg.src = '';
@@ -2654,4 +2659,308 @@ function closeLightbox(event, force = false) {
     overlay.classList.remove('open');
     setTimeout(() => { document.getElementById('lightbox-img').src = ''; }, 300);
   }
+}
+
+// ── Search Logic ───────────────────────────────────────────
+let searchTimeout;
+const searchInput = document.getElementById('nav-search-input');
+const searchDropdown = document.getElementById('nav-search-dropdown');
+
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    if (query.length < 1) {
+      searchDropdown.style.display = 'none';
+      return;
+    }
+    searchTimeout = setTimeout(() => performSearch(query), 350);
+  });
+
+  // Hide dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-search-container')) {
+      if (searchDropdown) searchDropdown.style.display = 'none';
+      if (searchInput && !searchInput.value.trim() && window.collapseSearchInput) window.collapseSearchInput();
+    }
+  });
+}
+
+window.collapseSearchInput = function() {
+  const inp = document.getElementById('nav-search-input');
+  if (inp) {
+    inp.style.width = '36px';
+    inp.style.padding = '0';
+    inp.style.textAlign = 'center';
+    inp.style.cursor = 'pointer';
+    inp.placeholder = '🔍';
+  }
+};
+
+async function performSearch(query) {
+  try {
+    const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(query)}`);
+    const users = await res.json();
+    
+    searchDropdown.innerHTML = '';
+    
+    if (!users || users.length === 0) {
+      searchDropdown.innerHTML = '<div style="padding:12px; color:var(--text-muted); font-size:14px; text-align:center;">No users found</div>';
+    } else {
+      users.forEach(u => {
+        const item = document.createElement('div');
+        item.style.padding = '8px 12px';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '12px';
+        item.style.cursor = 'pointer';
+        item.style.borderBottom = '1px solid #eee';
+        item.onmouseover = () => item.style.background = '#f5f5f5';
+        item.onmouseout = () => item.style.background = 'transparent';
+        
+        let avatarHtml = `<div style="width:30px; height:30px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
+        if (u.profilePicture) {
+          avatarHtml = `<img src="${u.profilePicture}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; flex-shrink:0; border:1px solid #ccc;" />`;
+        }
+        
+        item.innerHTML = `
+          ${avatarHtml}
+          <div style="font-weight:600; font-size:14px; color:#000;">${u.username}</div>
+        `;
+        
+        item.onclick = () => {
+          searchDropdown.style.display = 'none';
+          if (searchInput) searchInput.value = '';
+          if (window.collapseSearchInput) window.collapseSearchInput();
+          openPublicProfile(u.username);
+        };
+        
+        searchDropdown.appendChild(item);
+      });
+    }
+    searchDropdown.style.display = 'flex';
+  } catch (err) {
+    console.error('Search failed', err);
+  }
+}
+
+// ── Public Profile ──────────────────────────────────────────
+async function openPublicProfile(targetUsername) {
+  try {
+    const res = await fetch(`${API}/api/users/${encodeURIComponent(targetUsername)}`);
+    if (!res.ok) {
+      if (res.status === 403) {
+        showToast('This profile is private.', 'error');
+        return;
+      }
+      throw new Error('Failed to fetch profile');
+    }
+    const profile = await res.json();
+    
+    // Header
+    const imgEl = document.getElementById('public-profile-img');
+    const initEl = document.getElementById('public-profile-init');
+    if (profile.profilePicture) {
+      imgEl.src = profile.profilePicture;
+      imgEl.style.display = 'block';
+      initEl.style.display = 'none';
+    } else {
+      imgEl.src = '';
+      imgEl.style.display = 'none';
+      initEl.style.display = 'block';
+      initEl.textContent = profile.username.charAt(0).toUpperCase();
+    }
+    
+    document.getElementById('public-profile-name').textContent = profile.name || profile.username;
+    document.getElementById('public-profile-username').textContent = `@${profile.username}`;
+    document.getElementById('public-profile-streak').textContent = profile.currentStreak;
+    
+    // Graph
+    renderContributionGraph(profile.contributionData);
+    
+    // Activity (Cards & Achievements)
+    const actContainer = document.getElementById('public-profile-activity');
+    actContainer.innerHTML = '';
+    
+    // Mix days and achievements, sort by date desc
+    const combined = [];
+    if (profile.days) {
+      profile.days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
+    }
+    if (profile.achievements) {
+      profile.achievements.forEach(a => {
+        const dStr = new Date(a.date).toISOString().split('T')[0];
+        combined.push({ type: 'achievement', date: dStr, data: a });
+      });
+    }
+    combined.sort((a, b) => b.date.localeCompare(a.date));
+    
+    const maxItems = 15; // Limit recent activity
+    const toRender = combined.slice(0, maxItems);
+    
+    if (toRender.length === 0) {
+      actContainer.innerHTML = '<p style="color:var(--text-muted);">No recent activity.</p>';
+    } else {
+      toRender.forEach(item => {
+        if (item.type === 'day') {
+          actContainer.appendChild(buildReadOnlyDayCard(item.data));
+        } else {
+          actContainer.appendChild(buildReadOnlyAchievementCard(item.data));
+        }
+      });
+    }
+    
+    openModal('modal-public-profile');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function renderContributionGraph(data) {
+  const container = document.getElementById('public-profile-graph');
+  
+  // Create a map of date -> completedCount
+  const dateMap = {};
+  if (data) {
+    data.forEach(d => { dateMap[d.date] = d.completedCount; });
+  }
+  
+  // We want to render 53 columns (roughly 1 year), ending on today
+  const today = new Date();
+  const startDate = new Date();
+  startDate.setDate(today.getDate() - (52 * 7));
+  
+  // Align start date to Sunday
+  while (startDate.getDay() !== 0) {
+    startDate.setDate(startDate.getDate() - 1);
+  }
+  
+  const cellSize = 12;
+  const gap = 4;
+  const cols = 53;
+  const rows = 7;
+  const topPadding = 20;
+  const monthGap = 12;
+  
+  let curr = new Date(startDate);
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let lastMonth = curr.getMonth();
+  
+  let rectsHtml = '';
+  let monthLabels = '';
+  let extraX = 0;
+  let maxX = 0;
+  
+  for (let col = 0; col < cols; col++) {
+    if (curr > today) break;
+    
+    if (curr.getMonth() !== lastMonth) {
+      extraX += monthGap;
+      monthLabels += `<text x="${col * (cellSize + gap) + extraX}" y="12" dx="16" font-size="11" fill="#000" font-family="Inter, sans-serif" font-weight="600">${monthNames[curr.getMonth()]}</text>`;
+      lastMonth = curr.getMonth();
+    }
+    
+    for (let row = 0; row < rows; row++) {
+      if (curr > today) break;
+      
+      const yStr = curr.getFullYear();
+      const mStr = String(curr.getMonth() + 1).padStart(2, '0');
+      const dStr = String(curr.getDate()).padStart(2, '0');
+      const dateStr = `${yStr}-${mStr}-${dStr}`;
+      
+      const completed = dateMap[dateStr] || 0;
+      const x = col * (cellSize + gap) + extraX;
+      const y = row * (cellSize + gap) + topPadding;
+      
+      maxX = Math.max(maxX, x + cellSize);
+      
+      const fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
+      const stroke = completed > 0 ? 'rgba(0,0,0,0.2)' : 'rgba(27,31,35,0.06)';
+      const toastMsg = `${dateStr}\\n${completed} task${completed === 1 ? '' : 's'} completed`;
+      const titleHover = `${dateStr}: ${completed} task${completed === 1 ? '' : 's'} completed`;
+      
+      rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="1" onclick="showToast('${toastMsg}', 'graph')" style="cursor:pointer;"><title>${titleHover}</title></rect>`;
+      
+      curr.setDate(curr.getDate() + 1);
+    }
+  }
+  
+  const width = maxX;
+  const height = rows * (cellSize + gap) - gap + topPadding;
+  
+  let svg = `<div style="width: ${width}px; height: ${height}px; flex-shrink: 0; padding-bottom: 16px;"><svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;">`;
+  svg += monthLabels;
+  svg += rectsHtml;
+  svg += '</svg></div>';
+  container.innerHTML = svg;
+}
+
+function buildReadOnlyDayCard(day) {
+  const card = document.createElement('div');
+  card.className = 'card neo-card';
+  card.style.padding = '16px';
+  card.style.marginBottom = '0';
+  
+  let totalTasks = 0, completedTasks = 0;
+  let tasksHtml = '<div style="margin-top:12px; display:none; flex-direction:column; gap:8px;" class="public-day-tasks">';
+  day.categories.forEach(cat => {
+    if (cat.tasks.length > 0) {
+      tasksHtml += `<div style="font-size:13px; font-weight:700; color:var(--text); margin-top:4px;">${cat.name}</div>`;
+      cat.tasks.forEach(t => {
+        totalTasks++;
+        if (t.completed) completedTasks++;
+        
+        tasksHtml += `
+          <div style="display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--text-muted);">
+            <div style="margin-top:2px; font-weight:bold; color:${t.completed ? '#22c55e' : '#ccc'};">${t.completed ? '✓' : '○'}</div>
+            <div style="flex:1;">${t.title}</div>
+          </div>
+        `;
+      });
+    }
+  });
+  tasksHtml += '</div>';
+  
+  card.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0; font-size:16px;">${formatDisplayDate(day.date)}</h4>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:14px; font-weight:600; padding:2px 8px; border-radius:12px; background:${completedTasks === totalTasks && totalTasks > 0 ? '#22c55e' : 'var(--bg-muted)'}; color:var(--text);">
+          ${completedTasks}/${totalTasks} Tasks
+        </span>
+        <button class="btn-ghost ripple toggle-tasks-btn" style="padding:4px 8px; font-size:12px;" onclick="this.parentElement.parentElement.nextElementSibling.style.display = this.parentElement.parentElement.nextElementSibling.style.display === 'none' ? 'flex' : 'none'">▼</button>
+      </div>
+    </div>
+    ${tasksHtml}
+  `;
+  return card;
+}
+
+function buildReadOnlyAchievementCard(ach) {
+  const card = document.createElement('div');
+  card.className = 'card neo-card';
+  card.style.padding = '16px';
+  card.style.marginBottom = '0';
+  card.style.borderLeft = '4px solid var(--pink)';
+  
+  card.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <h4 style="margin:0; font-size:16px;">🏆 ${ach.title}</h4>
+      <span style="font-size:12px; color:var(--text-muted);">${new Date(ach.date).toLocaleDateString()}</span>
+    </div>
+    ${ach.description ? `<p style="margin:0; font-size:14px; color:var(--text-muted);">${ach.description}</p>` : ''}
+  `;
+  return card;
+}
+
+function previewOwnProfile() {
+  const unameInput = document.getElementById('profile-username');
+  if (!unameInput) return;
+  const uname = unameInput.value.trim();
+  if (!uname) {
+    showToast('You must set a username first before previewing your profile.', 'warn');
+    return;
+  }
+  closeModal('modal-profile');
+  openPublicProfile(uname);
 }

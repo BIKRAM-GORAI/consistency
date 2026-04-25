@@ -1027,7 +1027,7 @@
 
   <!-- Reviews Section -->
   <section class="landing-reviews">
-    <h2 class="landing-section-title">User Reviews</h2>
+    <h2 class="landing-section-title">User Reviews💖</h2>
     <p style="font-weight: 700; font-size: 16px; max-width: 600px; margin-bottom: 20px;">
       Got ideas, feedback, or want to share your experience? We'd love to hear from you!
     </p>
@@ -1056,6 +1056,10 @@
       <button class="btn-close-modal" onclick="closeSubmitReviewModal()">&times;</button>
       <h3>Submit Review</h3>
       <form id="review-form" onsubmit="submitReview(event)">
+        <div class="form-group">
+          <label>Your Name</label>
+          <input type="text" id="review-name" required placeholder="John Doe">
+        </div>
         <div class="form-group">
           <label>Your Email</label>
           <input type="email" id="review-email" required placeholder="you@example.com">
@@ -1091,6 +1095,7 @@
 
     async function submitReview(e) {
       e.preventDefault();
+      const name = document.getElementById('review-name').value;
       const email = document.getElementById('review-email').value;
       const description = document.getElementById('review-desc').value;
 
@@ -1098,7 +1103,7 @@
         const res = await fetch('/api/reviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, description })
+          body: JSON.stringify({ name, email, description })
         });
         const data = await res.json();
         if (res.ok) {
@@ -1161,7 +1166,7 @@
         const card = document.createElement('div');
         card.className = 'review-card';
         card.innerHTML = `
-          <div class="review-card-email">${r.email}</div>
+          <div class="review-card-email">${r.name || 'Anonymous'}</div>
           <div class="review-card-date">${d}</div>
           <div class="review-card-text">${r.description.replace(/\n/g, '<br>')}</div>
         `;

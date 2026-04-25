@@ -50,7 +50,15 @@
       </button>
     </div>
 
-    <div class="nav-user-area">
+    <div class="nav-user-area" style="display:flex; align-items:center; gap: 16px;">
+      <!-- Search Bar -->
+      <div class="nav-search-container" style="position: relative;">
+        <input type="text" id="nav-search-input" placeholder="🔍" style="padding: 0; text-align: center; border: 2px solid var(--black); border-radius: 18px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; width: 36px; height: 36px; transition: all 0.3s ease; background: var(--bg-card); color: var(--text); cursor: pointer; box-shadow: 2px 2px 0 var(--black);" onfocus="this.style.width=window.innerWidth <= 480 ? '130px' : '160px'; this.style.padding='8px 12px'; this.style.textAlign='left'; this.style.cursor='text'; this.placeholder='🔍 Search...';" onblur="if(!this.value.trim()) window.collapseSearchInput();" autocomplete="off" />
+        <div id="nav-search-dropdown" style="display: none; position: absolute; top: 110%; right: 0; background: #fff; border: 2px solid var(--black); border-radius: 8px; box-shadow: 4px 4px 0 var(--black); width: 250px; max-height: 300px; overflow-y: auto; z-index: 1000; flex-direction: column;">
+          <!-- Suggestions injected here -->
+        </div>
+      </div>
+
       <div class="nav-user-chip" id="nav-user-chip" onclick="openProfileModal()" style="cursor: pointer;" title="Profile & Settings">
         <div style="position: relative; width: 32px; height: 32px;">
           <span class="user-chip-avatar" id="user-chip-avatar" style="position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">?</span>
@@ -505,6 +513,10 @@
             <span id="toggle-pwd-icon">▼</span>
           </button>
           
+          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase; margin-top: 12px; background:var(--bg-muted);" onclick="previewOwnProfile()" id="preview-profile-btn">
+            <span>👀 How others view my profile</span>
+          </button>
+          
           <div id="password-change-section" style="display:none; margin-top:16px; padding:16px; background:#fafafa; border-radius:8px; border:1px solid #eee;">
             <div class="form-group">
               <label for="profile-old-password">Current Password</label>
@@ -542,12 +554,23 @@
             <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
               <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
                 <label style="margin:0; font-weight: 600; color: var(--text);">Email Reminders</label>
-              <label class="toggle-switch">
-                <input type="checkbox" id="email-notif-toggle" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="email-notif-toggle" />
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
               <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+            </div>
+
+            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
+              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <label style="margin:0; font-weight: 600; color: var(--text);">Public Profile</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="public-profile-toggle" />
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+              <p class="form-hint" style="margin: 0; line-height: 1.5;">Allow others to search for and view your profile, streak, and graph.</p>
             </div>
           </div>
         </div>
@@ -644,6 +667,49 @@
   <div class="toast" id="toast">
     <span class="toast-icon" id="toast-icon">✅</span>
     <span id="toast-msg"></span>
+  </div>
+
+  <!-- ===== MODAL: Public Profile ===== -->
+  <div class="modal-overlay" id="modal-public-profile" onclick="closeModalOnOverlay(event, 'modal-public-profile')">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>👤 Public Profile</h2>
+        <button class="modal-close" onclick="closeModal('modal-public-profile')">✕</button>
+      </div>
+      <div class="modal-body" id="public-profile-body" style="padding: 24px; text-align: center; min-width: 0;">
+        <!-- Header Info -->
+        <div style="margin-bottom: 24px; display: flex; flex-direction: column; align-items: center;">
+          <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 40px; color: #fff; border: 2px solid var(--black); box-shadow: 4px 4px 0 var(--black); margin-bottom: 12px;">
+            <img id="public-profile-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+            <span id="public-profile-init">?</span>
+          </div>
+          <h2 id="public-profile-name" style="margin: 0; font-size: 24px;">Name</h2>
+          <p id="public-profile-username" style="margin: 4px 0 12px 0; color: var(--text-muted); font-size: 14px;">@username</p>
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-muted); padding: 8px 16px; border: 2px solid var(--black); border-radius: 20px; box-shadow: 2px 2px 0 var(--black); font-weight: bold;">
+            <span>🔥</span> <span id="public-profile-streak">0</span> Day Streak
+          </div>
+        </div>
+
+        <!-- Contribution Graph -->
+        <div style="flex-shrink: 0; min-width: 0; margin-bottom: 32px; text-align: left; background: #fffae6; padding: 16px; border: 2px solid var(--black); box-shadow: 4px 4px 0 var(--black); border-radius: 8px; overflow-x: auto; width: 100%; max-width: 100%;">
+          <h3 style="font-size: 16px; margin-bottom: 12px; color: #000;">Contributions</h3>
+          <div id="public-profile-graph" style="display: block; flex-shrink: 0; min-width: 0;">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Cards / Achievements -->
+        <div style="text-align: left;">
+          <h3 style="font-size: 18px; margin-bottom: 16px; border-bottom: 2px solid var(--black); padding-bottom: 8px;">Recent Activity</h3>
+          <div id="public-profile-activity" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Read-only days and achievements injected here -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-public-profile')">Close</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== MODAL: Lightbox Viewer ===== -->

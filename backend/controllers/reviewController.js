@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 
 const CREATOR_EMAILS = [
   'bikram77620@gmail.com',
-  'gamingwithdeoxy@example.com',
+  'gamingwithdeoxy@gmail.com',
   'tanjirokamado777555@gmail.com' 
 ];
 
@@ -20,20 +20,20 @@ const CREATOR_EMAILS = [
  */
 async function submitReview(req, res) {
   try {
-    const { email, description } = req.body;
-    if (!email || !description) {
-      return res.status(400).json({ message: 'Email and description are required.' });
+    const { name, email, description } = req.body;
+    if (!name || !email || !description) {
+      return res.status(400).json({ message: 'Name, email, and description are required.' });
     }
 
-    const newReview = new Review({ email, description });
+    const newReview = new Review({ name, email, description });
     await newReview.save();
 
     // Send email to creators
     const mailOptions = {
       from: process.env.GMAIL_EMAIL,
       to: CREATOR_EMAILS.join(', '),
-      subject: `New Review for Consistency Daily from ${email}`,
-      text: `A new user review has been submitted on Consistency Daily!\n\nUser Email: ${email}\n\nReview:\n${description}\n\nCheck out the dashboard to see all reviews.`,
+      subject: `New Review for Consistency Daily from ${name} (${email})`,
+      text: `A new user review has been submitted on Consistency Daily!\n\nUser Name: ${name}\nUser Email: ${email}\n\nReview:\n${description}\n\nCheck out the dashboard to see all reviews.`,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
