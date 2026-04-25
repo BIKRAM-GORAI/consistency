@@ -2395,8 +2395,26 @@ async function deleteTemplate(templateId) {
   }
 }
 
+// ── Theme Logic ──────────────────────────────────────────────
+function toggleDarkTheme(isDark) {
+  if (isDark) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const themeToggle = document.getElementById('dark-theme-toggle');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    if (themeToggle) themeToggle.checked = true;
+  }
+
   // Today's date subtitle
   const display = document.getElementById('today-date-display');
   if (display) {

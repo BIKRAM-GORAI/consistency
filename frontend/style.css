@@ -52,6 +52,30 @@
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --t:    0.15s;
+
+  /* ── Extra Backgrounds ── */
+  --bg-goal-completed: #f0fdf4;
+  --bg-cat-input:      #fffae6;
+  --bg-ach-section:    #fffbf0;
+  --bg-ach-note:       #f0ece4;
+}
+
+[data-theme="dark"] {
+  --bg:        #2d2d2d;
+  --bg-card:   #3a3a3a;
+  --bg-input:  #444444;
+  --bg-muted:  #222222;
+
+  --text:      #f0f0f0;
+  --text-muted:#d0d0d0;
+  --text-light:#aaaaaa;
+
+  --bg-goal-completed: #2e4a36;
+  --bg-cat-input:      #4a4531;
+  --bg-ach-section:    #4a3a10;
+  --bg-ach-note:       #333333;
+
+  --black:     #000000;
 }
 
 /* ── Scrollbar ── */
@@ -889,7 +913,7 @@ body {
 
 /* ── Completed goal card theme ── */
 .goal-card.goal-completed {
-  background: #f0fdf4;
+  background: var(--bg-goal-completed);
   border-color: #16a34a;
   box-shadow: 4px 4px 0 #16a34a;
 }
@@ -1178,7 +1202,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 /* Highlight category inputs to distinguish them from task inputs */
 .cat-top-row .form-control {
-  background: #fffae6;
+  background: var(--bg-cat-input);
   border-color: var(--amber);
   font-weight: 800;
   text-align: center;
@@ -2011,7 +2035,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .achievements-section {
   margin-top: 16px;
   padding: 14px 14px 10px;
-  background: #fffbf0;
+  background: var(--bg-ach-section);
   border: 2px solid var(--amber);
   border-radius: var(--r-sm);
   box-shadow: 3px 3px 0 var(--amber);
@@ -2038,7 +2062,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   font-size: 10px;
   font-weight: 700;
   color: #888;
-  background: #f0ece4;
+  background: var(--bg-ach-note);
   border: 1px solid #ccc;
   border-radius: 4px;
   padding: 2px 8px;
@@ -2296,7 +2320,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fffbf0;
+  background: var(--bg-ach-section);
   border: 2px solid var(--amber);
   border-radius: var(--r-sm);
   padding: 8px 14px;

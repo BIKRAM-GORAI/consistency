@@ -518,15 +518,28 @@
         <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">Preferences</h3>
           
-          <div style="padding: 16px; background: #f9f8f6; border-radius: 8px; border: 1px solid #e5e5e5;">
-            <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-              <label style="margin:0; font-weight: 600; color: var(--black);">Email Reminders</label>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
+              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <label style="margin:0; font-weight: 600; color: var(--text);">Dark Theme</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="dark-theme-toggle" onchange="toggleDarkTheme(this.checked)" />
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+              <p class="form-hint" style="margin: 0; line-height: 1.5;">Switch to a dark brutalist theme.</p>
+            </div>
+
+            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
+              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <label style="margin:0; font-weight: 600; color: var(--text);">Email Reminders</label>
               <label class="toggle-switch">
                 <input type="checkbox" id="email-notif-toggle" />
                 <span class="toggle-track"><span class="toggle-thumb"></span></span>
               </label>
             </div>
-            <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+              <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+            </div>
           </div>
         </div>
 
