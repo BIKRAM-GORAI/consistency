@@ -2052,9 +2052,9 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .achievements-section-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
-  color: var(--black);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   flex: 1;
@@ -2143,9 +2143,9 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .achievement-item-title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
-  color: var(--black);
+  color: var(--text);
   flex: 1;
   line-height: 1.4;
 }
@@ -2194,13 +2194,14 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: 4px;
   border: var(--border-2);
   background: var(--bg-card);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 15px;
+  color: var(--text);
   transition: var(--t) var(--ease);
   box-shadow: 1px 1px 0 var(--black);
 }
@@ -2275,7 +2276,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(15px, 3.5vw, 18px);
   font-weight: 800;
-  color: var(--black);
+  color: var(--text);
 }
 
 .ach-page-actions {
@@ -2370,7 +2371,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .ach-privacy-title {
   font-size: 13px;
   font-weight: 800;
-  color: var(--black);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;

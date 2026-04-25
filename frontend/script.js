@@ -2347,7 +2347,7 @@ function renderTemplatesList() {
     const item = document.createElement('div');
     item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--bg-muted); border:var(--border-2); border-radius:var(--r-sm); box-shadow:var(--shadow-sm);';
     item.innerHTML = `
-      <div style="font-weight:800; font-size:14px; color:var(--black);">${escHtml(t.name)}</div>
+      <div style="font-weight:800; font-size:14px; color:var(--text);">${escHtml(t.name)}</div>
       <div style="display:flex; gap:6px;">
         <button class="btn-edit-ach ripple" onclick="openEditTemplateModal('${t._id}')">✏️</button>
         <button class="btn-del-ach ripple" onclick="deleteTemplate('${t._id}')">🗑️</button>
