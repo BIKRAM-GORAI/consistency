@@ -45,6 +45,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    subscriptionTier: {
+      type: String,
+      enum: ['free', 'premium'],
+      default: 'free',
+    },
   },
   { timestamps: true }
 );

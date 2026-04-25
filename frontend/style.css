@@ -1176,6 +1176,20 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 .cat-top-row { display: flex; align-items: center; gap: 8px; }
 
+/* Highlight category inputs to distinguish them from task inputs */
+.cat-top-row .form-control {
+  background: #fffae6;
+  border-color: var(--amber);
+  font-weight: 800;
+  text-align: center;
+}
+
+.cat-top-row .form-control:focus {
+  background: #ffffff;
+  border-color: var(--black);
+  box-shadow: 4px 4px 0 var(--amber);
+}
+
 .btn-remove {
   width: 30px; height: 30px;
   border-radius: var(--r-sm);
@@ -1951,6 +1965,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .ach-add-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   margin-top: 14px;
   padding-top: 12px;
@@ -2051,6 +2066,28 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .btn-add-ach:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+.btn-save-template {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--purple);
+  border: var(--border-2);
+  border-radius: var(--r-sm);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: var(--t) var(--ease);
+  white-space: nowrap;
+}
+
+.btn-save-template:hover {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 var(--black);
 }

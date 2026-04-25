@@ -153,6 +153,15 @@
         <button class="modal-close" onclick="closeModal('modal-add-day')">✕</button>
       </div>
       <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 12px;">
+          <label for="import-template-select">Import Template</label>
+          <div style="display:flex; gap:8px;">
+            <select id="import-template-select" class="form-control">
+              <option value="">-- Select a template to import --</option>
+            </select>
+            <button class="btn-primary ripple" onclick="applyTemplate()" id="apply-template-btn" style="padding: 10px 16px;">Import</button>
+          </div>
+        </div>
         <div class="form-group">
           <label for="day-date-input">Date</label>
           <input type="date" id="day-date-input" class="form-control" />
@@ -520,10 +529,85 @@
             <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
           </div>
         </div>
+
+        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
+          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase;" onclick="openManageTemplatesModal()" id="manage-templates-btn">
+            <span>📑 Manage Templates</span>
+            <span>▶</span>
+          </button>
+        </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-profile')">Cancel</button>
         <button class="btn-primary ripple" onclick="submitProfileSettings()" id="submit-profile-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Save Template ===== -->
+  <div class="modal-overlay" id="modal-save-template" onclick="closeModalOnOverlay(event, 'modal-save-template')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>💾 Save as Template</h2>
+        <button class="modal-close" onclick="closeModal('modal-save-template')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="template-name-input">Template Name <span style="color:var(--red)">*</span></label>
+          <input type="text" id="template-name-input" class="form-control" placeholder="e.g. My Workout Routine, Morning Workflow..." />
+        </div>
+        <p class="form-hint">Free users can save up to 5 templates.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-save-template')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitSaveTemplate()" id="submit-save-template-btn">Save Template</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Manage Templates ===== -->
+  <div class="modal-overlay" id="modal-manage-templates" onclick="closeModalOnOverlay(event, 'modal-manage-templates')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📑 Manage Templates</h2>
+        <button class="modal-close" onclick="closeModal('modal-manage-templates')">✕</button>
+      </div>
+      <div class="modal-body" id="templates-list-container">
+        <div class="loading-spinner" id="loading-templates">
+          <div class="spinner-ring"></div>
+          <p>Loading templates...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-manage-templates')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Edit Template ===== -->
+  <div class="modal-overlay" id="modal-edit-template" onclick="closeModalOnOverlay(event, 'modal-edit-template')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>✏️ Edit Template</h2>
+        <button class="modal-close" onclick="closeModal('modal-edit-template')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-template-name">Template Name <span style="color:var(--red)">*</span></label>
+          <input type="text" id="edit-template-name" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Categories &amp; Tasks</label>
+          <div id="edit-template-categories-builder"></div>
+          <button class="btn-ghost ripple" onclick="addEditTemplateCategoryField()" id="add-edit-template-category-btn">
+            <span>＋</span> Add Category
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-template')">Cancel</button>
+        <button class="btn-primary ripple" onclick="submitEditTemplate()" id="submit-edit-template-btn">Save Changes</button>
       </div>
     </div>
   </div>

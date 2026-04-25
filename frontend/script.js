@@ -31,6 +31,11 @@ let activeDayIdForAchievement = null;
 let editingAchievementId      = null;
 let achievementsPublic        = true; // mirrors the DB setting
 
+// Template state
+let allTemplates = [];
+let activeDayIdForTemplate = null;
+let editingTemplateId = null;
+
 // ── Mobile detection ───────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
 
@@ -400,10 +405,13 @@ function buildDayCard(day) {
       <div class="summary-inner">${summaryInner}</div>
     </div>
 
-    <!-- Always-visible Log Win button -->
+    <!-- Always-visible Log Win and Save Template buttons -->
     <div class="ach-add-row">
-      <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')">🏆 Log a Acheivement</button>
-      <span class="ach-no-progress-note">doesn't affect progress</span>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')">🏆 Log a Acheivement</button>
+        <span class="ach-no-progress-note">doesn't affect progress</span>
+      </div>
+      <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')">💾 Save Template</button>
     </div>
   `;
 
@@ -2146,6 +2154,247 @@ async function submitPasswordChange() {
   }
 }
 
+// ── Templates Logic ────────────────────────────────────────
+async function loadTemplates() {
+  try {
+    allTemplates = await apiFetch(`${API}/api/templates?userId=${encodeURIComponent(userId)}`);
+    populateTemplateDropdown();
+  } catch (err) {
+    console.error('Error loading templates:', err);
+  }
+}
+
+function populateTemplateDropdown() {
+  const select = document.getElementById('import-template-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Select a template to import --</option>';
+  for (const t of allTemplates) {
+    const opt = document.createElement('option');
+    opt.value = t._id;
+    opt.textContent = t.name;
+    select.appendChild(opt);
+  }
+}
+
+function applyTemplate() {
+  const select = document.getElementById('import-template-select');
+  if (!select || !select.value) {
+    showToast('Please select a template first.', 'warn');
+    return;
+  }
+  const t = allTemplates.find(x => x._id === select.value);
+  if (!t) return;
+  
+  document.getElementById('categories-builder').innerHTML = '';
+  categoryCount = 0;
+  
+  for (const cat of t.categories) {
+    const idx = categoryCount++;
+    const builder = document.getElementById('categories-builder');
+    const item = document.createElement('div');
+    item.className = 'category-builder-item';
+    item.id = `cat-build-${idx}`;
+    item.innerHTML = `
+      <div class="cat-top-row">
+        <input type="text" class="form-control" placeholder="Category name" id="cat-name-${idx}" value="${escHtml(cat.name)}" />
+        <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove">✕</button>
+      </div>
+      <div class="tasks-builder" id="tasks-build-${idx}"></div>
+      <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})">＋ Add Task</button>
+    `;
+    builder.appendChild(item);
+    
+    const tasksBuilder = document.getElementById(`tasks-build-${idx}`);
+    for (const task of cat.tasks) {
+      const row = document.createElement('div');
+      row.className = 'task-input-row';
+      row.innerHTML = `
+        <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(task.title)}" />
+        <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+      `;
+      tasksBuilder.appendChild(row);
+    }
+  }
+  showToast('Template imported! You can edit before creating.', 'success');
+}
+
+function openSaveTemplateModal(dayId) {
+  activeDayIdForTemplate = dayId;
+  document.getElementById('template-name-input').value = '';
+  openModal('modal-save-template');
+}
+
+async function submitSaveTemplate() {
+  const name = document.getElementById('template-name-input').value.trim();
+  if (!name) { showToast('Please enter a template name.', 'warn'); return; }
+  
+  const day = allDays.find(d => d._id === activeDayIdForTemplate);
+  if (!day) return;
+  
+  const categories = day.categories.map(c => ({
+    name: c.name,
+    tasks: c.tasks.map(t => ({ title: t.title, completed: false }))
+  }));
+
+  const btn = document.getElementById('submit-save-template-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    const newT = await apiFetch(`${API}/api/templates`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, name, categories })
+    });
+    allTemplates.unshift(newT);
+    populateTemplateDropdown();
+    closeModal('modal-save-template');
+    showToast('Template saved!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Template';
+  }
+}
+
+function openManageTemplatesModal() {
+  closeModal('modal-profile');
+  openModal('modal-manage-templates');
+  renderTemplatesList();
+}
+
+function renderTemplatesList() {
+  const container = document.getElementById('templates-list-container');
+  container.innerHTML = '';
+  
+  if (!allTemplates.length) {
+    container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No templates saved yet.</p>';
+    return;
+  }
+  
+  const list = document.createElement('div');
+  list.style.display = 'flex';
+  list.style.flexDirection = 'column';
+  list.style.gap = '10px';
+  
+  for (const t of allTemplates) {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--bg-muted); border:var(--border-2); border-radius:var(--r-sm); box-shadow:var(--shadow-sm);';
+    item.innerHTML = `
+      <div style="font-weight:800; font-size:14px; color:var(--black);">${escHtml(t.name)}</div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn-edit-ach ripple" onclick="openEditTemplateModal('${t._id}')">✏️</button>
+        <button class="btn-del-ach ripple" onclick="deleteTemplate('${t._id}')">🗑️</button>
+      </div>
+    `;
+    list.appendChild(item);
+  }
+  container.appendChild(list);
+}
+
+let editTemplateCategoryCount = 0;
+
+function openEditTemplateModal(templateId) {
+  editingTemplateId = templateId;
+  const t = allTemplates.find(x => x._id === templateId);
+  if (!t) return;
+  
+  document.getElementById('edit-template-name').value = t.name;
+  const builder = document.getElementById('edit-template-categories-builder');
+  builder.innerHTML = '';
+  editTemplateCategoryCount = 0;
+  
+  for (const cat of t.categories) {
+    addEditTemplateCategoryField(cat.name, cat.tasks);
+  }
+  if (!t.categories.length) addEditTemplateCategoryField();
+  
+  closeModal('modal-manage-templates');
+  openModal('modal-edit-template');
+}
+
+function addEditTemplateCategoryField(name = '', tasks = []) {
+  const idx = editTemplateCategoryCount++;
+  const builder = document.getElementById('edit-template-categories-builder');
+  const item = document.createElement('div');
+  item.className = 'category-builder-item';
+  item.id = `edit-template-cat-build-${idx}`;
+  item.innerHTML = `
+    <div class="cat-top-row">
+      <input type="text" class="form-control" placeholder="Category name" value="${escHtml(name)}" />
+      <button class="btn-remove" onclick="this.parentElement.parentElement.remove()" title="Remove">✕</button>
+    </div>
+    <div class="tasks-builder" id="edit-template-tasks-build-${idx}"></div>
+    <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addEditTemplateTaskField(${idx})">＋ Add Task</button>
+  `;
+  builder.appendChild(item);
+  
+  for (const task of tasks) {
+    addEditTemplateTaskField(idx, task.title);
+  }
+}
+
+function addEditTemplateTaskField(catIdx, title = '') {
+  const builder = document.getElementById(`edit-template-tasks-build-${catIdx}`);
+  const row = document.createElement('div');
+  row.className = 'task-input-row';
+  row.innerHTML = `
+    <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(title)}" />
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+  `;
+  builder.appendChild(row);
+}
+
+async function submitEditTemplate() {
+  const name = document.getElementById('edit-template-name').value.trim();
+  if (!name) { showToast('Name is required', 'warn'); return; }
+  
+  const catItems = document.querySelectorAll('#edit-template-categories-builder .category-builder-item');
+  const categories = [];
+  for (const item of catItems) {
+    const catName = item.querySelector('.cat-top-row input').value.trim();
+    if (!catName) continue;
+    const taskInputs = item.querySelectorAll('.task-input-row input');
+    const tasks = [];
+    for (const inp of taskInputs) {
+      if (inp.value.trim()) tasks.push({ title: inp.value.trim(), completed: false });
+    }
+    categories.push({ name: catName, tasks });
+  }
+  
+  const btn = document.getElementById('submit-edit-template-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    const res = await apiFetch(`${API}/api/templates/${editingTemplateId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, categories })
+    });
+    const idx = allTemplates.findIndex(x => x._id === editingTemplateId);
+    if (idx !== -1) allTemplates[idx] = res;
+    
+    populateTemplateDropdown();
+    closeModal('modal-edit-template');
+    openManageTemplatesModal(); // go back to list
+    showToast('Template updated!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+}
+
+async function deleteTemplate(templateId) {
+  if (!confirm('Delete this template?')) return;
+  try {
+    await apiFetch(`${API}/api/templates/${templateId}`, { method: 'DELETE' });
+    allTemplates = allTemplates.filter(x => x._id !== templateId);
+    populateTemplateDropdown();
+    renderTemplatesList();
+    showToast('Template deleted', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Today's date subtitle
@@ -2182,7 +2431,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ['modal-profile', 'modal-add-day', 'modal-add-goal', 'modal-add-category',
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
        'modal-edit-category', 'modal-edit-goal', 'modal-edit-group',
-       'modal-add-achievement', 'modal-edit-achievement'].forEach(id => {
+       'modal-add-achievement', 'modal-edit-achievement',
+       'modal-save-template', 'modal-manage-templates', 'modal-edit-template'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.classList.contains('open')) closeModal(id);
       });
@@ -2200,4 +2450,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   loadDays();
+  loadTemplates();
 });
