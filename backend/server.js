@@ -11,6 +11,7 @@ const groupRoutes       = require('./routes/groupRoutes');
 const achievementRoutes = require('./routes/achievementRoutes');
 const cronRoutes        = require('./routes/cronRoutes');
 const templateRoutes    = require('./routes/templateRoutes');
+const reviewRoutes      = require('./routes/reviewRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/groups',       groupRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/cron',         cronRoutes);
 app.use('/api/templates',    templateRoutes);
+app.use('/api/reviews',      reviewRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

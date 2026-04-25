@@ -23,6 +23,7 @@
       --coral:     #FF6B35;
       --purple:    #7B5EA7;
       --lime:      #B5FF4D;
+      --red:       #EF4444;
       --border:    3px solid #0a0a0a;
       --shadow:    4px 4px 0px #0a0a0a;
       --shadow-lg: 6px 6px 0px #0a0a0a;
@@ -732,6 +733,154 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
+
+    /* ── Reviews ── */
+    .landing-reviews {
+      padding: 80px 24px;
+      background: var(--lime);
+      border-top: var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .reviews-actions {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn-review {
+      padding: 14px 28px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      text-transform: uppercase;
+      border: 3px solid var(--black);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-review-primary {
+      background: var(--teal);
+      color: var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .btn-review-primary:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--black);
+    }
+    .btn-review-secondary {
+      background: var(--bg);
+      color: var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .btn-review-secondary:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--black);
+    }
+
+    /* Modals for Reviews */
+    .review-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(10, 10, 10, 0.85);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .review-modal-overlay.show { display: flex; }
+    .review-modal {
+      background: #fff;
+      border: 4px solid var(--black);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      padding: 32px;
+      position: relative;
+      box-shadow: 8px 8px 0 var(--black);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .review-modal h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      border-bottom: 4px solid var(--teal);
+      display: inline-block;
+      padding-bottom: 4px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      box-shadow: 2px 2px 0 var(--black);
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    .btn-close-modal {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: var(--red);
+      color: #fff;
+      border: 2px solid var(--black);
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 0 var(--black);
+    }
+    .review-card {
+      border: 2px solid var(--black);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: var(--bg);
+      box-shadow: 3px 3px 0 var(--black);
+      text-align: left;
+    }
+    .review-card-email {
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--teal);
+      margin-bottom: 8px;
+    }
+    .review-card-date {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .review-card-text {
+      font-size: 15px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -843,7 +992,7 @@
         <span class="team-role" style="background:var(--lime); color:var(--black);">Ideas & Tweaks</span>
         <h3 class="team-name">DEBJEET DEY</h3>
         <div class="team-links">
-          <a href="mailto:gamingwithdeoxy@example.com" class="btn-team btn-email">📧 Email Me</a>
+          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gamingwithdeoxy@gmail.com" target="_blank" class="btn-team btn-email">📧 Email Me</a>
           <a href="https://www.instagram.com/deyxop/" target="_blank" class="btn-team btn-ig">📸 Instagram</a>
           <a href="https://github.com/demo1" target="_blank" class="btn-team btn-github">💻 GitHub</a>
         </div>
@@ -855,7 +1004,7 @@
         <span class="team-role" style="background:var(--pink);">Lead Developer</span>
         <h3 class="team-name">Bikram Gorai</h3>
         <div class="team-links">
-          <a href="mailto:bikram77620@gmail.com" class="btn-team btn-email">📧 Email Me</a>
+          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=bikram77620@gmail.com" target="_blank" class="btn-team btn-email">📧 Email Me</a>
           <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig">📸 Instagram</a>
           <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github">💻 GitHub</a>
         </div>
@@ -867,12 +1016,24 @@
         <span class="team-role" style="background:var(--lime); color:var(--black);">Ideas & Tweaks</span>
         <h3 class="team-name">ABHISHEK ADHIKARI</h3>
         <div class="team-links">
-          <a href="mailto:demo2@example.com" class="btn-team btn-email">📧 Email Me</a>
+          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tanjirokamado777555@gmail.com" target="_blank" class="btn-team btn-email">📧 Email Me</a>
           <a href="https://www.instagram.com/mx.editts/" target="_blank" class="btn-team btn-ig">📸 Instagram</a>
           <a href="https://github.com/demo2" target="_blank" class="btn-team btn-github">💻 GitHub</a>
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <!-- Reviews Section -->
+  <section class="landing-reviews">
+    <h2 class="landing-section-title">User Reviews</h2>
+    <p style="font-weight: 700; font-size: 16px; max-width: 600px; margin-bottom: 20px;">
+      Got ideas, feedback, or want to share your experience? We'd love to hear from you!
+    </p>
+    <div class="reviews-actions">
+      <button class="btn-review btn-review-primary" onclick="openSubmitReviewModal()">📝 Write a Review</button>
+      <button class="btn-review btn-review-secondary" onclick="openViewReviewsModal()">👀 Read All Reviews</button>
     </div>
   </section>
 
@@ -889,7 +1050,126 @@
     </div>
   </div>
 
+  <!-- Give Review Modal -->
+  <div id="submit-review-modal" class="review-modal-overlay">
+    <div class="review-modal">
+      <button class="btn-close-modal" onclick="closeSubmitReviewModal()">&times;</button>
+      <h3>Submit Review</h3>
+      <form id="review-form" onsubmit="submitReview(event)">
+        <div class="form-group">
+          <label>Your Email</label>
+          <input type="email" id="review-email" required placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Your Review</label>
+          <textarea id="review-desc" required placeholder="What do you think?"></textarea>
+        </div>
+        <button type="submit" class="btn-review btn-review-primary" style="width:100%;">Submit</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Reviews Modal -->
+  <div id="view-reviews-modal" class="review-modal-overlay">
+    <div class="review-modal" style="max-width: 600px;">
+      <button class="btn-close-modal" onclick="closeViewReviewsModal()">&times;</button>
+      <h3>All Reviews</h3>
+      <div id="reviews-container">
+        <!-- Reviews injected here -->
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ── Reviews Logic ──
+    function openSubmitReviewModal() {
+      document.getElementById('submit-review-modal').classList.add('show');
+    }
+    function closeSubmitReviewModal() {
+      document.getElementById('submit-review-modal').classList.remove('show');
+    }
+
+    async function submitReview(e) {
+      e.preventDefault();
+      const email = document.getElementById('review-email').value;
+      const description = document.getElementById('review-desc').value;
+
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, description })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('Review submitted successfully!');
+          closeSubmitReviewModal();
+          document.getElementById('review-form').reset();
+        } else {
+          alert(data.message || 'Error submitting review');
+        }
+      } catch (err) {
+        alert('Failed to connect to server');
+      }
+    }
+
+    async function openViewReviewsModal() {
+      try {
+        const modeRes = await fetch('/api/reviews/access-mode');
+        const modeData = await modeRes.json();
+
+        let password = '';
+        if (modeData.mode === 'private') {
+          password = prompt('This section is private. Please enter the admin password:');
+          if (password === null) return; // User cancelled
+        }
+
+        const headers = {};
+        if (modeData.mode === 'private') {
+          headers['x-admin-password'] = password;
+        }
+
+        const res = await fetch('/api/reviews', { headers });
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.message || 'Error fetching reviews');
+          return;
+        }
+
+        renderReviews(data);
+        document.getElementById('view-reviews-modal').classList.add('show');
+      } catch (err) {
+        alert('Failed to fetch reviews');
+      }
+    }
+
+    function closeViewReviewsModal() {
+      document.getElementById('view-reviews-modal').classList.remove('show');
+    }
+
+    function renderReviews(reviews) {
+      const container = document.getElementById('reviews-container');
+      container.innerHTML = '';
+      if (!Array.isArray(reviews) || reviews.length === 0) {
+        container.innerHTML = '<p style="font-weight:600;">No reviews yet.</p>';
+        return;
+      }
+
+      reviews.forEach(r => {
+        const d = new Date(r.createdAt).toLocaleString();
+        const card = document.createElement('div');
+        card.className = 'review-card';
+        card.innerHTML = `
+          <div class="review-card-email">${r.email}</div>
+          <div class="review-card-date">${d}</div>
+          <div class="review-card-text">${r.description.replace(/\n/g, '<br>')}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ── Lightbox Logic ──
     function openLightbox(src) {
       const modal = document.getElementById('lightbox-modal');
       const img = document.getElementById('lightbox-img');
