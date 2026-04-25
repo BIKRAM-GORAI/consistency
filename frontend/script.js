@@ -17,6 +17,10 @@ function logout() {
 
 // ── State ──────────────────────────────────────────────────
 let allDays  = [];
+let currentPage = 1;
+const daysPerPage = 10;
+let hasMoreDays = false;
+let backendStreak = 0;
 let allGoals = [];
 let activeDayIdForCategory = null;
 
@@ -210,9 +214,24 @@ async function apiFetch(url, options = {}) {
 }
 
 // ── Days ───────────────────────────────────────────────────
-async function loadDays() {
+async function loadDays(page = 1) {
   try {
-    allDays = await apiFetch(`${API}/api/days?userId=${encodeURIComponent(userId)}`);
+    const data = await apiFetch(`${API}/api/days?userId=${encodeURIComponent(userId)}&page=${page}&limit=${daysPerPage}`);
+    
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      if (page === 1) allDays = data.days;
+      else allDays.push(...data.days);
+      
+      backendStreak = data.streak || 0;
+      hasMoreDays = data.hasMore || false;
+    } else {
+      // Fallback for non-paginated API
+      if (page === 1) allDays = data;
+      else allDays.push(...data);
+      hasMoreDays = false;
+    }
+
+    currentPage = page;
     renderDays();
     updateStreak();
   } catch (err) {
@@ -222,8 +241,13 @@ async function loadDays() {
   }
 }
 
+function loadMoreDays() {
+  loadDays(currentPage + 1);
+}
+
 function updateStreak() {
-  const { count: streak, todayDone } = calculateStreak(allDays);
+  const { todayDone } = calculateStreak(allDays);
+  const streak = backendStreak;
   const el = document.getElementById('streak-display');
   const fireEl = document.querySelector('.streak-fire');
 
@@ -284,6 +308,19 @@ function renderDays() {
     fragment.appendChild(buildDayCard(day));
   }
   container.appendChild(fragment);
+
+  if (hasMoreDays) {
+    const loadMoreRow = document.createElement('div');
+    loadMoreRow.style.textAlign = 'center';
+    loadMoreRow.style.marginTop = '20px';
+    loadMoreRow.style.marginBottom = '40px';
+    loadMoreRow.innerHTML = `
+      <button class="btn-ghost ripple btn-load-more" onclick="loadMoreDays()">
+        Load More Days ⬇️
+      </button>
+    `;
+    container.appendChild(loadMoreRow);
+  }
 
   // ── Mobile-aware GSAP entrance ──────────────────────────
   // On mobile: single quick fade-in (no stagger = no lag)

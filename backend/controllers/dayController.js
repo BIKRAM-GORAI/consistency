@@ -58,16 +58,32 @@ async function updateUserStreakAndActivity(userId) {
 }
 
 /**
- * GET /api/days?userId=...
- * Retrieve all days for a specific user, sorted by date ascending
+ * GET /api/days?userId=...&page=...&limit=...
+ * Retrieve days for a specific user, paginated. Sorted by date descending.
  */
 const getAllDays = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, page, limit } = req.query;
     if (!userId) return res.status(400).json({ message: 'userId is required' });
 
-    const days = await Day.find({ userId }).sort({ date: 1 });
-    res.json(days);
+    const user = await User.findById(userId);
+    const streak = user ? user.currentStreak : 0;
+
+    if (page && limit) {
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+      
+      const days = await Day.find({ userId }).sort({ date: -1 }).skip(skip).limit(limitNum);
+      const total = await Day.countDocuments({ userId });
+      const hasMore = (skip + days.length) < total;
+      
+      return res.json({ days, streak, hasMore });
+    } else {
+      // Fallback for non-paginated requests
+      const days = await Day.find({ userId }).sort({ date: -1 });
+      return res.json(days);
+    }
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
