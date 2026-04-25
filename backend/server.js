@@ -33,6 +33,18 @@ app.use('/api/templates',    templateRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.
+
+// Explicit routes for SEO bots to guarantee delivery before static middleware
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml');
+  res.sendFile(path.join(__dirname, '../frontend/sitemap.xml'));
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.sendFile(path.join(__dirname, '../frontend/robots.txt'));
+});
+
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ── Root: redirect to landing page ────────────────────────
