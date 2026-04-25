@@ -92,7 +92,7 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  min-height: 100dvh;
   line-height: 1.6;
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
@@ -1063,7 +1063,7 @@ body {
   width: 100%;
   max-width: 520px;
   box-shadow: var(--shadow-xl);
-  max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   will-change: transform, opacity;
@@ -1386,7 +1386,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   .modal {
     border-radius: var(--r-xl) var(--r-xl) 0 0;
     max-width: 100%;
-    max-height: 92vh;
+    max-height: 92dvh;
     width: 100%;
     padding-top: 6px;
   }
