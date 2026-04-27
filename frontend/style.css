@@ -2120,6 +2120,28 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   box-shadow: 3px 3px 0 var(--black);
 }
 
+.btn-delete-day {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--red);
+  border: var(--border-2);
+  border-radius: var(--r-sm);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: var(--t) var(--ease);
+  white-space: nowrap;
+}
+
+.btn-delete-day:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
 /* Empty state inside achievement section */
 .ach-empty {
   font-size: 12px;

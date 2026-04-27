@@ -28,15 +28,17 @@ async function makeUniqueCode() {
 
 /**
  * POST /api/groups/create
- * Body: { userId, name }
- * Creates a new group. Each user may only own one group.
+ * Body: { name }
+ * Creates a new group for the authenticated user. Each user may only own one group.
  */
 const createGroup = async (req, res) => {
   try {
-    const { userId, name } = req.body;
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+    const { name } = req.body;
 
-    if (!userId || !name) {
-      return res.status(400).json({ message: 'userId and name are required.' });
+    if (!name) {
+      return res.status(400).json({ message: 'name is required.' });
     }
 
 
@@ -58,15 +60,17 @@ const createGroup = async (req, res) => {
 
 /**
  * POST /api/groups/join
- * Body: { userId, code }
- * Adds the user to a group using the join code.
+ * Body: { code }
+ * Adds the authenticated user to a group using the join code.
  */
 const joinGroup = async (req, res) => {
   try {
-    const { userId, code } = req.body;
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+    const { code } = req.body;
 
-    if (!userId || !code) {
-      return res.status(400).json({ message: 'userId and code are required.' });
+    if (!code) {
+      return res.status(400).json({ message: 'code is required.' });
     }
 
     const group = await Group.findOne({ code: code.toUpperCase().trim() });
@@ -90,13 +94,13 @@ const joinGroup = async (req, res) => {
 };
 
 /**
- * GET /api/groups/mine?userId=
- * Returns all groups the user is a member of.
+ * GET /api/groups/mine
+ * Returns all groups the authenticated user is a member of.
  */
 const myGroups = async (req, res) => {
   try {
-    const { userId } = req.query;
-    if (!userId) return res.status(400).json({ message: 'userId is required.' });
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
 
     const groups = await Group.find({ members: userId })
       .populate('members', 'name email profilePicture')
@@ -124,16 +128,58 @@ const groupMembers = async (req, res) => {
 };
 
 /**
- * GET /api/groups/member-days?memberId=
- * Read-only: returns all day cards for a member (for group profile viewing).
+ * GET /api/groups/member-days?memberId=&page=&limit=
+ * Read-only: returns paginated day cards for a member (for group profile viewing).
+ * Only accessible if the requesting user is in the same group as the target member.
+ * Default: 10 days per page
  */
 const memberDays = async (req, res) => {
   try {
+    // Get userId from authenticated user (from JWT token)
+    const requestingUserId = req.user.userId;
     const { memberId } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
     if (!memberId) return res.status(400).json({ message: 'memberId is required.' });
 
-    const days = await Day.find({ userId: memberId }).sort({ date: 1 });
-    res.json(days);
+    // Verify that the requesting user is in the same group as the target member
+    const sharedGroups = await Group.find({
+      members: { $all: [requestingUserId, memberId] }
+    });
+
+    if (sharedGroups.length === 0) {
+      return res.status(403).json({ message: 'Access denied. You can only view data of users in your groups.' });
+    }
+
+    // Check if the target user has a public profile
+    const targetUser = await User.findById(memberId).select('isPublicProfile');
+    if (targetUser && targetUser.isPublicProfile === false) {
+      return res.status(403).json({ message: 'This user has a private profile.' });
+    }
+
+    // Get total count for pagination
+    const total = await Day.countDocuments({ userId: memberId });
+
+    // Get paginated days (newest first)
+    const skip = (page - 1) * limit;
+    const days = await Day.find({ userId: memberId })
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const hasMore = (skip + days.length) < total;
+
+    res.json({
+      days,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit,
+        hasMore
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -141,13 +187,15 @@ const memberDays = async (req, res) => {
 
 /**
  * PUT /api/groups/:groupId
- * Body: { userId, name }
+ * Body: { name }
  * Edits the group name (owner only).
  */
 const editGroup = async (req, res) => {
   try {
-    const { userId, name } = req.body;
-    if (!userId || !name) return res.status(400).json({ message: 'userId and name are required.' });
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ message: 'name is required.' });
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
@@ -168,13 +216,12 @@ const editGroup = async (req, res) => {
 
 /**
  * DELETE /api/groups/:groupId
- * Body: { userId }
  * Deletes the group entirely (owner only).
  */
 const deleteGroup = async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ message: 'userId is required.' });
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
@@ -192,13 +239,15 @@ const deleteGroup = async (req, res) => {
 
 /**
  * POST /api/groups/:groupId/remove-member
- * Body: { userId, targetUserId }
+ * Body: { targetUserId }
  * Removes a member. Owner can remove anyone. A user can remove themselves.
  */
 const removeMember = async (req, res) => {
   try {
-    const { userId, targetUserId } = req.body;
-    if (!userId || !targetUserId) return res.status(400).json({ message: 'userId and targetUserId are required.' });
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+    const { targetUserId } = req.body;
+    if (!targetUserId) return res.status(400).json({ message: 'targetUserId is required.' });
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });

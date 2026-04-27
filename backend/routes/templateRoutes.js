@@ -6,10 +6,12 @@ const {
   updateTemplate,
   deleteTemplate,
 } = require('../controllers/templateController');
+const { createTemplateValidation, updateTemplateValidation } = require('../middleware/validation');
+const { authenticateToken } = require('../middleware/auth');
 
-router.get('/', getTemplates);
-router.post('/', createTemplate);
-router.put('/:id', updateTemplate);
-router.delete('/:id', deleteTemplate);
+router.get('/', authenticateToken, getTemplates);
+router.post('/', authenticateToken, createTemplateValidation, createTemplate);
+router.put('/:id', authenticateToken, updateTemplateValidation, updateTemplate);
+router.delete('/:id', authenticateToken, deleteTemplate);
 
 module.exports = router;

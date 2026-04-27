@@ -3,6 +3,8 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const connectDB = require('./config/db');
+const { authenticateToken } = require('./middleware/auth');
+const { generalLimiter, authLimiter, dataModificationLimiter, readOnlyLimiter } = require('./middleware/rateLimit');
 
 const authRoutes        = require('./routes/authRoutes');
 const dayRoutes         = require('./routes/dayRoutes');
@@ -25,15 +27,23 @@ app.use(cors());
 app.use(express.json());
 
 // ── API Routes ─────────────────────────────────────────────
-app.use('/api/auth',         authRoutes);
-app.use('/api/days',         dayRoutes);
-app.use('/api/goals',        goalRoutes);
-app.use('/api/groups',       groupRoutes);
-app.use('/api/achievements', achievementRoutes);
-app.use('/api/cron',         cronRoutes);
-app.use('/api/templates',    templateRoutes);
-app.use('/api/reviews',      reviewRoutes);
-app.use('/api/users',        userRoutes);
+// Apply general rate limiting to all API routes
+app.use('/api', generalLimiter);
+
+// Public routes (no authentication required) with stricter rate limiting
+app.use('/api/auth/register', authLimiter, authRoutes);
+app.use('/api/auth/login', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes); // Other auth routes
+
+// Protected routes (authentication required) with appropriate rate limiting
+app.use('/api/days',         authenticateToken, dataModificationLimiter, dayRoutes);
+app.use('/api/goals',        authenticateToken, dataModificationLimiter, goalRoutes);
+app.use('/api/groups',       authenticateToken, dataModificationLimiter, groupRoutes);
+app.use('/api/achievements', authenticateToken, dataModificationLimiter, achievementRoutes);
+app.use('/api/cron',         cronRoutes); // Cron routes have their own auth
+app.use('/api/templates',    authenticateToken, dataModificationLimiter, templateRoutes);
+app.use('/api/reviews',      reviewRoutes); // Public review submission
+app.use('/api/users',        readOnlyLimiter, userRoutes); // Public user profiles
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

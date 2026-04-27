@@ -3,8 +3,8 @@ const User = require('../models/User');
 
 exports.getTemplates = async (req, res) => {
   try {
-    const { userId } = req.query;
-    if (!userId) return res.status(400).json({ message: 'User ID required' });
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
 
     const templates = await Template.find({ userId }).sort({ createdAt: -1 });
     res.status(200).json(templates);
@@ -15,9 +15,11 @@ exports.getTemplates = async (req, res) => {
 
 exports.createTemplate = async (req, res) => {
   try {
-    const { userId, name, categories } = req.body;
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+    const { name, categories } = req.body;
 
-    if (!userId || !name) {
+    if (!name) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -49,12 +51,19 @@ exports.createTemplate = async (req, res) => {
 
 exports.updateTemplate = async (req, res) => {
   try {
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
     const { id } = req.params;
     const { name, categories } = req.body;
 
     const template = await Template.findById(id);
     if (!template) {
       return res.status(404).json({ message: 'Template not found' });
+    }
+
+    // Verify ownership - only the owner can update their own templates
+    if (template.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied. You can only update your own templates.' });
     }
 
     if (name) template.name = name;
@@ -69,11 +78,21 @@ exports.updateTemplate = async (req, res) => {
 
 exports.deleteTemplate = async (req, res) => {
   try {
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
     const { id } = req.params;
-    const template = await Template.findByIdAndDelete(id);
+
+    const template = await Template.findById(id);
     if (!template) {
       return res.status(404).json({ message: 'Template not found' });
     }
+
+    // Verify ownership - only the owner can delete their own templates
+    if (template.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied. You can only delete your own templates.' });
+    }
+
+    await Template.findByIdAndDelete(id);
     res.status(200).json({ message: 'Template deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting template', error: error.message });

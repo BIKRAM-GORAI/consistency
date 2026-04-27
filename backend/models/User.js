@@ -31,7 +31,6 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    // Plain text password — simple personal project, no encryption needed
     password: {
       type: String,
       required: true,
@@ -46,6 +45,10 @@ const UserSchema = new mongoose.Schema(
       default: true,
     },
     currentStreak: {
+      type: Number,
+      default: 0,
+    },
+    highestStreak: {
       type: Number,
       default: 0,
     },

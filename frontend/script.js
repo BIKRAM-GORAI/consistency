@@ -215,11 +215,20 @@ function showPage(page) {
 
 // ── API ────────────────────────────────────────────────────
 async function apiFetch(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      localStorage.clear();
+      window.location.replace('landing.html');
+      throw new Error('Session expired. Please log in again.');
+    }
+    if (res.status === 429) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || 'Too many requests. Please try again later.');
+    }
     const body = await res.json().catch(() => ({}));
     throw new Error(body.message || `HTTP ${res.status}`);
   }
@@ -229,7 +238,7 @@ async function apiFetch(url, options = {}) {
 // ── Days ───────────────────────────────────────────────────
 async function loadDays(page = 1) {
   try {
-    const data = await apiFetch(`${API}/api/days?userId=${encodeURIComponent(userId)}&page=${page}&limit=${daysPerPage}`);
+    const data = await apiFetch(`${API}/api/days?page=${page}&limit=${daysPerPage}`);
     
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       if (page === 1) allDays = data.days;
@@ -249,8 +258,21 @@ async function loadDays(page = 1) {
     updateStreak();
   } catch (err) {
     console.error('Error loading days:', err);
+    let errorMessage = '⚠️ Failed to load days. Please check your connection.';
+
+    // Check for rate limiting or specific error messages
+    if (err.message) {
+      if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
+        errorMessage = '⚠️ Too many requests. Please try again later.';
+      } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
+        errorMessage = '⚠️ Server offline. Please check your connection.';
+      } else {
+        errorMessage = `⚠️ ${err.message}`;
+      }
+    }
+
     document.getElementById('loading-days').innerHTML =
-      `<p style="color:#ef4444;text-align:center">⚠️ Server offline. Start your backend first.</p>`;
+      `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
 
@@ -643,7 +665,7 @@ async function submitAddDay() {
   try {
     const newDay = await apiFetch(`${API}/api/days`, {
       method: 'POST',
-      body: JSON.stringify({ userId, date, categories, summary }),
+      body: JSON.stringify({ date, categories, summary }),
     });
     allDays.push(newDay);
     closeModal('modal-add-day');
@@ -925,10 +947,23 @@ async function loadGoals() {
   const container = document.getElementById('goals-container');
   container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
-    allGoals = await apiFetch(`${API}/api/goals?userId=${encodeURIComponent(userId)}`);
+    allGoals = await apiFetch(`${API}/api/goals`);
     renderGoals();
   } catch (err) {
-    container.innerHTML = `<p style="color:#ef4444;text-align:center">Failed to load goals.</p>`;
+    console.error('Error loading goals:', err);
+    let errorMessage = '⚠️ Failed to load goals. Please check your connection.';
+
+    if (err.message) {
+      if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
+        errorMessage = '⚠️ Too many requests. Please try again later.';
+      } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
+        errorMessage = '⚠️ Server offline. Please check your connection.';
+      } else {
+        errorMessage = `⚠️ ${err.message}`;
+      }
+    }
+
+    container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
 
@@ -1201,10 +1236,23 @@ async function loadGroups() {
   const container = document.getElementById('groups-container');
   container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading groups...</p></div>`;
   try {
-    allGroups = await apiFetch(`${API}/api/groups/mine?userId=${encodeURIComponent(userId)}`);
+    allGroups = await apiFetch(`${API}/api/groups/mine`);
     renderGroups();
   } catch (err) {
-    container.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load groups.</p>`;
+    console.error('Error loading groups:', err);
+    let errorMessage = '⚠️ Failed to load groups. Please check your connection.';
+
+    if (err.message) {
+      if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
+        errorMessage = '⚠️ Too many requests. Please try again later.';
+      } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
+        errorMessage = '⚠️ Server offline. Please check your connection.';
+      } else {
+        errorMessage = `⚠️ ${err.message}`;
+      }
+    }
+
+    container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
 
@@ -1510,6 +1558,10 @@ async function removeMember(groupId, memberId, memberName) {
 }
 
 // ── Member Tasks Modal (read-only) ─────────────────────────
+let memberDaysPage = 1;
+let memberDaysData = [];
+let memberDaysHasMore = false;
+
 async function openMemberTasks(memberId, memberName) {
   const titleEl = document.getElementById('member-tasks-title');
   const bodyEl  = document.getElementById('member-tasks-body');
@@ -1519,32 +1571,47 @@ async function openMemberTasks(memberId, memberName) {
   openModal('modal-member-tasks');
   _currentMemberId   = memberId;
   _currentMemberName = memberName;
+  memberDaysPage = 1;
+  memberDaysData = [];
+  memberDaysHasMore = false;
+
+  await loadMemberDays();
+}
+
+async function loadMemberDays() {
+  const titleEl = document.getElementById('member-tasks-title');
+  const bodyEl  = document.getElementById('member-tasks-body');
 
   try {
-    const days = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(memberId)}`);
+    const response = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(_currentMemberId)}&page=${memberDaysPage}&limit=10`);
+
+    // Handle both old format (array) and new format (object with days)
+    const days = response.days || response;
+    memberDaysData = memberDaysData.concat(days);
+    memberDaysHasMore = response.pagination ? response.pagination.hasMore : false;
 
     // Calculate member's streak and update the modal title
-    const streakInfo = calculateStreak(days);
+    const streakInfo = calculateStreak(memberDaysData);
     const memberStreak = streakInfo.count;
     const isTodayDone = streakInfo.todayDone;
     const icon = isTodayDone ? '🔥' : (memberStreak > 0 ? '❕' : '🌱');
     const streakBadge = memberStreak > 0
       ? ` <span class="member-streak-badge">${icon} ${memberStreak} day streak</span>`
       : ` <span class="member-streak-badge member-streak-zero">${icon} No streak yet</span>`;
-    titleEl.innerHTML = `📋 ${escHtml(memberName)}'s Tasks${streakBadge}`;
+    titleEl.innerHTML = `📋 ${escHtml(_currentMemberName)}'s Tasks${streakBadge}`;
 
-    if (!days.length) {
+    if (!memberDaysData.length) {
       bodyEl.innerHTML = `
         <div class="empty-state" style="padding:40px 0">
           <span class="empty-icon">📭</span>
           <h3>No cards yet</h3>
-          <p>${escHtml(memberName)} hasn't created any day cards yet.</p>
+          <p>${escHtml(_currentMemberName)} hasn't created any day cards yet.</p>
         </div>`;
       return;
     }
 
     // Sort newest-first for the viewer
-    const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = [...memberDaysData].sort((a, b) => b.date.localeCompare(a.date));
 
     let html = '<div class="member-days-list">';
     for (const day of sorted) {
@@ -1589,6 +1656,17 @@ async function openMemberTasks(memberId, memberName) {
         </div>`;
     }
     html += '</div>';
+
+    // Add load more button if there are more days
+    if (memberDaysHasMore) {
+      html += `
+        <div style="text-align:center; margin-top:20px;">
+          <button class="btn-ghost ripple" onclick="loadMoreMemberDays()" style="padding:10px 20px; border-radius:8px;">
+            Load More Days ⬇️
+          </button>
+        </div>`;
+    }
+
     bodyEl.innerHTML = html;
 
     // Inject achievements per day asynchronously
@@ -1615,6 +1693,11 @@ async function openMemberTasks(memberId, memberName) {
   }
 }
 
+async function loadMoreMemberDays() {
+  memberDaysPage++;
+  await loadMemberDays();
+}
+
 /** Open a panel showing all achievements for the current member */
 async function openMemberAllAchievements() {
   if (!_currentMemberId) return;
@@ -1627,7 +1710,10 @@ async function openMemberAllAchievements() {
   try {
     let achs = [];
     try {
-      const resp = await fetch(`${API}/api/achievements/user/${_currentMemberId}`);
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`${API}/api/achievements/user/${_currentMemberId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       if (resp.status === 403) {
         bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0">
           <span class="empty-icon">\uD83D\uDD12</span>
@@ -1733,14 +1819,27 @@ async function loadAchievements() {
   container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
     const [privacyRes, achs] = await Promise.all([
-      apiFetch(`${API}/api/auth/${userId}/achievements-privacy`),
-      apiFetch(`${API}/api/achievements?userId=${encodeURIComponent(userId)}`),
+      apiFetch(`${API}/api/auth/achievements-privacy`),
+      apiFetch(`${API}/api/achievements`),
     ]);
     achievementsPublic = privacyRes.achievementsPublic !== false;
-    allAchievements    = achs;
+    allAchievements    = achs.achievements || [];
     renderAchievements();
   } catch (err) {
-    container.innerHTML = `<p style="color:#ef4444;text-align:center">Failed to load achievements.</p>`;
+    console.error('Error loading achievements:', err);
+    let errorMessage = '⚠️ Failed to load achievements. Please check your connection.';
+
+    if (err.message) {
+      if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
+        errorMessage = '⚠️ Too many requests. Please try again later.';
+      } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
+        errorMessage = '⚠️ Server offline. Please check your connection.';
+      } else {
+        errorMessage = `⚠️ ${err.message}`;
+      }
+    }
+
+    container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
 
@@ -1793,7 +1892,7 @@ async function toggleAchievementPrivacy() {
   const labelEl  = document.getElementById('ach-privacy-label');
   if (toggleEl) toggleEl.disabled = true;
   try {
-    const res = await apiFetch(`${API}/api/auth/${userId}/achievements-privacy`, {
+    const res = await apiFetch(`${API}/api/auth/achievements-privacy`, {
       method: 'PATCH',
       body: JSON.stringify({ achievementsPublic: newVal }),
     });
@@ -2101,7 +2200,7 @@ async function openProfileModal() {
   }
 
   try {
-    const res = await apiFetch(`${API}/api/auth/${userId}/settings`);
+    const res = await apiFetch(`${API}/api/auth/settings`);
     document.getElementById('profile-email').value = res.email || '';
     
     const unameInput = document.getElementById('profile-username');
@@ -2171,7 +2270,7 @@ async function submitProfileSettings() {
       payload.username = username;
     }
 
-    const res = await apiFetch(`${API}/api/auth/${userId}/settings`, {
+    const res = await apiFetch(`${API}/api/auth/settings`, {
       method: 'PATCH',
       body: JSON.stringify(payload)
     });
@@ -2209,7 +2308,7 @@ async function submitPasswordChange() {
   btn.textContent = 'Updating...';
 
   try {
-    await apiFetch(`${API}/api/auth/${userId}/settings`, {
+    await apiFetch(`${API}/api/auth/settings`, {
       method: 'PATCH',
       body: JSON.stringify({ oldPassword, newPassword })
     });
@@ -2230,7 +2329,7 @@ async function submitPasswordChange() {
 // ── Templates Logic ────────────────────────────────────────
 async function loadTemplates() {
   try {
-    allTemplates = await apiFetch(`${API}/api/templates?userId=${encodeURIComponent(userId)}`);
+    allTemplates = await apiFetch(`${API}/api/templates`);
     populateTemplateDropdown();
   } catch (err) {
     console.error('Error loading templates:', err);
@@ -2591,8 +2690,10 @@ async function handleProfilePictureSelect(event) {
         formData.append('image', blob, 'profile.jpg');
 
         try {
-          const res = await fetch(`${API}/api/auth/${userId}/profile-picture`, {
+          const _tok = localStorage.getItem('token');
+          const res = await fetch(`${API}/api/auth/profile-picture`, {
             method: 'POST',
+            headers: _tok ? { Authorization: `Bearer ${_tok}` } : {},
             body: formData,
           });
 
@@ -2717,15 +2818,22 @@ async function performSearch(query) {
         item.style.borderBottom = '1px solid #eee';
         item.onmouseover = () => item.style.background = '#f5f5f5';
         item.onmouseout = () => item.style.background = 'transparent';
-        
+
         let avatarHtml = `<div style="width:30px; height:30px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
         if (u.profilePicture) {
           avatarHtml = `<img src="${u.profilePicture}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; flex-shrink:0; border:1px solid #ccc;" />`;
         }
-        
+
+        const streakBadge = u.highestStreak > 0
+          ? `<span style="font-size:11px; background:#fef3c7; color:#d97706; padding:2px 6px; border-radius:10px; font-weight:600;">🔥 ${u.highestStreak}</span>`
+          : '';
+
         item.innerHTML = `
           ${avatarHtml}
-          <div style="font-weight:600; font-size:14px; color:#000;">${u.username}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600; font-size:14px; color:#000;">${u.username}</div>
+            ${streakBadge ? `<div style="margin-top:2px;">${streakBadge}</div>` : ''}
+          </div>
         `;
         
         item.onclick = () => {
@@ -2774,6 +2882,7 @@ async function openPublicProfile(targetUsername) {
     document.getElementById('public-profile-name').textContent = profile.name || profile.username;
     document.getElementById('public-profile-username').textContent = `@${profile.username}`;
     document.getElementById('public-profile-streak').textContent = profile.currentStreak;
+    document.getElementById('public-profile-highest-streak').textContent = profile.highestStreak || 0;
     
     // Graph
     renderContributionGraph(profile.contributionData);

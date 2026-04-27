@@ -30,7 +30,7 @@ async function searchUsers(req, res) {
       username: regex,
       isPublicProfile: { $ne: false }
     })
-    .select('username profilePicture')
+    .select('username profilePicture currentStreak highestStreak')
     .limit(10);
 
     res.json(users);
@@ -95,6 +95,7 @@ async function getPublicProfile(req, res) {
       name: user.name,
       profilePicture: user.profilePicture,
       currentStreak: user.currentStreak,
+      highestStreak: user.highestStreak || 0,
       days: days, // the full daily cards
       contributionData: contributionData, // for the graph
       achievements: achievements

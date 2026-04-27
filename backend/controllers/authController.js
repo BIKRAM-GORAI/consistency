@@ -1,9 +1,14 @@
 const User = require('../models/User');
 const { cloudinary } = require('../config/cloudinary');
+const bcrypt = require('bcrypt');
+const { generateToken } = require('../middleware/auth');
+const { incrementFailedAttempts, resetFailedAttempts } = require('../middleware/accountLockout');
+const saltRounds = 10; // Number of salt rounds for bcrypt hashing
 
 /**
  * POST /api/auth/register
  * Register a new user with name, email, and password
+ * Password is hashed using bcrypt before storage
  */
 const register = async (req, res) => {
   try {
@@ -25,10 +30,27 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'This username is already taken' });
     }
 
-    const user = new User({ name, username: username.toLowerCase().trim(), email: email.toLowerCase().trim(), password });
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const user = new User({
+      name,
+      username: username.toLowerCase().trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword
+    });
     const saved = await user.save();
 
-    res.status(201).json({ _id: saved._id, name: saved.name, email: saved.email, profilePicture: saved.profilePicture });
+    // Generate JWT token for the new user
+    const token = generateToken(saved._id, saved.email);
+
+    res.status(201).json({
+      _id: saved._id,
+      name: saved.name,
+      email: saved.email,
+      profilePicture: saved.profilePicture,
+      token
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -37,6 +59,8 @@ const register = async (req, res) => {
 /**
  * POST /api/auth/login
  * Login with email and password — returns user info or 401
+ * Password is verified using bcrypt.compare
+ * Implements account lockout after 5 failed attempts
  */
 const login = async (req, res) => {
   try {
@@ -46,15 +70,47 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim(), password });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // Verify password using bcrypt.compare
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      // Increment failed login attempts
+      await incrementFailedAttempts(user);
+
+      // Check if this was the final attempt that locked the account
+      const updatedUser = await User.findById(user._id);
+      if (updatedUser.lockUntil && updatedUser.lockUntil > Date.now()) {
+        const remainingTime = Math.ceil((updatedUser.lockUntil - Date.now()) / 1000 / 60);
+        return res.status(423).json({
+          message: `Account locked due to too many failed login attempts. Please try again in ${remainingTime} minutes.`,
+          locked: true,
+          remainingTime
+        });
+      }
+
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Reset failed login attempts on successful login
+    await resetFailedAttempts(user._id);
+
     user.lastActiveAt = new Date();
     await user.save();
 
-    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture });
+    // Generate JWT token for the authenticated user
+    const token = generateToken(user._id, user.email);
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      token
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -62,12 +118,15 @@ const login = async (req, res) => {
 
 
 /**
- * GET /api/auth/:userId/achievements-privacy
- * Returns { achievementsPublic: Boolean }
+ * GET /api/auth/achievements-privacy
+ * Returns { achievementsPublic: Boolean } for the authenticated user
  */
 async function getAchievementPrivacy(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select('achievementsPublic');
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId).select('achievementsPublic');
     if (!user) return res.status(404).json({ message: 'User not found' });
     // Existing users have no field yet — treat as true (public)
     res.json({ achievementsPublic: user.achievementsPublic !== false });
@@ -77,17 +136,19 @@ async function getAchievementPrivacy(req, res) {
 }
 
 /**
- * PATCH /api/auth/:userId/achievements-privacy
+ * PATCH /api/auth/achievements-privacy
  * Body: { achievementsPublic: Boolean }
  */
 async function setAchievementPrivacy(req, res) {
   try {
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
     const { achievementsPublic } = req.body;
     if (typeof achievementsPublic !== 'boolean') {
       return res.status(400).json({ message: 'achievementsPublic must be a boolean' });
     }
     const updated = await User.findByIdAndUpdate(
-      req.params.userId,
+      userId,
       { achievementsPublic },
       { new: true }
     ).select('achievementsPublic');
@@ -99,13 +160,17 @@ async function setAchievementPrivacy(req, res) {
 }
 
 /**
- * GET /api/auth/:userId/settings
+ * GET /api/auth/settings
+ * Get profile settings for the authenticated user
  */
 async function getProfileSettings(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile');
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ 
+    res.json({
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',
@@ -119,13 +184,16 @@ async function getProfileSettings(req, res) {
 }
 
 /**
- * PATCH /api/auth/:userId/settings
+ * PATCH /api/auth/settings
+ * Update profile settings for the authenticated user
  */
 async function setProfileSettings(req, res) {
   try {
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
     const { emailNotifications, isPublicProfile, username, oldPassword, newPassword } = req.body;
-    
-    const user = await User.findById(req.params.userId);
+
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     let updates = {};
@@ -151,10 +219,13 @@ async function setProfileSettings(req, res) {
     }
 
     if (newPassword) {
-      if (user.password !== oldPassword) {
+      // Verify current password using bcrypt.compare
+      const isCurrentPasswordValid = await bcrypt.compare(oldPassword, user.password);
+      if (!isCurrentPasswordValid) {
         return res.status(400).json({ message: 'Incorrect current password' });
       }
-      updates.password = newPassword;
+      // Hash the new password before storing
+      updates.password = await bcrypt.hash(newPassword, saltRounds);
     }
 
     if (Object.keys(updates).length > 0) {
@@ -178,11 +249,15 @@ async function setProfileSettings(req, res) {
 }
 
 /**
- * POST /api/auth/:userId/profile-picture
+ * POST /api/auth/profile-picture
+ * Upload profile picture for the authenticated user
  */
 async function uploadProfilePicture(req, res) {
   try {
-    const user = await User.findById(req.params.userId);
+    // Get userId from authenticated user (from JWT token)
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (!req.file) {
