@@ -1,16 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture } = require('../controllers/authController');
+const rateLimit = require('express-rate-limit');
+const { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword } = require('../controllers/authController');
 const { upload } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { registerValidation, loginValidation, updateProfileValidation, achievementPrivacyValidation } = require('../middleware/validation');
 const { checkAccountLockout } = require('../middleware/accountLockout');
+
+// Rate limit for sending OTPs: max 3 per 15 minutes
+const otpSendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { message: 'Too many OTP requests from this IP, please try again after 15 minutes.' }
+});
+
+// Rate limit for validating OTPs / resetting: max 10 per 15 minutes
+const otpValidateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Too many validation attempts from this IP, please try again after 15 minutes.' }
+});
 
 // POST /api/auth/register (public)
 router.post('/register', registerValidation, register);
 
 // POST /api/auth/login (public) with account lockout check
 router.post('/login', loginValidation, checkAccountLockout, login);
+
+// POST /api/auth/forgot-password-otp
+router.post('/forgot-password-otp', otpSendLimiter, forgotPasswordOtp);
+
+// POST /api/auth/validate-otp
+router.post('/validate-otp', otpValidateLimiter, validateOtp);
+
+// POST /api/auth/reset-password
+router.post('/reset-password', otpValidateLimiter, resetPassword);
 
 // GET/PATCH achievement privacy toggle (requires authentication)
 router.get('/achievements-privacy', authenticateToken, getAchievementPrivacy);

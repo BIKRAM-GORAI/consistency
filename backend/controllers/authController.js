@@ -287,4 +287,151 @@ async function uploadProfilePicture(req, res) {
   }
 }
 
-module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture };
+const crypto = require('crypto');
+const { sendEmail } = require('../utils/email');
+
+/**
+ * POST /api/auth/forgot-password-otp
+ * Generates a 6-digit OTP, saves hash to DB, and emails it
+ */
+async function forgotPasswordOtp(req, res) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) return res.status(404).json({ message: 'No account found with that email' });
+
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otp, salt);
+
+    user.resetOtp = hashedOtp;
+    user.resetOtpExpire = Date.now() + 5 * 60 * 1000; // 5 mins
+    user.resetOtpAttempts = 0;
+    await user.save();
+
+    const htmlMessage = `
+      <div style="font-family: 'Inter', sans-serif; padding: 24px; color: #333; max-width: 500px; margin: 0 auto; border: 2px solid #ddd; border-radius: 8px;">
+        <h2 style="color: #0a0a0a; margin-top: 0;">Password Reset Request</h2>
+        <p style="font-size: 16px; line-height: 1.5;">You requested a password reset for your account. This email was sent to you directly by the <strong>Consistency Tracker App</strong>.</p>
+        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 24px;">Your one-time password (OTP) is:</p>
+        
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="background-color: #0a0a0a; color: #FFD60A; padding: 16px 24px; display: inline-block; border-radius: 6px; font-size: 28px; font-weight: 900; letter-spacing: 6px; font-family: monospace;">
+            ${otp}
+          </div>
+        </div>
+
+        <p style="color: #EF4444; font-weight: bold; font-size: 15px; text-align: center;">This code is valid for 5 minutes.</p>
+        
+        <hr style="border: none; border-top: 1px dashed #ccc; margin: 24px 0;" />
+        <p style="font-size: 13px; color: #777; margin-bottom: 0;">If you did not request this, please ignore this email. Your password will remain unchanged.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Your Password Reset OTP — Consistency Tracker',
+      html: htmlMessage
+    });
+
+    res.json({ message: 'OTP sent successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * POST /api/auth/validate-otp
+ * Validates the OTP purely for frontend UI flow (unlocking password fields)
+ */
+async function validateOtp(req, res) {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required' });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user || !user.resetOtp || !user.resetOtpExpire) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Check expiry
+    if (Date.now() > user.resetOtpExpire) {
+      user.resetOtp = undefined;
+      user.resetOtpExpire = undefined;
+      user.resetOtpAttempts = 0;
+      await user.save();
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const isMatch = await bcrypt.compare(otp.toString(), user.resetOtp);
+    if (!isMatch) {
+      user.resetOtpAttempts += 1;
+      if (user.resetOtpAttempts >= 5) {
+        user.resetOtp = undefined;
+        user.resetOtpExpire = undefined;
+        user.resetOtpAttempts = 0;
+        await user.save();
+        return res.status(400).json({ message: 'Too many failed attempts. OTP invalidated.' });
+      }
+      await user.save();
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    res.json({ message: 'OTP is valid' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * POST /api/auth/reset-password
+ * Final step: takes email, otp, newPassword. Re-validates OTP and resets.
+ */
+async function resetPassword(req, res) {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) return res.status(400).json({ message: 'All fields are required' });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user || !user.resetOtp || !user.resetOtpExpire) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    if (Date.now() > user.resetOtpExpire) {
+      user.resetOtp = undefined;
+      user.resetOtpExpire = undefined;
+      await user.save();
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const isMatch = await bcrypt.compare(otp.toString(), user.resetOtp);
+    if (!isMatch) {
+      user.resetOtpAttempts += 1;
+      if (user.resetOtpAttempts >= 5) {
+        user.resetOtp = undefined;
+        user.resetOtpExpire = undefined;
+      }
+      await user.save();
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Update password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
+    // Clear OTP fields
+    user.resetOtp = undefined;
+    user.resetOtpExpire = undefined;
+    user.resetOtpAttempts = 0;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword };

@@ -107,6 +107,19 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    // OTP fields for Forgot Password
+    resetOtp: {
+      type: String,
+      default: null,
+    },
+    resetOtpExpire: {
+      type: Date,
+      default: null,
+    },
+    resetOtpAttempts: {
+      type: Number,
+      default: 0,
+    }
   },
   { timestamps: true }
 );

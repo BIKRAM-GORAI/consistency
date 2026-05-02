@@ -240,6 +240,30 @@
 
     .auth-input::placeholder { color: #bbb; }
 
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input.has-toggle {
+      padding-right: 40px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      color: #666;
+      transition: color 0.15s;
+    }
+
+    .password-toggle:hover { color: var(--black); }
+
     .auth-input:focus {
       border-color: var(--black);
       box-shadow: 4px 4px 0 var(--yellow);
@@ -416,7 +440,13 @@
 
           <div class="auth-field">
             <label class="auth-label" for="login-password">Password</label>
-            <input class="auth-input" type="password" id="login-password" placeholder="Your password" autocomplete="current-password" />
+            <div class="password-wrapper">
+              <input class="auth-input has-toggle" type="password" id="login-password" placeholder="Your password" autocomplete="current-password" />
+              <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+            </div>
+            <div style="text-align: right; margin-top: 8px;">
+              <a href="#" onclick="switchTab('forgot'); return false;" style="font-size: 12px; color: #666; font-weight: 700; text-decoration: none; text-transform: uppercase;">Forgot Password?</a>
+            </div>
           </div>
 
           <button class="auth-submit-btn" id="login-btn" onclick="handleLogin()">Login →</button>
@@ -455,11 +485,71 @@
 
           <div class="auth-field">
             <label class="auth-label" for="register-password">Password</label>
-            <input class="auth-input" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" />
+            <div class="password-wrapper">
+              <input class="auth-input has-toggle" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" />
+              <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+            </div>
             <p class="auth-hint">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
           </div>
 
           <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()">Create Account →</button>
+        </div>
+
+        <!-- ── FORGOT PASSWORD FORM ── -->
+        <div class="auth-form" id="form-forgot">
+          <h1 class="auth-title">Reset Password 🔐</h1>
+          <p class="auth-subtitle">We'll send a code to your email.</p>
+
+          <div class="auth-error" id="forgot-error">
+            <span>⚠️</span>
+            <span id="forgot-error-msg"></span>
+          </div>
+          <div class="auth-success" id="forgot-success">
+            <span>✅</span>
+            <span id="forgot-success-msg"></span>
+          </div>
+
+          <!-- Step 1: Email -->
+          <div id="forgot-step-1">
+            <div class="auth-field">
+              <label class="auth-label" for="forgot-email">Email</label>
+              <input class="auth-input" type="email" id="forgot-email" placeholder="you@example.com" />
+            </div>
+            <button class="auth-submit-btn" id="forgot-send-btn" onclick="handleSendOtp()">Send OTP</button>
+            <div style="text-align: center; margin-top: 16px;">
+              <a href="#" onclick="switchTab('login'); return false;" class="auth-back-link">Cancel</a>
+            </div>
+          </div>
+
+          <!-- Step 2: OTP Validation -->
+          <div id="forgot-step-2" style="display: none; margin-top: 16px; border-top: 2px dashed #ddd; padding-top: 16px;">
+            <div class="auth-field">
+              <label class="auth-label" for="forgot-otp">6-Digit OTP</label>
+              <input class="auth-input" type="text" id="forgot-otp" placeholder="Enter code" maxlength="6" style="text-align: center; font-size: 20px; letter-spacing: 4px;" />
+            </div>
+            <button class="auth-submit-btn" id="forgot-validate-btn" style="background: var(--yellow); color: var(--black);" onclick="handleValidateOtp()">Validate OTP</button>
+          </div>
+
+          <!-- Step 3: New Password -->
+          <div id="forgot-step-3" style="display: none; margin-top: 16px; border-top: 2px dashed #ddd; padding-top: 16px;">
+            <div class="auth-field">
+              <label class="auth-label" for="forgot-new-password">New Password</label>
+              <div class="password-wrapper">
+                <input class="auth-input has-toggle" type="password" id="forgot-new-password" placeholder="Create a new password" />
+                <button type="button" class="password-toggle" onclick="togglePassword('forgot-new-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              </div>
+              <p class="auth-hint">Must be 5+ characters with 1 uppercase, 1 lowercase, 1 special character.</p>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="forgot-confirm-password">Confirm Password</label>
+              <div class="password-wrapper">
+                <input class="auth-input has-toggle" type="password" id="forgot-confirm-password" placeholder="Confirm new password" />
+                <button type="button" class="password-toggle" onclick="togglePassword('forgot-confirm-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              </div>
+            </div>
+            <button class="auth-submit-btn" id="forgot-reset-btn" onclick="handleResetPassword()">Save and Update Password</button>
+          </div>
+
         </div>
 
       </div>
@@ -479,13 +569,31 @@
     function switchTab(tab) {
       document.getElementById('form-login').classList.toggle('active', tab === 'login');
       document.getElementById('form-register').classList.toggle('active', tab === 'register');
-      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      document.getElementById('form-forgot').classList.toggle('active', tab === 'forgot');
+      
+      // Only show the tabs if not in forgot mode
+      document.querySelector('.auth-tabs').style.display = tab === 'forgot' ? 'none' : 'flex';
+      
+      if (tab !== 'forgot') {
+        document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+        document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      }
       clearErrors();
     }
 
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🔒';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
     function clearErrors() {
-      ['login-error', 'register-error', 'register-success'].forEach(id => {
+      ['login-error', 'register-error', 'register-success', 'forgot-error', 'forgot-success'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.remove('visible');
       });
@@ -622,13 +730,111 @@
       }
     }
 
+    // ── Forgot Password Flow ──────────────────────────────────
+    async function handleSendOtp() {
+      clearErrors();
+      const email = document.getElementById('forgot-email').value.trim();
+      if (!email) return showError('forgot', 'Please enter your email.');
+
+      const btn = document.getElementById('forgot-send-btn');
+      btn.disabled = true; btn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/auth/forgot-password-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to send OTP.');
+
+        document.getElementById('forgot-success-msg').textContent = 'OTP sent to your email!';
+        document.getElementById('forgot-success').classList.add('visible');
+        
+        // Unlock step 2
+        document.getElementById('forgot-step-2').style.display = 'block';
+        document.getElementById('forgot-email').disabled = true;
+      } catch (err) {
+        showError('forgot', err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Send OTP Again';
+      }
+    }
+
+    async function handleValidateOtp() {
+      clearErrors();
+      const email = document.getElementById('forgot-email').value.trim();
+      const otp = document.getElementById('forgot-otp').value.trim();
+      if (!otp || otp.length !== 6) return showError('forgot', 'Enter a valid 6-digit OTP.');
+
+      const btn = document.getElementById('forgot-validate-btn');
+      btn.disabled = true; btn.textContent = 'Validating...';
+
+      try {
+        const res = await fetch('/api/auth/validate-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Invalid OTP.');
+
+        document.getElementById('forgot-success-msg').textContent = 'OTP validated!';
+        document.getElementById('forgot-success').classList.add('visible');
+        
+        // Unlock step 3
+        document.getElementById('forgot-step-3').style.display = 'block';
+        document.getElementById('forgot-otp').disabled = true;
+        btn.style.display = 'none';
+      } catch (err) {
+        showError('forgot', err.message);
+        btn.disabled = false; btn.textContent = 'Validate OTP';
+      }
+    }
+
+    async function handleResetPassword() {
+      clearErrors();
+      const email = document.getElementById('forgot-email').value.trim();
+      const otp = document.getElementById('forgot-otp').value.trim();
+      const newPassword = document.getElementById('forgot-new-password').value;
+      const confirmPassword = document.getElementById('forgot-confirm-password').value;
+
+      if (!newPassword || !confirmPassword) return showError('forgot', 'Fill in all password fields.');
+      if (newPassword !== confirmPassword) return showError('forgot', 'Passwords do not match.');
+      if (newPassword.length < 5 || /\s/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
+        return showError('forgot', 'Password does not meet requirements.');
+      }
+
+      const btn = document.getElementById('forgot-reset-btn');
+      btn.disabled = true; btn.textContent = 'Updating...';
+
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp, newPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Reset failed.');
+
+        document.getElementById('forgot-success-msg').textContent = 'Password reset! Redirecting to login...';
+        document.getElementById('forgot-success').classList.add('visible');
+        
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        showError('forgot', err.message);
+        btn.disabled = false; btn.textContent = 'Save and Update Password';
+      }
+    }
+
     // ── Allow Enter key to submit ──────────────────────────────
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter') return;
       const activeForm = document.querySelector('.auth-form.active');
       if (!activeForm) return;
       if (activeForm.id === 'form-login') handleLogin();
-      else handleRegister();
+      else if (activeForm.id === 'form-register') handleRegister();
+      // For forgot form, handle enter explicitly if needed, but manual button click is safer
     });
 
     // ── Read URL tab param and redirect if already logged in ───
