@@ -52,11 +52,50 @@ const updateGoal = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You can only update your own goals.' });
     }
 
+    const wasCompleted = goal.tasks && goal.tasks.length > 0 && goal.tasks.every(t => t.completed);
+
     const updated = await Goal.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
+
+    const isCompleted = updated.tasks && updated.tasks.length > 0 && updated.tasks.every(t => t.completed);
+
+    // If goal was just fully completed, automatically log it as an achievement
+    if (!wasCompleted && isCompleted) {
+      const Day = require('../models/Day');
+      const Achievement = require('../models/Achievement');
+      
+      // Get today's local date string (YYYY-MM-DD)
+      const d = new Date();
+      const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+      // Ensure a Day exists for today to attach the achievement to
+      let day = await Day.findOne({ userId, date: todayStr });
+      if (!day) {
+        day = new Day({ userId, date: todayStr, categories: [] });
+        await day.save();
+      }
+
+      // Build a rich description listing the completed tasks
+      const deadlineStr = new Date(updated.deadline).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      let description = `Goal Deadline: ${deadlineStr}\n\nTasks:\n`;
+      updated.tasks.forEach(t => {
+        description += `✅ ${t.title}\n`;
+      });
+
+      const achievement = new Achievement({
+        userId,
+        dayId: day._id,
+        date: todayStr,
+        title: `Goal Achieved: ${updated.title}`,
+        description: description.trim(),
+        links: []
+      });
+      await achievement.save();
+    }
+
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
