@@ -3792,7 +3792,11 @@ async function loadLeetCodeProfileStatus() {
       document.getElementById('leetcode-connected').style.display       = 'none';
     }
 
-    if (user.leetcodeVerificationStatus === 'pending_retry' && user.leetcodeRetryScheduledAt) {
+    const isPendingRetryActive = user.leetcodeVerificationStatus === 'pending_retry' && 
+                                 user.leetcodeRetryScheduledAt && 
+                                 Date.now() < (new Date(user.leetcodeRetryScheduledAt).getTime() + 15 * 60 * 1000);
+
+    if (isPendingRetryActive) {
       // ── STATE 3: PENDING RETRY ────────────────────────────────
       // This must come BEFORE the isVerified check because a user changing
       // their username still has the old leetcodeUsername/lastVerifiedAt in DB.
@@ -3800,32 +3804,21 @@ async function loadLeetCodeProfileStatus() {
       const retryAvailMs   = scheduledMs + 5  * 60 * 1000;
       const retryExpiresMs = scheduledMs + 15 * 60 * 1000;
 
-      if (Date.now() >= retryExpiresMs) {
-        // Window expired — show State 1 so user can generate a fresh code
-        // (backend auto-clears DB state on the next generate-code call)
-        setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
-        leetcodeUsernameDisplay.textContent = 'Not connected';
-        leetcodeProfilePic.style.display = 'none';
-        hideAllSections();
-        document.getElementById('leetcode-not-connected').style.display = 'block';
-        updateLeetCodeButtonsStatus(false);
-      } else {
-        // Window still active — show pending retry UI with live timers
-        setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+      // Window still active — show pending retry UI with live timers
+      setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
 
-        if (user.leetcodeVerificationCode) {
-          document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
-          document.getElementById('leetcode-pending-code-display').textContent = user.leetcodeVerificationCode;
-        }
-
-        hideAllSections();
-        document.getElementById('leetcode-pending-retry').style.display = 'block';
-        startRetryCountdown(
-          new Date(retryAvailMs).toISOString(),
-          new Date(retryExpiresMs).toISOString()
-        );
-        updateLeetCodeButtonsStatus(false);
+      if (user.leetcodeVerificationCode) {
+        document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
+        document.getElementById('leetcode-pending-code-display').textContent = user.leetcodeVerificationCode;
       }
+
+      hideAllSections();
+      document.getElementById('leetcode-pending-retry').style.display = 'block';
+      startRetryCountdown(
+        new Date(retryAvailMs).toISOString(),
+        new Date(retryExpiresMs).toISOString()
+      );
+      updateLeetCodeButtonsStatus(false);
 
     } else if (isVerified) {
       // ── STATE 5: VERIFIED ─────────────────────────────────────
