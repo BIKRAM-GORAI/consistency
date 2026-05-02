@@ -19,6 +19,8 @@ const leetcodeRoutes    = require('./routes/leetcodeRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
+app.set("trust proxy", 1); // ✅ ADD THIS HERE
+
 
 // Connect to MongoDB
 connectDB();

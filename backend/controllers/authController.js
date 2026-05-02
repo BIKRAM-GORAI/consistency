@@ -312,22 +312,35 @@ async function forgotPasswordOtp(req, res) {
     user.resetOtpAttempts = 0;
     await user.save();
 
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const htmlMessage = `
-      <div style="font-family: 'Inter', sans-serif; padding: 24px; color: #333; max-width: 500px; margin: 0 auto; border: 2px solid #ddd; border-radius: 8px;">
-        <h2 style="color: #0a0a0a; margin-top: 0;">Password Reset Request</h2>
-        <p style="font-size: 16px; line-height: 1.5;">You requested a password reset for your account. This email was sent to you directly by the <strong>Consistency Tracker App</strong>.</p>
-        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 24px;">Your one-time password (OTP) is:</p>
-        
+      <div style="font-family: Arial, sans-serif; padding: 24px; color: #000000; max-width: 500px; margin: 0 auto; border-top: 3px solid #000000; border-left: 3px solid #000000; border-right: 8px solid #000000; border-bottom: 8px solid #000000; border-radius: 8px; background-color: #faf7f2;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <div style="background-color: #0a0a0a; color: #FFD60A; padding: 16px 24px; display: inline-block; border-radius: 6px; font-size: 28px; font-weight: 900; letter-spacing: 6px; font-family: monospace;">
+          <span style="font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 0; background-color: #FFD60A; display: inline-block; padding: 10px 18px; border-top: 2px solid #000000; border-left: 2px solid #000000; border-right: 5px solid #000000; border-bottom: 5px solid #000000;">
+            ⚡ Consistency Tracker
+          </span>
+        </div>
+        
+        <h2 style="font-size: 20px; font-weight: 900; margin-top: 0;">Password Reset Request</h2>
+        <p style="font-size: 15px; line-height: 1.6; font-weight: bold;">You requested a password reset for your account. This message was sent directly by the Consistency Tracker App.</p>
+        <p style="font-size: 15px; line-height: 1.6; margin-bottom: 20px; font-weight: bold;">Your one-time password (OTP) is:</p>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="background-color: #000000; color: #FFD60A; padding: 16px 32px; display: inline-block; border-radius: 6px; font-size: 32px; font-weight: 900; letter-spacing: 8px; font-family: monospace; border-bottom: 6px solid #FF3EA5; border-right: 6px solid #FF3EA5;">
             ${otp}
           </div>
         </div>
 
-        <p style="color: #EF4444; font-weight: bold; font-size: 15px; text-align: center;">This code is valid for 5 minutes.</p>
+        <p style="color: #EF4444; font-weight: 900; font-size: 16px; text-align: center; margin-bottom: 24px; background-color: #FFF0F0; padding: 12px; border-top: 2px solid #EF4444; border-left: 2px solid #EF4444; border-right: 5px solid #EF4444; border-bottom: 5px solid #EF4444; border-radius: 6px;">
+          This code will expire in exactly 5 minutes.<br>
+          <span style="font-size: 12px; font-weight: normal; color: #666;">(Code generated at ${currentTime})</span>
+        </p>
         
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 24px 0;" />
-        <p style="font-size: 13px; color: #777; margin-bottom: 0;">If you did not request this, please ignore this email. Your password will remain unchanged.</p>
+        <div style="background-color: #f5f5f5; padding: 12px; border: 2px solid #ddd; border-radius: 4px;">
+          <p style="font-size: 13px; color: #555; margin: 0; font-weight: bold;">
+            <strong>Didn't request this?</strong> Please ignore this email. Your password will remain completely safe and unchanged. Ref: ${Date.now().toString().slice(-6)}
+          </p>
+        </div>
       </div>
     `;
 
