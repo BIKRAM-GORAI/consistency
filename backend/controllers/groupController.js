@@ -152,8 +152,8 @@ const memberDays = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You can only view data of users in your groups.' });
     }
 
-    // Check if the target user has a public profile
-    const targetUser = await User.findById(memberId).select('isPublicProfile');
+    // Check if the target user has a public profile and get streak info
+    const targetUser = await User.findById(memberId).select('isPublicProfile currentStreak highestStreak');
     if (targetUser && targetUser.isPublicProfile === false) {
       return res.status(403).json({ message: 'This user has a private profile.' });
     }
@@ -172,6 +172,10 @@ const memberDays = async (req, res) => {
 
     res.json({
       days,
+      streak: {
+        current: targetUser?.currentStreak || 0,
+        highest: targetUser?.highestStreak || 0
+      },
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),

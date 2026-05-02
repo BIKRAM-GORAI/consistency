@@ -65,6 +65,48 @@ const UserSchema = new mongoose.Schema(
       enum: ['free', 'premium'],
       default: 'free',
     },
+    // LeetCode Integration
+    leetcodeUsername: {
+      type: String,
+      default: null,
+      sparse: true
+    },
+    // Holds the unverified username until verification succeeds
+    leetcodePendingUsername: {
+      type: String,
+      default: null
+    },
+    leetcodeVerificationCode: {
+      type: String,
+      default: null
+    },
+    leetcodeVerificationExpiry: {
+      type: Date,
+      default: null
+    },
+    leetcodeUsernameChangeCount: {
+      type: Number,
+      default: 0
+    },
+    leetcodeLastVerifiedAt: {
+      type: Date,
+      default: null
+    },
+    leetcodeProfilePicture: {
+      type: String,
+      default: ''
+    },
+    // 'none' = no pending retry; 'pending_retry' = first verify failed, retry window open
+    leetcodeVerificationStatus: {
+      type: String,
+      enum: ['none', 'pending_retry'],
+      default: 'none'
+    },
+    // Timestamp when the retry was scheduled — drives both the 5-min enable and 15-min expiry timers
+    leetcodeRetryScheduledAt: {
+      type: Date,
+      default: null
+    },
   },
   { timestamps: true }
 );

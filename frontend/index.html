@@ -446,6 +446,40 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: Add LeetCode Problem ===== -->
+  <div class="modal-overlay" id="modal-add-leetcode" onclick="closeModalOnOverlay(event, 'modal-add-leetcode')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎯 Add LeetCode Problem</h2>
+        <button class="modal-close" onclick="forceCloseModal('modal-add-leetcode')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="leetcode-problem-url">LeetCode Problem URL</label>
+          <input type="text" id="leetcode-problem-url" class="form-control" placeholder="https://leetcode.com/problems/two-sum/" />
+          <p class="form-hint">URL should end with the problem title (e.g., /problems/two-sum/)</p>
+        </div>
+
+        <div id="leetcode-problem-preview" class="lc-problem-preview" style="display:none;">
+          <h4 id="leetcode-problem-title" class="lc-problem-title"></h4>
+          <p style="margin:0;">Difficulty: <span id="leetcode-problem-difficulty" style="font-weight:bold;"></span></p>
+        </div>
+
+        <button class="btn-primary ripple" style="width:100%; margin-top:12px;" onclick="validateLeetCodeProblemForModal()" id="validate-leetcode-btn">
+          🔍 Validate Problem
+        </button>
+
+        <div id="leetcode-validation-result" style="display:none; margin-top:16px; padding:12px; border-radius:8px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="forceCloseModal('modal-add-leetcode')">Cancel</button>
+        <button class="btn-primary ripple" onclick="addLeetCodeProblem()" id="add-leetcode-btn" disabled>
+          + Add to Daily Tasks
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: Edit Achievement ===== -->
   <div class="modal-overlay" id="modal-edit-achievement" onclick="closeModalOnOverlay(event, 'modal-edit-achievement')">
     <div class="modal">
@@ -506,7 +540,107 @@
           <p class="form-hint" id="profile-username-hint">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br>⚠️ Username can be set only once.</p>
           <!-- <p class="form-hint" id="profile-username-warning"  style="display:none; color:var(--coral); font-weight:600;">⚠️ You can only set your username once.</p> -->
         </div>
-        
+
+        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">🎯 LeetCode Integration</h3>
+
+          <div id="leetcode-connect-section">
+            <!-- Status display -->
+            <div id="leetcode-status" class="lc-status-badge lc-status-error"></div>
+
+            <!-- Profile picture display -->
+            <img id="leetcode-profile-pic" style="width:60px; height:60px; border-radius:50%; object-fit:cover; display:none; margin:0 auto 12px; border:2px solid #ddd;" />
+
+            <!-- Username display -->
+            <div style="margin-bottom:12px; font-size:14px; text-align:center;">
+              <span style="color:var(--text-muted);">Username: </span>
+              <strong id="leetcode-username-display" style="color:var(--text);"></strong>
+            </div>
+
+            <!-- Remaining changes display -->
+            <div id="leetcode-remaining-changes" style="margin-bottom:12px; font-size:13px; color:var(--text-muted); text-align:center;"></div>
+
+            <!-- Show if not connected -->
+            <div id="leetcode-not-connected">
+              <div class="form-group">
+                <label for="leetcode-username">LeetCode Username</label>
+                <input type="text" id="leetcode-username" class="form-control" placeholder="Enter your LeetCode username" />
+              </div>
+              <button class="btn-primary ripple" style="width:100%; margin-top:12px;" onclick="generateLeetCodeCode()">
+                Generate Verification Code
+              </button>
+            </div>
+
+            <!-- Show if code expired -->
+            <div id="leetcode-code-expired" class="lc-panel lc-panel-expired" style="display:none;">
+              <p style="margin:0 0 8px 0; font-weight:600;">⏰ Your verification code has expired</p>
+              <p style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted);">Please generate a new verification code to continue.</p>
+              <button class="btn-primary ripple" style="width:100%;" onclick="generateLeetCodeCode()">
+                🔄 Generate New Code
+              </button>
+            </div>
+
+            <!-- Show if code generated -->
+            <div id="leetcode-code-generated" class="lc-panel lc-panel-generated" style="display:none;">
+              <p style="margin:0 0 8px 0; font-weight:600;">Add this code to your LeetCode profile bio:</p>
+              <div class="verification-code-display" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <code id="leetcode-verification-code" style="flex:1; padding:8px 12px; background:#fff; color:#0a0a0a; border:1px solid #ccc; border-radius:4px; font-family:monospace; font-size:16px; font-weight:bold;"></code>
+                <button onclick="copyLeetCodeCode()" style="padding:8px 12px; background:#10b981; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;">📋 Copy</button>
+              </div>
+              <p id="leetcode-code-expiry" style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted); display:none;"></p>
+              <p style="margin:0 0 8px 0; font-size:13px; color:var(--text-muted);"><strong>Where to add:</strong> Go to your LeetCode profile → Click "Edit" → Add the code to your "About" or "Bio" section</p>
+              <p style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted);">After adding the code to your bio, click verify below</p>
+              <button class="btn-primary ripple" style="width:100%; margin-bottom:8px;" onclick="verifyLeetCodeProfile()">
+                ✅ Verify Profile
+              </button>
+            </div>
+
+            <!-- Show if verification retry is pending (first verify failed, cache bypass window) -->
+            <div id="leetcode-pending-retry" class="lc-panel lc-panel-pending-retry" style="display:none;">
+              <p style="margin:0 0 6px 0; font-weight:700; color:#854d0e; font-size:14px;">⏳ Verification Pending</p>
+              <p style="margin:0 0 10px 0; font-size:13px; color:#713f12; line-height:1.5;">
+                Code not found yet — this may be a caching delay. Make sure
+                <strong id="leetcode-pending-code-display" class="lc-pending-code"></strong>
+                is in your LeetCode bio, then click "Check Status" once the timer is ready.
+              </p>
+
+              <!-- Phase 1/2 timer display -->
+              <div id="leetcode-retry-timer" class="lc-retry-timer"></div>
+
+              <!-- Check Status button — disabled during 5-min wait, enabled after -->
+              <button id="leetcode-check-status-btn"
+                      class="btn-primary ripple"
+                      style="width:100%; margin-bottom:8px;"
+                      onclick="checkLeetCodeVerificationStatus()"
+                      disabled>
+                🔄 Check Status
+              </button>
+
+              <!-- Window expiry countdown -->
+              <p style="margin:0; font-size:12px; color:#92400e; text-align:center;">
+                Window closes in <strong id="leetcode-window-countdown"></strong> — after that you can generate a new code
+              </p>
+            </div>
+
+            <!-- Show if connected -->
+            <div id="leetcode-connected" class="lc-panel-connected" style="display:none;">
+              <div class="leetcode-connected-info" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:20px;">🎯</span>
+                  <span>Connected to: <strong id="leetcode-connected-username"></strong></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:20px;">🔄</span>
+                  <span>Changes remaining: <strong id="leetcode-changes-remaining"></strong>/3</span>
+                </div>
+              </div>
+              <button class="btn-ghost ripple" style="width:100%; padding:8px 12px; border:2px solid #10b981; color:#10b981;" onclick="changeLeetCodeUsername()">
+                Change Username
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
           <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase;" onclick="togglePasswordSection()" id="toggle-pwd-btn">
             <span>🔒 Change Password</span>

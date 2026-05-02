@@ -41,6 +41,31 @@ let allTemplates = [];
 let activeDayIdForTemplate = null;
 let editingTemplateId = null;
 
+// LeetCode configuration
+const MAX_USERNAME_CHANGES = 3;
+
+// Current day ID for LeetCode problem addition
+let currentLeetCodeDayId = null;
+
+// Cached validation result — reused in addLeetCodeProblem to avoid a second API call
+let currentLeetCodeValidation = null;
+
+// setInterval reference for the pending-retry countdown timer
+let leetcodeRetryTimerInterval = null;
+
+/**
+ * Sets the LeetCode status badge class (theme-aware, no inline colours).
+ * @param {HTMLElement} el  - the #leetcode-status element
+ * @param {'verified'|'pending'|'waiting'|'error'} state
+ * @param {string} text     - display text
+ */
+function setLcStatus(el, state, text) {
+  if (!el) return;
+  el.className = `lc-status-badge lc-status-${state}`;
+  el.textContent = text;
+}
+
+
 // ── Mobile detection ───────────────────────────────────────
 const isMobile = () => window.innerWidth <= 768;
 
@@ -227,10 +252,16 @@ async function apiFetch(url, options = {}) {
     }
     if (res.status === 429) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.message || 'Too many requests. Please try again later.');
+      const err = new Error(body.message || 'Too many requests. Please try again later.');
+      err.status = 429;
+      err.data = body;
+      throw err;
     }
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `HTTP ${res.status}`);
+    const err = new Error(body.message || `HTTP ${res.status}`);
+    err.status = res.status;
+    err.data = body; // attach full body so callers can read extra fields (e.g. retryAvailableAt)
+    throw err;
   }
   return res.json();
 }
@@ -404,6 +435,7 @@ function buildDayCard(day) {
               onchange="toggleTask('${day._id}','${cat._id}','${task._id}',this.checked)"
               id="chk-${task._id}" />
             <label class="task-title" for="chk-${task._id}">${escHtml(task.title)}</label>
+            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task">🗑️</button>
           </div>`;
       } else {
         const lockClass = task.completed ? 'locked-complete' : 'locked-incomplete';
@@ -411,6 +443,7 @@ function buildDayCard(day) {
           <div class="task-item ${lockClass}">
             <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled />
             <span class="task-title">${escHtml(task.title)}</span>
+            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task">🗑️</button>
           </div>`;
       }
     }
@@ -419,6 +452,7 @@ function buildDayCard(day) {
     const editCatBtn = isToday
       ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category">✏️</button>`
       : '';
+    const delCatBtn = `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category">🗑️</button>`;
     categoriesHTML += `
       <div class="category-block">
         <div class="category-header">
@@ -426,6 +460,7 @@ function buildDayCard(day) {
           <div class="category-header-right">
             <span class="category-count">${completedCount}/${cat.tasks.length}</span>
             ${editCatBtn}
+            ${delCatBtn}
           </div>
         </div>
         <div class="tasks-list">${tasksHTML || '<p style="padding:8px 14px;font-size:13px;color:var(--text-3)">No tasks added.</p>'}</div>
@@ -483,7 +518,10 @@ function buildDayCard(day) {
         <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')">🏆 Log a Acheivement</button>
         <span class="ach-no-progress-note">doesn't affect progress</span>
       </div>
-      <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')">💾 Save Template</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-add-leetcode ripple" onclick="openLeetCodeProblemModal('${day._id}','${day.date}')" title="Add LeetCode problem" id="leetcode-btn-${day._id}">🎯 LeetCode</button>
+        <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')">💾 Save Template</button>
+      </div>
     </div>
   `;
 
@@ -541,6 +579,73 @@ async function toggleTask(dayId, catId, taskId, checked) {
     if (checkbox) checkbox.checked = !checked;
     updateProgressBar(dayId, day.categories);
     showToast('Failed to save. Check connection.', 'error');
+  }
+}
+
+// ── Delete category ────────────────────────────────────────
+async function deleteCategory(dayId, catId) {
+  const day = allDays.find(d => d._id === dayId);
+  if (!day) return;
+  const catIndex = day.categories.findIndex(c => c._id === catId);
+  if (catIndex < 0) return;
+
+  const catName = day.categories[catIndex].name;
+  if (!confirm(`Delete the "${catName}" category and all its tasks?`)) return;
+
+  // Optimistic update
+  const removed = day.categories.splice(catIndex, 1)[0];
+  updateProgressBar(dayId, day.categories);
+
+  try {
+    await apiFetch(`${API}/api/days/${dayId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ categories: day.categories }),
+    });
+    // Re-render only this card
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) cardEl.replaceWith(buildDayCard(day));
+    showToast(`"${catName}" deleted`, 'success');
+  } catch (err) {
+    // Rollback
+    day.categories.splice(catIndex, 0, removed);
+    updateProgressBar(dayId, day.categories);
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) cardEl.replaceWith(buildDayCard(day));
+    showToast('Failed to delete category', 'error');
+  }
+}
+
+// ── Delete individual task ──────────────────────────────────
+async function deleteTask(dayId, catId, taskId) {
+  const day = allDays.find(d => d._id === dayId);
+  if (!day) return;
+  const cat = day.categories.find(c => c._id === catId);
+  if (!cat) return;
+  const taskIndex = cat.tasks.findIndex(t => t._id === taskId);
+  if (taskIndex < 0) return;
+
+  const taskTitle = cat.tasks[taskIndex].title;
+  if (!confirm(`Delete task "${taskTitle}"?`)) return;
+
+  // Optimistic update
+  const removed = cat.tasks.splice(taskIndex, 1)[0];
+  updateProgressBar(dayId, day.categories);
+
+  try {
+    await apiFetch(`${API}/api/days/${dayId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ categories: day.categories }),
+    });
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) cardEl.replaceWith(buildDayCard(day));
+    showToast('Task deleted', 'success');
+  } catch (err) {
+    // Rollback
+    cat.tasks.splice(taskIndex, 0, removed);
+    updateProgressBar(dayId, day.categories);
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) cardEl.replaceWith(buildDayCard(day));
+    showToast('Failed to delete task', 'error');
   }
 }
 
@@ -1561,6 +1666,8 @@ async function removeMember(groupId, memberId, memberName) {
 let memberDaysPage = 1;
 let memberDaysData = [];
 let memberDaysHasMore = false;
+let memberCurrentStreak = 0;
+let memberHighestStreak = 0;
 
 async function openMemberTasks(memberId, memberName) {
   const titleEl = document.getElementById('member-tasks-title');
@@ -1574,6 +1681,8 @@ async function openMemberTasks(memberId, memberName) {
   memberDaysPage = 1;
   memberDaysData = [];
   memberDaysHasMore = false;
+  memberCurrentStreak = 0;
+  memberHighestStreak = 0;
 
   await loadMemberDays();
 }
@@ -1590,15 +1699,28 @@ async function loadMemberDays() {
     memberDaysData = memberDaysData.concat(days);
     memberDaysHasMore = response.pagination ? response.pagination.hasMore : false;
 
-    // Calculate member's streak and update the modal title
-    const streakInfo = calculateStreak(memberDaysData);
-    const memberStreak = streakInfo.count;
-    const isTodayDone = streakInfo.todayDone;
-    const icon = isTodayDone ? '🔥' : (memberStreak > 0 ? '❕' : '🌱');
-    const streakBadge = memberStreak > 0
-      ? ` <span class="member-streak-badge">${icon} ${memberStreak} day streak</span>`
+    // Use streak from backend response if available, otherwise calculate from loaded days
+    if (response.streak) {
+      memberCurrentStreak = response.streak.current || 0;
+      memberHighestStreak = response.streak.highest || 0;
+    } else {
+      // Fallback to calculation for backward compatibility
+      const streakInfo = calculateStreak(memberDaysData);
+      memberCurrentStreak = streakInfo.count;
+      memberHighestStreak = memberCurrentStreak; // Can't calculate highest from partial data
+    }
+
+    const isTodayDone = memberCurrentStreak > 0; // Simplified check
+    const icon = isTodayDone ? '🔥' : (memberCurrentStreak > 0 ? '❕' : '🌱');
+    const streakBadge = memberCurrentStreak > 0
+      ? ` <span class="member-streak-badge">${icon} ${memberCurrentStreak} day streak</span>`
       : ` <span class="member-streak-badge member-streak-zero">${icon} No streak yet</span>`;
-    titleEl.innerHTML = `📋 ${escHtml(_currentMemberName)}'s Tasks${streakBadge}`;
+
+    const highestBadge = memberHighestStreak > 0
+      ? ` <span class="member-streak-badge" style="background:#fef3c7; color:#d97706;">🏆 ${memberHighestStreak} highest</span>`
+      : '';
+
+    titleEl.innerHTML = `📋 ${escHtml(_currentMemberName)}'s Tasks${streakBadge}${highestBadge}`;
 
     if (!memberDaysData.length) {
       bodyEl.innerHTML = `
@@ -2163,14 +2285,84 @@ function closeModal(id) {
       onComplete: () => {
         overlay.classList.remove('open');
         gsap.set(modalEl, { clearProps: 'all' }); // clean up so next open starts fresh
+
+        // Reset LeetCode modal state if closing LeetCode modal
+        if (id === 'modal-add-leetcode') {
+          resetLeetCodeModalState();
+        }
       },
     });
   } else {
     overlay.classList.remove('open');
+
+    // Reset LeetCode modal state if closing LeetCode modal
+    if (id === 'modal-add-leetcode') {
+      resetLeetCodeModalState();
+    }
   }
 }
 
 function closeModalOnOverlay(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+
+// Reset LeetCode modal state
+function resetLeetCodeModalState() {
+  // Don't clear currentLeetCodeDayId here - it should persist for the current session
+  currentLeetCodeValidation = null; // Clear cached validation result
+  const problemUrlInput = document.getElementById('leetcode-problem-url');
+  if (problemUrlInput) {
+    problemUrlInput.value = '';
+  }
+  const previewDiv = document.getElementById('leetcode-problem-preview');
+  if (previewDiv) {
+    previewDiv.style.display = 'none';
+  }
+  const resultDiv = document.getElementById('leetcode-validation-result');
+  if (resultDiv) {
+    resultDiv.style.display = 'none';
+  }
+  const addBtn = document.getElementById('add-leetcode-btn');
+  if (addBtn) {
+    addBtn.disabled = true; // Start with disabled button
+  }
+}
+
+// Reset LeetCode profile modal state
+function resetLeetCodeProfileModalState() {
+  const leetcodeUsernameInput = document.getElementById('leetcode-username');
+  if (leetcodeUsernameInput) {
+    leetcodeUsernameInput.value = '';
+  }
+  document.getElementById('leetcode-verification-code').style.display = 'none';
+  document.getElementById('leetcode-code-expiry').style.display = 'none';
+  document.getElementById('leetcode-code-generated').style.display = 'none';
+  document.getElementById('leetcode-code-expired').style.display = 'none';
+  document.getElementById('leetcode-connected').style.display = 'none';
+  document.getElementById('leetcode-not-connected').style.display = 'block';
+
+  const leetcodeStatus = document.getElementById('leetcode-status');
+  setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+}
+
+// Fallback close function for emergencies
+function forceCloseModal(id) {
+  try {
+    const overlay = document.getElementById(id);
+    if (overlay) {
+      overlay.classList.remove('open');
+      // IMPORTANT: remove the inline property instead of setting display:none.
+      // Setting style.display='none' creates an invisible full-screen overlay that
+      // blocks all subsequent clicks because position:fixed;inset:0 still applies.
+      overlay.style.removeProperty('display');
+
+      // Reset LeetCode modal state if closing LeetCode modal
+      if (id === 'modal-add-leetcode') {
+        resetLeetCodeModalState();
+      }
+    }
+  } catch (error) {
+    console.error('Error force closing modal:', error);
+  }
+}
 
 // ── Profile & Settings ─────────────────────────────────────
 async function openProfileModal() {
@@ -2179,7 +2371,7 @@ async function openProfileModal() {
   document.getElementById('profile-old-password').value = '';
   document.getElementById('profile-new-password').value = '';
   document.getElementById('profile-confirm-password').value = '';
-  
+
   // Reset password collapse section
   const pwdSection = document.getElementById('password-change-section');
   if (pwdSection) pwdSection.style.display = 'none';
@@ -2202,11 +2394,11 @@ async function openProfileModal() {
   try {
     const res = await apiFetch(`${API}/api/auth/settings`);
     document.getElementById('profile-email').value = res.email || '';
-    
+
     const unameInput = document.getElementById('profile-username');
     const unameHint = document.getElementById('profile-username-hint');
     const unameWarn = document.getElementById('profile-username-warning');
-    
+
     unameInput.value = res.username || '';
     if (res.username) {
       unameInput.readOnly = true;
@@ -2228,6 +2420,9 @@ async function openProfileModal() {
     if (toggle) toggle.checked = res.emailNotifications;
     const publicToggle = document.getElementById('public-profile-toggle');
     if (publicToggle) publicToggle.checked = res.isPublicProfile !== false;
+
+    // Load LeetCode profile status
+    await loadLeetCodeProfileStatus();
   } catch (err) {
     console.error('Failed to load profile settings:', err);
     showToast('Failed to load profile', 'error');
@@ -2599,6 +2794,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const chipName   = document.getElementById('user-chip-name');
   if (chipName)   chipName.textContent   = userName;
   updateNavAvatar();
+
+  // Initialize LeetCode button status (non-blocking)
+  apiFetch(`${API}/api/auth/settings`)
+    .then(user => {
+      const isVerified = user.leetcodeLastVerifiedAt ? true : false;
+      updateLeetCodeButtonsStatus(isVerified);
+    })
+    .catch(error => {
+      console.error('Error checking LeetCode verification status:', error);
+      updateLeetCodeButtonsStatus(false); // Default to unverified if we can't check
+    });
 
   // Random motivation chip
   const chip = document.getElementById('motivation-chip');
@@ -3073,3 +3279,791 @@ function previewOwnProfile() {
   closeModal('modal-profile');
   openPublicProfile(uname);
 }
+
+// ── LeetCode Integration ──────────────────────────────────────────
+
+// Generate verification code for LeetCode profile
+async function generateLeetCodeCode() {
+  const leetcodeUsernameInput = document.getElementById('leetcode-username');
+  const leetcodeUsername = leetcodeUsernameInput.value.trim();
+
+  if (!leetcodeUsername) {
+    showToast('Please enter your LeetCode username', 'error');
+    return;
+  }
+
+  try {
+    const data = await apiFetch(`${API}/api/leetcode/generate-code`, {
+      method: 'POST',
+      body: JSON.stringify({ leetcodeUsername })
+    });
+
+    // Display verification code
+    const codeDisplay = document.getElementById('leetcode-verification-code');
+    const codeExpiry = document.getElementById('leetcode-code-expiry');
+    const remainingChanges = document.getElementById('leetcode-remaining-changes');
+
+    codeDisplay.textContent = data.verificationCode;
+    codeDisplay.style.display = 'block';
+
+    const expiryTime = new Date(data.expiry);
+    const now = new Date();
+    const timeLeft = Math.max(0, Math.floor((expiryTime - now) / (1000 * 60))); // minutes left
+
+    let timeMessage = `Expires: ${expiryTime.toLocaleString()}`;
+    if (timeLeft > 0 && timeLeft < 60) {
+      timeMessage += ` (${timeLeft} minutes left)`;
+    }
+
+    codeExpiry.textContent = timeMessage;
+    codeExpiry.style.display = 'block';
+    remainingChanges.textContent = `Remaining changes: ${data.remainingChanges}`;
+
+    // Show code generated section
+    document.getElementById('leetcode-not-connected').style.display = 'none';
+    document.getElementById('leetcode-code-expired').style.display = 'none';
+    document.getElementById('leetcode-code-generated').style.display = 'block';
+
+    // Update status
+    const leetcodeStatus = document.getElementById('leetcode-status');
+    setLcStatus(leetcodeStatus, 'waiting', '⏳ Pending verification');
+
+    showToast('Verification code generated! Add it to your LeetCode bio.', 'success');
+  } catch (error) {
+    console.error('Error generating LeetCode code:', error);
+
+    // Always reload profile status after a failure.
+    // If a pending retry is active, loadLeetCodeProfileStatus() will show the
+    // Check Status section automatically (pending_retry is checked before isVerified).
+    // For any other error (bad username, change limit etc.) it shows the correct state too.
+    const isPendingRetry = error.data && error.data.retryAvailableAt;
+    showToast(
+      isPendingRetry
+        ? 'A verification is already in progress — use the Check Status button below'
+        : (error.message || 'Failed to generate verification code'),
+      isPendingRetry ? 'warn' : 'error'
+    );
+    await loadLeetCodeProfileStatus();
+  }
+}
+
+// Verify LeetCode profile ownership
+async function verifyLeetCodeProfile() {
+  try {
+    const data = await apiFetch(`${API}/api/leetcode/verify-profile`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+
+    if (data.pendingRetry) {
+      // First attempt failed — could be a caching issue, start retry window
+      showPendingRetryUI(data.retryAvailableAt, data.retryExpiresAt);
+      showToast('Code not found yet — check again in 5 minutes', 'warn');
+      return;
+    }
+
+    if (data.finalFailure) {
+      // Check Status also failed — reset to State 1 so user can try fresh
+      showToast(data.message || 'Verification failed', 'error');
+      await loadLeetCodeProfileStatus();
+      return;
+    }
+
+    // ── SUCCESS ──
+    const leetcodeStatus          = document.getElementById('leetcode-status');
+    const leetcodeUsernameDisplay = document.getElementById('leetcode-username-display');
+    const leetcodeProfilePic      = document.getElementById('leetcode-profile-pic');
+    const remainingChanges        = document.getElementById('leetcode-remaining-changes');
+
+    setLcStatus(leetcodeStatus, 'verified', '✅ Verified');
+    leetcodeUsernameDisplay.textContent = data.leetcodeUsername;
+    remainingChanges.textContent = `Remaining changes: ${data.remainingChanges}`;
+
+    if (data.profilePicture) {
+      leetcodeProfilePic.src = data.profilePicture;
+      leetcodeProfilePic.style.display = 'block';
+    }
+
+    document.getElementById('leetcode-verification-code').style.display = 'none';
+    document.getElementById('leetcode-code-expiry').style.display = 'none';
+    document.getElementById('leetcode-code-generated').style.display = 'none';
+    document.getElementById('leetcode-pending-retry').style.display = 'none';
+    document.getElementById('leetcode-connected').style.display = 'block';
+    document.getElementById('leetcode-connected-username').textContent = data.leetcodeUsername;
+    document.getElementById('leetcode-changes-remaining').textContent = data.remainingChanges;
+
+    updateLeetCodeButtonsStatus(true);
+    showToast('LeetCode profile verified successfully!', 'success');
+  } catch (error) {
+    console.error('Error verifying LeetCode profile:', error);
+    showToast(error.message || 'Failed to verify profile', 'error');
+  }
+}
+
+// Show the pending-retry UI section and start both countdown timers
+function showPendingRetryUI(retryAvailableAt, retryExpiresAt) {
+  // Hide all other LeetCode sections
+  document.getElementById('leetcode-not-connected').style.display = 'none';
+  document.getElementById('leetcode-code-generated').style.display = 'none';
+  document.getElementById('leetcode-code-expired').style.display = 'none';
+  document.getElementById('leetcode-connected').style.display = 'none';
+  document.getElementById('leetcode-pending-retry').style.display = 'block';
+
+  // Status badge
+  const leetcodeStatus = document.getElementById('leetcode-status');
+  setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+
+  // Show the verification code in the pending section so user can double-check their bio
+  const codeText = document.getElementById('leetcode-verification-code').textContent;
+  document.getElementById('leetcode-pending-code-display').textContent = codeText || '(your code)';
+
+  startRetryCountdown(retryAvailableAt, retryExpiresAt);
+}
+
+// Dual countdown: enables button after 5 min, resets to State 1 after 15 min
+function startRetryCountdown(retryAvailableAt, retryExpiresAt) {
+  // Clear any existing timer first
+  if (leetcodeRetryTimerInterval) {
+    clearInterval(leetcodeRetryTimerInterval);
+    leetcodeRetryTimerInterval = null;
+  }
+
+  const btn        = document.getElementById('leetcode-check-status-btn');
+  const timerEl   = document.getElementById('leetcode-retry-timer');
+  const windowEl  = document.getElementById('leetcode-window-countdown');
+  const availMs   = new Date(retryAvailableAt).getTime();
+  const expiresMs = new Date(retryExpiresAt).getTime();
+
+  function tick() {
+    const now = Date.now();
+
+    // 15-min window expired → auto-reset to State 1
+    if (now >= expiresMs) {
+      clearInterval(leetcodeRetryTimerInterval);
+      leetcodeRetryTimerInterval = null;
+      loadLeetCodeProfileStatus(); // DB was auto-cleared by next generateVerificationCode call or we show generate code state
+      return;
+    }
+
+    // Window remaining (shown in footer text)
+    const winMs   = expiresMs - now;
+    const wMins   = Math.floor(winMs / 60000);
+    const wSecs   = Math.floor((winMs % 60000) / 1000);
+    if (windowEl) windowEl.textContent = `${wMins}:${wSecs.toString().padStart(2, '0')}`;
+
+    if (now < availMs) {
+      // Phase 1: button disabled, show enable countdown
+      const remMs  = availMs - now;
+      const rMins  = Math.floor(remMs / 60000);
+      const rSecs  = Math.floor((remMs % 60000) / 1000);
+      if (timerEl) timerEl.textContent = `⏳ Check available in ${rMins}:${rSecs.toString().padStart(2, '0')}`;
+      if (btn) btn.disabled = true;
+    } else {
+      // Phase 2: button enabled
+      if (timerEl) timerEl.textContent = '✅ Ready — click Check Status below';
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 Check Status'; }
+    }
+  }
+
+  tick();
+  leetcodeRetryTimerInterval = setInterval(tick, 1000);
+}
+
+// Called when user clicks "Check Status" button (re-uses the same verify endpoint)
+async function checkLeetCodeVerificationStatus() {
+  const btn = document.getElementById('leetcode-check-status-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Checking...'; }
+
+  try {
+    const data = await apiFetch(`${API}/api/leetcode/verify-profile`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+
+    if (data.verified) {
+      // SUCCESS — clear timer, show verified state
+      if (leetcodeRetryTimerInterval) {
+        clearInterval(leetcodeRetryTimerInterval);
+        leetcodeRetryTimerInterval = null;
+      }
+      showToast('LeetCode profile verified!', 'success');
+      await loadLeetCodeProfileStatus();
+    } else if (data.finalFailure) {
+      // FAIL — clear timer, reset to State 1
+      if (leetcodeRetryTimerInterval) {
+        clearInterval(leetcodeRetryTimerInterval);
+        leetcodeRetryTimerInterval = null;
+      }
+      showToast(data.message || 'Verification failed. Please check your bio and try again.', 'error');
+      await loadLeetCodeProfileStatus();
+    }
+  } catch (error) {
+    // Re-enable button so user can try again
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Check Status'; }
+    if (error.status === 429 || (error.message && error.message.includes('429'))) {
+      showToast('Please wait for the timer before retrying', 'warn');
+    } else {
+      showToast(error.message || 'Check failed', 'error');
+    }
+  }
+}
+
+// Validate LeetCode problem submission (for modal UI)
+async function validateLeetCodeProblemForModal() {
+  const problemUrlInput = document.getElementById('leetcode-problem-url');
+  const problemUrl = problemUrlInput.value.trim();
+
+  if (!problemUrl) {
+    showToast('Please enter a LeetCode problem URL', 'error');
+    return;
+  }
+
+  // Validate URL format
+  if (!problemUrl.includes('leetcode.com/problems/')) {
+    showToast('Please enter a valid LeetCode problem URL', 'error');
+    return;
+  }
+
+  try {
+    // Extract problem title from URL for preview
+    const problemTitle = extractProblemTitleFromUrl(problemUrl);
+    if (!problemTitle) {
+      showToast('Could not extract problem title from URL', 'error');
+      return;
+    }
+
+    // Show preview with basic info
+    const previewDiv = document.getElementById('leetcode-problem-preview');
+    const titleElement = document.getElementById('leetcode-problem-title');
+    const difficultyElement = document.getElementById('leetcode-problem-difficulty');
+
+    titleElement.textContent = problemTitle.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    difficultyElement.textContent = 'Validating...';
+    previewDiv.style.display = 'block';
+
+    // Get the day date for validation
+    if (!currentLeetCodeDayId) {
+      showToast('No day selected. Please try again.', 'error');
+      difficultyElement.textContent = 'Error';
+      difficultyElement.style.color = '#ef4444';
+      return;
+    }
+
+    const dayData = await apiFetch(`${API}/api/days/id/${currentLeetCodeDayId}`);
+
+    // Validate the problem using backend API
+    const validation = await validateLeetCodeProblem(problemUrl, dayData.date);
+
+    // Get problem details for display
+    const problemDetails = await getProblemDetailsFromAPI(problemTitle);
+
+    if (problemDetails) {
+      difficultyElement.textContent = problemDetails.difficulty || 'Unknown';
+      difficultyElement.style.color = getDifficultyColor(problemDetails.difficulty);
+    } else {
+      difficultyElement.textContent = 'Unknown';
+      difficultyElement.style.color = '#666';
+    }
+
+    // Show validation result
+    const resultDiv = document.getElementById('leetcode-validation-result');
+    resultDiv.style.display = 'block';
+
+    if (validation.valid) {
+      // Format the submission time
+      const submissionTime = new Date(validation.acceptedDate);
+      const formattedTime = submissionTime.toLocaleString();
+
+      resultDiv.style.background = '#d1fae5';
+      resultDiv.style.color = '#10b981';
+      resultDiv.innerHTML = `
+        <div style="margin-bottom: 8px;">✅ <strong>Validation Successful!</strong></div>
+        <div style="font-size: 13px; margin-bottom: 4px;">Problem: <strong>${validation.problemTitle || problemDetails.title}</strong></div>
+        <div style="font-size: 13px; margin-bottom: 4px;">Difficulty: <strong>${validation.difficulty || problemDetails.difficulty}</strong></div>
+        <div style="font-size: 13px; margin-bottom: 4px;">Accepted on: <strong>${formattedTime}</strong></div>
+        <div style="font-size: 12px; color: #065f46; margin-top: 8px;">You can now add this to your daily tasks</div>
+      `;
+
+      // Cache the validation result so addLeetCodeProblem can reuse it without a second API call
+      currentLeetCodeValidation = validation;
+
+      // Enable add button only after successful validation
+      document.getElementById('add-leetcode-btn').disabled = false;
+    } else {
+      resultDiv.style.background = '#fee2e2';
+      resultDiv.style.color = '#ef4444';
+      resultDiv.innerHTML = `
+        <div style="margin-bottom: 8px;">❌ <strong>Validation Failed</strong></div>
+        <div style="font-size: 13px;">${validation.message}</div>
+        <div style="font-size: 12px; color: #991b1b; margin-top: 8px;">Please try a different problem or check if you solved it on this date</div>
+      `;
+
+      // Disable add button if validation failed
+      document.getElementById('add-leetcode-btn').disabled = true;
+    }
+  } catch (error) {
+    console.error('Error validating problem:', error);
+    showToast('Error validating problem. Please try again.', 'error');
+
+    // Show error message
+    const resultDiv = document.getElementById('leetcode-validation-result');
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = '#fee2e2';
+    resultDiv.style.color = '#ef4444';
+    resultDiv.innerHTML = `
+      <div style="margin-bottom: 8px;">❌ <strong>Error</strong></div>
+      <div style="font-size: 13px;">Failed to validate problem. Please try again.</div>
+      <div style="font-size: 12px; color: #991b1b; margin-top: 8px;">Error: ${error.message || 'Unknown error'}</div>
+    `;
+
+    // Disable add button on error
+    document.getElementById('add-leetcode-btn').disabled = true;
+  }
+}
+
+// Validate LeetCode problem submission (for API validation)
+async function validateLeetCodeProblem(problemUrl, dayDate) {
+  try {
+    const data = await apiFetch(`${API}/api/leetcode/validate-problem`, {
+      method: 'POST',
+      body: JSON.stringify({ problemUrl, dayDate })
+    });
+
+    return {
+      valid: true,
+      problemTitle: data.problemTitle,
+      difficulty: data.difficulty,
+      acceptedDate: data.acceptedDate,
+      submissionCount: data.submissionCount
+    };
+  } catch (error) {
+    console.error('Error validating LeetCode problem:', error);
+    return {
+      valid: false,
+      message: error.message || 'Failed to validate problem'
+    };
+  }
+}
+
+// Get daily LeetCode problem
+async function getDailyLeetCodeProblem() {
+  try {
+    const data = await apiFetch(`${API}/api/leetcode/daily-problem`);
+    return data;
+  } catch (error) {
+    console.error('Error getting daily LeetCode problem:', error);
+    return null;
+  }
+}
+
+// Add LeetCode problem to daily card
+async function addLeetCodeProblem() {
+  if (!currentLeetCodeDayId) {
+    showToast('No day selected', 'error');
+    return;
+  }
+
+  // Reuse the cached validation result — no second API call needed
+  if (!currentLeetCodeValidation || !currentLeetCodeValidation.valid) {
+    showToast('Please validate the problem first before adding', 'error');
+    return;
+  }
+
+  const validation = currentLeetCodeValidation;
+
+  // Build a safe title: prefer backend-returned title, fall back to the URL slug
+  const problemUrlInput = document.getElementById('leetcode-problem-url');
+  const problemUrl = (problemUrlInput && problemUrlInput.value.trim()) || '';
+  const slugFallback = problemUrl
+    ? (extractProblemTitleFromUrl(problemUrl) || '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    : 'Unknown Problem';
+  const taskTitle = validation.problemTitle || slugFallback;
+
+  try {
+    // Add LeetCode problem as a task under the LeetCode category
+    const taskData = {
+      title: `\uD83E\uDDE0 LeetCode: ${taskTitle}`,
+      completed: true,
+      metadata: {
+        problemUrl: problemUrl,
+        difficulty: validation.difficulty,
+        acceptedDate: validation.acceptedDate,
+        submissionCount: validation.submissionCount,
+        verified: true
+      }
+    };
+
+    await apiFetch(`${API}/api/days/${currentLeetCodeDayId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ tasks: [taskData] })
+    });
+
+    showToast(`LeetCode: "${taskTitle}" added to daily tasks!`, 'success');
+  } catch (error) {
+    console.error('Error adding LeetCode problem:', error);
+    showToast(error.message || 'Failed to add problem', 'error');
+    return; // Keep modal open so user can try again
+  }
+
+  // Clean up and close modal only after successful save
+  try {
+    if (problemUrlInput) problemUrlInput.value = '';
+    document.getElementById('leetcode-problem-preview').style.display = 'none';
+    document.getElementById('leetcode-validation-result').style.display = 'none';
+    document.getElementById('add-leetcode-btn').disabled = true;
+    currentLeetCodeValidation = null;
+    closeModal('modal-add-leetcode');
+
+    // Refresh the days display
+    await loadDays();
+
+    // Update LeetCode button states after reload
+    try {
+      const user = await apiFetch(`${API}/api/auth/settings`);
+      updateLeetCodeButtonsStatus(!!user.leetcodeLastVerifiedAt);
+    } catch (e) {
+      console.error('Error updating LeetCode button status:', e);
+    }
+  } catch (error) {
+    console.error('Error cleaning up after adding problem:', error);
+    try { closeModal('modal-add-leetcode'); } catch (e) { /* ignore */ }
+  }
+}
+
+// Open LeetCode problem modal for a specific day
+async function openLeetCodeProblemModal(dayId, dayDate) {
+  // Check if user has verified LeetCode profile first
+  try {
+    const user = await apiFetch(`${API}/api/auth/settings`);
+    if (!user.leetcodeLastVerifiedAt) {
+      showToast('Please verify your LeetCode profile first', 'error');
+      // Open profile modal to guide user
+      openProfileModal();
+      return;
+    }
+  } catch (error) {
+    console.error('Error checking profile verification:', error);
+    showToast('Unable to verify profile status', 'error');
+    return;
+  }
+
+  const modal = document.getElementById('modal-add-leetcode');
+  if (!modal) {
+    console.error('LeetCode modal not found');
+    return;
+  }
+
+  // Clear previous data and reset state (but don't clear day ID yet)
+  resetLeetCodeModalState();
+
+  // Set the day ID AFTER resetting state
+  currentLeetCodeDayId = dayId;
+
+  // Show the modal using the proper function
+  openModal('modal-add-leetcode');
+}
+
+// Load LeetCode profile status
+async function loadLeetCodeProfileStatus() {
+  try {
+    const user = await apiFetch(`${API}/api/auth/settings`);
+
+    const leetcodeUsernameDisplay = document.getElementById('leetcode-username-display');
+    const leetcodeStatus         = document.getElementById('leetcode-status');
+    const leetcodeProfilePic     = document.getElementById('leetcode-profile-pic');
+    const leetcodeUsernameInput  = document.getElementById('leetcode-username');
+    const remainingChanges       = document.getElementById('leetcode-remaining-changes');
+
+    // Derived state
+    const isVerified  = !!(user.leetcodeUsername && user.leetcodeLastVerifiedAt);
+    const hasPending  = !!(user.leetcodePendingUsername && user.leetcodeVerificationCode);
+    const displayName = user.leetcodeUsername || user.leetcodePendingUsername || null;
+    const inputName   = user.leetcodePendingUsername || user.leetcodeUsername || '';
+
+    if (inputName)   leetcodeUsernameInput.value = inputName;
+    if (displayName) leetcodeUsernameDisplay.textContent = displayName;
+
+    // Helper — hides all sub-sections
+    function hideAllSections() {
+      document.getElementById('leetcode-not-connected').style.display   = 'none';
+      document.getElementById('leetcode-code-generated').style.display  = 'none';
+      document.getElementById('leetcode-code-expired').style.display    = 'none';
+      document.getElementById('leetcode-pending-retry').style.display   = 'none';
+      document.getElementById('leetcode-connected').style.display       = 'none';
+    }
+
+    if (user.leetcodeVerificationStatus === 'pending_retry' && user.leetcodeRetryScheduledAt) {
+      // ── STATE 3: PENDING RETRY ────────────────────────────────
+      // This must come BEFORE the isVerified check because a user changing
+      // their username still has the old leetcodeUsername/lastVerifiedAt in DB.
+      const scheduledMs    = new Date(user.leetcodeRetryScheduledAt).getTime();
+      const retryAvailMs   = scheduledMs + 5  * 60 * 1000;
+      const retryExpiresMs = scheduledMs + 15 * 60 * 1000;
+
+      if (Date.now() >= retryExpiresMs) {
+        // Window expired — show State 1 so user can generate a fresh code
+        // (backend auto-clears DB state on the next generate-code call)
+        setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+        leetcodeUsernameDisplay.textContent = 'Not connected';
+        leetcodeProfilePic.style.display = 'none';
+        hideAllSections();
+        document.getElementById('leetcode-not-connected').style.display = 'block';
+        updateLeetCodeButtonsStatus(false);
+      } else {
+        // Window still active — show pending retry UI with live timers
+        setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+
+        if (user.leetcodeVerificationCode) {
+          document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
+          document.getElementById('leetcode-pending-code-display').textContent = user.leetcodeVerificationCode;
+        }
+
+        hideAllSections();
+        document.getElementById('leetcode-pending-retry').style.display = 'block';
+        startRetryCountdown(
+          new Date(retryAvailMs).toISOString(),
+          new Date(retryExpiresMs).toISOString()
+        );
+        updateLeetCodeButtonsStatus(false);
+      }
+
+    } else if (isVerified) {
+      // ── STATE 5: VERIFIED ─────────────────────────────────────
+      setLcStatus(leetcodeStatus, 'verified', '✅ Verified');
+
+      hideAllSections();
+      document.getElementById('leetcode-connected').style.display = 'block';
+      document.getElementById('leetcode-connected-username').textContent = user.leetcodeUsername;
+      document.getElementById('leetcode-changes-remaining').textContent =
+        MAX_USERNAME_CHANGES - user.leetcodeUsernameChangeCount;
+
+      if (user.leetcodeProfilePicture) {
+        leetcodeProfilePic.src = user.leetcodeProfilePicture;
+        leetcodeProfilePic.style.display = 'block';
+      }
+      updateLeetCodeButtonsStatus(true);
+
+    } else if (hasPending) {
+      // ── STATE 2: CODE GENERATED ───────────────────────────────
+      const isExpired = user.leetcodeVerificationExpiry &&
+                        new Date() > new Date(user.leetcodeVerificationExpiry);
+
+      if (isExpired) {
+        setLcStatus(leetcodeStatus, 'error', '⏰ Code expired');
+        hideAllSections();
+        document.getElementById('leetcode-code-expired').style.display = 'block';
+      } else {
+        setLcStatus(leetcodeStatus, 'waiting', '⏳ Pending verification');
+
+        document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
+        document.getElementById('leetcode-verification-code').style.display = 'block';
+
+        if (user.leetcodeVerificationExpiry) {
+          const expiryTime = new Date(user.leetcodeVerificationExpiry);
+          const timeLeft   = Math.max(0, Math.floor((expiryTime - new Date()) / 60000));
+          let msg = `Expires: ${expiryTime.toLocaleString()}`;
+          if (timeLeft > 0 && timeLeft < 60) msg += ` (${timeLeft} min left)`;
+          document.getElementById('leetcode-code-expiry').textContent = msg;
+          document.getElementById('leetcode-code-expiry').style.display = 'block';
+        }
+
+        hideAllSections();
+        document.getElementById('leetcode-code-generated').style.display = 'block';
+      }
+      updateLeetCodeButtonsStatus(false);
+
+    } else {
+      // ── STATE 1: NOT CONNECTED ────────────────────────────────
+      leetcodeUsernameDisplay.textContent = 'Not connected';
+      setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+      leetcodeProfilePic.style.display = 'none';
+      hideAllSections();
+      document.getElementById('leetcode-not-connected').style.display = 'block';
+      updateLeetCodeButtonsStatus(false);
+    }
+
+    remainingChanges.textContent =
+      `Remaining changes: ${MAX_USERNAME_CHANGES - (user.leetcodeUsernameChangeCount || 0)}`;
+
+  } catch (error) {
+    console.error('Error loading LeetCode profile status:', error);
+  }
+}
+
+// Update all LeetCode buttons to show verification status
+function updateLeetCodeButtonsStatus(isVerified) {
+  const leetcodeButtons = document.querySelectorAll('[id^="leetcode-btn-"]');
+  leetcodeButtons.forEach(button => {
+    if (isVerified) {
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
+      button.style.pointerEvents = 'auto';
+      button.title = 'Add LeetCode problem';
+    } else {
+      button.style.opacity = '0.5';
+      button.style.cursor = 'not-allowed';
+      button.style.pointerEvents = 'none';
+      button.title = 'Verify your LeetCode profile first';
+    }
+  });
+}
+
+// Copy LeetCode verification code to clipboard
+function copyLeetCodeCode() {
+  const codeElement = document.getElementById('leetcode-verification-code');
+  const code = codeElement.textContent;
+
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('Verification code copied to clipboard!', 'success');
+  }).catch(err => {
+    console.error('Failed to copy code:', err);
+    showToast('Failed to copy code', 'error');
+  });
+}
+
+// Change LeetCode username
+function changeLeetCodeUsername() {
+  const leetcodeUsernameInput = document.getElementById('leetcode-username');
+  const newUsername = leetcodeUsernameInput.value.trim();
+
+  if (!newUsername) {
+    showToast('Please enter a new LeetCode username', 'error');
+    return;
+  }
+
+  // Reset the UI to show the not connected state
+  document.getElementById('leetcode-not-connected').style.display = 'block';
+  document.getElementById('leetcode-code-generated').style.display = 'none';
+  document.getElementById('leetcode-code-expired').style.display = 'none';
+  document.getElementById('leetcode-pending-retry').style.display = 'none';
+  document.getElementById('leetcode-connected').style.display = 'none';
+
+  // Reset status
+  const leetcodeStatus = document.getElementById('leetcode-status');
+  setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+
+  showToast('Enter your new username and generate a new verification code', 'info');
+}
+
+// Helper functions for LeetCode integration
+
+// Extract problem title from URL
+function extractProblemTitleFromUrl(url) {
+  try {
+    const patterns = [
+      /leetcode\.com\/problems\/([^\/\?]+)/,  // Matches problem-title or problem-title/description
+      /leetcode\.com\/problems\/([^\/\?]+)\/?/,  // Matches with optional trailing slash
+      /leetcode\.com\/problems\/([^\/\?]+)\/?[^\/]*\/?/  // Matches with additional path segments
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        // If the matched part contains a slash, take only the first part (the problem title)
+        const problemTitle = match[1].split('/')[0];
+        return problemTitle;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error extracting problem title:', error);
+    return null;
+  }
+}
+
+// Get problem details from API
+async function getProblemDetailsFromAPI(problemTitle) {
+  // Try REST API first
+  try {
+    const LEETCODE_API_BASE_URL = 'https://alfa-leetcode-api.onrender.com';
+    const response = await fetch(`${LEETCODE_API_BASE_URL}/select?titleSlug=${problemTitle}`, {
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
+
+    if (!response.ok) {
+      console.error('API response not ok:', response.status, response.statusText);
+      throw new Error('Failed to fetch problem details');
+    }
+
+    const problemData = await response.json();
+
+    // Handle different API response formats
+    const title = problemData.title || problemData.questionTitle || problemData.question_title;
+    const difficulty = problemData.difficulty || problemData.difficulty_level;
+
+    if (title) {
+      return {
+        title: title,
+        difficulty: difficulty || 'Unknown',
+        topicTags: problemData.topicTags || problemData.tags || []
+      };
+    }
+  } catch (error) {
+    console.error('REST API failed, trying GraphQL:', error.message);
+  }
+
+  // Fallback to GraphQL API
+  try {
+    const graphqlQuery = {
+      query: `
+        query getQuestionDetail($titleSlug: String!) {
+          question(titleSlug: $titleSlug) {
+            title
+            difficulty
+            topicTags {
+              name
+            }
+          }
+        }
+      `,
+      variables: {
+        titleSlug: problemTitle
+      }
+    };
+
+    const response = await fetch('https://leetcode.com/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(graphqlQuery),
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
+
+    if (!response.ok) {
+      throw new Error('GraphQL API failed');
+    }
+
+    const data = await response.json();
+
+    if (data.data && data.data.question) {
+      const question = data.data.question;
+      return {
+        title: question.title,
+        difficulty: question.difficulty,
+        topicTags: question.topicTags || []
+      };
+    }
+  } catch (error) {
+    console.error('GraphQL API failed:', error.message);
+  }
+
+  // If both APIs fail, return null
+  return null;
+}
+
+// Get color based on difficulty
+function getDifficultyColor(difficulty) {
+  switch (difficulty?.toLowerCase()) {
+    case 'easy':
+      return '#10b981'; // green
+    case 'medium':
+      return '#f59e0b'; // orange
+    case 'hard':
+      return '#ef4444'; // red
+    default:
+      return '#666'; // gray
+  }
+}
+

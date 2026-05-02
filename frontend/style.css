@@ -1915,6 +1915,58 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   box-shadow: 2px 2px 0 var(--black);
 }
 
+/* Delete category button — red variant of btn-edit-cat */
+.btn-del-cat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--black);
+  background: #fee2e2;
+  color: #ef4444;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--t) var(--ease);
+  flex-shrink: 0;
+  padding: 0;
+  box-shadow: 1px 1px 0 var(--black);
+}
+.btn-del-cat:hover {
+  background: #ef4444;
+  color: #fff;
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+/* Delete task button — tiny trash shown on task row hover */
+.btn-del-task {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: #ef4444;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--t) var(--ease);
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: auto;
+  opacity: 0;
+}
+.task-item:hover .btn-del-task {
+  opacity: 1;
+}
+.btn-del-task:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
 /* ============================================================
    INLINE "NEW DAY CARD" BUTTON
    ============================================================ */
@@ -2116,6 +2168,28 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .btn-save-template:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+.btn-add-leetcode {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: #3b82f6;
+  border: var(--border-2);
+  border-radius: var(--r-sm);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: var(--t) var(--ease);
+  white-space: nowrap;
+}
+
+.btn-add-leetcode:hover {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 var(--black);
 }
@@ -2533,3 +2607,131 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-color: var(--black) !important;
   white-space: pre-line !important;
 }
+
+/* ============================================================
+   LEETCODE INTEGRATION — THEME-AWARE CLASSES
+   Replaces hardcoded inline colours so dark theme works.
+   ============================================================ */
+
+/* ── LeetCode panel sections ── */
+.lc-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 8px;
+}
+.lc-panel-expired {
+  background: #fee2e2;
+  border: 2px solid #ef4444;
+}
+.lc-panel-generated {
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+}
+.lc-panel-connected {
+  padding: 16px;
+  background: #d1fae5;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+}
+.lc-panel-pending-retry {
+  background: #fef9c3;
+  border: 2px solid #ca8a04;
+}
+
+/* ── Status badge ── */
+.lc-status-badge {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.lc-status-verified { background: #d1fae5; color: #10b981; }
+.lc-status-pending  { background: #fef3c7; color: #d97706; }
+.lc-status-waiting  { background: #fef3c7; color: #f59e0b; }
+.lc-status-error    { background: #fee2e2; color: #ef4444; }
+
+/* ── Retry countdown timer block ── */
+.lc-retry-timer {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 12px;
+  background: #fef08a;
+  border-radius: 6px;
+  border: 1px solid #ca8a04;
+  color: #854d0e;
+}
+
+/* ── Inline code snippet shown in pending section ── */
+.lc-pending-code {
+  font-family: monospace;
+  background: #fef08a;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #854d0e;
+}
+
+/* ── Problem preview card in Add LeetCode modal ── */
+.lc-problem-preview {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 2px solid #3b82f6;
+}
+.lc-problem-title {
+  margin: 0 0 8px 0;
+  color: #1e40af;
+}
+
+/* ── Text colours used inside panels ── */
+.lc-text-expired { color: #b91c1c; }
+.lc-text-pending { color: #713f12; }
+
+/* ============================================================
+   LEETCODE — DARK THEME OVERRIDES
+   ============================================================ */
+[data-theme="dark"] .lc-panel-expired       { background: #3d1515; border-color: #f87171; }
+[data-theme="dark"] .lc-panel-generated     { background: #302800; border-color: #fbbf24; }
+[data-theme="dark"] .lc-panel-connected     { background: #0d2e1e; border-color: #34d399; }
+[data-theme="dark"] .lc-panel-pending-retry { background: #302800; border-color: #fbbf24; }
+
+[data-theme="dark"] .lc-status-verified { background: #0d2e1e; color: #34d399; }
+[data-theme="dark"] .lc-status-pending  { background: #302800; color: #fbbf24; }
+[data-theme="dark"] .lc-status-waiting  { background: #302800; color: #fbbf24; }
+[data-theme="dark"] .lc-status-error    { background: #3d1515; color: #f87171; }
+
+[data-theme="dark"] .lc-retry-timer {
+  background: #302800;
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .lc-pending-code {
+  background: #302800;
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .lc-problem-preview {
+  background: #0d2030;
+  border-color: #3b82f6;
+}
+[data-theme="dark"] .lc-problem-title { color: #93c5fd; }
+
+[data-theme="dark"] .lc-text-expired { color: #f87171; }
+[data-theme="dark"] .lc-text-pending { color: #fbbf24; }
+
+/* Delete buttons in dark mode */
+[data-theme="dark"] .btn-del-cat               { background: #3d1515; color: #f87171; }
+[data-theme="dark"] .btn-del-cat:hover         { background: #ef4444; color: #fff; }
+[data-theme="dark"] .btn-del-task              { color: #f87171; }
+[data-theme="dark"] .btn-del-task:hover        { background: #3d1515; border-color: #f87171; }
+
+/* Connected section inner text colours in dark mode */
+[data-theme="dark"] #leetcode-connected .leetcode-connected-info span { color: var(--text); }
+[data-theme="dark"] #leetcode-changes-remaining { color: var(--text); }
+
+/* Pending retry window-close text */
+[data-theme="dark"] #leetcode-pending-retry > p:last-child { color: #fbbf24; }

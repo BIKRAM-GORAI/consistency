@@ -12,7 +12,12 @@ const TaskSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-});
+  // Allow additional metadata for LeetCode problems
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  }
+}, { strict: false }); // Allow additional fields
 
 // Category subdocument schema
 const CategorySchema = new mongoose.Schema({

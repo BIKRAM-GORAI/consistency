@@ -15,6 +15,7 @@ const cronRoutes        = require('./routes/cronRoutes');
 const templateRoutes    = require('./routes/templateRoutes');
 const reviewRoutes      = require('./routes/reviewRoutes');
 const userRoutes        = require('./routes/userRoutes');
+const leetcodeRoutes    = require('./routes/leetcodeRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api/cron',         cronRoutes); // Cron routes have their own auth
 app.use('/api/templates',    authenticateToken, dataModificationLimiter, templateRoutes);
 app.use('/api/reviews',      reviewRoutes); // Public review submission
 app.use('/api/users',        readOnlyLimiter, userRoutes); // Public user profiles
+app.use('/api/leetcode',    authenticateToken, dataModificationLimiter, leetcodeRoutes); // LeetCode integration
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

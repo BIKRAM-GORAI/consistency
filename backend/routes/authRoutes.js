@@ -18,6 +18,7 @@ router.patch('/achievements-privacy', authenticateToken, achievementPrivacyValid
 
 // GET/PATCH profile settings (requires authentication)
 router.get('/settings', authenticateToken, getProfileSettings);
+router.get('/me', authenticateToken, getProfileSettings); // Alias for /settings
 router.patch('/settings', authenticateToken, updateProfileValidation, setProfileSettings);
 
 // POST upload profile picture (requires authentication)

@@ -220,6 +220,22 @@ const getDayByDate = async (req, res) => {
 };
 
 /**
+ * GET /api/days/id/:id
+ * Get a specific day by MongoDB _id for a user.
+ */
+const getDayById = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const day = await Day.findOne({ _id: req.params.id, userId });
+    if (!day) return res.status(404).json({ message: 'Day not found' });
+    res.json(day);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
  * POST /api/days
  * Create a new day entry for a user.
  * Returns the saved day with the updated streak included.
@@ -258,10 +274,54 @@ const createDay = async (req, res) => {
 const updateDay = async (req, res) => {
   try {
     const userId = req.user.userId;
-    // Only allow updating days that belong to the user
+    const updateData = req.body;
+
+    // Handle different update formats
+    if (updateData.tasks && Array.isArray(updateData.tasks)) {
+      // If tasks array is provided, add it to the LeetCode category or create one
+      const day = await Day.findOne({ _id: req.params.id, userId });
+      if (!day) return res.status(404).json({ message: 'Day not found or unauthorized' });
+
+      // Find or create LeetCode category
+      let leetcodeCategory = day.categories.find(cat => cat.name === 'LeetCode');
+      if (!leetcodeCategory) {
+        day.categories.push({ name: 'LeetCode', tasks: [] });
+        // IMPORTANT: After pushing a plain object, Mongoose converts it to a subdocument.
+        // Re-assign to the actual subdocument so task pushes below are reflected on save.
+        leetcodeCategory = day.categories[day.categories.length - 1];
+      }
+
+      // Add new tasks to the category
+      updateData.tasks.forEach(task => {
+        // Check if task already exists
+        const existingTaskIndex = leetcodeCategory.tasks.findIndex(
+          t => t.title === task.title
+        );
+        if (existingTaskIndex >= 0) {
+          // Update existing task
+          leetcodeCategory.tasks[existingTaskIndex] = {
+            ...leetcodeCategory.tasks[existingTaskIndex],
+            ...task
+          };
+        } else {
+          // Add new task
+          leetcodeCategory.tasks.push(task);
+        }
+      });
+
+      // Save the updated day
+      const updated = await day.save();
+
+      // Recalculate streak and include it in the response
+      const newStreak = await updateUserStreakAndActivity(updated.userId);
+
+      return res.json({ ...updated.toObject(), streak: newStreak });
+    }
+
+    // Standard update with categories
     const updated = await Day.findOneAndUpdate(
       { _id: req.params.id, userId },
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
     if (!updated) return res.status(404).json({ message: 'Day not found or unauthorized' });
@@ -275,4 +335,4 @@ const updateDay = async (req, res) => {
   }
 };
 
-module.exports = { getAllDays, getDayByDate, createDay, updateDay };
+module.exports = { getAllDays, getDayByDate, getDayById, createDay, updateDay };

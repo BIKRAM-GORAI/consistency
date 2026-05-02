@@ -168,7 +168,7 @@ async function getProfileSettings(req, res) {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
 
-    const user = await User.findById(userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile');
+    const user = await User.findById(userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile leetcodeUsername leetcodePendingUsername leetcodeVerificationCode leetcodeVerificationExpiry leetcodeLastVerifiedAt leetcodeUsernameChangeCount leetcodeProfilePicture leetcodeVerificationStatus leetcodeRetryScheduledAt');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({
       email: user.email,
@@ -176,7 +176,16 @@ async function getProfileSettings(req, res) {
       profilePicture: user.profilePicture || '',
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false,
-      isPublicProfile: user.isPublicProfile !== false
+      isPublicProfile: user.isPublicProfile !== false,
+      leetcodeUsername: user.leetcodeUsername || null,
+      leetcodePendingUsername: user.leetcodePendingUsername || null,
+      leetcodeVerificationCode: user.leetcodeVerificationCode || null,
+      leetcodeVerificationExpiry: user.leetcodeVerificationExpiry || null,
+      leetcodeLastVerifiedAt: user.leetcodeLastVerifiedAt || null,
+      leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
+      leetcodeProfilePicture: user.leetcodeProfilePicture || '',
+      leetcodeVerificationStatus: user.leetcodeVerificationStatus || 'none',
+      leetcodeRetryScheduledAt: user.leetcodeRetryScheduledAt || null
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

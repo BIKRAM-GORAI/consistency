@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { getAllDays, getDayByDate, createDay, updateDay } = require('../controllers/dayController');
+const { getAllDays, getDayByDate, getDayById, createDay, updateDay } = require('../controllers/dayController');
 const { createDayValidation, updateDayValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
 // GET all days
 router.get('/', authenticateToken, getAllDays);
+
+// GET a specific day by MongoDB _id
+router.get('/id/:id', authenticateToken, getDayById);
 
 // GET a specific day by date string (must come before /:id)
 router.get('/:date', authenticateToken, getDayByDate);
