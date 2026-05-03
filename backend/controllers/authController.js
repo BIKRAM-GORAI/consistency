@@ -1,4 +1,10 @@
 const User = require('../models/User');
+const Day = require('../models/Day');
+const Goal = require('../models/Goal');
+const Template = require('../models/Template');
+const Achievement = require('../models/Achievement');
+const Group = require('../models/Group');
+const Review = require('../models/Review');
 const { cloudinary } = require('../config/cloudinary');
 const bcrypt = require('bcrypt');
 const { generateToken } = require('../middleware/auth');
@@ -523,4 +529,41 @@ async function resetPassword(req, res) {
   }
 }
 
-module.exports = { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword };
+/**
+ * DELETE /api/auth/account
+ * Completely delete the user account and all associated data
+ */
+async function deleteAccount(req, res) {
+  try {
+    const userId = req.user.userId;
+
+    // Delete associated data
+    await Day.deleteMany({ userId: userId });
+    await Goal.deleteMany({ userId: userId });
+    await Template.deleteMany({ userId: userId });
+    await Achievement.deleteMany({ userId: userId });
+    await Review.deleteMany({ userId: userId });
+
+    // Handle groups: delete groups owned by user
+    await Group.deleteMany({ owner: userId });
+    
+    // Handle groups: remove user from members array in other groups
+    await Group.updateMany(
+      { members: userId },
+      { $pull: { members: userId } }
+    );
+
+    // Delete the user
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Server error deleting account', error: error.message });
+  }
+}
+
+module.exports = { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount };

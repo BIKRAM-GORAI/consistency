@@ -931,7 +931,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
@@ -987,16 +987,43 @@
       } catch (error) {
         console.error('OAuth Error:', error);
         
+        let errorMessage = error.message;
+
+        // Handle the specific error when an account exists with a different provider
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          try {
+            const pendingEmail = error.customData.email;
+            const methods = await fetchSignInMethodsForEmail(auth, pendingEmail);
+            
+            const providerMap = {
+              'google.com': 'Google',
+              'github.com': 'GitHub',
+              'facebook.com': 'Facebook',
+              'password': 'Email/Password'
+            };
+            
+            const existingProviders = methods.length > 0 
+              ? methods.map(m => providerMap[m] || m).join(' or ') 
+              : "your original provider (Google/Email)";
+              
+            // errorMessage = `An account already exists with this email. Please sign in using ${existingProviders} to link them.`;
+            errorMessage = `An account already exists with this email. Please sign in using original provider to link account`;
+          } catch(fetchErr) {
+            console.error('Failed to fetch sign in methods', fetchErr);
+            errorMessage = 'An account already exists with this email. Please sign in with your original provider.';
+          }
+        }
+        
         // Show error visually
         const activeForm = document.querySelector('.auth-form.active');
         if (activeForm && activeForm.id === 'form-login') {
-          document.getElementById('login-error-msg').textContent = error.message;
+          document.getElementById('login-error-msg').textContent = errorMessage;
           document.getElementById('login-error').classList.add('visible');
         } else if (activeForm && activeForm.id === 'form-register') {
-          document.getElementById('register-error-msg').textContent = error.message;
+          document.getElementById('register-error-msg').textContent = errorMessage;
           document.getElementById('register-error').classList.add('visible');
         } else {
-          alert('OAuth Error: ' + error.message);
+          alert('OAuth Error: ' + errorMessage);
         }
       }
     }

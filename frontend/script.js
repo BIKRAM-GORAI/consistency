@@ -2521,6 +2521,100 @@ async function submitPasswordChange() {
   }
 }
 
+// ── Account Deletion ───────────────────────────────────────
+let targetDeletionString = '';
+
+function openDeleteWarning() {
+  closeModal('modal-profile');
+  document.getElementById('modal-delete-warning').classList.add('open');
+}
+
+function proceedToDeleteConfirm() {
+  closeModal('modal-delete-warning');
+  
+  const unameInput = document.getElementById('profile-username');
+  const localEmail = localStorage.getItem('userEmail');
+  
+  if (unameInput && unameInput.value.trim()) {
+    targetDeletionString = unameInput.value.trim();
+  } else if (localEmail && localEmail.trim() !== '') {
+    targetDeletionString = localEmail; // From local storage
+  } else {
+    targetDeletionString = 'DELETE'; // Fallback if no email or username
+  }
+
+  document.getElementById('delete-username-hint').textContent = targetDeletionString;
+  document.getElementById('delete-username-input').value = '';
+  document.getElementById('btn-final-delete').disabled = true;
+  document.getElementById('btn-final-delete').style.opacity = '0.5';
+  document.getElementById('btn-final-delete').style.cursor = 'not-allowed';
+  
+  document.getElementById('modal-delete-confirm').classList.add('open');
+}
+
+function checkDeleteConfirmation() {
+  const inputVal = document.getElementById('delete-username-input').value.trim();
+  const btn = document.getElementById('btn-final-delete');
+  
+  // Ensure the input matches and is NOT empty
+  if (inputVal === targetDeletionString && inputVal !== '') {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+async function verifyAndDeleteAccount() {
+  if (document.getElementById('delete-username-input').value.trim() !== targetDeletionString) return;
+  
+  const btn = document.getElementById('btn-final-delete');
+  btn.disabled = true;
+  
+  // Hide footer buttons to prevent cancellation
+  const modalFooter = document.querySelector('#modal-delete-confirm .modal-footer');
+  if (modalFooter) modalFooter.style.display = 'none';
+
+  // Show loading animation and warning
+  const modalBody = document.querySelector('#modal-delete-confirm .modal-body');
+  const originalBodyHTML = modalBody.innerHTML; // Save in case of failure
+  
+  modalBody.innerHTML = `
+    <style>
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+      .spinner { font-size: 40px; display: inline-block; animation: spin 2s linear infinite; }
+    </style>
+    <div style="text-align: center; padding: 20px 0;">
+      <div class="spinner">⏳</div>
+      <h3 style="color: var(--red); margin-top: 16px; margin-bottom: 8px; font-weight: 800;">DELETING ACCOUNT...</h3>
+      <p style="color: var(--text); font-weight: 700; background: var(--bg-muted); padding: 8px; border: 2px solid var(--black); border-radius: 4px; display: inline-block;">⚠️ DO NOT CLOSE OR REFRESH THIS PAGE ⚠️</p>
+      <p style="font-size: 14px; color: var(--text); margin-top: 12px; font-weight: 600;">Interrupting this process may cause data to not get deleted completely.</p>
+    </div>
+  `;
+
+  try {
+    await apiFetch(`${API}/api/auth/account`, {
+      method: 'DELETE'
+    });
+    
+    // Clear all local data
+    localStorage.clear();
+    
+    // Redirect to landing
+    window.location.replace('landing.html');
+  } catch (err) {
+    showToast(err.message || 'Failed to delete account', 'error');
+    // Restore UI if it failed so they can try again or cancel
+    modalBody.innerHTML = originalBodyHTML;
+    if (modalFooter) modalFooter.style.display = 'flex';
+    document.getElementById('delete-username-input').value = targetDeletionString;
+    checkDeleteConfirmation();
+  }
+}
+
 // ── Templates Logic ────────────────────────────────────────
 async function loadTemplates() {
   try {

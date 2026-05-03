@@ -726,6 +726,13 @@
           </button>
         </div>
 
+        <div style="margin: 20px 0; border-top: 1px dashed var(--red); padding-top: 16px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase;">Danger Zone</h3>
+          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:#fff; text-transform:uppercase; background:var(--red); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="openDeleteWarning()">
+            <span>🗑️ Delete Account</span>
+          </button>
+        </div>
+
         <div style="margin: 20px 0; border-top: 1px dashed var(--border-color, #ccc); padding-top: 16px;">
           <button class="btn-ghost ripple log-out-btn" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:var(--red); text-transform:uppercase; background:rgba(239, 68, 68, 0.15); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="logout()">
             <span>🚪 Log Out</span>
@@ -866,6 +873,47 @@
     <div class="lightbox-content">
       <button class="lightbox-close" onclick="closeLightbox(event, true)">✕</button>
       <img id="lightbox-img" src="" alt="Profile Picture" />
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Delete Account Warning ===== -->
+  <div class="modal-overlay" id="modal-delete-warning" onclick="closeModalOnOverlay(event, 'modal-delete-warning')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="color: var(--red);">⚠️ Delete Account</h2>
+        <button class="modal-close" onclick="closeModal('modal-delete-warning')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 16px; font-weight: 600; text-align: center; margin-bottom: 16px;">Are you absolutely sure?</p>
+        <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid var(--red); padding: 16px; border-radius: 8px; text-align: center;">
+          <p style="color: var(--red); font-weight: 700; margin: 0;">This action cannot be undone.</p>
+          <p style="color: var(--text); margin-top: 8px; font-size: 14px;">Your account, goals, daily logs, achievements, and all associated data will be permanently lost.</p>
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-direction: column; gap: 12px;">
+        <button class="btn-primary ripple" style="width: 100%; background: var(--red); color: white; border-color: var(--red);" onclick="proceedToDeleteConfirm()">I understand the risk</button>
+        <button class="btn-ghost ripple" style="width: 100%;" onclick="closeModal('modal-delete-warning')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Delete Account Confirm ===== -->
+  <div class="modal-overlay" id="modal-delete-confirm" onclick="closeModalOnOverlay(event, 'modal-delete-confirm')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="color: var(--red);">Confirm Deletion</h2>
+        <button class="modal-close" onclick="closeModal('modal-delete-confirm')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px; text-align: center;">Please type <strong id="delete-username-hint" style="user-select: all; background: var(--bg-muted); padding: 2px 6px; border-radius: 4px; border: var(--border-2);"></strong> to confirm.</p>
+        <div class="form-group">
+          <input type="text" id="delete-username-input" class="form-control" placeholder="Type here..." oninput="checkDeleteConfirmation()" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-direction: column; gap: 12px;">
+        <button class="btn-primary ripple" id="btn-final-delete" style="width: 100%; background: var(--red); color: white; border-color: var(--red); opacity: 0.5; cursor: not-allowed;" onclick="verifyAndDeleteAccount()" disabled>Permanently Delete Account</button>
+        <button class="btn-ghost ripple" style="width: 100%;" onclick="closeModal('modal-delete-confirm')">Cancel</button>
+      </div>
     </div>
   </div>
 

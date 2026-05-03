@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword } = require('../controllers/authController');
+const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount } = require('../controllers/authController');
 const { upload } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { registerValidation, loginValidation, updateProfileValidation, achievementPrivacyValidation } = require('../middleware/validation');
@@ -47,6 +47,9 @@ router.patch('/achievements-privacy', authenticateToken, achievementPrivacyValid
 router.get('/settings', authenticateToken, getProfileSettings);
 router.get('/me', authenticateToken, getProfileSettings); // Alias for /settings
 router.patch('/settings', authenticateToken, updateProfileValidation, setProfileSettings);
+
+// DELETE account (requires authentication)
+router.delete('/account', authenticateToken, deleteAccount);
 
 // POST upload profile picture (requires authentication)
 router.post('/profile-picture', authenticateToken, upload.single('image'), uploadProfilePicture);
