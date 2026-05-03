@@ -1171,6 +1171,24 @@ body {
 
 .form-control::placeholder { color: var(--text-light); }
 
+/* Fix WebKit Autofill Background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #000000 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover, 
+[data-theme="dark"] input:-webkit-autofill:focus, 
+[data-theme="dark"] input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #444444 inset !important;
+    -webkit-text-fill-color: #f0f0f0 !important;
+}
+
 .form-control:focus {
   border-color: var(--black);
   box-shadow: 4px 4px 0 var(--yellow);
@@ -2766,6 +2784,34 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 [data-theme="dark"] .btn-del-cat:hover         { background: #ef4444; color: #fff; }
 [data-theme="dark"] .btn-del-task              { color: #f87171; }
 [data-theme="dark"] .btn-del-task:hover        { background: #3d1515; border-color: #f87171; }
+
+/* Log Out Button styles */
+.log-out-btn {
+  width: auto;
+  padding: 10px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  border: 2px solid #7f1d1d;
+  color: #ffffff !important;
+  text-transform: uppercase;
+  background: #b91c1c !important;
+  box-shadow: 2px 2px 0 var(--black);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: var(--r-sm);
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.log-out-btn:hover {
+  background: #dc2626 !important;
+  border-color: #991b1b;
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.6), 4px 4px 0 var(--black);
+  transform: translateY(-2px);
+}
 
 /* Connected section inner text colours in dark mode */
 [data-theme="dark"] #leetcode-connected .leetcode-connected-info span { color: var(--text); }

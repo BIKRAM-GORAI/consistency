@@ -4190,3 +4190,68 @@ function getDifficultyColor(difficulty) {
   }
 }
 
+/* ==========================================================================
+   PWA Installation Logic
+   ========================================================================== */
+let deferredPrompt;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.log('ServiceWorker registration failed: ', err);
+    });
+  });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later.
+  deferredPrompt = e;
+  
+  // Show modal if not shown this session
+  if (!sessionStorage.getItem('pwaPromptShown')) {
+    const modal = document.getElementById('pwa-modal-overlay');
+    if (modal) {
+      modal.style.display = 'flex';
+      sessionStorage.setItem('pwaPromptShown', 'true');
+    }
+  }
+});
+
+function dismissPwaPrompt() {
+  const modal = document.getElementById('pwa-modal-overlay');
+  if (modal) modal.style.display = 'none';
+}
+
+async function installPWA() {
+  const modal = document.getElementById('pwa-modal-overlay');
+  if (modal) modal.style.display = 'none';
+
+  if (!deferredPrompt) {
+    showToast('App is already installed or your browser requires you to install it via the browser menu (e.g. Share > Add to Home Screen).', 'info');
+    return;
+  }
+  
+  // Show the install prompt
+  deferredPrompt.prompt();
+  
+  // Wait for the user to respond to the prompt
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log(`User response to the install prompt: ${outcome}`);
+  
+  // We've used the prompt, and can't use it again, throw it away
+  deferredPrompt = null;
+  
+  // Hide profile container if installed
+  if (outcome === 'accepted') {
+    const profileContainer = document.getElementById('pwa-install-container');
+    if (profileContainer) profileContainer.style.display = 'none';
+  }
+}
+
+window.addEventListener('appinstalled', (evt) => {
+  console.log('INSTALL: Success');
+  const profileContainer = document.getElementById('pwa-install-container');
+  if (profileContainer) profileContainer.style.display = 'none';
+});

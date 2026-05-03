@@ -471,28 +471,69 @@
       z-index: -1;
       border-radius: 2px;
     }
-    .about-list {
-      list-style: none;
-      max-width: 650px;
+    .about-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      max-width: 1200px;
+      margin-top: 50px;
+      padding-bottom: 50px;
+    }
+    .about-card {
+      border: 3px solid var(--black);
+      border-radius: 12px;
+      padding: 24px;
       text-align: left;
-      font-size: 17px;
-      line-height: 1.8;
+      box-shadow: 6px 6px 0 var(--black);
+      transition: transform 0.2s, box-shadow 0.2s, z-index 0s;
+      flex: 1 1 300px;
+      max-width: 360px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
-    }
-    .about-list li {
+      gap: 8px;
       position: relative;
-      padding-left: 36px;
-      font-weight: 700;
-      color: var(--black);
+      --rot: 0deg;
+      --x-offset: 0px;
+      --y-offset: 0px;
+      transform: translate(var(--x-offset), var(--y-offset)) rotate(var(--rot));
     }
-    .about-list li::before {
-      content: '⚡';
-      position: absolute;
-      left: 0; top: 0;
+    .about-card:hover {
+      z-index: 10;
+      transform: translate(calc(var(--x-offset) - 6px), calc(var(--y-offset) - 6px)) rotate(var(--rot)) scale(1.05);
+      box-shadow: 12px 12px 0 var(--black);
+    }
+    .about-card h3 {
       font-size: 20px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      margin: 0;
+      line-height: 1.2;
+      color: inherit;
     }
+    .about-card p {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.6;
+      opacity: 0.95;
+      color: inherit;
+    }
+    
+    /* 12 randomized scattering patterns */
+    .about-card:nth-child(12n + 1)  { background: #ffb3ba; color: var(--black); --rot: -4deg; --x-offset: -15px; --y-offset: 20px; } 
+    .about-card:nth-child(12n + 2)  { background: #baffc9; color: var(--black); --rot: 2deg;  --x-offset: 10px;  --y-offset: -10px; } 
+    .about-card:nth-child(12n + 3)  { background: #ffffba; color: var(--black); --rot: 5deg;  --x-offset: 25px;  --y-offset: 15px; } 
+    .about-card:nth-child(12n + 4)  { background: #e2baff; color: var(--black); --rot: -3deg; --x-offset: -20px; --y-offset: -15px; } 
+    .about-card:nth-child(12n + 5)  { background: #bae1ff; color: var(--black); --rot: 4deg;  --x-offset: 15px;  --y-offset: 25px; } 
+    .about-card:nth-child(12n + 6)  { background: #ffdfba; color: var(--black); --rot: -5deg; --x-offset: -5px;  --y-offset: -25px; } 
+    .about-card:nth-child(12n + 7)  { background: #baffc9; color: var(--black); --rot: -2deg; --x-offset: 18px;  --y-offset: 30px; } 
+    .about-card:nth-child(12n + 8)  { background: #ffb3ba; color: var(--black); --rot: 3deg;  --x-offset: -25px; --y-offset: -12px; } 
+    .about-card:nth-child(12n + 9)  { background: #bae1ff; color: var(--black); --rot: -6deg; --x-offset: 22px;  --y-offset: 5px; } 
+    .about-card:nth-child(12n + 10) { background: #ffdfba; color: var(--black); --rot: 4deg;  --x-offset: -8px;  --y-offset: 22px; } 
+    .about-card:nth-child(12n + 11) { background: #ffffba; color: var(--black); --rot: -1deg; --x-offset: 10px;  --y-offset: -18px; } 
+    .about-card:nth-child(12n + 12) { background: #e2baff; color: var(--black); --rot: 2deg;  --x-offset: -30px; --y-offset: 8px; }
 
     /* ── Screenshots ── */
     .landing-screenshots {
@@ -945,13 +986,61 @@
   <!-- About Section -->
   <section class="landing-about">
     <h2 class="landing-section-title">About Us</h2>
-    <ul class="about-list">
-      <li><strong>Track Your Daily Habits:</strong> Stay consistent every single day by logging your daily routines and checking them off with a satisfying click.</li>
-      <li><strong>Build Unbreakable Streaks:</strong> Watch your streaks grow and maintain your momentum with visual progress tracking that keeps you accountable.</li>
-      <li><strong>Crush Long-Term Goals:</strong> Break down massive goals into actionable subtasks, track deadlines, and monitor your journey to success.</li>
-      <li><strong>Compete with Friends:</strong> Create private groups, share your wins, see who has the longest streak, and hold each other accountable.</li>
-      <li><strong>Celebrate Your Wins:</strong> Log your daily achievements to reflect on how far you've come and never lose sight of your progress.</li>
-    </ul>
+    <div class="about-grid">
+      <!-- <div class="about-card"><h3>Track Your Daily Habits</h3><p>Stay consistent every single day by logging your daily routines and checking them off with a satisfying click.</p></div>
+      <div class="about-card"><h3>Build Unbreakable Streaks</h3><p>Watch your streaks grow and maintain your momentum with visual progress tracking that keeps you accountable.</p></div>
+      <div class="about-card"><h3>Crush Long-Term Goals</h3><p>Break down massive goals into actionable subtasks, track deadlines, and monitor your journey to success.</p></div>
+      <div class="about-card"><h3>Compete with Friends</h3><p>Create private groups, share your wins, see who has the longest streak, and hold each other accountable.</p></div>
+      <div class="about-card"><h3>Celebrate Your Wins</h3><p>Log your daily achievements to reflect on how far you've come and never lose sight of your progress.</p></div>
+      <div class="about-card"><h3>Track LeetCode Progress</h3><p>Integrate your LeetCode account to automatically track your daily coding practice and earn rewards for consistency.</p></div>
+      <div class="about-card"><h3>Automated Email Reminders</h3><p>Stay consistent with scheduled notifications that ensure you never miss a task or lose your streak.</p></div>
+      <div class="about-card"><h3>Reusable Templates</h3><p>Save your entire task table as a template and instantly apply it anywhere to fill everything in one click.</p></div>
+      <div class="about-card"><h3>Private Accounts</h3><p>Keep your progress and goals private — visible only to you, unless you choose to share.</p></div>
+      <div class="about-card"><h3>Customizable Themes</h3><p>Personalize your experience with light and dark mode options to match your preference.</p></div>
+      <div class="about-card"><h3>User-Friendly Interface</h3><p>Enjoy a clean, intuitive design that makes tracking your progress simple and enjoyable.</p></div>
+      <div class="about-card"><h3>Lightweight and Fast</h3><p>Built for speed and simplicity, ensuring you can focus on your goals without unnecessary clutter.</p></div>
+      <div class="about-card"><h3>Cross-Platform Support</h3><p>Access your account from any device with a web browser and enjoy a seamless experience.</p></div>
+      <div class="about-card"><h3>Secure and Reliable</h3><p>Your data is stored securely with robust authentication and data protection measures.</p></div>
+      <div class="about-card"><h3>Built with Privacy in Mind</h3><p>We believe in user control and data ownership. Your information is treated with strict confidentiality and will never be sold or shared without your explicit consent.</p></div>
+      <div class="about-card"><h3>Community and Connection</h3><p>Join groups, share your progress, and motivate each other to achieve your goals together.</p></div>
+      <div class="about-card"><h3>Progress Visualization</h3><p>Track your journey with detailed analytics, charts, and reports to visualize your progress and stay motivated.</p></div>
+      <div class="about-card"><h3>Customizable Goals</h3><p>Set your own goals, track your progress, and celebrate your achievements along the way.</p></div> -->
+      <div class="about-card"><h3>Track Your Daily Habits</h3><p>Build consistency by logging your daily routines and completing tasks with a simple, satisfying flow.</p></div>
+
+      <div class="about-card"><h3>Build Unbreakable Streaks</h3><p>Stay motivated with streak tracking that turns daily actions into powerful long-term habits.</p></div>
+
+      <div class="about-card"><h3>Crush Long-Term Goals</h3><p>Break big ambitions into manageable steps, set deadlines, and track your progress with clarity.</p></div>
+
+      <div class="about-card"><h3>Reusable Templates</h3><p>Create complete task setups once and instantly reuse them anywhere to save time and stay organized.</p></div>
+
+      <div class="about-card"><h3>Track LeetCode Progress</h3><p>Connect your LeetCode account to automatically track your coding consistency and stay on top of your practice.</p></div>
+
+      <div class="about-card"><h3>Progress Visualization</h3><p>Understand your journey with insightful graphs and analytics that highlight your consistency and growth.</p></div>
+
+      <div class="about-card"><h3>Automated Email Reminders</h3><p>Never miss a day with smart reminders that help you stay consistent and protect your streak.</p></div>
+
+      <div class="about-card"><h3>Compete with Friends</h3><p>Create private groups, compare streaks, and stay accountable through healthy competition.</p></div>
+
+      <div class="about-card"><h3>Community and Connection</h3><p>Engage with others, share progress, and stay inspired by a community focused on growth.</p></div>
+
+      <div class="about-card"><h3>Celebrate Your Wins</h3><p>Track your achievements and reflect on your progress to stay motivated every step of the way.</p></div>
+
+      <div class="about-card"><h3>Customizable Goals</h3><p>Define your own goals, adapt your workflow, and build a system that works for you.</p></div>
+
+      <div class="about-card"><h3>Private Accounts</h3><p>Control your visibility with flexible privacy settings—share only what you want, when you want.</p></div>
+
+      <div class="about-card"><h3>Customizable Themes</h3><p>Switch between light and dark modes for a personalized and comfortable experience.</p></div>
+
+      <div class="about-card"><h3>User-Friendly Interface</h3><p>Enjoy a clean, intuitive design that keeps you focused without distractions.</p></div>
+
+      <div class="about-card"><h3>Lightweight and Fast</h3><p>Experience smooth performance with a fast, responsive interface built for everyday use.</p></div>
+
+      <div class="about-card"><h3>Cross-Platform Access</h3><p>Access your workspace anytime, anywhere, from any device with a seamless experience.</p></div>
+
+      <div class="about-card"><h3>Secure and Reliable</h3><p>Your data is protected with secure authentication and reliable infrastructure you can trust.</p></div>
+
+      <div class="about-card"><h3>Privacy-First Approach</h3><p>Your data belongs to you. We ensure strict confidentiality and never share your information without consent.</p></div>
+    </div>
   </section>
 
   <!-- Screenshots Section -->

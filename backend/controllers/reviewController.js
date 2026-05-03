@@ -73,7 +73,8 @@ async function getReviews(req, res) {
       }
     }
 
-    const reviews = await Review.find().sort({ createdAt: -1 });
+    // Exclude the email field from the response to prevent data leaks in the network tab
+    const reviews = await Review.find().select('-email').sort({ createdAt: -1 });
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
