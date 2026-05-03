@@ -3,6 +3,7 @@ const { cloudinary } = require('../config/cloudinary');
 const bcrypt = require('bcrypt');
 const { generateToken } = require('../middleware/auth');
 const { incrementFailedAttempts, resetFailedAttempts } = require('../middleware/accountLockout');
+const admin = require('../config/firebase');
 const saltRounds = 10; // Number of salt rounds for bcrypt hashing
 
 /**
@@ -113,6 +114,71 @@ const login = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * POST /api/auth/oauth-login
+ * Handle login or registration via Firebase OAuth (Google, GitHub, Facebook)
+ */
+const oauthLogin = async (req, res) => {
+  try {
+    const { idToken, email, name, provider, uid } = req.body;
+
+    if (!idToken || !email || !uid) {
+      return res.status(400).json({ message: 'Missing required OAuth fields' });
+    }
+
+    // Verify the Firebase ID token securely via admin SDK
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+      if (decodedToken.uid !== uid || decodedToken.email !== email) {
+        return res.status(401).json({ message: 'Invalid token payload' });
+      }
+    } catch (verifyErr) {
+      console.error('Firebase Token Verification Error:', verifyErr);
+      return res.status(401).json({ message: 'Authentication failed. Invalid token.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (user) {
+      // User exists. Ensure the authProvider is added to their account if not present
+      if (!user.authProviders) {
+        user.authProviders = [];
+      }
+      
+      const providerExists = user.authProviders.some(p => p.provider === provider && p.uid === uid);
+      if (!providerExists) {
+        user.authProviders.push({ provider, uid });
+        await user.save();
+      }
+    } else {
+      // User does not exist. Create a new user account without a password
+      user = new User({
+        name: name || 'User',
+        email: normalizedEmail,
+        authProviders: [{ provider, uid }]
+      });
+      await user.save();
+    }
+
+    // Generate JWT token for the user
+    const token = generateToken(user._id, user.email);
+
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      token
+    });
+
+  } catch (error) {
+    console.error('OAuth Login Error:', error);
+    res.status(500).json({ message: 'Server error during OAuth login', error: error.message });
   }
 };
 
@@ -447,4 +513,4 @@ async function resetPassword(req, res) {
   }
 }
 
-module.exports = { register, login, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword };
+module.exports = { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword };

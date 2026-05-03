@@ -33,8 +33,16 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        // Password is required only if the user has no OAuth providers
+        return !this.authProviders || this.authProviders.length === 0;
+      },
     },
+    // Array to track OAuth providers (e.g., google, github, facebook)
+    authProviders: [{
+      provider: String,
+      uid: String
+    }],
     // Privacy toggle: when false, other group members cannot see this user's achievements
     achievementsPublic: {
       type: Boolean,

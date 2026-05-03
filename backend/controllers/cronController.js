@@ -58,6 +58,7 @@ const sendStreakReminders = async (req, res) => {
       }
 
       if (!isTodayCompleted) {
+        const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         emailsToSend.push({
           mailOptions: {
             to: user.email,
@@ -79,8 +80,14 @@ const sendStreakReminders = async (req, res) => {
                   <a href="${process.env.FRONTEND_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : 'http://localhost:5001')}/index.html" style="background-color: #000000; color: #FFD60A; padding: 14px 28px; display: inline-block; border-radius: 6px; font-size: 16px; font-weight: bold; text-decoration: none; border-bottom: 5px solid #FF6B35; border-right: 5px solid #FF6B35; text-transform: uppercase; letter-spacing: 1px;">Log Today's Tasks →</a>
                 </div>
 
-                <div style="background-color: #FFF0F0; padding: 16px; border-top: 2px solid #EF4444; border-left: 2px solid #EF4444; border-right: 5px solid #EF4444; border-bottom: 5px solid #EF4444; border-radius: 6px; text-align: center;">
+                <div style="background-color: #FFF0F0; padding: 16px; border-top: 2px solid #EF4444; border-left: 2px solid #EF4444; border-right: 5px solid #EF4444; border-bottom: 5px solid #EF4444; border-radius: 6px; text-align: center; margin-bottom: 24px;">
                   <p style="font-size: 14px; color: #000000; margin: 0; font-style: italic; font-weight: bold;">"Small disciplines repeated with consistency every day lead to great achievements gained slowly over time."</p>
+                </div>
+
+                <div style="background-color: #f5f5f5; padding: 12px; border: 2px solid #ddd; border-radius: 4px; text-align: center;">
+                  <p style="font-size: 12px; color: #666; margin: 0; font-weight: bold;">
+                    Generated at: ${currentTime} | Ref: ${Date.now().toString().slice(-6)}
+                  </p>
                 </div>
               </div>
             `
@@ -149,6 +156,7 @@ const sendInactiveReminders = async (req, res) => {
 
     const emailsToSend = inactiveUsers.map(user => {
       const daysInactive = Math.floor((Date.now() - new Date(user.lastActiveAt).getTime()) / (1000 * 60 * 60 * 24));
+      const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       return {
         mailOptions: {
           to: user.email,
@@ -168,6 +176,12 @@ const sendInactiveReminders = async (req, res) => {
               
               <div style="text-align: center; margin-bottom: 24px;">
                 <a href="${process.env.FRONTEND_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : 'http://localhost:5001')}/index.html" style="background-color: #000000; color: #00C9A7; padding: 14px 28px; display: inline-block; border-radius: 6px; font-size: 16px; font-weight: bold; text-decoration: none; border-bottom: 5px solid #00C9A7; border-right: 5px solid #00C9A7; text-transform: uppercase; letter-spacing: 1px;">Start a New Streak →</a>
+              </div>
+
+              <div style="background-color: #f5f5f5; padding: 12px; border: 2px solid #ddd; border-radius: 4px; text-align: center;">
+                <p style="font-size: 12px; color: #666; margin: 0; font-weight: bold;">
+                  Generated at: ${currentTime} | Ref: ${Date.now().toString().slice(-6)}
+                </p>
               </div>
             </div>
           `
