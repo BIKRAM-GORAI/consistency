@@ -76,7 +76,7 @@ const sendStreakReminders = async (req, res) => {
                 <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Don't forget to log your progress today so you don't lose your momentum. It only takes a minute!</p>
                 
                 <div style="text-align: center; margin-bottom: 24px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://consistency-tracker.vercel.app'}/index.html" style="background-color: #000000; color: #FFD60A; padding: 14px 28px; display: inline-block; border-radius: 6px; font-size: 16px; font-weight: bold; text-decoration: none; border-bottom: 5px solid #FF6B35; border-right: 5px solid #FF6B35; text-transform: uppercase; letter-spacing: 1px;">Log Today's Tasks →</a>
+                  <a href="${process.env.FRONTEND_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : 'http://localhost:5001')}/index.html" style="background-color: #000000; color: #FFD60A; padding: 14px 28px; display: inline-block; border-radius: 6px; font-size: 16px; font-weight: bold; text-decoration: none; border-bottom: 5px solid #FF6B35; border-right: 5px solid #FF6B35; text-transform: uppercase; letter-spacing: 1px;">Log Today's Tasks →</a>
                 </div>
 
                 <div style="background-color: #FFF0F0; padding: 16px; border-top: 2px solid #EF4444; border-left: 2px solid #EF4444; border-right: 5px solid #EF4444; border-bottom: 5px solid #EF4444; border-radius: 6px; text-align: center;">
@@ -167,7 +167,7 @@ const sendInactiveReminders = async (req, res) => {
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Building consistency isn't about never missing a day, it's about <strong>never missing two</strong>. Come back and start building your next streak today!</p>
               
               <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${process.env.FRONTEND_URL || 'https://consistency-tracker.vercel.app'}/index.html" style="background-color: #000000; color: #00C9A7; padding: 14px 28px; display: inline-block; border-radius: 6px; font-size: 16px; font-weight: bold; text-decoration: none; border-bottom: 5px solid #00C9A7; border-right: 5px solid #00C9A7; text-transform: uppercase; letter-spacing: 1px;">Start a New Streak →</a>
+                <a href="${process.env.FRONTEND_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : 'http://localhost:5001')}/index.html" style="background-color: #000000; color: #00C9A7; padding: 14px 28px; display: inline-block; border-radius: 6px; font-size: 16px; font-weight: bold; text-decoration: none; border-bottom: 5px solid #00C9A7; border-right: 5px solid #00C9A7; text-transform: uppercase; letter-spacing: 1px;">Start a New Streak →</a>
               </div>
             </div>
           `
