@@ -521,27 +521,32 @@
         <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
       </div>
       <div class="modal-body" id="profile-modal-body">
-        <div class="profile-picture-section" style="text-align:center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px dashed #ccc;">
-          <div class="profile-avatar-container" onclick="document.getElementById('profile-pic-upload').click()" title="Click to upload profile picture" style="width:100px; height:100px; border-radius:50%; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; cursor:pointer; overflow:hidden; border:2px solid #ccc; position:relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <span id="profile-avatar-initial">?</span>
-            <img id="profile-avatar-img" src="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
-            <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.5); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">👤 Personal Information</h3>
+          
+          <div class="profile-picture-section" style="text-align:center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed var(--border-color, #ccc);">
+            <div class="profile-avatar-container" onclick="document.getElementById('profile-pic-upload').click()" title="Click to upload profile picture" style="width:100px; height:100px; border-radius:50%; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; cursor:pointer; overflow:hidden; border:2px solid var(--black); position:relative; box-shadow: 4px 4px 0 var(--black); margin: 0 auto;">
+              <span id="profile-avatar-initial">?</span>
+              <img id="profile-avatar-img" src="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
+              <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.6); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
+            </div>
+            <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePictureSelect(event)" />
+            <p class="form-hint" style="margin-top:12px; font-size: 13px;">Max 5MB. Image will be compressed before upload.</p>
           </div>
-          <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePictureSelect(event)" />
-          <p class="form-hint" style="margin-top:8px;">Max 5MB. Image will be compressed before upload.</p>
-        </div>
-        <div class="form-group">
-          <label for="profile-email">Email (Read Only)</label>
-          <input type="email" id="profile-email" class="form-control" readonly style="background: #f5f5f5; color: #666; cursor: not-allowed;" />
-        </div>
-        <div class="form-group">
-          <label for="profile-username">Username</label>
-          <input type="text" id="profile-username" class="form-control" placeholder="Choose a unique username" />
-          <p class="form-hint" id="profile-username-hint">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br>⚠️ Username can be set only once.</p>
-          <!-- <p class="form-hint" id="profile-username-warning"  style="display:none; color:var(--coral); font-weight:600;">⚠️ You can only set your username once.</p> -->
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label for="profile-email" style="font-weight: 600;">Email (Read Only)</label>
+            <input type="email" id="profile-email" class="form-control" readonly style="background: var(--bg); color: var(--text-muted); cursor: not-allowed; border-color: var(--border-color, #ccc);" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="profile-username" style="font-weight: 600;">Username</label>
+            <input type="text" id="profile-username" class="form-control" placeholder="Choose a unique username" style="background: var(--bg); color: var(--text); border-color: var(--border-color, #ccc);" />
+            <p class="form-hint" id="profile-username-hint" style="margin-top: 6px; font-size: 13px;">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br>⚠️ Username can be set only once.</p>
+          </div>
         </div>
 
-        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">🎯 LeetCode Integration</h3>
 
           <div id="leetcode-connect-section">
@@ -641,50 +646,53 @@
           </div>
         </div>
 
-        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
-          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase;" onclick="togglePasswordSection()" id="toggle-pwd-btn">
-            <span>🔒 Change Password</span>
-            <span id="toggle-pwd-icon">▼</span>
-          </button>
-          
-          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase; margin-top: 12px; background:var(--bg-muted);" onclick="previewOwnProfile()" id="preview-profile-btn">
-            <span>👀 How others view my profile</span>
-          </button>
-          
-          <div id="password-change-section" style="display:none; margin-top:16px; padding:16px; background:var(--bg-muted); border-radius:8px; border:var(--border-2);">
-            <div class="form-group">
-              <label for="profile-old-password">Current Password</label>
-              <div class="password-wrapper">
-                <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-old-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">🔒 Security & Visibility</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="togglePasswordSection()" id="toggle-pwd-btn">
+              <span>Change Password</span>
+              <span id="toggle-pwd-icon">▼</span>
+            </button>
+            
+            <div id="password-change-section" style="display:none; padding:16px; background:var(--bg); border-radius:8px; border:var(--border-2);">
+              <div class="form-group">
+                <label for="profile-old-password">Current Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-old-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: 16px;">
+                <label for="profile-new-password">New Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-new-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+                </div>
+                <p class="form-hint" style="margin-top: 6px; line-height: 1.4;">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
+              </div>
+              <div class="form-group" style="margin-top: 16px;">
+                <label for="profile-confirm-password">Confirm New Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-confirm-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:center; margin-top: 20px;">
+                <button class="btn-primary ripple" style="padding:8px 24px; font-size:14px;" onclick="submitPasswordChange()" id="submit-pwd-btn">Update Password</button>
               </div>
             </div>
-            <div class="form-group" style="margin-top: 16px;">
-              <label for="profile-new-password">New Password</label>
-              <div class="password-wrapper">
-                <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-new-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
-              </div>
-              <p class="form-hint" style="margin-top: 6px; line-height: 1.4;">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
-            </div>
-            <div class="form-group" style="margin-top: 16px;">
-              <label for="profile-confirm-password">Confirm New Password</label>
-              <div class="password-wrapper">
-                <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-confirm-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
-              </div>
-            </div>
-            <div style="display:flex; justify-content:center; margin-top: 20px;">
-              <button class="btn-primary ripple" style="padding:8px 24px; font-size:14px;" onclick="submitPasswordChange()" id="submit-pwd-btn">Update Password</button>
-            </div>
+
+            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="previewOwnProfile()" id="preview-profile-btn">
+              <span>👀 How others view my profile</span>
+            </button>
           </div>
         </div>
 
-        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">Preferences</h3>
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">⚙️ Preferences</h3>
           
           <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
+            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
               <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
                 <label style="margin:0; font-weight: 600; color: var(--text);">Dark Theme</label>
                 <label class="toggle-switch">
@@ -695,7 +703,7 @@
               <p class="form-hint" style="margin: 0; line-height: 1.5;">Switch to a dark brutalist theme.</p>
             </div>
 
-            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
+            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
               <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
                 <label style="margin:0; font-weight: 600; color: var(--text);">Email Reminders</label>
                 <label class="toggle-switch">
@@ -706,7 +714,7 @@
               <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
             </div>
 
-            <div style="padding: 16px; background: var(--bg-muted); border-radius: 8px; border: var(--border-2);">
+            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
               <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
                 <label style="margin:0; font-weight: 600; color: var(--text);">Public Profile</label>
                 <label class="toggle-switch">
@@ -719,25 +727,33 @@
           </div>
         </div>
 
-        <div style="margin: 20px 0; border-top: 1px dashed #ccc; padding-top: 16px;">
-          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:2px solid #eee; text-transform:uppercase;" onclick="openManageTemplatesModal()" id="manage-templates-btn">
-            <span>📑 Manage Templates</span>
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📑 Manage Templates</h3>
+          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="openManageTemplatesModal()" id="manage-templates-btn">
+            <span>Manage Daily Templates</span>
             <span>▶</span>
           </button>
         </div>
 
-        <div style="margin: 20px 0; border-top: 1px dashed var(--red); padding-top: 16px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase;">Danger Zone</h3>
-          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:#fff; text-transform:uppercase; background:var(--red); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="openDeleteWarning()">
-            <span>🗑️ Delete Account</span>
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase;">⚠️ Danger Zone</h3>
+          
+          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); color: var(--text); text-transform:uppercase;" onclick="document.getElementById('delete-account-section').style.display = document.getElementById('delete-account-section').style.display === 'none' ? 'block' : 'none';">
+            <span>Want to delete your account?</span>
+            <span>▼</span>
           </button>
+          
+          <div id="delete-account-section" style="display:none; margin-top:12px; padding: 16px; border: 2px dashed var(--red); background: var(--bg); border-radius: 8px;">
+            <p style="margin:0 0 12px 0; font-size: 13px; color: var(--red); font-weight: 600;">Warning: Once deleted, your account and all data cannot be recovered.</p>
+            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:#fff; text-transform:uppercase; background:var(--red); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="openDeleteWarning()">
+              <span>🗑️ Delete Account</span>
+            </button>
+          </div>
         </div>
 
-        <div style="margin: 20px 0; border-top: 1px dashed var(--border-color, #ccc); padding-top: 16px;">
-          <button class="btn-ghost ripple log-out-btn" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:var(--red); text-transform:uppercase; background:rgba(239, 68, 68, 0.15); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="logout()">
-            <span>🚪 Log Out</span>
-          </button>
-        </div>
+        <button class="btn-ghost ripple log-out-btn" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:var(--red); text-transform:uppercase; background:rgba(239, 68, 68, 0.15); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black); margin-bottom: 0;" onclick="logout()">
+          <span>🚪 Log Out</span>
+        </button>
 
       </div>
       <div class="modal-footer">
@@ -879,9 +895,9 @@
   <!-- ===== MODAL: Delete Account Warning ===== -->
   <div class="modal-overlay" id="modal-delete-warning" onclick="closeModalOnOverlay(event, 'modal-delete-warning')">
     <div class="modal">
-      <div class="modal-header">
-        <h2 style="color: var(--red);">⚠️ Delete Account</h2>
-        <button class="modal-close" onclick="closeModal('modal-delete-warning')">✕</button>
+      <div class="modal-header" style="background: linear-gradient(135deg, #ffb74d, #ff7043); border-bottom: 2px solid var(--black);">
+        <h2 style="color: var(--black);">⚠️ Delete Account</h2>
+        <button class="modal-close" onclick="closeModal('modal-delete-warning')" style="color: var(--black);">✕</button>
       </div>
       <div class="modal-body">
         <p style="font-size: 16px; font-weight: 600; text-align: center; margin-bottom: 16px;">Are you absolutely sure?</p>
@@ -891,8 +907,8 @@
         </div>
       </div>
       <div class="modal-footer" style="flex-direction: column; gap: 12px;">
-        <button class="btn-primary ripple" style="width: 100%; background: var(--red); color: white; border-color: var(--red);" onclick="proceedToDeleteConfirm()">I understand the risk</button>
-        <button class="btn-ghost ripple" style="width: 100%;" onclick="closeModal('modal-delete-warning')">Cancel</button>
+        <button class="btn-primary ripple" style="width: 100%; display: flex; justify-content: center; text-align: center; background: var(--red); color: var(--black); font-weight: 800; border-color: var(--red);" onclick="proceedToDeleteConfirm()">I UNDERSTAND THE RISKS</button>
+        <button class="btn-ghost ripple" style="width: 100%; display: flex; justify-content: center; text-align: center;" onclick="closeModal('modal-delete-warning')">Cancel</button>
       </div>
     </div>
   </div>
@@ -900,9 +916,9 @@
   <!-- ===== MODAL: Delete Account Confirm ===== -->
   <div class="modal-overlay" id="modal-delete-confirm" onclick="closeModalOnOverlay(event, 'modal-delete-confirm')">
     <div class="modal">
-      <div class="modal-header">
-        <h2 style="color: var(--red);">Confirm Deletion</h2>
-        <button class="modal-close" onclick="closeModal('modal-delete-confirm')">✕</button>
+      <div class="modal-header" style="background: linear-gradient(135deg, #ffb74d, #ff7043); border-bottom: 2px solid var(--black);">
+        <h2 style="color: var(--black);">Confirm Deletion</h2>
+        <button class="modal-close" onclick="closeModal('modal-delete-confirm')" style="color: var(--black);">✕</button>
       </div>
       <div class="modal-body">
         <p style="margin-bottom: 16px; text-align: center;">Please type <strong id="delete-username-hint" style="user-select: all; background: var(--bg-muted); padding: 2px 6px; border-radius: 4px; border: var(--border-2);"></strong> to confirm.</p>
@@ -911,8 +927,8 @@
         </div>
       </div>
       <div class="modal-footer" style="flex-direction: column; gap: 12px;">
-        <button class="btn-primary ripple" id="btn-final-delete" style="width: 100%; background: var(--red); color: white; border-color: var(--red); opacity: 0.5; cursor: not-allowed;" onclick="verifyAndDeleteAccount()" disabled>Permanently Delete Account</button>
-        <button class="btn-ghost ripple" style="width: 100%;" onclick="closeModal('modal-delete-confirm')">Cancel</button>
+        <button class="btn-primary ripple" id="btn-final-delete" style="width: 100%; display: flex; justify-content: center; text-align: center; background: var(--red); color: var(--black); font-weight: 800; border-color: var(--red); opacity: 0.5; cursor: not-allowed;" onclick="verifyAndDeleteAccount()" disabled>Permanently Delete Account</button>
+        <button class="btn-ghost ripple" style="width: 100%; display: flex; justify-content: center; text-align: center;" onclick="closeModal('modal-delete-confirm')">Cancel</button>
       </div>
     </div>
   </div>

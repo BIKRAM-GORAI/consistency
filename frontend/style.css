@@ -83,7 +83,11 @@
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-muted); }
-::-webkit-scrollbar-thumb { background: var(--black); border-radius: 0; }
+::-webkit-scrollbar-thumb { background: var(--black); border-radius: 12px; }
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #aaaaaa;
+}
 
 /* ============================================================
    BASE

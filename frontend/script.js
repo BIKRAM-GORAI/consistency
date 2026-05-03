@@ -1506,10 +1506,14 @@ function buildMembersHTML(members, groupId, isOwner = false) {
 
     const avatarClick = profilePic ? `onclick="openLightbox('${profilePic}')"` : '';
 
+    const nameClick = (!isSelf && member.username) 
+      ? `onclick="openPublicProfile('${member.username}')" style="cursor: pointer; color: inherit;" title="View Profile"` 
+      : '';
+
     return `
       <div class="member-pill">
         <div class="member-avatar" style="background:${memberAvatarColor(memberName)}" ${avatarClick}>${avatarContent}</div>
-        <span class="member-name">${escHtml(memberName)}${isSelf ? ' (you)' : ''}</span>
+        <span class="member-name" ${nameClick}>${escHtml(memberName)}${isSelf ? ' (you)' : ''}</span>
         ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escJs(memberName)}')">View Tasks</button>` : ''}
         ${removeBtn}
       </div>
