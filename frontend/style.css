@@ -2661,8 +2661,42 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   background: #fef08a;
   border-radius: 6px;
   border: 1px solid #ca8a04;
-  color: #854d0e;
+  color: #fff;
 }
+
+/* ── Password Wrapper ── */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper .form-control {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
+/* ── Utilities ── */
 
 /* ── Inline code snippet shown in pending section ── */
 .lc-pending-code {

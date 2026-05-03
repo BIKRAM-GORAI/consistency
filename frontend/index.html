@@ -651,18 +651,28 @@
             <span>👀 How others view my profile</span>
           </button>
           
-          <div id="password-change-section" style="display:none; margin-top:16px; padding:16px; background:#fafafa; border-radius:8px; border:1px solid #eee;">
+          <div id="password-change-section" style="display:none; margin-top:16px; padding:16px; background:var(--bg-muted); border-radius:8px; border:var(--border-2);">
             <div class="form-group">
               <label for="profile-old-password">Current Password</label>
-              <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
+              <div class="password-wrapper">
+                <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-old-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              </div>
             </div>
             <div class="form-group" style="margin-top: 16px;">
               <label for="profile-new-password">New Password</label>
-              <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
+              <div class="password-wrapper">
+                <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-new-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              </div>
+              <p class="form-hint" style="margin-top: 6px; line-height: 1.4;">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
             </div>
             <div class="form-group" style="margin-top: 16px;">
               <label for="profile-confirm-password">Confirm New Password</label>
-              <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
+              <div class="password-wrapper">
+                <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-confirm-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              </div>
             </div>
             <div style="display:flex; justify-content:center; margin-top: 20px;">
               <button class="btn-primary ripple" style="padding:8px 24px; font-size:14px;" onclick="submitPasswordChange()" id="submit-pwd-btn">Update Password</button>

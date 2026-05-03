@@ -2493,8 +2493,8 @@ async function submitPasswordChange() {
     showToast('New passwords do not match.', 'warn');
     return;
   }
-  if (newPassword.length < 5) {
-    showToast('New password must be at least 5 characters.', 'warn');
+  if (newPassword.length < 5 || /\s/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
+    showToast('New password must be 5+ chars with 1 uppercase, 1 lowercase, 1 special char.', 'warn');
     return;
   }
 
@@ -2763,13 +2763,33 @@ async function deleteTemplate(templateId) {
 }
 
 // ── Theme Logic ──────────────────────────────────────────────
-function toggleDarkTheme(isDark) {
+async function toggleDarkTheme(isDark) {
   if (isDark) {
     document.documentElement.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
   } else {
     document.documentElement.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
+  }
+  
+  try {
+    await apiFetch(`${API}/api/auth/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify({ theme: isDark ? 'dark' : 'light' })
+    });
+  } catch(err) {
+    console.error('Failed to sync theme preference:', err);
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🔓';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
   }
 }
 
@@ -2795,14 +2815,26 @@ document.addEventListener('DOMContentLoaded', () => {
   if (chipName)   chipName.textContent   = userName;
   updateNavAvatar();
 
-  // Initialize LeetCode button status (non-blocking)
+  // Initialize settings (theme, LeetCode, etc.)
   apiFetch(`${API}/api/auth/settings`)
     .then(user => {
+      // Sync theme from backend if different
+      if (user.theme && localStorage.getItem('theme') !== user.theme) {
+        localStorage.setItem('theme', user.theme);
+        if (user.theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          if (themeToggle) themeToggle.checked = true;
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          if (themeToggle) themeToggle.checked = false;
+        }
+      }
+
       const isVerified = user.leetcodeLastVerifiedAt ? true : false;
       updateLeetCodeButtonsStatus(isVerified);
     })
     .catch(error => {
-      console.error('Error checking LeetCode verification status:', error);
+      console.error('Error fetching settings:', error);
       updateLeetCodeButtonsStatus(false); // Default to unverified if we can't check
     });
 

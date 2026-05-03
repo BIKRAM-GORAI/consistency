@@ -234,7 +234,7 @@ async function getProfileSettings(req, res) {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
 
-    const user = await User.findById(userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile leetcodeUsername leetcodePendingUsername leetcodeVerificationCode leetcodeVerificationExpiry leetcodeLastVerifiedAt leetcodeUsernameChangeCount leetcodeProfilePicture leetcodeVerificationStatus leetcodeRetryScheduledAt');
+    const user = await User.findById(userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile theme leetcodeUsername leetcodePendingUsername leetcodeVerificationCode leetcodeVerificationExpiry leetcodeLastVerifiedAt leetcodeUsernameChangeCount leetcodeProfilePicture leetcodeVerificationStatus leetcodeRetryScheduledAt');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({
       email: user.email,
@@ -243,6 +243,7 @@ async function getProfileSettings(req, res) {
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false,
       isPublicProfile: user.isPublicProfile !== false,
+      theme: user.theme || 'light',
       leetcodeUsername: user.leetcodeUsername || null,
       leetcodePendingUsername: user.leetcodePendingUsername || null,
       leetcodeVerificationCode: user.leetcodeVerificationCode || null,
@@ -279,6 +280,9 @@ async function setProfileSettings(req, res) {
     if (typeof isPublicProfile === 'boolean') {
       updates.isPublicProfile = isPublicProfile;
     }
+    if (req.body.theme === 'dark' || req.body.theme === 'light') {
+      updates.theme = req.body.theme;
+    }
 
     if (username !== undefined && username !== user.username) {
       if (user.username) {
@@ -299,8 +303,14 @@ async function setProfileSettings(req, res) {
       if (!isCurrentPasswordValid) {
         return res.status(400).json({ message: 'Incorrect current password' });
       }
-      // Hash the new password before storing
-      updates.password = await bcrypt.hash(newPassword, saltRounds);
+
+      // Validate new password complexity
+      if (newPassword.length < 5 || /\s/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
+        return res.status(400).json({ message: 'Password must be 5+ characters with 1 uppercase, 1 lowercase, 1 special character, and no spaces.' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      updates.password = await bcrypt.hash(newPassword, salt);
     }
 
     if (Object.keys(updates).length > 0) {
