@@ -29,6 +29,38 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+// ── Security Headers ───────────────────────────────────────
+app.use((req, res, next) => {
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+  // Stop MIME-type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // Send referrer only on same-origin; only origin on cross-origin
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Disable browser features the app doesn't use
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+
+  // Content Security Policy — permissive enough not to break scripts/styles
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+      "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+      "img-src 'self' data: blob: https:",
+      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com",
+      "frame-src 'self'",
+      "object-src 'none'",
+    ].join('; ')
+  );
+
+  next();
+});
+
 // ── API Routes ─────────────────────────────────────────────
 // Apply general rate limiting to all API routes
 app.use('/api', generalLimiter);
