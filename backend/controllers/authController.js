@@ -331,15 +331,16 @@ async function setProfileSettings(req, res) {
       updates.password = await bcrypt.hash(newPassword, salt);
     }
 
-    if (Object.keys(updates).length > 0) {
-      Object.assign(user, updates);
-      await user.save();
-    }
+    // Apply updates from the updates object
+    Object.assign(user, updates);
+    
+    await user.save();
     
     res.json({ 
       emailNotifications: user.emailNotifications, 
       isPublicProfile: user.isPublicProfile,
       username: user.username,
+      profilePicture: user.profilePicture,
       message: 'Profile updated successfully'
     });
   } catch (err) {

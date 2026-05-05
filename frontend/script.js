@@ -2608,6 +2608,20 @@ async function openProfileModal() {
 
   try {
     const res = await apiFetch(`${API}/api/auth/settings`);
+    
+    // Sync latest profile picture from backend
+    if (res.profilePicture) {
+      userProfilePicture = res.profilePicture;
+      localStorage.setItem('userProfilePicture', userProfilePicture);
+      updateNavAvatar();
+      
+      const avatarImg = document.getElementById('profile-avatar-img');
+      const avatarInit = document.getElementById('profile-avatar-initial');
+      avatarImg.src = userProfilePicture;
+      avatarImg.style.display = 'block';
+      avatarInit.style.display = 'none';
+    }
+
     document.getElementById('profile-email').value = res.email || '';
 
     const unameInput = document.getElementById('profile-username');
@@ -3132,6 +3146,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize settings (theme, LeetCode, etc.)
   apiFetch(`${API}/api/auth/settings`)
     .then(user => {
+      // Sync profile picture
+      if (user.profilePicture) {
+        userProfilePicture = user.profilePicture;
+        localStorage.setItem('userProfilePicture', userProfilePicture);
+        updateNavAvatar();
+      }
+
       // Sync theme from backend if different
       if (user.theme && localStorage.getItem('theme') !== user.theme) {
         localStorage.setItem('theme', user.theme);
@@ -3205,7 +3226,12 @@ async function handleProfilePictureSelect(event) {
     return;
   }
 
-  showToast('Compressing and uploading image...', 'info');
+  showToast('Compressing image...', 'info');
+  const btn = document.getElementById('submit-profile-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+  }
 
   const reader = new FileReader();
   reader.readAsDataURL(file);
@@ -3243,6 +3269,11 @@ async function handleProfilePictureSelect(event) {
         reader.onloadend = () => {
           const base64data = reader.result;
           document.getElementById('profile-pic-dataurl').value = base64data;
+          
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+          }
 
           // Update UI Preview
           const avatarImg = document.getElementById('profile-avatar-img');
@@ -3273,6 +3304,11 @@ async function handleGroupIconSelect(event, isEdit = false) {
   }
 
   showToast('Compressing icon...', 'info');
+  const btn = document.getElementById(isEdit ? 'submit-edit-group-btn' : 'submit-create-group-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+  }
 
   const reader = new FileReader();
   reader.readAsDataURL(file);
@@ -3309,6 +3345,12 @@ async function handleGroupIconSelect(event, isEdit = false) {
         reader.onloadend = () => {
           const base64data = reader.result;
           document.getElementById(prefix + 'group-icon-url').value = base64data;
+          
+          if (btn) {
+            btn.disabled = false;
+            const isPub = document.getElementById('group-is-public-hidden')?.value === 'true';
+            btn.textContent = isEdit ? 'Save Changes' : (isPub ? 'Make the Group' : 'Create Team');
+          }
           
           const previewImg = document.getElementById(prefix + 'group-icon-img');
           const placeholder = document.getElementById(prefix + 'group-icon-placeholder');
