@@ -48,8 +48,9 @@ const GroupSchema = new mongoose.Schema(
     // Pending join requests for public groups
     requests: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        message: { type: String, maxlength: 200 },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
   },

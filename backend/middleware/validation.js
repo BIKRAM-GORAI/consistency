@@ -221,6 +221,15 @@ const joinGroupValidation = [
   validate
 ];
 
+const joinPublicGroupValidation = [
+  param('groupId').isMongoId().withMessage('Invalid group ID'),
+  body('message')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 200 }).withMessage('Message must not exceed 200 characters'),
+  validate
+];
+
 const editGroupValidation = [
   param('groupId')
     .isMongoId().withMessage('Invalid group ID'),
@@ -295,6 +304,7 @@ module.exports = {
   editGroupValidation,
   removeMemberValidation,
   handleJoinRequestValidation,
+  joinPublicGroupValidation,
   submitReviewValidation,
   userSearchValidation
 };

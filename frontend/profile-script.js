@@ -80,10 +80,16 @@ function renderProfile(data) {
     }
   }
 
-  // Days
-  renderDays(data.days);
-  if (data.days.length < totalDays) {
-    document.getElementById('load-more-days').style.display = 'block';
+  // Days Section (Optimized for on-demand loading)
+  if (totalDays === 0) {
+    const ctaBox = document.getElementById('progress-cta-box');
+    if (ctaBox) {
+      ctaBox.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 20px;">🏜️</div>
+        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 24px; margin-bottom: 12px; text-transform: uppercase;">A Quiet Start</h3>
+        <p style="color: var(--text-muted); font-weight: 600; margin-bottom: 0; max-width: 400px; margin-left: auto; margin-right: auto;">This user hasn't logged any daily progress cards yet.</p>
+      `;
+    }
   }
 
   if (window.lucide) lucide.createIcons();
@@ -142,26 +148,54 @@ function renderContributionGraph(data) {
   container.innerHTML = `<div class="graph-wrapper"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${monthLabels}${rectsHtml}</svg></div>`;
 }
 
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function buildLinksHTML(links) {
+  if (!links || !links.length) return '';
+  return links.map((l, i) =>
+    `<a class="ach-link-pill" href="${escHtml(l)}" target="_blank" rel="noopener noreferrer">
+      <i data-lucide="external-link"></i> 
+      <span>${links.length > 1 ? `Link ${i + 1}` : 'View Proof'}</span>
+    </a>`
+  ).join('');
+}
+
 function renderAchievements(achievements, append = false) {
   const container = document.getElementById('prof-achievements-list');
-  const html = achievements.map(ach => `
-    <div class="stat-pill" style="flex-direction:column; align-items:flex-start; background:var(--bg-card); padding:16px;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-        <span style="font-size:20px;">🎉</span>
-        <span style="font-weight:900; font-family:'Space Grotesk'; font-size:16px;">${ach.title}</span>
+  const pastels = ['#E8F5E9', '#FCE4EC', '#FFF9C4', '#E3F2FD', '#F3E5F5', '#FFF3E0'];
+  
+  const html = achievements.map((ach, idx) => {
+    const bgColor = pastels[idx % pastels.length];
+    const linksHtml = buildLinksHTML(ach.links || []);
+    
+    return `
+      <div class="stat-pill" style="flex-direction:column; align-items:flex-start; background:${bgColor} !important; padding:20px; border:3px solid #111111; box-shadow:6px 6px 0px #111111; border-radius:12px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="font-size:22px;">🎉</span>
+          <span style="font-weight:900; font-family:'Space Grotesk'; font-size:18px; color:#111111;">${escHtml(ach.title)}</span>
+        </div>
+        <p style="font-size:12px; color:#444444; margin:0; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${new Date(ach.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+        ${ach.description ? `<p style="font-size:14px; margin-top:10px; line-height:1.5; color:#111111; font-weight:500;">${escHtml(ach.description)}</p>` : ''}
+        ${linksHtml ? `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">${linksHtml}</div>` : ''}
       </div>
-      <p style="font-size:12px; color:var(--text-muted); margin:0;">${new Date(ach.date).toLocaleDateString()}</p>
-      ${ach.description ? `<p style="font-size:13px; margin-top:8px; line-height:1.4;">${ach.description}</p>` : ''}
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   if (append) container.innerHTML += html;
   else container.innerHTML = html;
+  if (window.lucide) lucide.createIcons({ root: container });
 }
 
 function renderDays(days, append = false) {
   const container = document.getElementById('prof-days-list');
-  const html = days.map(day => {
+  const subtlePastels = ['#F9FAFB', '#F0FDF4', '#FDF2F8', '#F5F3FF', '#FFFBEB', '#EFF6FF', '#FFF7ED', '#F8FAFC'];
+
+  const html = days.map((day, idx) => {
+    const bgColor = subtlePastels[idx % subtlePastels.length];
     let total = 0, done = 0;
     day.categories.forEach(c => {
       total += c.tasks.length;
@@ -169,13 +203,13 @@ function renderDays(days, append = false) {
     });
 
     return `
-      <div class="day-item">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="day-item" style="background:${bgColor} !important; border:3px solid #111111; box-shadow:6px 6px 0px rgba(0,0,0,0.05); transition:transform 0.2s ease;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <div>
-            <h3 style="font-family:'Space Grotesk'; font-weight:900; font-size:18px;">${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h3>
-            <p style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+            <h3 style="font-family:'Space Grotesk'; font-weight:900; font-size:20px; color:#111111;">${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h3>
+            <p style="font-size:12px; font-weight:700; color:#666666; text-transform:uppercase; letter-spacing:1px;">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
           </div>
-          <div style="background:var(--bg-muted); border:2px solid var(--black); border-radius:12px; padding:4px 12px; font-weight:900; font-size:13px;">
+          <div style="background:#ffffff; border:2px solid #111111; border-radius:10px; padding:6px 14px; font-weight:900; font-size:14px; color:#111111; box-shadow:3px 3px 0px #111111;">
             ${done}/${total} Tasks
           </div>
         </div>
@@ -198,6 +232,42 @@ function renderDays(days, append = false) {
   else container.innerHTML = html;
 }
 
+async function viewProgress() {
+  const ctaBox = document.getElementById('progress-cta-box');
+  const daysList = document.getElementById('prof-days-list');
+  const btn = document.getElementById('btn-view-progress');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner-ring" style="width:20px;height:20px;border-width:3px;"></div> Loading...';
+  }
+
+  try {
+    // Fetch first page (page 1)
+    currentDaysPage = 1;
+    const res = await fetch(`${API}/api/users/${currentUser}/days?page=${currentDaysPage}`);
+    const data = await res.json();
+    
+    if (data.length > 0) {
+      ctaBox.style.display = 'none';
+      daysList.style.display = 'flex';
+      renderDays(data);
+      
+      if (totalDays > 7) {
+        document.getElementById('load-more-days').style.display = 'block';
+      }
+    }
+    if (window.lucide) lucide.createIcons({ root: daysList });
+  } catch (err) {
+    console.error(err);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="eye"></i> Try Again';
+      if (window.lucide) lucide.createIcons({ root: btn });
+    }
+  }
+}
+
 async function loadMoreDays() {
   currentDaysPage++;
   const btn = document.getElementById('load-more-days');
@@ -208,9 +278,10 @@ async function loadMoreDays() {
     if (data.length > 0) {
       renderDays(data, true);
     }
-    if (data.length < 7 || (currentDaysPage + 1) * 7 >= totalDays) {
+    if (data.length < 7 || currentDaysPage * 7 >= totalDays) {
       btn.style.display = 'none';
     }
+    if (window.lucide) lucide.createIcons();
   } catch (err) {
     console.error(err);
   } finally {

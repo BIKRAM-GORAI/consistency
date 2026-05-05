@@ -21,7 +21,7 @@
 
 :root {
   /* ── Background ── */
-  --bg:        #faf7f2;
+  --bg:        #ebe4e4;
   --bg-card:   #ffffff;
   --bg-input:  #ffffff;
   --bg-muted:  #f5f2eb;
@@ -2861,3 +2861,35 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 /* Pending retry window-close text */
 [data-theme="dark"] #leetcode-pending-retry > p:last-child { color: #fbbf24; }
+/* Achievement Proof Links */
+.ach-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 2px solid #111111;
+  border-radius: 99px;
+  color: #111111;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 3px 3px 0px #111111;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ach-link-pill:hover {
+  transform: translate(-2px, -2px) scale(1.02);
+  box-shadow: 5px 5px 0px #111111;
+  background: #FFD60A;
+  color: #111111;
+  border-color: #111111;
+}
+
+.ach-link-pill i {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}

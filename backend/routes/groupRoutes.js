@@ -1,7 +1,7 @@
 const express    = require('express');
 const router     = express.Router();
 const ctrl       = require('../controllers/groupController');
-const { createGroupValidation, joinGroupValidation, editGroupValidation, removeMemberValidation, handleJoinRequestValidation } = require('../middleware/validation');
+const { createGroupValidation, joinGroupValidation, editGroupValidation, removeMemberValidation, handleJoinRequestValidation, joinPublicGroupValidation } = require('../middleware/validation');
 const { uploadGroup } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -21,7 +21,7 @@ router.get('/mine', authenticateToken, ctrl.myGroups);
 router.get('/public', authenticateToken, ctrl.publicGroups);
 
 // Join a public group (creates a join request)
-router.post('/:groupId/join-public', authenticateToken, ctrl.joinPublicGroup);
+router.post('/:groupId/join-public', authenticateToken, joinPublicGroupValidation, ctrl.joinPublicGroup);
 
 // Manage join requests (owner only)
 router.get('/:groupId/requests', authenticateToken, ctrl.getRequests);

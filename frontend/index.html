@@ -399,6 +399,15 @@
           </p>
         </div>
         <p style="font-size:14px; font-weight:500;">Do you want to proceed and join <strong id="join-public-group-name"></strong>?</p>
+        
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="join-public-message" style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block;">Intro Message (Optional)</label>
+          <textarea id="join-public-message" class="form-control" rows="3" maxlength="200" placeholder="Hi! I want to join because..." style="resize: none;" oninput="updateCharCount('join-public-message', 'join-public-char-count', 200)"></textarea>
+          <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+            <span id="join-public-char-count" style="font-size: 11px; font-weight: 800; color: var(--text-muted);">0 / 200</span>
+          </div>
+        </div>
+
         <input type="hidden" id="join-public-group-id" value="" />
       </div>
       <div class="modal-footer">
@@ -642,7 +651,7 @@
           </div>
 
           <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
-            <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--teal); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800;" onclick="sharePublicProfile()">
+            <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--teal); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="sharePublicProfile()">
               <span><i data-lucide="share-2"></i> Share My Profile</span>
             </button>
             <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid var(--black); font-size: 14px; text-transform: uppercase; font-weight: 700;" onclick="previewOwnProfile()">

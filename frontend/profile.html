@@ -375,11 +375,26 @@
         <button id="load-more-ach" class="btn-ghost ripple" style="width:100%; margin-top:20px; display:none;" onclick="loadMoreAchievements()">Load More Achievements</button>
       </section>
 
-      <!-- Recent Days -->
-      <section>
-        <h2 class="section-title"><i data-lucide="calendar"></i> Recent Progress</h2>
-        <div class="days-list" id="prof-days-list"></div>
-        <button id="load-more-days" class="btn-ghost ripple" style="width:100%; margin-top:20px; display:none;" onclick="loadMoreDays()">Load More Days</button>
+      <!-- Daily Progress Section -->
+      <section id="prof-days-section">
+        <h2 class="section-title"><i data-lucide="calendar"></i> Daily Progress</h2>
+        
+        <div id="progress-cta-box" style="text-align: center; padding: 60px 24px; background: #b3b6b4; border: 4px solid #111111; border-radius: var(--r-lg); box-shadow: 12px 12px 0px rgba(0,0,0,0.05);">
+          <div style="margin-bottom: 24px; color: #111111;">
+            <i data-lucide="calendar-days" style="width: 56px; height: 56px; stroke-width: 2px;"></i>
+          </div>
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 24px; margin-bottom: 12px; text-transform: uppercase; color: #111111;">Want  to see the daily grind?</h3>
+          <p style="color: #120f0f; font-weight: 600; margin-bottom: 32px; max-width: 400px; margin-left: auto; margin-right: auto;">Explore the detailed daily tasks and progress cards from this consistency journey.</p>
+          <button id="btn-view-progress" class="cta-btn" onclick="viewProgress()" style="box-shadow: 6px 6px 0px #111111; border: 2px solid #111111; padding: 18px 40px; font-size: 16px; background: #696b6a; color: #151212; border-radius: 12px; font-weight: 900; text-transform: uppercase; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;">
+            <span>VIEW DAILY PROGRESS</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+
+        <div class="days-list" id="prof-days-list" style="display: none;"></div>
+        <button id="load-more-days" class="btn-ghost ripple" style="width:100%; margin-top:32px; display:none; background:var(--black); color:var(--yellow); border:none; box-shadow: 6px 6px 0px rgba(0,0,0,0.1); border-radius:12px; padding:15px; font-weight:900; text-transform:uppercase;" onclick="loadMoreDays()">
+          Load More Days <i data-lucide="chevron-down"></i>
+        </button>
       </section>
 
       <!-- CTA -->

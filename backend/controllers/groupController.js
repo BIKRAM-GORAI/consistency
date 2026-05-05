@@ -2,6 +2,7 @@ const Group = require('../models/Group');
 const User  = require('../models/User');
 const Day   = require('../models/Day');
 const { cloudinary } = require('../config/cloudinary');
+const { sendEmail } = require('../utils/email');
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -140,7 +141,7 @@ const myGroups = async (req, res) => {
     const groups = await Group.find({ members: userId })
       .populate('members', 'name username profilePicture currentStreak highestStreak')
       .populate('owner', 'name username profilePicture')
-      .populate('requests', 'name username profilePicture')
+      .populate('requests.user', 'name username profilePicture')
       .sort({ createdAt: -1 });
 
     res.json(groups);
@@ -187,11 +188,11 @@ const joinPublicGroup = async (req, res) => {
       return res.status(400).json({ message: 'You are already a member of this group.' });
     }
 
-    if (group.requests.map(String).includes(String(userId))) {
+    if (group.requests.some(r => String(r.user) === String(userId))) {
       return res.status(400).json({ message: 'Your join request is already pending.' });
     }
 
-    group.requests.push(userId);
+    group.requests.push({ user: userId, message: req.body.message });
     await group.save();
 
     res.json({ message: 'Join request sent! Waiting for owner approval.' });
@@ -209,7 +210,7 @@ const getRequests = async (req, res) => {
     const userId = req.user.userId;
     const { groupId } = req.params;
 
-    const group = await Group.findById(groupId).populate('requests', 'name username email profilePicture');
+    const group = await Group.findById(groupId).populate('requests.user', 'name username email profilePicture');
     if (!group) return res.status(404).json({ message: 'Group not found.' });
 
     if (String(group.owner) !== String(userId)) {
@@ -233,15 +234,18 @@ const handleJoinRequest = async (req, res) => {
     const { groupId, targetUserId } = req.params;
     const { action } = req.body;
 
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).populate('owner', 'name');
     if (!group) return res.status(404).json({ message: 'Group not found.' });
 
-    if (String(group.owner) !== String(userId)) {
+    if (String(group.owner._id || group.owner) !== String(userId)) {
       return res.status(403).json({ message: 'Only the owner can manage join requests.' });
     }
 
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) return res.status(404).json({ message: 'User not found.' });
+
     // Remove from requests anyway
-    group.requests = group.requests.filter(id => String(id) !== String(targetUserId));
+    group.requests = group.requests.filter(r => String(r.user) !== String(targetUserId));
 
     if (action === 'approve') {
       if (!group.members.map(String).includes(String(targetUserId))) {
@@ -250,6 +254,79 @@ const handleJoinRequest = async (req, res) => {
     }
 
     await group.save();
+
+    // Send Email Notification
+    const siteUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const isApproved = action === 'approve';
+    const accentColor = isApproved ? '#22C55E' : '#EF4444';
+    const statusText = isApproved ? 'Request Accepted' : 'Request Declined';
+    
+    const emailHtml = `
+      <div style="background-color: #f8f5f0; padding: 40px 10px;">
+        <div style="font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; color: #111111; max-width: 500px; margin: 0 auto; border: 4px solid #111111; border-radius: 0px; background-color: #ffffff; box-shadow: 12px 12px 0px #111111;">
+          <div style="text-align: center; margin-bottom: 40px;">
+            <div style="font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #111111 !important;">
+              ⚡ CONSISTENCY TRACKER
+            </div>
+          </div>
+          
+          <h2 style="font-size: 32px; font-weight: 900; margin: 0 0 30px 0; text-transform: uppercase; letter-spacing: -1px; line-height: 1.1; text-align: center; color: #111111 !important;">JOIN REQUEST<br>UPDATE</h2>
+          
+          <div style="text-align: center; margin-bottom: 40px;">
+            <div style="background-color: ${accentColor} !important; color: ${isApproved ? '#000000' : '#ffffff'} !important; padding: 18px 36px; box-shadow: 8px 8px 0px #111111; display: inline-block;">
+              <h3 style="margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: inherit !important;">${statusText}</h3>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 30px;">
+            <p style="font-size: 18px; font-weight: 800; margin-bottom: 10px; color: #111111 !important;">
+              Hi ${targetUser.name.split(' ')[0]},
+            </p>
+            <p style="font-size: 16px; line-height: 1.6; color: #111111 !important; margin: 0;">
+              <strong>${group.owner.name}</strong>, owner of the group <strong>${group.name}</strong>, has reviewed your request.
+            </p>
+          </div>
+
+          <div style="background: ${isApproved ? '#f0fdf4' : '#fef2f2'} !important; padding: 25px; margin-bottom: 40px; text-align: center; box-shadow: 8px 8px 0px #111111;">
+            <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #111111 !important; font-weight: 600;">
+              ${isApproved ? 
+                `SUCCESS! You're now a member. Start tracking and contributing now!` : 
+                `UPDATE: Unfortunately, your request wasn't accepted this time. Keep exploring!`
+              }
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-top: 10px;">
+            <a href="${siteUrl}" style="display: inline-block; background-color: #FF3EA5 !important; color: #ffffff !important; padding: 20px 40px; border-radius: 0px; font-size: 20px; font-weight: 900; text-decoration: none; text-transform: uppercase; box-shadow: 10px 10px 0px #111111;">
+              OPEN WEBSITE
+            </a>
+          </div>
+
+          <div style="margin-top: 60px; padding-top: 30px; border-top: 4px solid #111111; text-align: center;">
+            <p style="font-size: 12px; color: #111111 !important; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+              CONSISTENCY-DAILY
+            </p>
+            <p style="font-size: 10px; color: #999999 !important; margin-top: 15px; font-family: monospace;">
+              Ref: ${Math.random().toString(36).substring(2, 9).toUpperCase()} | ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (targetUser.emailNotifications !== false) {
+      console.log(`Sending join request ${action} email to: ${targetUser.email} for group: ${group.name}`);
+      sendEmail({
+        to: targetUser.email,
+        subject: `Join Request ${isApproved ? 'Approved' : 'Declined'} — ${group.name}`,
+        html: emailHtml
+      })
+      .then(() => console.log(`Successfully sent ${action} email to ${targetUser.email}`))
+      .catch(err => console.error('Error sending join request email:', err));
+    } else {
+      console.log(`Email notifications disabled for user: ${targetUser.email}`);
+    }
+
     res.json({ message: `User ${action === 'approve' ? 'approved' : 'rejected'}.` });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -270,7 +347,7 @@ const cancelJoinRequest = async (req, res) => {
 
     // Remove from requests
     const originalCount = group.requests.length;
-    group.requests = group.requests.filter(id => String(id) !== String(userId));
+    group.requests = group.requests.filter(r => String(r.user) !== String(userId));
 
     if (group.requests.length === originalCount) {
       return res.status(400).json({ message: 'No pending request found for this group.' });

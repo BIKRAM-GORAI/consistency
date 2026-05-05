@@ -1478,7 +1478,7 @@ function renderGroups() {
           ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
           <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.members.length} members</p>
           <div style="display: flex; justify-content: center; width: 100%;">
-            ${group.requests && group.requests.includes(userId) ? 
+            ${group.requests && group.requests.some(r => String(r.user._id || r.user) === String(userId)) ? 
               `<button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--red); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800; color: #fff;" onclick="cancelJoinRequest('${group._id}', '${escJs(group.name)}')"><i data-lucide="x-circle"></i> Cancel Request</button>` :
               `<button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--green); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800;" onclick="joinPublicGroup('${group._id}', '${escJs(group.name)}')"><i data-lucide="user-plus"></i> Request to Join</button>`
             }
@@ -1587,6 +1587,19 @@ function renderSingleGroupCard(group, emoji) {
   `;
 }
 
+function updateCharCount(inputId, countId, max) {
+  const input = document.getElementById(inputId);
+  const count = document.getElementById(countId);
+  if (!input || !count) return;
+  const len = input.value.length;
+  count.textContent = `${len} / ${max}`;
+  if (len >= max) {
+    count.style.color = 'var(--red)';
+  } else {
+    count.style.color = 'var(--text-muted)';
+  }
+}
+
 // ── Join Requests Management ──────────────────────────────
 async function openRequestsModal(groupId) {
   const container = document.getElementById('requests-list-container');
@@ -1607,30 +1620,41 @@ async function openRequestsModal(groupId) {
       return;
     }
 
-    let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+    let html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
     for (const r of requests) {
-      const initial = (r.name || '?').charAt(0).toUpperCase();
-      const avatarHtml = r.profilePicture 
-        ? `<img src="${r.profilePicture}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;cursor:pointer;" onclick="openLightbox(this.src)" title="View Photo" />`
+      const u = r.user;
+      if (!u) continue;
+
+      const initial = (u.name || '?').charAt(0).toUpperCase();
+      const avatarHtml = u.profilePicture 
+        ? `<img src="${u.profilePicture}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;cursor:pointer;" onclick="openLightbox(this.src)" title="View Photo" />`
         : `<div style="width:40px;height:40px;border-radius:50%;background:var(--pink);border:2px solid var(--black);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;">${initial}</div>`;
 
       html += `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 2px 2px 0 var(--black);">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            ${avatarHtml}
-            <div>
-              <p style="font-weight: 800; margin: 0; cursor:pointer;" onclick="closeModal('modal-join-requests'); openPublicProfile('${r.username}')" title="View Profile">${escHtml(r.name)}</p>
-              <p style="font-size: 12px; color: var(--text-muted); margin: 0;">@${escHtml(r.username)}</p>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; background: var(--bg-muted); border: 2px solid var(--black); border-radius: 12px; box-shadow: 4px 4px 0 var(--black);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              ${avatarHtml}
+              <div>
+                <p style="font-weight: 800; margin: 0; cursor:pointer;" onclick="closeModal('modal-join-requests'); openPublicProfile('${u.username}')" title="View Profile">${escHtml(u.name)}</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">@${escHtml(u.username)}</p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-primary ripple" style="padding: 8px; background: var(--green); color: var(--black); min-width: 42px; border-radius: 8px; box-shadow: 2px 2px 0 var(--black); border: 2px solid var(--black);" onclick="handleRequest('${groupId}', '${u._id}', 'approve', this)" title="Approve">
+                <i data-lucide="check"></i>
+              </button>
+              <button class="btn-primary ripple" style="padding: 8px; background: var(--red); color: #fff; min-width: 42px; border-radius: 8px; box-shadow: 2px 2px 0 var(--black); border: 2px solid var(--black);" onclick="handleRequest('${groupId}', '${u._id}', 'reject', this)" title="Reject">
+                <i data-lucide="x"></i>
+              </button>
             </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-primary ripple" style="padding: 8px; background: var(--green); min-width: 40px;" onclick="handleRequest('${groupId}', '${r._id}', 'approve', this)" title="Approve">
-              <i data-lucide="check"></i>
-            </button>
-            <button class="btn-primary ripple" style="padding: 8px; background: var(--red); min-width: 40px;" onclick="handleRequest('${groupId}', '${r._id}', 'reject', this)" title="Reject">
-              <i data-lucide="x"></i>
-            </button>
-          </div>
+          ${r.message ? `
+            <div style="margin-top: 8px; padding: 14px; background: var(--bg-card); border: 2px solid var(--black); border-radius: 8px; font-size: 14px; position: relative; box-shadow: inset 2px 2px 0 rgba(0,0,0,0.05);">
+              <div style="position: absolute; top: -10px; left: 12px; background: var(--bg-muted); border: 2px solid var(--black); padding: 0 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--text); border-radius: 4px;">Message</div>
+              <p style="margin: 0; color: var(--text); line-height: 1.5; word-break: break-word; font-weight: 500;">${escHtml(r.message)}</p>
+            </div>
+          ` : ''}
         </div>
       `;
     }
@@ -1722,18 +1746,28 @@ async function loadMoreMembers(groupId) {
 async function joinPublicGroup(groupId, groupName) {
   document.getElementById('join-public-group-id').value = groupId;
   document.getElementById('join-public-group-name').textContent = groupName;
+  
+  // Reset message field
+  const msgInput = document.getElementById('join-public-message');
+  if (msgInput) msgInput.value = '';
+  updateCharCount('join-public-message', 'join-public-char-count', 200);
+
   openModal('modal-join-public-confirm');
 }
 
 async function confirmJoinPublicGroup() {
   const groupId = document.getElementById('join-public-group-id').value;
+  const message = document.getElementById('join-public-message').value.trim();
   const btn = document.getElementById('confirm-join-public-btn');
   const originalText = btn.textContent;
   
   btn.disabled = true; btn.textContent = 'Joining...';
   
   try {
-    const res = await apiFetch(`${API}/api/groups/${groupId}/join-public`, { method: 'POST' });
+    const res = await apiFetch(`${API}/api/groups/${groupId}/join-public`, { 
+      method: 'POST',
+      body: JSON.stringify({ message })
+    });
     showToast(res.message || 'Joined successfully!', 'success');
     closeModal('modal-join-public-confirm');
     loadGroups();

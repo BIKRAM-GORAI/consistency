@@ -17,6 +17,7 @@ const transporter = nodemailer.createTransport({
  * @returns {Promise}
  */
 const sendEmail = async (options) => {
+  console.log(`[Email Service] Preparing to send email to: ${options.to} | Subject: ${options.subject}`);
   const mailOptions = {
     from: `Consistency Tracker <${process.env.GMAIL_EMAIL}>`,
     to: options.to,

@@ -92,35 +92,22 @@ async function getPublicProfile(req, res) {
       return res.status(403).json({ message: 'This profile is private' });
     }
 
-    // Fetch Days
-    const daysRaw = await Day.find({ userId: user._id }).sort({ date: -1 }).lean();
+    // Fetch only dates and task counts for the contribution graph (performance optimization)
+    const daysRaw = await Day.find({ userId: user._id }).select('date categories').lean();
     
-    // Map contribution data and sanitize days
+    // Map contribution data
     const contributionData = [];
-    const days = [];
-
     for (const day of daysRaw) {
       let completedCount = 0;
-      
-      const sanitizedCategories = day.categories.map(cat => {
-        const sanitizedTasks = cat.tasks.map(t => {
-          if (t.completed) completedCount++;
-          return { title: t.title, completed: t.completed }; // Exclude extra personal notes
-        });
-        return { name: cat.name, tasks: sanitizedTasks };
-      });
-
+      for (const cat of day.categories) {
+        for (const task of cat.tasks) {
+          if (task.completed) completedCount++;
+        }
+      }
       contributionData.push({ date: day.date, completedCount });
-      
-      days.push({
-        _id: day._id,
-        date: day.date,
-        categories: sanitizedCategories
-        // 'summary' is explicitly omitted
-      });
     }
 
-    // Fetch Achievements if public
+    // Fetch Achievements if public (limit to 10 for initial view)
     let achievements = [];
     if (user.achievementsPublic !== false) {
       achievements = await Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10);
@@ -135,10 +122,10 @@ async function getPublicProfile(req, res) {
       currentStreak: user.currentStreak,
       highestStreak: user.highestStreak || 0,
       groupCount: groupCount,
-      days: days.slice(0, 7), // Only first 7 for initial view
+      days: [], // Now empty, fetched on demand
       contributionData: contributionData, // Full graph
       achievements: achievements,
-      totalDays: days.length
+      totalDays: daysRaw.length
     });
 
   } catch (err) {
@@ -151,7 +138,7 @@ async function getPublicProfileDays(req, res) {
     const { username } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = 7;
-    const skip = page * limit;
+    const skip = (page - 1) * limit;
 
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -182,7 +169,7 @@ async function getPublicProfileAchievements(req, res) {
     const { username } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
-    const skip = page * limit;
+    const skip = (page - 1) * limit;
 
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ message: 'User not found' });

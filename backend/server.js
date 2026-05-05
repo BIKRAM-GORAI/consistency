@@ -57,10 +57,13 @@ app.use((req, res, next) => {
     "https://fonts.googleapis.com",
     "https://fonts.gstatic.com",
     "https://res.cloudinary.com",
+    "https://*.cloudinary.com",
     "https://assets.leetcode.com",
     "https://www.gstatic.com",
     "https://apis.google.com",
-    "https://unpkg.com"
+    "https://unpkg.com",
+    "https://consistency-daily.vercel.app",
+    "https://*.vercel.app"
   ];
   if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001");
 
