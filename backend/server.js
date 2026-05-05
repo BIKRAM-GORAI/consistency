@@ -46,6 +46,24 @@ app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
   // Content Security Policy — permissive enough not to break scripts/styles
+  const isDev = process.env.NODE_ENV === 'development';
+  const connectSrc = [
+    "'self'",
+    "https://*.firebaseio.com",
+    "https://*.googleapis.com",
+    "wss://*.firebaseio.com",
+    "https://firestore.googleapis.com",
+    "https://cdnjs.cloudflare.com",
+    "https://fonts.googleapis.com",
+    "https://fonts.gstatic.com",
+    "https://res.cloudinary.com",
+    "https://assets.leetcode.com",
+    "https://www.gstatic.com",
+    "https://apis.google.com",
+    "https://unpkg.com"
+  ];
+  if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001");
+
   res.setHeader(
     'Content-Security-Policy',
     [
@@ -54,7 +72,7 @@ app.use((req, res, next) => {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
       "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' http://localhost:5001 https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com https://unpkg.com",
+      `connect-src ${connectSrc.join(' ')}`,
       "frame-src 'self' https://*.firebaseapp.com",
       "object-src 'none'",
     ].join('; ')
