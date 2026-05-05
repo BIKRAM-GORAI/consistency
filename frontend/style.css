@@ -15,6 +15,7 @@
   --bg-card:   #ffffff;
   --bg-input:  #ffffff;
   --bg-muted:  #f0ece4;
+  --bg-readonly: #f8f8f8;
   --graph-empty: #ebedf0;
 
   /* ── Text ── */
@@ -62,22 +63,24 @@
 }
 
 [data-theme="dark"] {
-  --bg:        #2d2d2d;
-  --bg-card:   #3a3a3a;
-  --bg-input:  #444444;
-  --bg-muted:  #222222;
-  --graph-empty: #e8e4d9;
+  --bg:        #121212;
+  --bg-card:   #1e1e1e;
+  --bg-input:  #2a2a2a;
+  --bg-muted:  #252525;
+  --bg-readonly: #1a1a1a;
+  --graph-empty: #333333;
 
-  --text:      #f0f0f0;
-  --text-muted:#d0d0d0;
-  --text-light:#aaaaaa;
+  --text:      #e0e0e0;
+  --text-muted:#a0a0a0;
+  --text-light:#707070;
 
-  --bg-goal-completed: #2e4a36;
-  --bg-cat-input:      #4a4531;
-  --bg-ach-section:    #4a3a10;
-  --bg-ach-note:       #333333;
+  --bg-goal-completed: #1b2e1f;
+  --bg-cat-input:      #2d2a1a;
+  --bg-ach-section:    #2d240a;
+  --bg-ach-note:       #222222;
 
   --black:     #000000;
+  --border-color: #333333;
 }
 
 /* ── Scrollbar ── */
@@ -1088,6 +1091,15 @@ body {
   border-radius: var(--r-lg) var(--r-lg) 0 0;
 }
 
+[data-theme="dark"] .modal-header {
+  background: var(--purple);
+  border-bottom-color: var(--black);
+}
+
+[data-theme="dark"] .modal-header h2 {
+  color: white;
+}
+
 .modal-header h2 {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 18px;
@@ -1167,6 +1179,13 @@ body {
   outline: none;
   transition: border-color var(--t), box-shadow var(--t);
   box-shadow: 2px 2px 0 var(--black);
+}
+
+.form-control[readonly] {
+  background: var(--bg-readonly);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-style: dashed;
 }
 
 .form-control::placeholder { color: var(--text-light); }
