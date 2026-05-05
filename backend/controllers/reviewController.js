@@ -20,12 +20,17 @@ const CREATOR_EMAILS = [
  */
 async function submitReview(req, res) {
   try {
-    const { name, email, description } = req.body;
+    const { name, email, description, userBadges } = req.body;
     if (!name || !email || !description) {
       return res.status(400).json({ message: 'Name, email, and description are required.' });
     }
 
-    const newReview = new Review({ name, email, description });
+    const newReview = new Review({ 
+      name, 
+      email, 
+      description,
+      userBadges: userBadges || []
+    });
     await newReview.save();
 
     // Send email to creators

@@ -764,6 +764,14 @@
           </div>
         </div>
 
+        <div style="padding: 16px; background: rgba(96, 165, 250, 0.15); border: 2px solid var(--blue); border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">💬 Community Feedback</h3>
+          <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Share your thoughts or suggest a feature! Your feedback helps us grow.</p>
+          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--blue); color:var(--black); text-transform:uppercase; background:var(--bg); transition: all 0.2s ease; box-shadow: 4px 4px 0 var(--blue);" onclick="openFeedbackModal()">
+            <span>✨ Give Feedback / Review</span>
+          </button>
+        </div>
+
         <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px; display: block;" id="pwa-install-container">
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📱 App Installation</h3>
           <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Install Consistency Daily on your device for a faster, app-like experience.</p>
@@ -959,6 +967,42 @@
   <!-- GSAP + ScrollTrigger -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <!-- ===== MODAL: Give Feedback ===== -->
+  <div class="modal-overlay" id="modal-feedback" onclick="closeModalOnOverlay(event, 'modal-feedback')">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>✍️ Give Feedback</h2>
+        <button class="modal-close" onclick="closeModal('modal-feedback')">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div id="feedback-success-msg" style="display:none; background:var(--green); color:white; padding:12px; border:2px solid var(--black); box-shadow:4px 4px 0 var(--black); margin-bottom:20px; font-weight:700;">
+          ✨ Thank you! Your review has been submitted.
+        </div>
+        <form id="feedback-form" onsubmit="submitFeedback(event)">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600;">Your Name</label>
+            <input type="text" id="feedback-name" class="form-control" readonly style="background: #eee; cursor: not-allowed;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600;">Your Email</label>
+            <input type="email" id="feedback-email" class="form-control" readonly style="background: #eee; cursor: not-allowed;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 600;">Your Review / Suggestions <span style="color:var(--red)">*</span></label>
+            <textarea id="feedback-text" class="form-control" rows="4" placeholder="How has your experience been so far? Any features you'd like to see?" required style="resize: none;"></textarea>
+          </div>
+          <div style="background: rgba(167, 139, 250, 0.1); border: 2px dashed var(--purple); padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">✅</span>
+            <span style="font-size: 13px; font-weight: 600; color: var(--purple);">You're submitting this as a logged-in user. A "Verified Account" badge will be added automatically.</span>
+          </div>
+          <button type="submit" class="btn-primary ripple" style="width: 100%; justify-content: center; font-size: 16px; font-weight: 800;" id="btn-submit-feedback">
+            🚀 Submit Review
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

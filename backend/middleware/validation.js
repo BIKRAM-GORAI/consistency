@@ -253,7 +253,10 @@ const submitReviewValidation = [
   body('description')
     .trim()
     .notEmpty().withMessage('Review description is required')
-    .isLength({ min: 10, max: 1000 }).withMessage('Review must be between 10 and 1000 characters'),
+    .isLength({ min: 3, max: 1000 }).withMessage('Review must be between 3 and 1000 characters'),
+  body('userBadges')
+    .optional()
+    .isArray().withMessage('userBadges must be an array'),
   validate
 ];
 

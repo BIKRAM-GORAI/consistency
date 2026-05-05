@@ -4255,3 +4255,64 @@ window.addEventListener('appinstalled', (evt) => {
   const profileContainer = document.getElementById('pwa-install-container');
   if (profileContainer) profileContainer.style.display = 'none';
 });
+
+/**
+ * Give Feedback / Review
+ */
+function openFeedbackModal() {
+  const nameEl = document.getElementById('feedback-name');
+  const emailEl = document.getElementById('feedback-email');
+  
+  // Fill with logged-in user data
+  if (nameEl) nameEl.value = localStorage.getItem('userName') || 'User';
+  if (emailEl) emailEl.value = localStorage.getItem('userEmail') || '';
+  
+  // Reset form
+  document.getElementById('feedback-form').style.display = 'block';
+  document.getElementById('feedback-success-msg').style.display = 'none';
+  document.getElementById('feedback-text').value = '';
+  
+  openModal('modal-feedback');
+}
+
+async function submitFeedback(e) {
+  e.preventDefault();
+  
+  const name = document.getElementById('feedback-name').value;
+  const email = document.getElementById('feedback-email').value;
+  const description = document.getElementById('feedback-text').value;
+  const submitBtn = document.getElementById('btn-submit-feedback');
+  
+  // Auto-attach Verified badge
+  const userBadges = ['Verified Account'];
+  
+  try {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    const res = await fetch(`${API}/api/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, description, userBadges })
+    });
+    
+    if (res.ok) {
+      document.getElementById('feedback-form').style.display = 'none';
+      document.getElementById('feedback-success-msg').style.display = 'block';
+      
+      // Auto close after 2 seconds
+      setTimeout(() => {
+        closeModal('modal-feedback');
+      }, 2500);
+    } else {
+      const data = await res.json();
+      showToast(data.message || 'Failed to submit review', 'error');
+    }
+  } catch (err) {
+    console.error('Feedback error:', err);
+    showToast('Network error while submitting feedback', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '🚀 Submit Review';
+  }
+}
