@@ -15,7 +15,11 @@ const authenticateAdmin = (req, res, next) => {
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('CRITICAL: JWT_SECRET is missing in .env for Admin');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
     const decoded = jwt.verify(token, jwtSecret);
     
     if (!decoded.isAdmin) {

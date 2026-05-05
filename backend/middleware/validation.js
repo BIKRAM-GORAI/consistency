@@ -208,7 +208,7 @@ const createGroupValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Group name is required')
-    .isLength({ min: 3, max: 50 }).withMessage('Group name must be between 3 and 50 characters'),
+    .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters'),
   validate
 ];
 
@@ -227,7 +227,7 @@ const editGroupValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Group name is required')
-    .isLength({ min: 3, max: 50 }).withMessage('Group name must be between 3 and 50 characters'),
+    .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters'),
   validate
 ];
 

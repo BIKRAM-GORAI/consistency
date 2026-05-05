@@ -28,6 +28,23 @@ const GroupSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
+    icon: {
+      type: String,
+      default: '',
+    },
+    iconId: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

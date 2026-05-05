@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount } = require('../controllers/authController');
-const { upload } = require('../config/cloudinary');
+const { uploadProfile } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { registerValidation, loginValidation, updateProfileValidation, achievementPrivacyValidation } = require('../middleware/validation');
 const { checkAccountLockout } = require('../middleware/accountLockout');
@@ -52,6 +52,6 @@ router.patch('/settings', authenticateToken, updateProfileValidation, setProfile
 router.delete('/account', authenticateToken, deleteAccount);
 
 // POST upload profile picture (requires authentication)
-router.post('/profile-picture', authenticateToken, upload.single('image'), uploadProfilePicture);
+router.post('/profile-picture', authenticateToken, uploadProfile.single('image'), uploadProfilePicture);
 
 module.exports = router;

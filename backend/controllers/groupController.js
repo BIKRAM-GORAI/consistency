@@ -1,6 +1,7 @@
 const Group = require('../models/Group');
 const User  = require('../models/User');
 const Day   = require('../models/Day');
+const { cloudinary } = require('../config/cloudinary');
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -35,12 +36,23 @@ const createGroup = async (req, res) => {
   try {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
-    const { name } = req.body;
+    const { name, isPublic, description, icon } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: 'name is required.' });
     }
 
+    let iconUrl = '';
+    let iconId = '';
+
+    // If icon is a base64 string, upload it
+    if (icon && icon.startsWith('data:image')) {
+      const result = await cloudinary.uploader.upload(icon, {
+        folder: 'consistency_app_groups',
+      });
+      iconUrl = result.secure_url;
+      iconId = result.public_id;
+    }
 
     const code  = await makeUniqueCode();
     const group = new Group({
@@ -48,6 +60,10 @@ const createGroup = async (req, res) => {
       code,
       owner: userId,
       members: [userId],
+      isPublic: !!isPublic,
+      description: description || '',
+      icon: iconUrl,
+      iconId: iconId,
     });
 
     const saved = await group.save();
@@ -103,11 +119,61 @@ const myGroups = async (req, res) => {
     const userId = req.user.userId;
 
     const groups = await Group.find({ members: userId })
-      .populate('members', 'name username email profilePicture')
-      .populate('owner', 'name username email profilePicture')
+      .populate('members', 'name username profilePicture currentStreak highestStreak')
+      .populate('owner', 'name username profilePicture')
       .sort({ createdAt: -1 });
 
     res.json(groups);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * GET /api/groups/public
+ * Returns all public groups the authenticated user is NOT a member of.
+ */
+const publicGroups = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const groups = await Group.find({
+      isPublic: true,
+      members: { $ne: userId }
+    })
+    .select('name description isPublic icon members owner createdAt') // Exclude code
+    .populate('owner', 'name username profilePicture')
+    .sort({ createdAt: -1 });
+
+    res.json(groups);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * POST /api/groups/:groupId/join-public
+ * Joins a public group without a code.
+ */
+const joinPublicGroup = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { groupId } = req.params;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+    if (!group.isPublic) return res.status(403).json({ message: 'This is not a public group.' });
+
+    if (group.members.map(String).includes(String(userId))) {
+      return res.status(400).json({ message: 'You are already a member of this group.' });
+    }
+
+    group.members.push(userId);
+    await group.save();
+
+    const populated = await Group.findById(group._id)
+      .populate('members', 'name username email profilePicture')
+      .populate('owner', 'name username email profilePicture');
+    res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -119,9 +185,45 @@ const myGroups = async (req, res) => {
  */
 const groupMembers = async (req, res) => {
   try {
-    const group = await Group.findById(req.params.groupId).populate('members', 'name username email profilePicture');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const userId = req.user.userId;
+    const { groupId } = req.params;
+
+    // Security Check: Is the requesting user a member of this group?
+    const isMember = await Group.findOne({ _id: groupId, members: userId });
+    if (!isMember) {
+      return res.status(403).json({ message: 'Access denied. You must be a member to view the member list.' });
+    }
+
+    const group = await Group.findById(groupId)
+      .populate({
+        path: 'members',
+        select: 'name username profilePicture currentStreak highestStreak',
+        options: {
+          skip: skip,
+          limit: limit
+        }
+      });
+
     if (!group) return res.status(404).json({ message: 'Group not found.' });
-    res.json(group.members);
+
+    // Get total member count for pagination
+    const totalGroup = await Group.findById(req.params.groupId).select('members');
+    const totalCount = totalGroup.members.length;
+    const hasMore = (skip + group.members.length) < totalCount;
+
+    res.json({
+      members: group.members,
+      pagination: {
+        currentPage: page,
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasMore
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -152,9 +254,14 @@ const memberDays = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You can only view data of users in your groups.' });
     }
 
+    // Check if they share any PUBLIC group. If they do, the consent rule applies.
+    const sharesPublicGroup = sharedGroups.some(g => g.isPublic === true);
+
     // Check if the target user has a public profile and get streak info
     const targetUser = await User.findById(memberId).select('isPublicProfile currentStreak highestStreak');
-    if (targetUser && targetUser.isPublicProfile === false) {
+    
+    // Bypass privacy check if they share a public group
+    if (!sharesPublicGroup && targetUser && targetUser.isPublicProfile === false) {
       return res.status(403).json({ message: 'This user has a private profile.' });
     }
 
@@ -198,8 +305,7 @@ const editGroup = async (req, res) => {
   try {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ message: 'name is required.' });
+    const { name, description, icon } = req.body;
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
@@ -208,7 +314,30 @@ const editGroup = async (req, res) => {
       return res.status(403).json({ message: 'Only the owner can edit the group.' });
     }
 
-    group.name = name;
+    if (name) group.name = name;
+    if (description !== undefined) group.description = description;
+    
+    // If icon is a base64 string, upload it and delete old one
+    if (icon && icon.startsWith('data:image')) {
+      // Delete old one if exists
+      if (group.iconId) {
+        await cloudinary.uploader.destroy(group.iconId);
+      }
+      
+      const result = await cloudinary.uploader.upload(icon, {
+        folder: 'consistency_app_groups',
+      });
+      group.icon = result.secure_url;
+      group.iconId = result.public_id;
+    } else if (icon === '') {
+      // User removed icon
+      if (group.iconId) {
+        await cloudinary.uploader.destroy(group.iconId);
+      }
+      group.icon = '';
+      group.iconId = '';
+    }
+    
     await group.save();
     
     const populated = await Group.findById(group._id).populate('members', 'name username email profilePicture').populate('owner', 'name username email profilePicture');
@@ -234,8 +363,13 @@ const deleteGroup = async (req, res) => {
       return res.status(403).json({ message: 'Only the owner can delete the group.' });
     }
 
+    // Delete icon from Cloudinary if exists
+    if (group.iconId) {
+      await cloudinary.uploader.destroy(group.iconId);
+    }
+
     await Group.findByIdAndDelete(req.params.groupId);
-    res.json({ message: 'Group deleted successfully.' });
+    res.json({ message: 'Group deleted.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -279,4 +413,28 @@ const removeMember = async (req, res) => {
   }
 };
 
-module.exports = { createGroup, joinGroup, myGroups, groupMembers, memberDays, editGroup, deleteGroup, removeMember };
+const uploadGroupIcon = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    // Cloudinary URL is in req.file.path
+    res.json({ icon: req.file.path });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+module.exports = { 
+  createGroup, 
+  joinGroup, 
+  myGroups, 
+  publicGroups,
+  joinPublicGroup,
+  groupMembers, 
+  memberDays, 
+  editGroup, 
+  deleteGroup, 
+  removeMember,
+  uploadGroupIcon
+};

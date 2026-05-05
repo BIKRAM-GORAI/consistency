@@ -6,6 +6,18 @@
 
 const API = '';  // Same origin
 
+// ── Security Helpers ──────────────────────────────────────
+/** Escapes HTML special characters to prevent XSS */
+function escapeHTML(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ── Auth ───────────────────────────────────────────────────
 const userId   = localStorage.getItem('userId')   || '';
 const userName = localStorage.getItem('userName') || 'User';
@@ -245,7 +257,7 @@ async function apiFetch(url, options = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       localStorage.clear();
       window.location.replace('landing.html');
       throw new Error('Session expired. Please log in again.');
@@ -1337,11 +1349,19 @@ async function submitAddGoal() {
 
 let allGroups = [];
 
+let allJoinedGroups = [];
+let availablePublicGroups = [];
+
 async function loadGroups() {
   const container = document.getElementById('groups-container');
   container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading groups...</p></div>`;
   try {
-    allGroups = await apiFetch(`${API}/api/groups/mine`);
+    const [joined, public] = await Promise.all([
+      apiFetch(`${API}/api/groups/mine`),
+      apiFetch(`${API}/api/groups/public`)
+    ]);
+    allJoinedGroups = joined;
+    availablePublicGroups = public;
     renderGroups();
   } catch (err) {
     console.error('Error loading groups:', err);
@@ -1365,113 +1385,88 @@ function renderGroups() {
   const container = document.getElementById('groups-container');
   container.innerHTML = '';
 
-  // Separate my owned teams from joined groups
-  const myTeams      = allGroups.filter(g => String(g.owner._id || g.owner) === String(userId));
-  const joinedGroups = allGroups.filter(g => String(g.owner._id || g.owner) !== String(userId));
+  // 1. My Private Teams (owned by me)
+  const myPrivateTeams = allJoinedGroups.filter(g => !g.isPublic && String(g.owner._id || g.owner) === String(userId));
+  // 2. Joined Private Groups (owned by others)
+  const joinedPrivate = allJoinedGroups.filter(g => !g.isPublic && String(g.owner._id || g.owner) !== String(userId));
+  // 3. Joined Public Groups
+  const joinedPublic = allJoinedGroups.filter(g => g.isPublic);
 
-  // ── My Teams section ──────────────────────────────────
-  const myTeamSection = document.createElement('div');
-  myTeamSection.className = 'groups-section';
+  // ── Section 1: My Private Teams ─────────────────────────
+  renderGroupSection(container, '👑 My Private Teams', myPrivateTeams, true, '🔒', 'You haven\'t created any private teams yet.');
 
-  const myTeamHeader = `
+  // ── Section 2: Joined Private Teams ─────────────────────
+  const joinedPrivateSection = document.createElement('div');
+  joinedPrivateSection.className = 'groups-section';
+  let jpHTML = `
     <div class="groups-section-header">
-      <h2 class="groups-section-title">👑 My Teams</h2>
-      <button class="btn-ghost ripple groups-join-btn" onclick="openCreateGroupModal()">
-        <span>＋</span> Create a Team
-      </button>
-    </div>
-  `;
-
-  if (myTeams.length > 0) {
-    let teamsHTML = myTeamHeader + '<div class="groups-list">';
-    for (const myTeam of myTeams) {
-      teamsHTML += `
-        <div class="group-card my-team-card">
-          <div class="group-card-top">
-            <div class="group-name-wrap">
-              <span class="group-emoji">⚡</span>
-              <span class="group-name">${escHtml(myTeam.name)}</span>
-              <button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${myTeam._id}', '${escJs(myTeam.name)}')">✏️</button>
-              <button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${myTeam._id}')">🗑️</button>
-            </div>
-            <div class="team-code-wrap">
-              <span class="team-code-label">Join Code</span>
-              <button class="team-code-pill" onclick="copyTeamCode('${myTeam.code}')" title="Click to copy">
-                <span class="team-code-text">${myTeam.code}</span>
-                <span class="team-code-copy">📋</span>
-              </button>
-            </div>
-          </div>
-          <p class="group-meta">${myTeam.members.length} member${myTeam.members.length !== 1 ? 's' : ''}</p>
-          <div class="members-row" id="members-row-${myTeam._id}">
-            ${buildMembersHTML(myTeam.members, myTeam._id, true)}
-          </div>
-        </div>
-      `;
-    }
-    teamsHTML += '</div>';
-    myTeamSection.innerHTML = teamsHTML;
-  } else {
-    myTeamSection.innerHTML = myTeamHeader + `
-      <div class="group-empty-card">
-        <span class="group-empty-icon">🏗️</span>
-        <p>You haven't created a team yet.</p>
-      </div>
-    `;
-  }
-  container.appendChild(myTeamSection);
-
-  // ── Divider ───────────────────────────────────────────
-  const divider = document.createElement('hr');
-  divider.className = 'groups-divider';
-  container.appendChild(divider);
-
-  // ── Joined Groups section ─────────────────────────────
-  const joinedSection = document.createElement('div');
-  joinedSection.className = 'groups-section';
-
-  const joinedHeader = `
-    <div class="groups-section-header">
-      <h2 class="groups-section-title">🔗 Joined Teams</h2>
+      <h2 class="groups-section-title">🔗 Joined Private Teams</h2>
       <button class="btn-ghost ripple groups-join-btn" onclick="openJoinGroupModal()">
-        <span>＋</span> Join a Team
+        <span>＋</span> Join with Code
       </button>
     </div>
   `;
-
-  if (!joinedGroups.length) {
-    joinedSection.innerHTML = joinedHeader + `
+  if (joinedPrivate.length === 0) {
+    jpHTML += `
       <div class="group-empty-card">
         <span class="group-empty-icon">👫</span>
-        <p>You haven't joined any teams yet.<br>Ask a friend for their team code!</p>
+        <p>You haven't joined any private teams yet.</p>
       </div>
     `;
   } else {
-    let groupsHTML = joinedHeader + '<div class="groups-list">';
-    for (const group of joinedGroups) {
-      groupsHTML += `
-        <div class="group-card" id="group-card-${group._id}">
+    jpHTML += '<div class="groups-list">';
+    for (const group of joinedPrivate) {
+      jpHTML += renderSingleGroupCard(group, '🤝');
+    }
+    jpHTML += '</div>';
+  }
+  joinedPrivateSection.innerHTML = jpHTML;
+  container.appendChild(joinedPrivateSection);
+
+  // ── Section 3: Joined Public Groups ──────────────────────
+  renderGroupSection(container, '🌍 Joined Public Groups', joinedPublic, false, '🌐', 'You haven\'t joined any public groups yet.');
+
+  // ── Section 4: Available Public Groups ───────────────────
+  if (availablePublicGroups.length > 0) {
+    const divider = document.createElement('hr');
+    divider.className = 'groups-divider';
+    container.appendChild(divider);
+
+    const publicSection = document.createElement('div');
+    publicSection.className = 'groups-section';
+    let html = `
+      <div class="groups-section-header">
+        <h2 class="groups-section-title">✨ Discover Public Groups</h2>
+      </div>
+      <div class="groups-list">
+    `;
+
+    for (const group of availablePublicGroups) {
+      const iconHtml = group.icon 
+        ? `<img src="${group.icon}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
+        : `<span class="group-emoji">🌐</span>`;
+
+      html += `
+        <div class="group-card public-discovery-card" style="border-color: var(--green); box-shadow: 4px 4px 0 rgba(34, 197, 150, 0.15);">
           <div class="group-card-top">
             <div class="group-name-wrap">
-              <span class="group-emoji">👥</span>
-              <span class="group-name">${escHtml(group.name)}</span>
+              ${iconHtml}
+              <span class="group-name" style="font-size: 1.25rem;">${escHtml(group.name)}</span>
             </div>
-            <span class="group-owner-badge">by ${escHtml(group.owner.name || 'Unknown')}</span>
+            <span class="group-owner-badge" style="background: var(--bg-muted); border: 1px solid var(--green); color: var(--green); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 10px; text-transform: uppercase;">BY ${escHtml(group.owner.name || 'Admin')}</span>
           </div>
-          <p class="group-meta">${group.members.length} member${group.members.length !== 1 ? 's' : ''}</p>
-          <div class="members-row">
-            ${buildMembersHTML(group.members, group._id, false)}
-          </div>
-          <div style="margin-top:12px;text-align:right;">
-            <button class="btn-ghost ripple" style="color:#ef4444;font-size:13px;padding:6px 12px;" onclick="leaveGroup('${group._id}')">🚪 Leave Team</button>
+          ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
+          <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.members.length} members</p>
+          <div style="display: flex; justify-content: center; width: 100%;">
+            <button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--green); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800;" onclick="joinPublicGroup('${group._id}', '${escJs(group.name)}')">Join Group</button>
           </div>
         </div>
       `;
     }
-    groupsHTML += '</div>';
-    joinedSection.innerHTML = groupsHTML;
+    html += '</div>';
+    publicSection.innerHTML = html;
+    container.appendChild(publicSection);
   }
-  container.appendChild(joinedSection);
 
   // GSAP entrance
   if (window.gsap) {
@@ -1479,17 +1474,159 @@ function renderGroups() {
       opacity: 0,
       y: 20,
       duration: 0.45,
-      stagger: 0.07,
+      stagger: 0.05,
       ease: 'power2.out',
       clearProps: 'all',
     });
   }
 }
 
+function renderGroupSection(container, title, groups, isOwnerSection, emoji, emptyMsg) {
+  const section = document.createElement('div');
+  section.className = 'groups-section';
+
+  let html = `
+    <div class="groups-section-header">
+      <h2 class="groups-section-title">${title}</h2>
+    </div>
+  `;
+
+  if (groups.length === 0) {
+    html += `
+      <div class="group-empty-card">
+        <span class="group-empty-icon">${isOwnerSection ? '🏗️' : '👫'}</span>
+        <p>${emptyMsg}</p>
+      </div>
+    `;
+  } else {
+    html += '<div class="groups-list">';
+    for (const group of groups) {
+      html += renderSingleGroupCard(group, emoji);
+    }
+    html += '</div>';
+  }
+  section.innerHTML = html;
+  container.appendChild(section);
+}
+
+function renderSingleGroupCard(group, emoji) {
+  const userId = localStorage.getItem('userId');
+  const isMyOwned = String(group.owner._id || group.owner) === String(userId);
+  const isPublic = group.isPublic;
+  
+  const iconHtml = group.icon 
+    ? `<img src="${group.icon}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
+    : `<span class="group-emoji">${emoji}</span>`;
+
+  return `
+    <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}">
+      <div class="group-card-top">
+        <div class="group-name-wrap">
+          ${iconHtml}
+          <span class="group-name">${escHtml(group.name)}</span>
+          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${group._id}', '${escJs(group.name)}', '${group.icon || ''}', '${escJs(group.description || '')}')">✏️</button>` : ''}
+          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${group._id}')">🗑️</button>` : ''}
+        </div>
+        ${!isPublic && isMyOwned ? `
+          <div class="team-code-wrap">
+            <span class="team-code-label">Join Code</span>
+            <button class="team-code-pill" onclick="copyTeamCode('${group.code}')" title="Click to copy">
+              <span class="team-code-text">${group.code}</span>
+              <span class="team-code-copy">📋</span>
+            </button>
+          </div>
+        ` : ''}
+        ${!isMyOwned ? `<span class="group-owner-badge" style="border: 1px solid var(--text-muted); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px;">by ${escHtml(group.owner.name || 'Unknown')}</span>` : ''}
+      </div>
+      ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
+      <p class="group-meta">${group.members.length} member${group.members.length !== 1 ? 's' : ''}</p>
+      <div class="members-row" id="members-row-${group._id}">
+        ${buildMembersHTML(group.members, group._id, isMyOwned)}
+      </div>
+      ${group.members.length > 10 ? `
+        <div id="members-load-more-${group._id}" style="margin-top:10px;">
+          <button class="btn-ghost ripple" style="font-size:12px; width:100%;" onclick="loadMoreMembers('${group._id}')">Load More Members ⬇️</button>
+        </div>
+      ` : ''}
+      ${!isMyOwned ? `
+        <div style="margin-top:12px;text-align:right;">
+          <button class="btn-ghost ripple" style="color:#ef4444;font-size:13px;padding:6px 12px;" onclick="leaveGroup('${group._id}')">🚪 Leave ${isPublic ? 'Group' : 'Team'}</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+const groupMembersState = {};
+
+async function loadMoreMembers(groupId) {
+  if (!groupMembersState[groupId]) {
+    groupMembersState[groupId] = { page: 2, limit: 10 }; // We already have the first 5-10 from the initial load? 
+    // Actually allJoinedGroups initially has all members because the backend populates them.
+    // BUT we want to limit to 5-6 initially for UI performance.
+  } else {
+    groupMembersState[groupId].page++;
+  }
+
+  const btn = document.querySelector(`#members-load-more-${groupId} button`);
+  btn.disabled = true; btn.textContent = 'Loading...';
+
+  try {
+    const data = await apiFetch(`${API}/api/groups/${groupId}/members?page=${groupMembersState[groupId].page}&limit=${groupMembersState[groupId].limit}`);
+    const row = document.getElementById(`members-row-${groupId}`);
+    
+    // Check if we are the owner to show remove buttons
+    const group = allJoinedGroups.find(g => g._id === groupId);
+    const isOwner = group && String(group.owner._id || group.owner) === String(userId);
+    
+    const newMembersHtml = buildMembersHTML(data.members, groupId, isOwner);
+    row.insertAdjacentHTML('beforeend', newMembersHtml);
+
+    if (!data.pagination.hasMore) {
+      document.getElementById(`members-load-more-${groupId}`).style.display = 'none';
+    }
+  } catch (err) {
+    showToast('Failed to load more members.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Load More Members ⬇️';
+  }
+}
+
+async function joinPublicGroup(groupId, groupName) {
+  document.getElementById('join-public-group-id').value = groupId;
+  document.getElementById('join-public-group-name').textContent = groupName;
+  openModal('modal-join-public-confirm');
+}
+
+async function confirmJoinPublicGroup() {
+  const groupId = document.getElementById('join-public-group-id').value;
+  const btn = document.getElementById('confirm-join-public-btn');
+  const originalText = btn.textContent;
+  
+  btn.disabled = true; btn.textContent = 'Joining...';
+  
+  try {
+    await apiFetch(`${API}/api/groups/${groupId}/join-public`, { method: 'POST' });
+    showToast('Joined public group successfully! 🌿', 'success');
+    closeModal('modal-join-public-confirm');
+    loadGroups();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = originalText;
+  }
+}
+
 function buildMembersHTML(members, groupId, isOwner = false) {
   if (!members || !members.length) return '<p class="no-members">No members yet.</p>';
 
-  return members.map(member => {
+  // If we are rendering the initial row and have > 10 members, slice it
+  let list = members;
+  if (members.length > 10 && !groupMembersState[groupId]) {
+    list = members.slice(0, 10);
+  }
+
+  return list.map(member => {
     const memberId   = member._id || member;
     const memberName = member.name || 'Unknown';
     const initial    = memberName.charAt(0).toUpperCase();
@@ -1538,30 +1675,80 @@ function copyTeamCode(code) {
 }
 
 // ── Create Group Modal ─────────────────────────────────────
-function openCreateGroupModal() {
+function openCreateGroupModal(isPublic = false) {
   document.getElementById('group-name-input').value = '';
+  document.getElementById('group-desc-input').value = '';
+  document.getElementById('group-is-public-hidden').value = isPublic;
+  
+  // Reset Icon
+  const iconInput = document.getElementById('group-icon-input');
+  if (iconInput) iconInput.value = '';
+  const iconUrlInput = document.getElementById('group-icon-url');
+  if (iconUrlInput) iconUrlInput.value = '';
+  const iconImg = document.getElementById('group-icon-img');
+  if (iconImg) {
+    iconImg.src = '';
+    iconImg.style.display = 'none';
+  }
+  const iconPlaceholder = document.getElementById('group-icon-placeholder');
+  if (iconPlaceholder) iconPlaceholder.style.display = 'block';
+  
+  const title = document.getElementById('create-group-title');
+  const warning = document.getElementById('group-public-warning');
+  const hint = document.getElementById('group-private-hint');
+  const btn = document.getElementById('submit-create-group-btn');
+
+  if (isPublic) {
+    title.innerHTML = '🌍 Create Public Group';
+    warning.style.display = 'block';
+    warning.style.background = 'rgba(34,197,94,0.1)';
+    warning.style.borderColor = 'var(--green)';
+    warning.querySelector('p').style.color = 'var(--green)';
+    hint.style.display = 'none';
+    btn.textContent = 'Create Public Group';
+    btn.style.background = 'var(--green)';
+  } else {
+    title.innerHTML = '👥 Create Private Team';
+    warning.style.display = 'none';
+    hint.style.display = 'block';
+    btn.textContent = 'Create Private Team';
+  }
+
   openModal('modal-create-group');
 }
 
 async function submitCreateGroup() {
   const name = document.getElementById('group-name-input').value.trim();
-  if (!name) { showToast('Team name is required.', 'warn'); return; }
+  const description = document.getElementById('group-desc-input').value.trim();
+  const isPublic = document.getElementById('group-is-public-hidden').value === 'true';
+
+  const icon = document.getElementById('group-icon-url').value;
+
+  if (name.length < 3 || name.length > 25) {
+    showToast('Group name must be between 3 and 25 characters.', 'warn');
+    return;
+  }
 
   const btn = document.getElementById('submit-create-group-btn');
+  const originalText = btn.textContent;
   btn.disabled = true; btn.textContent = 'Creating...';
 
   try {
     const group = await apiFetch(`${API}/api/groups/create`, {
       method: 'POST',
-      body: JSON.stringify({ userId, name }),
+      body: JSON.stringify({ userId, name, isPublic, description, icon }),
     });
     closeModal('modal-create-group');
-    showToast(`Team "${group.name}" created! Code: ${group.code}`, 'success');
+    if (isPublic) {
+      showToast(`Public Group "${group.name}" created!`, 'success');
+    } else {
+      showToast(`Team "${group.name}" created! Code: ${group.code}`, 'success');
+    }
     loadGroups(); // refresh
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Create Team';
+    btn.disabled = false; btn.textContent = originalText;
   }
 }
 
@@ -1596,15 +1783,38 @@ async function submitJoinGroup() {
 // ── Manage Groups ──────────────────────────────────────────
 let editingGroupId = null;
 
-function openEditGroupModal(id, name) {
+function openEditGroupModal(id, name, icon, description) {
   editingGroupId = id;
   document.getElementById('edit-group-name-input').value = name;
+  document.getElementById('edit-group-desc-input').value = description || '';
+  
+  // Set Icon
+  document.getElementById('edit-group-icon-url').value = icon;
+  const iconImg = document.getElementById('edit-group-icon-img');
+  const iconPlaceholder = document.getElementById('edit-group-icon-placeholder');
+  
+  if (icon) {
+    iconImg.src = icon;
+    iconImg.style.display = 'block';
+    iconPlaceholder.style.display = 'none';
+  } else {
+    iconImg.src = '';
+    iconImg.style.display = 'none';
+    iconPlaceholder.style.display = 'block';
+  }
+
   openModal('modal-edit-group');
 }
 
 async function submitEditGroup() {
   const name = document.getElementById('edit-group-name-input').value.trim();
-  if (!name) { showToast('Team name is required.', 'warn'); return; }
+  const description = document.getElementById('edit-group-desc-input').value.trim();
+  const icon = document.getElementById('edit-group-icon-url').value;
+
+  if (name.length < 3 || name.length > 25) {
+    showToast('Team name must be between 3 and 25 characters.', 'warn');
+    return;
+  }
 
   const btn = document.getElementById('submit-edit-group-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
@@ -1612,10 +1822,10 @@ async function submitEditGroup() {
   try {
     await apiFetch(`${API}/api/groups/${editingGroupId}`, {
       method: 'PUT',
-      body: JSON.stringify({ userId, name }),
+      body: JSON.stringify({ userId, name, description, icon }),
     });
     closeModal('modal-edit-group');
-    showToast('Team name updated!', 'success');
+    showToast('Team updated!', 'success');
     loadGroups();
   } catch (err) {
     showToast(err.message, 'error');
@@ -2370,6 +2580,7 @@ function forceCloseModal(id) {
 
 // ── Profile & Settings ─────────────────────────────────────
 async function openProfileModal() {
+  document.getElementById('profile-pic-dataurl').value = '';
   openModal('modal-profile');
   // Clear sensitive fields
   document.getElementById('profile-old-password').value = '';
@@ -2458,9 +2669,13 @@ async function submitProfileSettings() {
   btn.textContent = 'Saving...';
 
   try {
+    const profilePicture = document.getElementById('profile-pic-dataurl').value;
     const payload = { emailNotifications, isPublicProfile };
     if (!usernameInput.readOnly && username) {
       payload.username = username;
+    }
+    if (profilePicture) {
+      payload.profilePicture = profilePicture;
     }
 
     const res = await apiFetch(`${API}/api/auth/settings`, {
@@ -2468,6 +2683,13 @@ async function submitProfileSettings() {
       body: JSON.stringify(payload)
     });
     
+    // Update local storage and UI if pic changed
+    if (res.profilePicture) {
+      userProfilePicture = res.profilePicture;
+      localStorage.setItem('userProfilePicture', userProfilePicture);
+      updateNavAvatar();
+    }
+
     showToast('Profile updated successfully!', 'success');
     closeModal('modal-profile');
   } catch (err) {
@@ -3016,41 +3238,88 @@ async function handleProfilePictureSelect(event) {
 
       // Compress to 70% quality
       canvas.toBlob(async (blob) => {
-        const formData = new FormData();
-        formData.append('image', blob, 'profile.jpg');
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const base64data = reader.result;
+          document.getElementById('profile-pic-dataurl').value = base64data;
 
-        try {
-          const _tok = localStorage.getItem('token');
-          const res = await fetch(`${API}/api/auth/profile-picture`, {
-            method: 'POST',
-            headers: _tok ? { Authorization: `Bearer ${_tok}` } : {},
-            body: formData,
-          });
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || 'Failed to upload profile picture');
-          }
-
-          const data = await res.json();
-          userProfilePicture = data.profilePicture;
-          localStorage.setItem('userProfilePicture', userProfilePicture);
-
-          // Update UI
+          // Update UI Preview
           const avatarImg = document.getElementById('profile-avatar-img');
           const avatarInit = document.getElementById('profile-avatar-initial');
-          avatarImg.src = userProfilePicture;
+          avatarImg.src = base64data;
           avatarImg.style.display = 'block';
           avatarInit.style.display = 'none';
 
-          updateNavAvatar();
-
-          showToast('Profile picture updated!', 'success');
-        } catch (error) {
-          showToast(error.message, 'error');
-        } finally {
+          showToast('Image ready to save!', 'success');
           event.target.value = '';
+        };
+      }, 'image/jpeg', 0.7);
+    };
+  };
+}
+
+// ── Group Icon Upload (Canvas Compression) ───────────────────
+async function handleGroupIconSelect(event, isEdit = false) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const prefix = isEdit ? 'edit-' : '';
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('File is too large. Max 5MB.', 'warn');
+    event.target.value = '';
+    return;
+  }
+
+  showToast('Compressing icon...', 'info');
+
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = (e) => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const MAX_WIDTH = 400; // Smaller for icons
+      const MAX_HEIGHT = 400;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
         }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(async (blob) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const base64data = reader.result;
+          document.getElementById(prefix + 'group-icon-url').value = base64data;
+          
+          const previewImg = document.getElementById(prefix + 'group-icon-img');
+          const placeholder = document.getElementById(prefix + 'group-icon-placeholder');
+          
+          previewImg.src = base64data;
+          previewImg.style.display = 'block';
+          placeholder.style.display = 'none';
+
+          showToast('Icon ready!', 'success');
+          event.target.value = '';
+        };
       }, 'image/jpeg', 0.7);
     };
   };
@@ -3185,15 +3454,7 @@ async function performSearch(query) {
 // ── Public Profile ──────────────────────────────────────────
 async function openPublicProfile(targetUsername) {
   try {
-    const res = await fetch(`${API}/api/users/${encodeURIComponent(targetUsername)}`);
-    if (!res.ok) {
-      if (res.status === 403) {
-        showToast('This profile is private.', 'error');
-        return;
-      }
-      throw new Error('Failed to fetch profile');
-    }
-    const profile = await res.json();
+    const profile = await apiFetch(`${API}/api/users/${encodeURIComponent(targetUsername)}`);
     
     // Header
     const imgEl = document.getElementById('public-profile-img');

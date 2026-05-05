@@ -1657,6 +1657,12 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.group-name-wrap .btn-ghost {
+  flex-shrink: 0;
 }
 
 .group-meta {

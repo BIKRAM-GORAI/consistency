@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const storage = new CloudinaryStorage({
+const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'consistency_app_profiles',
@@ -16,6 +16,32 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const groupStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'consistency_app_groups',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+  },
+});
 
-module.exports = { cloudinary, upload };
+const uploadProfile = multer({ storage: profileStorage });
+const uploadGroup = multer({ storage: groupStorage });
+
+/**
+ * Extracts public_id from a Cloudinary URL and deletes the image.
+ * URL format: https://res.cloudinary.com/[cloud_name]/image/upload/v[version]/[folder]/[public_id].[ext]
+ */
+const deleteFromCloudinary = async (url) => {
+  if (!url || !url.includes('cloudinary.com')) return;
+  try {
+    const parts = url.split('/');
+    const folderPart = parts[parts.length - 2];
+    const fileName = parts[parts.length - 1].split('.')[0];
+    const publicId = `${folderPart}/${fileName}`;
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Cloudinary delete error:', err);
+  }
+};
+
+module.exports = { cloudinary, uploadProfile, uploadGroup, deleteFromCloudinary };

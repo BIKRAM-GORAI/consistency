@@ -273,7 +273,7 @@ async function setProfileSettings(req, res) {
   try {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
-    const { emailNotifications, isPublicProfile, username, oldPassword, newPassword } = req.body;
+    const { emailNotifications, isPublicProfile, username, oldPassword, newPassword, profilePicture } = req.body;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -288,6 +288,18 @@ async function setProfileSettings(req, res) {
     }
     if (req.body.theme === 'dark' || req.body.theme === 'light') {
       updates.theme = req.body.theme;
+    }
+
+    if (profilePicture && profilePicture.startsWith('data:image')) {
+      // Delete old one if exists
+      if (user.profilePictureId) {
+        await cloudinary.uploader.destroy(user.profilePictureId);
+      }
+      const result = await cloudinary.uploader.upload(profilePicture, {
+        folder: 'consistency_app_profiles',
+      });
+      user.profilePicture = result.secure_url;
+      user.profilePictureId = result.public_id;
     }
 
     if (username !== undefined && username !== user.username) {
@@ -545,6 +557,12 @@ async function deleteAccount(req, res) {
     await Review.deleteMany({ userId: userId });
 
     // Handle groups: delete groups owned by user
+    const ownedGroups = await Group.find({ owner: userId });
+    for (const group of ownedGroups) {
+      if (group.iconId) {
+        await cloudinary.uploader.destroy(group.iconId);
+      }
+    }
     await Group.deleteMany({ owner: userId });
     
     // Handle groups: remove user from members array in other groups
@@ -555,6 +573,9 @@ async function deleteAccount(req, res) {
 
     // Delete the user
     const deletedUser = await User.findByIdAndDelete(userId);
+    if (deletedUser && deletedUser.profilePictureId) {
+      await cloudinary.uploader.destroy(deletedUser.profilePictureId);
+    }
     if (!deletedUser) {
       return res.status(404).json({ message: 'User not found' });
     }

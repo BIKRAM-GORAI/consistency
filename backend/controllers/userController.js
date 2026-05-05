@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Day = require('../models/Day');
 const Achievement = require('../models/Achievement');
+const Group = require('../models/Group');
 
 // Helper to count completed tasks
 function countTasks(categories) {
@@ -52,7 +53,21 @@ async function getPublicProfile(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.isPublicProfile === false) {
+    let canView = user.isPublicProfile !== false;
+
+    // If not public, check if requesting user shares a public group with the target
+    if (!canView && req.user && req.user.userId) {
+      const requestingUserId = req.user.userId;
+      const sharedPublicGroup = await Group.findOne({
+        isPublic: true,
+        members: { $all: [requestingUserId, user._id] }
+      });
+      if (sharedPublicGroup) {
+        canView = true;
+      }
+    }
+
+    if (!canView) {
       return res.status(403).json({ message: 'This profile is private' });
     }
 

@@ -137,7 +137,15 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Groups</h1>
-        <p class="page-subtitle">Create a team or join your friends</p>
+        <p class="page-subtitle">Collaborate with friends or join public communities</p>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn-primary ripple" onclick="openCreateGroupModal(false)" style="background:var(--purple); border-color:var(--black);">
+          <span>🔒</span> Private Team
+        </button>
+        <button class="btn-primary ripple" onclick="openCreateGroupModal(true)" style="background:var(--green); border-color:var(--black); box-shadow: 2px 2px 0 var(--black);">
+          <span>🌍</span> Public Group
+        </button>
       </div>
     </div>
 
@@ -268,15 +276,44 @@
   <div class="modal-overlay" id="modal-create-group" onclick="closeModalOnOverlay(event, 'modal-create-group')">
     <div class="modal">
       <div class="modal-header">
-        <h2>👥 Create a Team</h2>
+        <h2 id="create-group-title">👥 Create a Team</h2>
         <button class="modal-close" onclick="closeModal('modal-create-group')">✕</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label for="group-name-input">Team Name</label>
-          <input type="text" id="group-name-input" class="form-control" placeholder="e.g. Study Squad, Gym Crew..." />
+        <input type="hidden" id="group-is-public-hidden" value="false" />
+        
+        <!-- Group Icon Upload -->
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">
+          <div id="group-icon-preview-container" style="position: relative; width: 80px; height: 80px; border: 3px solid var(--black); border-radius: 50%; background: var(--bg-muted); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; box-shadow: 4px 4px 0 var(--black);" onclick="document.getElementById('group-icon-input').click()">
+            <img id="group-icon-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+            <div id="group-icon-placeholder" style="font-size: 32px; font-weight: 900; color: var(--text-muted);">＋</div>
+            <div style="position: absolute; bottom: 0; right: 0; background: var(--yellow); border: 2px solid var(--black); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px;">📸</div>
+          </div>
+          <input type="file" id="group-icon-input" style="display: none;" accept="image/*" onchange="handleGroupIconSelect(event)" />
+          <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-top: 8px; color: var(--text-muted);">Group Icon</p>
+          <input type="hidden" id="group-icon-url" value="" />
         </div>
-        <p class="form-hint">A unique 6-character join code will be generated automatically. Share it with friends so they can join your team.</p>
+
+        <div class="form-group">
+          <label for="group-name-input">Name <span style="color:var(--red)">*</span></label>
+          <input type="text" id="group-name-input" class="form-control" placeholder="e.g. Study Squad, Gym Crew..." maxlength="25" />
+          <p class="form-hint">3 to 25 characters.</p>
+        </div>
+        <div class="form-group">
+          <label for="group-desc-input">Description (optional)</label>
+          <textarea id="group-desc-input" class="form-control" rows="2" maxlength="200" placeholder="What is the purpose of this group?"></textarea>
+          <p class="form-hint">Max 200 characters.</p>
+        </div>
+        
+        <div id="group-public-warning" style="display:none; background:rgba(79,70,229,0.1); border:2px dashed #4f46e5; padding:12px; border-radius:8px; margin-top:16px;">
+          <p style="margin:0; font-size:13px; font-weight:600; color:#818cf8; line-height:1.4;">
+            ℹ️ <strong>Public Group Visibility:</strong> By creating or joining a public group, you consent to making your daily tasks and streak visible to ALL members of this group, regardless of your personal profile privacy settings.
+          </p>
+        </div>
+
+        <div id="group-private-hint">
+          <p class="form-hint">A unique 6-character join code will be generated automatically. Share it with friends so they can join your team.</p>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-create-group')">Cancel</button>
@@ -293,9 +330,27 @@
         <button class="modal-close" onclick="closeModal('modal-edit-group')">✕</button>
       </div>
       <div class="modal-body">
+        <!-- Edit Group Icon Upload -->
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">
+          <div id="edit-group-icon-preview-container" style="position: relative; width: 80px; height: 80px; border: 3px solid var(--black); border-radius: 50%; background: var(--bg-muted); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; box-shadow: 4px 4px 0 var(--black);" onclick="document.getElementById('edit-group-icon-input').click()">
+            <img id="edit-group-icon-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+            <div id="edit-group-icon-placeholder" style="font-size: 32px; font-weight: 900; color: var(--text-muted);">＋</div>
+            <div style="position: absolute; bottom: 0; right: 0; background: var(--yellow); border: 2px solid var(--black); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px;">📸</div>
+          </div>
+          <input type="file" id="edit-group-icon-input" style="display: none;" accept="image/*" onchange="handleGroupIconSelect(event, true)" />
+          <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-top: 8px; color: var(--text-muted);">Group Icon</p>
+          <input type="hidden" id="edit-group-icon-url" value="" />
+        </div>
+
         <div class="form-group">
           <label for="edit-group-name-input">Team Name</label>
-          <input type="text" id="edit-group-name-input" class="form-control" placeholder="New team name..." />
+          <input type="text" id="edit-group-name-input" class="form-control" placeholder="New team name..." maxlength="25" />
+          <p class="form-hint">3 to 25 characters.</p>
+        </div>
+        <div class="form-group">
+          <label for="edit-group-desc-input">Description (optional)</label>
+          <textarea id="edit-group-desc-input" class="form-control" rows="2" maxlength="200" placeholder="New description..."></textarea>
+          <p class="form-hint">Max 200 characters.</p>
         </div>
       </div>
       <div class="modal-footer">
@@ -305,11 +360,11 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: Join Group ===== -->
+  <!-- ===== MODAL: Join Group (Private) ===== -->
   <div class="modal-overlay" id="modal-join-group" onclick="closeModalOnOverlay(event, 'modal-join-group')">
     <div class="modal">
       <div class="modal-header">
-        <h2>🔗 Join a Team</h2>
+        <h2>🔗 Join a Private Team</h2>
         <button class="modal-close" onclick="closeModal('modal-join-group')">✕</button>
       </div>
       <div class="modal-body">
@@ -322,6 +377,32 @@
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-join-group')">Cancel</button>
         <button class="btn-primary ripple" onclick="submitJoinGroup()" id="submit-join-group-btn">Join Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Join Public Group Confirmation ===== -->
+  <div class="modal-overlay" id="modal-join-public-confirm" onclick="closeModalOnOverlay(event, 'modal-join-public-confirm')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="color:var(--green);">🌿 Join Public Group?</h2>
+        <button class="modal-close" onclick="closeModal('modal-join-public-confirm')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:rgba(34,197,94,0.1); border:2px dashed var(--green); padding:16px; border-radius:12px; margin-bottom:16px;">
+          <p style="margin:0; font-size:15px; font-weight:700; color:var(--green); line-height:1.5;">
+            ⚠️ Consent Required
+          </p>
+          <p style="margin:8px 0 0 0; font-size:13px; color:var(--text); line-height:1.5;">
+            By joining this public group, you agree that your <strong>daily tasks, streak, and activity graph</strong> will be visible to all members of this group.
+          </p>
+        </div>
+        <p style="font-size:14px; font-weight:500;">Do you want to proceed and join <strong id="join-public-group-name"></strong>?</p>
+        <input type="hidden" id="join-public-group-id" value="" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-join-public-confirm')">Cancel</button>
+        <button class="btn-primary ripple" onclick="confirmJoinPublicGroup()" id="confirm-join-public-btn" style="background:var(--green); border-color:var(--black);">Yes, Join Group</button>
       </div>
     </div>
   </div>
@@ -544,6 +625,7 @@
               <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.6); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
             </div>
             <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePictureSelect(event)" />
+            <input type="hidden" id="profile-pic-dataurl" value="" />
             <p class="form-hint" style="margin-top:12px; font-size: 13px;">Max 5MB. Image will be compressed before upload.</p>
           </div>
 
