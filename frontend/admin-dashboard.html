@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Consistency Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --yellow: #facc15;
+      --pink: #f472b6;
+      --blue: #60a5fa;
+      --green: #4ade80;
+      --purple: #a78bfa;
+      --orange: #fb923c;
+      --cyan: #22d3ee;
+      --indigo: #818cf8;
+      --rose: #fb7185;
+      --black: #0a0a0a;
+      --white: #ffffff;
+      --border: 3px solid #0a0a0a;
+      --shadow: 4px 4px 0px #0a0a0a;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8f8f8;
+      color: var(--black);
+    }
+
+    /* ── Navbar ── */
+    .admin-nav {
+      background: var(--white);
+      border-bottom: var(--border);
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .nav-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(16px, 4vw, 24px);
+      font-weight: 900;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .nav-brand span {
+      background: var(--yellow);
+      padding: 0 8px;
+      border: 2px solid var(--black);
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+
+    .nav-links::-webkit-scrollbar { display: none; }
+
+    .nav-link {
+      background: none;
+      border: 2px solid transparent;
+      font-family: inherit;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 7px 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .nav-link:hover { background: #eee; }
+
+    .nav-link.active {
+      background: var(--yellow);
+      border-color: var(--black);
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      font-family: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 13px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Container ── */
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    /* ── Dashboard Header ── */
+    .dashboard-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+      font-size: clamp(20px, 5vw, 28px);
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-control {
+      padding: 10px 16px;
+      background: var(--white);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      font-family: inherit;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .btn-control.active { background: var(--yellow); }
+
+    /* ── Review Grid ── */
+    .review-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+      gap: 20px;
+    }
+
+    .review-card {
+      background: var(--white);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .review-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #666;
+    }
+
+    .review-email {
+      color: var(--blue);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+
+    .review-text {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .review-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border: 2px solid var(--black);
+      border-radius: 4px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      border-top: 2px dashed #ddd;
+      padding-top: 14px;
+    }
+
+    .btn-action {
+      flex: 1;
+      padding: 8px;
+      font-family: inherit;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 2px solid var(--black);
+      font-size: 12px;
+    }
+
+    .btn-edit  { background: var(--green); }
+    .btn-delete { background: var(--pink); color: var(--white); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--white);
+      border: var(--border);
+      box-shadow: 8px 8px 0 var(--black);
+      width: 100%;
+      max-width: 600px;
+      padding: 28px;
+      position: relative;
+      margin: auto;
+    }
+
+    .modal h3 {
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    textarea, input[type="text"], input[type="email"], input[type="datetime-local"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: var(--border);
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    .badge-selection {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .badge-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f0f0;
+      padding: 8px;
+      border: 2px solid var(--black);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-checkbox input[type="checkbox"] {
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .badge-checkbox.selected { background: var(--yellow); }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn-save {
+      flex: 2;
+      background: var(--black);
+      color: var(--white);
+      padding: 12px;
+      font-family: inherit;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      background: #eee;
+      padding: 12px;
+      font-family: inherit;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: var(--border);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* ── Placeholder sections ── */
+    .admin-section h2 { margin-bottom: 16px; }
+    .admin-section p  { color: #555; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .container { padding: 0 14px; margin: 20px auto; }
+
+      .header-actions { width: 100%; }
+
+      .btn-control { padding: 10px 12px; font-size: 12px; }
+
+      .form-grid { grid-template-columns: 1fr; }
+
+      .badge-selection { grid-template-columns: 1fr; }
+
+      .modal { padding: 20px 16px; }
+
+      .modal-footer { flex-direction: column; }
+      .btn-save, .btn-cancel { flex: none; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <div class="nav-left">
+      <div class="nav-brand"><span>ADMIN</span></div>
+      <div class="nav-links">
+        <button class="nav-link active" onclick="showSection('reviews')">Reviews</button>
+        <button class="nav-link" onclick="showSection('days')">Days</button>
+        <button class="nav-link" onclick="showSection('groups')">Groups</button>
+        <button class="nav-link" onclick="showSection('achievements')">Achievements</button>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </nav>
+
+  <div class="container">
+
+    <!-- Reviews Section -->
+    <div id="section-reviews" class="admin-section">
+      <div class="dashboard-header">
+        <h2>Review Management</h2>
+        <div class="header-actions">
+          <button class="btn-control" style="background: var(--blue); color: white;" onclick="openAddModal()">+ Add Review</button>
+          <div class="controls">
+            <button class="btn-control active" id="sort-desc" onclick="loadReviews('desc')">Newest</button>
+            <button class="btn-control" id="sort-asc"  onclick="loadReviews('asc')">Oldest</button>
+          </div>
+        </div>
+      </div>
+      <div id="review-grid" class="review-grid"></div>
+    </div>
+
+    <!-- Placeholder Sections -->
+    <div id="section-days" class="admin-section" style="display:none;">
+      <h2>Days Management</h2>
+      <p>Content for Days management will appear here.</p>
+    </div>
+    <div id="section-groups" class="admin-section" style="display:none;">
+      <h2>Groups Management</h2>
+      <p>Content for Groups management will appear here.</p>
+    </div>
+    <div id="section-achievements" class="admin-section" style="display:none;">
+      <h2>Achievements Management</h2>
+      <p>Content for Achievements management will appear here.</p>
+    </div>
+
+  </div>
+
+  <!-- Modal -->
+  <div id="edit-modal" class="modal-overlay">
+    <div class="modal">
+      <h3 id="modal-title">Edit Review</h3>
+      <form id="edit-form">
+        <input type="hidden" id="edit-id">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>User Name</label>
+            <input type="text" id="edit-name" required placeholder="John Doe">
+          </div>
+          <div class="form-group">
+            <label>User Email</label>
+            <input type="email" id="edit-email" required placeholder="john@example.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Review Text</label>
+          <textarea id="edit-text" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Date &amp; Time</label>
+          <input type="datetime-local" id="edit-date" required>
+        </div>
+        <div class="form-group">
+          <label>User Badges</label>
+          <div class="badge-selection">
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Verified Account"> Verified Account</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Considered by Developer"> Considered by Dev</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Helpful Review"> Helpful Review</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Early / Beta Tester"> Early / Beta Tester</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Thanks from developer"> Thanks from Dev</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Peak Productivity"> Peak Productivity</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Chaos Coordinator"> Chaos Coordinator</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Feature Hunter"> Feature Hunter</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Certified G.O.A.T"> Certified G.O.A.T</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Vibe Checker"> Vibe Checker</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Professional Procrastinator"> Pro Procrastinator</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Big Brain Energy"> Big Brain Energy</label>
+            <label class="badge-checkbox"><input type="checkbox" name="badges" value="Hidden Genius"> Hidden Genius</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn-save" id="btn-save-text">Save Changes</button>
+          <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="admin-script.js"></script>
+</body>
+</html>

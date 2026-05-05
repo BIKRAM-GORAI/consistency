@@ -16,6 +16,7 @@ const templateRoutes    = require('./routes/templateRoutes');
 const reviewRoutes      = require('./routes/reviewRoutes');
 const userRoutes        = require('./routes/userRoutes');
 const leetcodeRoutes    = require('./routes/leetcodeRoutes');
+const adminRoutes       = require('./routes/adminRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -52,7 +53,7 @@ app.use((req, res, next) => {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
       "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com",
+      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com",
       "frame-src 'self'",
       "object-src 'none'",
     ].join('; ')
@@ -80,6 +81,7 @@ app.use('/api/templates',    authenticateToken, dataModificationLimiter, templat
 app.use('/api/reviews',      reviewRoutes); // Public review submission
 app.use('/api/users',        readOnlyLimiter, userRoutes); // Public user profiles
 app.use('/api/leetcode',    authenticateToken, dataModificationLimiter, leetcodeRoutes); // LeetCode integration
+app.use('/api/admin',       adminRoutes); // Admin routes
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

@@ -15,6 +15,10 @@ const reviewSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  userBadges: {
+    type: [String],
+    default: [], // Array of badges like 'Verified Account', 'Helpful Review', etc.
+  },
   createdAt: {
     type: Date,
     default: Date.now,

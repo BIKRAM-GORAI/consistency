@@ -1250,14 +1250,54 @@
         return;
       }
 
-      reviews.forEach(r => {
+      // Pastel colors for Neo-Brutalist cards
+      const cardColors = ['#fdf2f2', '#f0fdf4', '#eff6ff', '#fffbeb', '#faf5ff'];
+      
+      // Badge colors mapping
+      const badgeColors = {
+        'Verified Account': '#4ade80',
+        'Considered by Developer': '#facc15',
+        'Helpful Review': '#60a5fa',
+        'Early / Beta Tester': '#a78bfa',
+        'Thanks from developer': '#fb923c',
+        'Peak Productivity': '#4ade80',
+        'Chaos Coordinator': '#fb7185',
+        'Feature Hunter': '#f472b6',
+        'Certified G.O.A.T': '#facc15',
+        'Vibe Checker': '#22d3ee',
+        'Professional Procrastinator': '#94a3b8',
+        'Big Brain Energy': '#818cf8',
+        'Hidden Genius': '#34d399'
+      };
+
+      reviews.forEach((r, index) => {
         const d = new Date(r.createdAt).toLocaleString();
+        const color = cardColors[index % cardColors.length];
+        
+        const badgesHtml = (r.userBadges || []).map(b => `
+          <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 2px 8px; border: 2px solid var(--black); border-radius: 4px; background: ${badgeColors[b] || '#eee'}; display: inline-block; box-shadow: 2px 2px 0 var(--black);">${b}</span>
+        `).join('');
+
         const card = document.createElement('div');
         card.className = 'review-card';
+        card.style.background = color;
+        card.style.border = '3px solid var(--black)';
+        card.style.boxShadow = '6px 6px 0 var(--black)';
+        card.style.transition = 'transform 0.2s';
+        card.style.padding = '24px';
+        card.style.marginBottom = '24px';
+        card.style.width = '100%';
+        card.style.boxSizing = 'border-box';
+        card.onmouseover = () => card.style.transform = 'translate(-4px, -4px)';
+        card.onmouseout = () => card.style.transform = 'translate(0, 0)';
+
         card.innerHTML = `
-          <div class="review-card-email">${r.name || 'Anonymous'}</div>
-          <div class="review-card-date">${d}</div>
-          <div class="review-card-text">${r.description.replace(/\n/g, '<br>')}</div>
+          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div class="review-card-email" style="margin-bottom: 0; font-size: 18px; color: var(--black);">${r.name || 'Anonymous'}</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">${badgesHtml}</div>
+          </div>
+          <div class="review-card-date" style="margin-bottom: 16px; opacity: 0.7;">${d}</div>
+          <div class="review-card-text" style="font-weight: 600; line-height: 1.6; color: #111;">${r.description.replace(/\n/g, '<br>')}</div>
         `;
         container.appendChild(card);
       });

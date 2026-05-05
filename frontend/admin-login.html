@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | Consistency Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --yellow: #facc15;
+      --black: #0a0a0a;
+      --white: #ffffff;
+      --blue: #60a5fa;
+      --pink: #f472b6;
+      --border: 3px solid #0a0a0a;
+      --shadow: 8px 8px 0px #0a0a0a;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f0f0;
+      background-image: radial-gradient(var(--black) 1px, transparent 1px);
+      background-size: 30px 30px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Floating Decorative Shapes */
+    .shape {
+      position: absolute;
+      z-index: 0;
+      border: var(--border);
+      box-shadow: 6px 6px 0 var(--black);
+    }
+    .shape-1 { width: 100px; height: 100px; background: var(--yellow); top: 10%; left: 10%; transform: rotate(15deg); }
+    .shape-2 { width: 150px; height: 150px; background: var(--blue); bottom: 15%; right: 10%; border-radius: 50%; }
+    .shape-3 { width: 80px; height: 80px; background: var(--pink); top: 20%; right: 20%; transform: rotate(-20deg); }
+    .shape-4 { width: 120px; height: 60px; background: #4ade80; bottom: 20%; left: 15%; transform: skew(10deg); }
+
+    .login-card {
+      background: var(--white);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 48px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      z-index: 10;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px;
+      margin-bottom: 32px;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      border-left: 10px solid var(--yellow);
+      padding-left: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      box-sizing: border-box;
+      border: var(--border);
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+    }
+
+    input:focus {
+      background: #fdf2f2;
+      box-shadow: 4px 4px 0 var(--yellow);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 16px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      font-family: inherit;
+      font-weight: 900;
+      font-size: 18px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.1s;
+      margin-bottom: 20px;
+    }
+
+    .btn-login:hover {
+      background: var(--yellow);
+      color: var(--black);
+      transform: translate(-3px, -3px);
+      box-shadow: 6px 6px 0 var(--black);
+    }
+
+    .back-home {
+      display: block;
+      text-align: center;
+      font-weight: 800;
+      text-decoration: none;
+      color: var(--black);
+      font-size: 14px;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--black);
+      width: fit-content;
+      margin: 0 auto;
+    }
+
+    .back-home:hover {
+      background: var(--pink);
+    }
+
+    .error-msg {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #b91c1c;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Decorative Background Shapes -->
+  <div class="shape shape-1"></div>
+  <div class="shape shape-2"></div>
+  <div class="shape shape-3"></div>
+  <div class="shape shape-4"></div>
+
+  <div class="login-card">
+    <h1>Admin Login</h1>
+    <div id="error-msg" class="error-msg"></div>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required placeholder="admin@example.com">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn-login">Secure Login →</button>
+      <a href="landing.html" class="back-home">← Back to home</a>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error-msg');
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('adminToken', data.token);
+          window.location.href = 'admin-dashboard.html';
+        } else {
+          errorEl.textContent = data.message || 'Login failed';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.style.display = 'block';
+      }
+    });
+
+    // Already logged in?
+    if (localStorage.getItem('adminToken')) {
+      window.location.href = 'admin-dashboard.html';
+    }
+  </script>
+</body>
+</html>
