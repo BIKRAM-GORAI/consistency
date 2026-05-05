@@ -54,10 +54,13 @@ app.use((req, res, next) => {
       "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https:",
       "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com",
-      "frame-src 'self'",
+      "frame-src 'self' https://*.firebaseapp.com",
       "object-src 'none'",
     ].join('; ')
   );
+
+  // Allow Firebase Auth popups
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
 
   next();
 });
