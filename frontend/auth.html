@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="/js/libs/lucide/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -463,7 +464,7 @@
       <!-- Card Header Band -->
       <div class="auth-card-header">
         <div class="auth-brand">
-          <span class="auth-brand-icon">⚡</span>
+          <span class="auth-brand-icon"><i data-lucide="zap"></i></span>
           <span class="auth-brand-name">Consistency Tracker</span>
         </div>
       </div>
@@ -479,11 +480,11 @@
 
         <!-- ── LOGIN FORM ── -->
         <div class="auth-form" id="form-login">
-          <h1 class="auth-title">Welcome back 👋</h1>
+          <h1 class="auth-title">Welcome back <i data-lucide="hand"></i></h1>
           <p class="auth-subtitle">Log in to your account to continue</p>
 
           <div class="auth-error" id="login-error">
-            <span>⚠️</span>
+            <span><i data-lucide="alert-triangle"></i></span>
             <span id="login-error-msg"></span>
           </div>
 
@@ -496,14 +497,14 @@
             <label class="auth-label" for="login-password">Password</label>
             <div class="password-wrapper">
               <input class="auth-input has-toggle" type="password" id="login-password" placeholder="Your password" autocomplete="current-password" />
-              <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
             </div>
             <div style="text-align: right; margin-top: 8px;">
               <a href="#" onclick="switchTab('forgot'); return false;" style="font-size: 12px; color: #666; font-weight: 700; text-decoration: none; text-transform: uppercase;">Forgot Password?</a>
             </div>
           </div>
 
-          <button class="auth-submit-btn" id="login-btn" onclick="handleLogin()">Login →</button>
+          <button class="auth-submit-btn" id="login-btn" onclick="handleLogin()">Login <i data-lucide="arrow-right"></i></button>
 
           <div class="oauth-divider"><span>Or continue with</span></div>
           <div class="oauth-buttons">
@@ -521,16 +522,16 @@
 
         <!-- ── REGISTER FORM ── -->
         <div class="auth-form" id="form-register">
-          <h1 class="auth-title">Create Account ✨</h1>
+          <h1 class="auth-title">Create Account <i data-lucide="sparkles"></i></h1>
           <p class="auth-subtitle">Join in and start tracking your consistency</p>
 
           <div class="auth-error" id="register-error">
-            <span>⚠️</span>
+            <span><i data-lucide="alert-triangle"></i></span>
             <span id="register-error-msg"></span>
           </div>
 
           <div class="auth-success" id="register-success">
-            <span>✅</span>
+            <span><i data-lucide="check-circle"></i></span>
             <span>Account created! Redirecting...</span>
           </div>
 
@@ -554,12 +555,12 @@
             <label class="auth-label" for="register-password">Password</label>
             <div class="password-wrapper">
               <input class="auth-input has-toggle" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" />
-              <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+              <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
             </div>
             <p class="auth-hint">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
           </div>
 
-          <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()">Create Account →</button>
+          <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()">Create Account <i data-lucide="arrow-right"></i></button>
 
           <div class="oauth-divider"><span>Or sign up with</span></div>
           <div class="oauth-buttons">
@@ -577,15 +578,15 @@
 
         <!-- ── FORGOT PASSWORD FORM ── -->
         <div class="auth-form" id="form-forgot">
-          <h1 class="auth-title">Reset Password 🔐</h1>
+          <h1 class="auth-title">Reset Password <i data-lucide="lock"></i></h1>
           <p class="auth-subtitle">We'll send a code to your email.</p>
 
           <div class="auth-error" id="forgot-error">
-            <span>⚠️</span>
+            <span><i data-lucide="alert-triangle"></i></span>
             <span id="forgot-error-msg"></span>
           </div>
           <div class="auth-success" id="forgot-success">
-            <span>✅</span>
+            <span><i data-lucide="check-circle"></i></span>
             <span id="forgot-success-msg"></span>
           </div>
 
@@ -616,7 +617,7 @@
               <label class="auth-label" for="forgot-new-password">New Password</label>
               <div class="password-wrapper">
                 <input class="auth-input has-toggle" type="password" id="forgot-new-password" placeholder="Create a new password" />
-                <button type="button" class="password-toggle" onclick="togglePassword('forgot-new-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+                <button type="button" class="password-toggle" onclick="togglePassword('forgot-new-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
               </div>
               <p class="auth-hint">Must be 5+ characters with 1 uppercase, 1 lowercase, 1 special character.</p>
             </div>
@@ -624,7 +625,7 @@
               <label class="auth-label" for="forgot-confirm-password">Confirm Password</label>
               <div class="password-wrapper">
                 <input class="auth-input has-toggle" type="password" id="forgot-confirm-password" placeholder="Confirm new password" />
-                <button type="button" class="password-toggle" onclick="togglePassword('forgot-confirm-password', this)" tabindex="-1" title="Toggle password visibility">👁️</button>
+                <button type="button" class="password-toggle" onclick="togglePassword('forgot-confirm-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
               </div>
             </div>
             <button class="auth-submit-btn" id="forgot-reset-btn" onclick="handleResetPassword()">Save and Update Password</button>
@@ -666,11 +667,12 @@
       const input = document.getElementById(inputId);
       if (input.type === 'password') {
         input.type = 'text';
-        btn.textContent = '🔒';
+        btn.innerHTML = '<i data-lucide="eye-off"></i>';
       } else {
         input.type = 'password';
-        btn.textContent = '👁️';
+        btn.innerHTML = '<i data-lucide="eye"></i>';
       }
+      if (window.lucide) lucide.createIcons({ root: btn });
     }
 
     function clearErrors() {
@@ -1036,6 +1038,8 @@
     document.getElementById('oauth-register-google').addEventListener('click', () => handleOAuthLogin('google'));
     document.getElementById('oauth-register-github').addEventListener('click', () => handleOAuthLogin('github'));
     document.getElementById('oauth-register-facebook').addEventListener('click', () => handleOAuthLogin('facebook'));
+    
+    lucide.createIcons();
   </script>
 </body>
 </html>

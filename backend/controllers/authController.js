@@ -116,6 +116,7 @@ const login = async (req, res) => {
       name: user.name,
       email: user.email,
       profilePicture: user.profilePicture,
+      username: user.username,
       token
     });
   } catch (error) {
@@ -179,6 +180,7 @@ const oauthLogin = async (req, res) => {
       name: user.name,
       email: user.email,
       profilePicture: user.profilePicture,
+      username: user.username,
       token
     });
 

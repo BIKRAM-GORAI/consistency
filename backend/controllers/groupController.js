@@ -42,6 +42,25 @@ const createGroup = async (req, res) => {
       return res.status(400).json({ message: 'name is required.' });
     }
 
+    const publicLimit = parseInt(process.env.PUBLIC_GROUP_LIMIT) || 10;
+    const privateLimit = parseInt(process.env.PRIVATE_GROUP_LIMIT) || 10;
+
+    if (isPublic) {
+      const publicCount = await Group.countDocuments({ owner: userId, isPublic: true });
+      if (publicCount >= publicLimit) {
+        return res.status(403).json({ message: `You have reached the limit of ${publicLimit} public groups.` });
+      }
+    } else {
+      const privateCount = await Group.countDocuments({ owner: userId, isPublic: false });
+      if (privateCount >= privateLimit) {
+        return res.status(403).json({ message: `You have reached the limit of ${privateLimit} private teams.` });
+      }
+    }
+
+    if (!icon || !icon.startsWith('data:image')) {
+      return res.status(400).json({ message: 'A group icon is mandatory.' });
+    }
+
     let iconUrl = '';
     let iconId = '';
 
@@ -121,6 +140,7 @@ const myGroups = async (req, res) => {
     const groups = await Group.find({ members: userId })
       .populate('members', 'name username profilePicture currentStreak highestStreak')
       .populate('owner', 'name username profilePicture')
+      .populate('requests', 'name username profilePicture')
       .sort({ createdAt: -1 });
 
     res.json(groups);
@@ -140,7 +160,7 @@ const publicGroups = async (req, res) => {
       isPublic: true,
       members: { $ne: userId }
     })
-    .select('name description isPublic icon members owner createdAt') // Exclude code
+    .select('name description isPublic icon members requests owner createdAt') // Exclude code
     .populate('owner', 'name username profilePicture')
     .sort({ createdAt: -1 });
 
@@ -167,13 +187,97 @@ const joinPublicGroup = async (req, res) => {
       return res.status(400).json({ message: 'You are already a member of this group.' });
     }
 
-    group.members.push(userId);
+    if (group.requests.map(String).includes(String(userId))) {
+      return res.status(400).json({ message: 'Your join request is already pending.' });
+    }
+
+    group.requests.push(userId);
     await group.save();
 
-    const populated = await Group.findById(group._id)
-      .populate('members', 'name username email profilePicture')
-      .populate('owner', 'name username email profilePicture');
-    res.json(populated);
+    res.json({ message: 'Join request sent! Waiting for owner approval.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * GET /api/groups/:groupId/requests
+ * Returns pending join requests (owner only).
+ */
+const getRequests = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { groupId } = req.params;
+
+    const group = await Group.findById(groupId).populate('requests', 'name username email profilePicture');
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    if (String(group.owner) !== String(userId)) {
+      return res.status(403).json({ message: 'Only the owner can view join requests.' });
+    }
+
+    res.json(group.requests);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * POST /api/groups/:groupId/requests/:targetUserId
+ * Approves or rejects a join request.
+ * Body: { action: 'approve' | 'reject' }
+ */
+const handleJoinRequest = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { groupId, targetUserId } = req.params;
+    const { action } = req.body;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    if (String(group.owner) !== String(userId)) {
+      return res.status(403).json({ message: 'Only the owner can manage join requests.' });
+    }
+
+    // Remove from requests anyway
+    group.requests = group.requests.filter(id => String(id) !== String(targetUserId));
+
+    if (action === 'approve') {
+      if (!group.members.map(String).includes(String(targetUserId))) {
+        group.members.push(targetUserId);
+      }
+    }
+
+    await group.save();
+    res.json({ message: `User ${action === 'approve' ? 'approved' : 'rejected'}.` });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * DELETE /api/groups/:groupId/requests
+ * Allows a user to cancel their own pending join request.
+ */
+const cancelJoinRequest = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { groupId } = req.params;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    // Remove from requests
+    const originalCount = group.requests.length;
+    group.requests = group.requests.filter(id => String(id) !== String(userId));
+
+    if (group.requests.length === originalCount) {
+      return res.status(400).json({ message: 'No pending request found for this group.' });
+    }
+
+    await group.save();
+    res.json({ message: 'Join request cancelled.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -431,6 +535,9 @@ module.exports = {
   myGroups, 
   publicGroups,
   joinPublicGroup,
+  getRequests,
+  handleJoinRequest,
+  cancelJoinRequest,
   groupMembers, 
   memberDays, 
   editGroup, 

@@ -50,11 +50,11 @@ app.use((req, res, next) => {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
       "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com",
+      "connect-src 'self' http://localhost:5001 https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com https://unpkg.com",
       "frame-src 'self' https://*.firebaseapp.com",
       "object-src 'none'",
     ].join('; ')
@@ -102,6 +102,7 @@ app.get('/robots.txt', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, '../frontend')));
+app.use('/js/libs/lucide', express.static(path.join(__dirname, '../node_modules/lucide/dist/umd')));
 
 // ── Root: redirect to landing page ────────────────────────
 app.get('/', (req, res) => {

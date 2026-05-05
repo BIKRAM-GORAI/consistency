@@ -96,12 +96,16 @@ function renderReviews(reviews) {
       <div class="review-text">${r.description}</div>
       <div class="review-badges">${badgesHtml}</div>
       <div class="card-actions">
-        <button class="btn-action btn-edit" onclick="openEditModal(${index})">Edit</button>
-        <button class="btn-action btn-delete" onclick="deleteReview('${r._id}')">Delete</button>
+        <button class="btn-action btn-edit" onclick="openEditModal(${index})"><i data-lucide="edit-3"></i> Edit</button>
+        <button class="btn-action btn-delete" onclick="deleteReview('${r._id}')"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     `;
     grid.appendChild(card);
   });
+
+  if (window.lucide) {
+    lucide.createIcons({ root: grid });
+  }
 }
 
 /**

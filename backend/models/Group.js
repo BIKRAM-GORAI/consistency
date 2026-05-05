@@ -45,6 +45,13 @@ const GroupSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // Pending join requests for public groups
+    requests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   { timestamps: true }
 );

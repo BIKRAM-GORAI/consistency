@@ -83,14 +83,14 @@ const isMobile = () => window.innerWidth <= 768;
 
 // ── Motivation quotes ──────────────────────────────────────
 const MOTIVATIONS = [
-  { icon: '💪', text: 'Keep pushing!' },
-  { icon: '🚀', text: 'You\'re on fire!' },
-  { icon: '🌟', text: 'Unstoppable!' },
-  { icon: '⚡', text: 'Small steps win!' },
-  { icon: '🎯', text: 'Stay locked in.' },
-  { icon: '🔥', text: 'Don\'t break the chain!' },
-  { icon: '✨', text: 'Progress = Success.' },
-  { icon: '🏆', text: 'Champions show up!' },
+  { icon: 'biceps-flexed', text: 'Keep pushing!' },
+  { icon: 'rocket',        text: 'You\'re on fire!' },
+  { icon: 'star',          text: 'Unstoppable!' },
+  { icon: 'zap',           text: 'Small steps win!' },
+  { icon: 'target',        text: 'Stay locked in.' },
+  { icon: '🔥',          text: 'Don\'t break the chain!' },
+  { icon: 'sparkles',      text: 'Progress = Success.' },
+  { icon: 'trophy',        text: 'Champions show up!' },
 ];
 
 // ── Ripple Effect ──────────────────────────────────────────
@@ -196,13 +196,16 @@ function showToast(msg, type = 'info') {
   const iconEl  = document.getElementById('toast-icon');
   const msgEl   = document.getElementById('toast-msg');
 
-  const icons = { success: '✅', error: '❌', warn: '⚠️', info: '💡' };
-  iconEl.textContent = icons[type] || icons.info;
-  msgEl.textContent  = msg;
+  const icons = { success: 'check-circle', error: 'x-circle', warn: 'alert-triangle', info: 'info' };
+  iconEl.innerHTML = `<i data-lucide="${icons[type] || 'info'}"></i>`;
+  msgEl.innerHTML = msg;
 
   toast.className = 'toast';
   if (type === 'graph') toast.classList.add('graph');
   toast.classList.add('show');
+  
+  if (window.lucide) lucide.createIcons({ props: { width: 20, height: 20 }, nameAttr: 'data-lucide', root: iconEl });
+
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => toast.classList.remove('show'), 3200);
 }
@@ -331,7 +334,8 @@ function updateStreak() {
 
   // Show exclamation mark if streak > 0 but today is not done yet
   if (fireEl) {
-    fireEl.textContent = (streak > 0 && !todayDone) ? '❕' : '🔥';
+    fireEl.innerHTML = (streak > 0 && !todayDone) ? '<i data-lucide="alert-circle"></i>' : '🔥';
+    if (window.lucide) lucide.createIcons({ root: fireEl });
   }
 
   // Animate streak number with GSAP counter
@@ -369,7 +373,7 @@ function renderDays() {
     const emptyEl = document.createElement('div');
     emptyEl.className = 'empty-state';
     emptyEl.innerHTML = `
-      <span class="empty-icon">📅</span>
+      <span class="empty-icon"><i data-lucide="calendar"></i></span>
       <h3>No days yet</h3>
       <p>Click the button above to start your first day card.</p>`;
     container.appendChild(emptyEl);
@@ -447,7 +451,7 @@ function buildDayCard(day) {
               onchange="toggleTask('${day._id}','${cat._id}','${task._id}',this.checked)"
               id="chk-${task._id}" />
             <label class="task-title" for="chk-${task._id}">${escHtml(task.title)}</label>
-            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task">🗑️</button>
+            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
           </div>`;
       } else {
         const lockClass = task.completed ? 'locked-complete' : 'locked-incomplete';
@@ -455,16 +459,16 @@ function buildDayCard(day) {
           <div class="task-item ${lockClass}">
             <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled />
             <span class="task-title">${escHtml(task.title)}</span>
-            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task">🗑️</button>
+            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
           </div>`;
       }
     }
 
     const completedCount = cat.tasks.filter(t => t.completed).length;
     const editCatBtn = isToday
-      ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category">✏️</button>`
+      ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category"><i data-lucide="edit-3"></i></button>`
       : '';
-    const delCatBtn = `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category">🗑️</button>`;
+    const delCatBtn = `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category"><i data-lucide="trash-2"></i></button>`;
     categoriesHTML += `
       <div class="category-block">
         <div class="category-header">
@@ -482,12 +486,12 @@ function buildDayCard(day) {
   // Summary
   const summaryInner = isToday
     ? `<textarea class="summary-edit" id="summary-edit-${day._id}" rows="3">${escHtml(day.summary || '')}</textarea>
-       <button class="summary-save-btn ripple" onclick="saveSummary('${day._id}')">💾 Save Note</button>`
+       <button class="summary-save-btn ripple" onclick="saveSummary('${day._id}')"><i data-lucide="save"></i> Save Note</button>`
     : `<p class="summary-text">${escHtml(day.summary || '(no notes for this day)')}</p>`;
 
   // Add category button (today only)
   const addCatBtn = isToday
-    ? `<div class="add-category-row"><button class="btn-add-cat ripple" onclick="openAddCategoryModal('${day._id}')">＋ Add Category</button></div>`
+    ? `<div class="add-category-row"><button class="btn-add-cat ripple" onclick="openAddCategoryModal('${day._id}')"><i data-lucide="plus-circle"></i> Add Category</button></div>`
     : '';
 
   card.innerHTML = `
@@ -496,7 +500,7 @@ function buildDayCard(day) {
         <span class="card-date">${formatDisplayDate(day.date)}</span>
         <span class="card-day-name">${getDayName(day.date)}</span>
       </div>
-      <span class="card-badge ${isToday ? 'badge-today' : (isFuture ? 'badge-future' : 'badge-past')}">${isToday ? '✨ Today' : (isFuture ? '⏳ Future' : 'Past')}</span>
+      <span class="card-badge ${isToday ? 'badge-today' : (isFuture ? 'badge-future' : 'badge-past')}">${isToday ? '<i data-lucide="sparkles"></i> Today' : (isFuture ? '<i data-lucide="clock"></i> Future' : 'Past')}</span>
     </div>
 
     <div class="progress-section">
@@ -516,9 +520,9 @@ function buildDayCard(day) {
     ${addCatBtn}
 
     <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')">
-      <span>📝</span>
+      <span><i data-lucide="file-text"></i></span>
       <span>Notes</span>
-      <span class="summary-chevron">▼</span>
+      <span class="summary-chevron"><i data-lucide="chevron-down"></i></span>
     </button>
     <div class="summary-content" id="summary-content-${day._id}">
       <div class="summary-inner">${summaryInner}</div>
@@ -527,12 +531,12 @@ function buildDayCard(day) {
     <!-- Always-visible Log Win and Save Template buttons -->
     <div class="ach-add-row">
       <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')">🏆 Log a Acheivement</button>
+        <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')"><i data-lucide="trophy"></i> Log a Acheivement</button>
         <span class="ach-no-progress-note">doesn't affect progress</span>
       </div>
       <div style="display:flex; gap:10px;">
-        <button class="btn-add-leetcode ripple" onclick="openLeetCodeProblemModal('${day._id}','${day.date}')" title="Add LeetCode problem" id="leetcode-btn-${day._id}">🎯 LeetCode</button>
-        <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')">💾 Save Template</button>
+        <button class="btn-add-leetcode ripple" onclick="openLeetCodeProblemModal('${day._id}','${day.date}')" title="Add LeetCode problem" id="leetcode-btn-${day._id}"><i data-lucide="target"></i> LeetCode</button>
+        <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')"><i data-lucide="save"></i> Save Template</button>
       </div>
     </div>
   `;
@@ -547,6 +551,13 @@ function buildDayCard(day) {
 
   // Load achievements for this card asynchronously (non-blocking)
   loadDayAchievements(day._id, card);
+
+  // Initialize Lucide icons after building the card content
+  if (window.lucide) {
+    setTimeout(() => {
+      lucide.createIcons({ root: card });
+    }, 10);
+  }
 
   return card;
 }
@@ -725,10 +736,10 @@ function addCategoryField() {
   item.innerHTML = `
     <div class="cat-top-row">
       <input type="text" class="form-control" placeholder="Category name (e.g. Work, Fitness...)" id="cat-name-${idx}" />
-      <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove">✕</button>
+      <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="x"></i></button>
     </div>
     <div class="tasks-builder" id="tasks-build-${idx}"></div>
-    <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})">＋ Add Task</button>
+    <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
   `;
   builder.appendChild(item);
   addTaskField(idx);
@@ -989,8 +1000,9 @@ function openEditGoalModal(goalId) {
 
   editingGoalId = goalId;
   document.getElementById('edit-goal-title').value = goal.title;
-  document.getElementById('edit-goal-deadline-display').textContent =
-    `📅 Deadline: ${formatDisplayDate(goal.deadline.split('T')[0])}`;
+  document.getElementById('edit-goal-deadline-display').innerHTML =
+    `<i data-lucide="calendar"></i> Deadline: ${formatDisplayDate(goal.deadline.split('T')[0])}`;
+  if (window.lucide) lucide.createIcons({ root: document.getElementById('edit-goal-deadline-display') });
 
   const builder = document.getElementById('edit-goal-tasks-builder');
   builder.innerHTML = '';
@@ -1009,7 +1021,7 @@ function addEditGoalTaskField(title = '', taskId = '', completed = false) {
   row.dataset.completed = completed ? 'true' : 'false';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Subtask title..." value="${escHtml(title)}" />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="x"></i></button>
   `;
   builder.appendChild(row);
 }
@@ -1068,15 +1080,15 @@ async function loadGoals() {
     renderGoals();
   } catch (err) {
     console.error('Error loading goals:', err);
-    let errorMessage = '⚠️ Failed to load goals. Please check your connection.';
+    let errorMessage = '<i data-lucide="alert-triangle"></i> Failed to load goals. Please check your connection.';
 
     if (err.message) {
       if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
-        errorMessage = '⚠️ Too many requests. Please try again later.';
+        errorMessage = '<i data-lucide="alert-triangle"></i> Too many requests. Please try again later.';
       } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
-        errorMessage = '⚠️ Server offline. Please check your connection.';
+        errorMessage = '<i data-lucide="alert-triangle"></i> Server offline. Please check your connection.';
       } else {
-        errorMessage = `⚠️ ${err.message}`;
+        errorMessage = `<i data-lucide="alert-triangle"></i> ${err.message}`;
       }
     }
 
@@ -1091,10 +1103,11 @@ function renderGoals() {
   if (!allGoals.length) {
     container.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">🎯</span>
+        <span class="empty-icon"><i data-lucide="target"></i></span>
         <h3>No goals yet</h3>
         <p>Set a long-term goal to stay focused on what matters.</p>
       </div>`;
+    if (window.lucide) lucide.createIcons({ root: container });
     if (window.gsap) gsap.from('.empty-state', { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' });
     return;
   }
@@ -1129,13 +1142,13 @@ function buildGoalCard(goal) {
     dlText  = '✅ Completed!';
   } else if (dl < 0) {
     dlClass = 'days-overdue';
-    dlText  = `⚠️ Overdue by ${Math.abs(dl)}d`;
+    dlText  = `<i data-lucide="alert-triangle"></i> Overdue by ${Math.abs(dl)}d`;
   } else if (dl <= 2) {
     dlClass = 'days-danger';
-    dlText  = `🚨 ${dl}d left!`;
+    dlText  = `<i data-lucide="alert-circle"></i> ${dl}d left!`;
   } else if (dl <= 5) {
     dlClass = 'days-warn';
-    dlText  = `⏰ ${dl} days left`;
+    dlText  = `<i data-lucide="clock"></i> ${dl} days left`;
   } else {
     dlClass = 'days-safe';
     dlText  = `${dl} days left`;
@@ -1164,8 +1177,8 @@ function buildGoalCard(goal) {
   // Show actions only when not completed
   const actionsHTML = isComplete ? '' : `
     <div class="goal-actions">
-      ${dl >= 0 ? `<button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;">✏️ Edit</button>` : ''}
-      <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')">🗑 Delete</button>
+      ${dl >= 0 ? `<button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;"><i data-lucide="edit-3"></i> Edit</button>` : ''}
+      <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')"><i data-lucide="trash-2"></i> Delete</button>
     </div>`;
 
   card.innerHTML = `
@@ -1173,7 +1186,7 @@ function buildGoalCard(goal) {
       <span class="goal-title">${escHtml(goal.title)}</span>
       <div class="goal-meta">
         <span class="days-left-badge ${dlClass}">${dlText}</span>
-        <span class="goal-deadline">📅 ${formatDisplayDate(goal.deadline.split('T')[0])}</span>
+        <span class="goal-deadline"><i data-lucide="calendar"></i> ${formatDisplayDate(goal.deadline.split('T')[0])}</span>
       </div>
     </div>
 
@@ -1201,6 +1214,13 @@ function buildGoalCard(goal) {
 
     ${actionsHTML}
   `;
+
+  // Initialize Lucide icons after building the goal card
+  if (window.lucide) {
+    setTimeout(() => {
+      lucide.createIcons({ root: card });
+    }, 10);
+  }
 
   return card;
 }
@@ -1305,7 +1325,7 @@ function addGoalTaskField() {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Subtask title..." />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="x"></i></button>
   `;
   builder.appendChild(row);
 }
@@ -1365,15 +1385,15 @@ async function loadGroups() {
     renderGroups();
   } catch (err) {
     console.error('Error loading groups:', err);
-    let errorMessage = '⚠️ Failed to load groups. Please check your connection.';
+    let errorMessage = '<i data-lucide="alert-triangle"></i> Failed to load groups. Please check your connection.';
 
     if (err.message) {
       if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
-        errorMessage = '⚠️ Too many requests. Please try again later.';
+        errorMessage = '<i data-lucide="alert-triangle"></i> Too many requests. Please try again later.';
       } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
-        errorMessage = '⚠️ Server offline. Please check your connection.';
+        errorMessage = '<i data-lucide="alert-triangle"></i> Server offline. Please check your connection.';
       } else {
-        errorMessage = `⚠️ ${err.message}`;
+        errorMessage = `<i data-lucide="alert-triangle"></i> ${err.message}`;
       }
     }
 
@@ -1393,30 +1413,30 @@ function renderGroups() {
   const joinedPublic = allJoinedGroups.filter(g => g.isPublic);
 
   // ── Section 1: My Private Teams ─────────────────────────
-  renderGroupSection(container, '👑 My Private Teams', myPrivateTeams, true, '🔒', 'You haven\'t created any private teams yet.');
+  renderGroupSection(container, '<i data-lucide="crown"></i> My Private Teams', myPrivateTeams, true, 'lock', 'You haven\'t created any private teams yet.');
 
   // ── Section 2: Joined Private Teams ─────────────────────
   const joinedPrivateSection = document.createElement('div');
   joinedPrivateSection.className = 'groups-section';
   let jpHTML = `
     <div class="groups-section-header">
-      <h2 class="groups-section-title">🔗 Joined Private Teams</h2>
+      <h2 class="groups-section-title"><i data-lucide="link"></i> Joined Private Teams</h2>
       <button class="btn-ghost ripple groups-join-btn" onclick="openJoinGroupModal()">
-        <span>＋</span> Join with Code
+        <span><i data-lucide="plus"></i></span> Join with Code
       </button>
     </div>
   `;
   if (joinedPrivate.length === 0) {
     jpHTML += `
       <div class="group-empty-card">
-        <span class="group-empty-icon">👫</span>
+        <span class="group-empty-icon"><i data-lucide="users"></i></span>
         <p>You haven't joined any private teams yet.</p>
       </div>
     `;
   } else {
     jpHTML += '<div class="groups-list">';
     for (const group of joinedPrivate) {
-      jpHTML += renderSingleGroupCard(group, '🤝');
+      jpHTML += renderSingleGroupCard(group, 'handshake');
     }
     jpHTML += '</div>';
   }
@@ -1424,7 +1444,7 @@ function renderGroups() {
   container.appendChild(joinedPrivateSection);
 
   // ── Section 3: Joined Public Groups ──────────────────────
-  renderGroupSection(container, '🌍 Joined Public Groups', joinedPublic, false, '🌐', 'You haven\'t joined any public groups yet.');
+  renderGroupSection(container, '<i data-lucide="globe"></i> Joined Public Groups', joinedPublic, false, 'globe', 'You haven\'t joined any public groups yet.');
 
   // ── Section 4: Available Public Groups ───────────────────
   if (availablePublicGroups.length > 0) {
@@ -1436,7 +1456,7 @@ function renderGroups() {
     publicSection.className = 'groups-section';
     let html = `
       <div class="groups-section-header">
-        <h2 class="groups-section-title">✨ Discover Public Groups</h2>
+        <h2 class="groups-section-title"><i data-lucide="sparkles"></i> Discover Public Groups</h2>
       </div>
       <div class="groups-list">
     `;
@@ -1444,7 +1464,7 @@ function renderGroups() {
     for (const group of availablePublicGroups) {
       const iconHtml = group.icon 
         ? `<img src="${group.icon}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
-        : `<span class="group-emoji">🌐</span>`;
+        : `<span class="group-emoji"><i data-lucide="globe"></i></span>`;
 
       html += `
         <div class="group-card public-discovery-card" style="border-color: var(--green); box-shadow: 4px 4px 0 rgba(34, 197, 150, 0.15);">
@@ -1458,7 +1478,10 @@ function renderGroups() {
           ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
           <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.members.length} members</p>
           <div style="display: flex; justify-content: center; width: 100%;">
-            <button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--green); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800;" onclick="joinPublicGroup('${group._id}', '${escJs(group.name)}')">Join Group</button>
+            ${group.requests && group.requests.includes(userId) ? 
+              `<button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--red); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800; color: #fff;" onclick="cancelJoinRequest('${group._id}', '${escJs(group.name)}')"><i data-lucide="x-circle"></i> Cancel Request</button>` :
+              `<button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--green); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800;" onclick="joinPublicGroup('${group._id}', '${escJs(group.name)}')"><i data-lucide="user-plus"></i> Request to Join</button>`
+            }
           </div>
         </div>
       `;
@@ -1479,6 +1502,7 @@ function renderGroups() {
       clearProps: 'all',
     });
   }
+  if (window.lucide) lucide.createIcons({ root: container });
 }
 
 function renderGroupSection(container, title, groups, isOwnerSection, emoji, emptyMsg) {
@@ -1494,7 +1518,7 @@ function renderGroupSection(container, title, groups, isOwnerSection, emoji, emp
   if (groups.length === 0) {
     html += `
       <div class="group-empty-card">
-        <span class="group-empty-icon">${isOwnerSection ? '🏗️' : '👫'}</span>
+        <span class="group-empty-icon"><i data-lucide="${isOwnerSection ? 'construction' : 'users'}"></i></span>
         <p>${emptyMsg}</p>
       </div>
     `;
@@ -1507,6 +1531,7 @@ function renderGroupSection(container, title, groups, isOwnerSection, emoji, emp
   }
   section.innerHTML = html;
   container.appendChild(section);
+  if (window.lucide) lucide.createIcons({ root: section });
 }
 
 function renderSingleGroupCard(group, emoji) {
@@ -1516,7 +1541,7 @@ function renderSingleGroupCard(group, emoji) {
   
   const iconHtml = group.icon 
     ? `<img src="${group.icon}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
-    : `<span class="group-emoji">${emoji}</span>`;
+    : `<span class="group-emoji"><i data-lucide="${emoji}"></i></span>`;
 
   return `
     <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}">
@@ -1524,17 +1549,22 @@ function renderSingleGroupCard(group, emoji) {
         <div class="group-name-wrap">
           ${iconHtml}
           <span class="group-name">${escHtml(group.name)}</span>
-          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${group._id}', '${escJs(group.name)}', '${group.icon || ''}', '${escJs(group.description || '')}')">✏️</button>` : ''}
-          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${group._id}')">🗑️</button>` : ''}
+          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${group._id}', '${escJs(group.name)}', '${group.icon || ''}', '${escJs(group.description || '')}')"><i data-lucide="edit-3"></i></button>` : ''}
+          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${group._id}')"><i data-lucide="trash-2"></i></button>` : ''}
         </div>
         ${!isPublic && isMyOwned ? `
           <div class="team-code-wrap">
             <span class="team-code-label">Join Code</span>
             <button class="team-code-pill" onclick="copyTeamCode('${group.code}')" title="Click to copy">
               <span class="team-code-text">${group.code}</span>
-              <span class="team-code-copy">📋</span>
+              <span class="team-code-copy"><i data-lucide="copy"></i></span>
             </button>
           </div>
+        ` : ''}
+        ${isMyOwned && group.requests && group.requests.length > 0 ? `
+          <button class="btn-ghost ripple" style="padding: 4px 10px; font-size: 11px; background: var(--pink); color: #fff; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); font-weight: 800; text-transform: uppercase;" onclick="openRequestsModal('${group._id}')">
+            <i data-lucide="user-plus"></i> ${group.requests.length} Request${group.requests.length !== 1 ? 's' : ''}
+          </button>
         ` : ''}
         ${!isMyOwned ? `<span class="group-owner-badge" style="border: 1px solid var(--text-muted); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px;">by ${escHtml(group.owner.name || 'Unknown')}</span>` : ''}
       </div>
@@ -1545,16 +1575,111 @@ function renderSingleGroupCard(group, emoji) {
       </div>
       ${group.members.length > 10 ? `
         <div id="members-load-more-${group._id}" style="margin-top:10px;">
-          <button class="btn-ghost ripple" style="font-size:12px; width:100%;" onclick="loadMoreMembers('${group._id}')">Load More Members ⬇️</button>
+          <button class="btn-ghost ripple" style="font-size:12px; width:100%;" onclick="loadMoreMembers('${group._id}')">Load More Members <i data-lucide="chevron-down"></i></button>
         </div>
       ` : ''}
       ${!isMyOwned ? `
         <div style="margin-top:12px;text-align:right;">
-          <button class="btn-ghost ripple" style="color:#ef4444;font-size:13px;padding:6px 12px;" onclick="leaveGroup('${group._id}')">🚪 Leave ${isPublic ? 'Group' : 'Team'}</button>
+          <button class="btn-ghost ripple" style="color:#ef4444;font-size:13px;padding:6px 12px;" onclick="leaveGroup('${group._id}')"><i data-lucide="log-out"></i> Leave ${isPublic ? 'Group' : 'Team'}</button>
         </div>
       ` : ''}
     </div>
   `;
+}
+
+// ── Join Requests Management ──────────────────────────────
+async function openRequestsModal(groupId) {
+  const container = document.getElementById('requests-list-container');
+  container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading requests...</p></div>`;
+  openModal('modal-join-requests');
+
+  try {
+    const requests = await apiFetch(`${API}/api/groups/${groupId}/requests`);
+    
+    if (requests.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding: 20px 0;">
+          <span class="empty-icon"><i data-lucide="users"></i></span>
+          <h3>No pending requests</h3>
+          <p>You're all caught up!</p>
+        </div>`;
+      if (window.lucide) lucide.createIcons({ root: container });
+      return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+    for (const r of requests) {
+      const initial = (r.name || '?').charAt(0).toUpperCase();
+      const avatarHtml = r.profilePicture 
+        ? `<img src="${r.profilePicture}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;cursor:pointer;" onclick="openLightbox(this.src)" title="View Photo" />`
+        : `<div style="width:40px;height:40px;border-radius:50%;background:var(--pink);border:2px solid var(--black);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;">${initial}</div>`;
+
+      html += `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 2px 2px 0 var(--black);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${avatarHtml}
+            <div>
+              <p style="font-weight: 800; margin: 0; cursor:pointer;" onclick="closeModal('modal-join-requests'); openPublicProfile('${r.username}')" title="View Profile">${escHtml(r.name)}</p>
+              <p style="font-size: 12px; color: var(--text-muted); margin: 0;">@${escHtml(r.username)}</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-primary ripple" style="padding: 8px; background: var(--green); min-width: 40px;" onclick="handleRequest('${groupId}', '${r._id}', 'approve', this)" title="Approve">
+              <i data-lucide="check"></i>
+            </button>
+            <button class="btn-primary ripple" style="padding: 8px; background: var(--red); min-width: 40px;" onclick="handleRequest('${groupId}', '${r._id}', 'reject', this)" title="Reject">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    if (window.lucide) lucide.createIcons({ root: container });
+  } catch (err) {
+    container.innerHTML = `<p style="color: var(--red); text-align: center;"><i data-lucide="alert-triangle"></i> Failed to load requests.</p>`;
+    if (window.lucide) lucide.createIcons({ root: container });
+  }
+}
+
+async function handleRequest(groupId, targetUserId, action, btn) {
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i>';
+  if (window.lucide) lucide.createIcons({ root: btn });
+
+  try {
+    const res = await apiFetch(`${API}/api/groups/${groupId}/requests/${targetUserId}`, {
+      method: 'POST',
+      body: JSON.stringify({ action })
+    });
+
+    showToast(res.message, 'success');
+    // Reload modal and main groups list
+    openRequestsModal(groupId);
+    loadGroups(); 
+  } catch (err) {
+    showToast(err.message || 'Failed to process request.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (window.lucide) lucide.createIcons({ root: btn });
+  }
+}
+
+async function cancelJoinRequest(groupId, groupName) {
+  if (!confirm(`Are you sure you want to cancel your join request for "${groupName}"?`)) return;
+
+  try {
+    const res = await apiFetch(`${API}/api/groups/${groupId}/requests`, {
+      method: 'DELETE'
+    });
+
+    showToast(res.message, 'success');
+    loadGroups(); // Refresh discovery list
+  } catch (err) {
+    showToast(err.message || 'Failed to cancel request.', 'error');
+  }
 }
 
 const groupMembersState = {};
@@ -1581,6 +1706,7 @@ async function loadMoreMembers(groupId) {
     
     const newMembersHtml = buildMembersHTML(data.members, groupId, isOwner);
     row.insertAdjacentHTML('beforeend', newMembersHtml);
+    if (window.lucide) lucide.createIcons({ root: row });
 
     if (!data.pagination.hasMore) {
       document.getElementById(`members-load-more-${groupId}`).style.display = 'none';
@@ -1588,7 +1714,8 @@ async function loadMoreMembers(groupId) {
   } catch (err) {
     showToast('Failed to load more members.', 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Load More Members ⬇️';
+    btn.disabled = false; btn.innerHTML = 'Load More Members <i data-lucide="chevron-down"></i>';
+    if (window.lucide) lucide.createIcons({ root: btn });
   }
 }
 
@@ -1606,8 +1733,8 @@ async function confirmJoinPublicGroup() {
   btn.disabled = true; btn.textContent = 'Joining...';
   
   try {
-    await apiFetch(`${API}/api/groups/${groupId}/join-public`, { method: 'POST' });
-    showToast('Joined public group successfully! 🌿', 'success');
+    const res = await apiFetch(`${API}/api/groups/${groupId}/join-public`, { method: 'POST' });
+    showToast(res.message || 'Joined successfully!', 'success');
     closeModal('modal-join-public-confirm');
     loadGroups();
   } catch (err) {
@@ -1699,7 +1826,7 @@ function openCreateGroupModal(isPublic = false) {
   const btn = document.getElementById('submit-create-group-btn');
 
   if (isPublic) {
-    title.innerHTML = '🌍 Create Public Group';
+    title.innerHTML = '<i data-lucide="globe"></i> Create Public Group';
     warning.style.display = 'block';
     warning.style.background = 'rgba(34,197,94,0.1)';
     warning.style.borderColor = 'var(--green)';
@@ -1708,7 +1835,7 @@ function openCreateGroupModal(isPublic = false) {
     btn.textContent = 'Create Public Group';
     btn.style.background = 'var(--green)';
   } else {
-    title.innerHTML = '👥 Create Private Team';
+    title.innerHTML = '<i data-lucide="users"></i> Create Private Team';
     warning.style.display = 'none';
     hint.style.display = 'block';
     btn.textContent = 'Create Private Team';
@@ -1726,6 +1853,11 @@ async function submitCreateGroup() {
 
   if (name.length < 3 || name.length > 25) {
     showToast('Group name must be between 3 and 25 characters.', 'warn');
+    return;
+  }
+
+  if (!icon) {
+    showToast('A group icon is mandatory. Please upload an image.', 'warn');
     return;
   }
 
@@ -1771,7 +1903,7 @@ async function submitJoinGroup() {
       body: JSON.stringify({ userId, code }),
     });
     closeModal('modal-join-group');
-    showToast(`Joined "${group.name}"! 🎉`, 'success');
+    showToast(`Joined "${group.name}"! <i data-lucide="party-popper"></i>`, 'success');
     loadGroups(); // refresh
   } catch (err) {
     showToast(err.message, 'error');
@@ -1887,7 +2019,8 @@ async function openMemberTasks(memberId, memberName) {
   const titleEl = document.getElementById('member-tasks-title');
   const bodyEl  = document.getElementById('member-tasks-body');
 
-  titleEl.innerHTML = `📋 ${escHtml(memberName)}'s Tasks`;
+  titleEl.innerHTML = `<i data-lucide="clipboard-list"></i> ${escHtml(memberName)}'s Tasks`;
+  if (window.lucide) lucide.createIcons({ root: titleEl });
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   openModal('modal-member-tasks');
   _currentMemberId   = memberId;
@@ -1925,24 +2058,26 @@ async function loadMemberDays() {
     }
 
     const isTodayDone = memberCurrentStreak > 0; // Simplified check
-    const icon = isTodayDone ? '🔥' : (memberCurrentStreak > 0 ? '❕' : '🌱');
+    const icon = isTodayDone ? '🔥' : (memberCurrentStreak > 0 ? '<i data-lucide="alert-circle"></i>' : '<i data-lucide="sprout"></i>');
     const streakBadge = memberCurrentStreak > 0
       ? ` <span class="member-streak-badge">${icon} ${memberCurrentStreak} day streak</span>`
       : ` <span class="member-streak-badge member-streak-zero">${icon} No streak yet</span>`;
 
     const highestBadge = memberHighestStreak > 0
-      ? ` <span class="member-streak-badge" style="background:#fef3c7; color:#d97706;">🏆 ${memberHighestStreak} highest</span>`
+      ? ` <span class="member-streak-badge" style="background:#fef3c7; color:#d97706;"><i data-lucide="trophy"></i> ${memberHighestStreak} highest</span>`
       : '';
 
-    titleEl.innerHTML = `📋 ${escHtml(_currentMemberName)}'s Tasks${streakBadge}${highestBadge}`;
+    titleEl.innerHTML = `<i data-lucide="clipboard-list"></i> ${escHtml(_currentMemberName)}'s Tasks${streakBadge}${highestBadge}`;
+    if (window.lucide) lucide.createIcons({ root: titleEl });
 
     if (!memberDaysData.length) {
       bodyEl.innerHTML = `
         <div class="empty-state" style="padding:40px 0">
-          <span class="empty-icon">📭</span>
+          <span class="empty-icon"><i data-lucide="mailbox"></i></span>
           <h3>No cards yet</h3>
           <p>${escHtml(_currentMemberName)} hasn't created any day cards yet.</p>
         </div>`;
+      if (window.lucide) lucide.createIcons({ root: bodyEl });
       return;
     }
 
@@ -1998,7 +2133,7 @@ async function loadMemberDays() {
       html += `
         <div style="text-align:center; margin-top:20px;">
           <button class="btn-ghost ripple" onclick="loadMoreMemberDays()" style="padding:10px 20px; border-radius:8px;">
-            Load More Days ⬇️
+            Load More Days <i data-lucide="chevron-down"></i>
           </button>
         </div>`;
     }
@@ -2013,11 +2148,11 @@ async function loadMemberDays() {
           if (!achs.length) return;
           const dayCard = bodyEl.querySelector(`[data-day-id="${day._id}"]`);
           if (!dayCard) return;
-          let achHtml = `<div class="achievements-section" style="margin-top:10px;"><div class="achievements-section-header"><span class="achievements-section-label">🏆 Wins</span></div>`;
+          let achHtml = `<div class="achievements-section" style="margin-top:10px;"><div class="achievements-section-header"><span class="achievements-section-label"><i data-lucide="trophy"></i> Wins</span></div>`;
           for (const a of achs) {
             const linksHTML = buildLinksHTML(a.links || []);
             const descHTML  = a.description ? `<p class="ach-desc">${escHtml(a.description)}</p>` : '';
-            achHtml += `<div class="achievement-item"><span class="achievement-item-title">🎖️ ${escHtml(a.title)}</span>${descHTML}<div class="ach-links-row">${linksHTML}</div></div>`;
+            achHtml += `<div class="achievement-item"><span class="achievement-item-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</span>${descHTML}<div class="ach-links-row">${linksHTML}</div></div>`;
           }
           achHtml += '</div>';
           dayCard.insertAdjacentHTML('beforeend', achHtml);
@@ -2025,7 +2160,7 @@ async function loadMemberDays() {
       })();
     }
   } catch (err) {
-    bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load tasks.</p>`;
+    bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center"><i data-lucide="alert-triangle"></i> Failed to load tasks.</p>`;
   }
 }
 
@@ -2039,7 +2174,7 @@ async function openMemberAllAchievements() {
   if (!_currentMemberId) return;
   const bodyEl = document.getElementById('member-tasks-body');
   const titleEl = document.getElementById('member-tasks-title');
-  titleEl.innerHTML = `<button id="btn-back-to-tasks" style="background:var(--bg-card);border:var(--border-2);border-radius:var(--r-sm);padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;margin-right:8px;box-shadow:2px 2px 0 var(--black);font-family:'Inter',sans-serif;text-transform:uppercase;color:var(--text);" title="Back to daily tasks">← Back</button>🏆 ${escHtml(_currentMemberName)}'s Achievements`;
+  titleEl.innerHTML = `<button id="btn-back-to-tasks" style="background:var(--bg-card);border:var(--border-2);border-radius:var(--r-sm);padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;margin-right:8px;box-shadow:2px 2px 0 var(--black);font-family:'Inter',sans-serif;text-transform:uppercase;color:var(--text);" title="Back to daily tasks"><i data-lucide="arrow-left"></i> Back</button><i data-lucide="trophy"></i> ${escHtml(_currentMemberName)}'s Achievements`;
   const backBtn = document.getElementById('btn-back-to-tasks');
   if (backBtn) backBtn.addEventListener('click', () => openMemberTasks(_currentMemberId, _currentMemberName));
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
@@ -2052,7 +2187,7 @@ async function openMemberAllAchievements() {
       });
       if (resp.status === 403) {
         bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0">
-          <span class="empty-icon">\uD83D\uDD12</span>
+          <span class="empty-icon"><i data-lucide="lock"></i></span>
           <h3>Achievements are Private</h3>
           <p>${escHtml(_currentMemberName)} has chosen to hide their achievements.</p>
         </div>`;
@@ -2061,7 +2196,7 @@ async function openMemberAllAchievements() {
       achs = await resp.json();
     } catch (_) {}
     if (!achs.length) {
-      bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0"><span class="empty-icon">🏆</span><h3>No achievements yet</h3><p>${escHtml(_currentMemberName)} hasn't logged any wins yet.</p></div>`;
+      bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0"><span class="empty-icon"><i data-lucide="trophy"></i></span><h3>No achievements yet</h3><p>${escHtml(_currentMemberName)} hasn't logged any wins yet.</p></div>`;
       return;
     }
     let html = '<div class="member-days-list">';
@@ -2082,8 +2217,12 @@ async function openMemberAllAchievements() {
     }
     html += '</div>';
     bodyEl.innerHTML = html;
+    if (window.lucide) {
+      lucide.createIcons({ root: bodyEl });
+      lucide.createIcons({ root: titleEl });
+    }
   } catch (err) {
-    bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load achievements.</p>`;
+    bodyEl.innerHTML = `<p style="color:#ef4444;text-align:center"><i data-lucide="alert-triangle"></i> Failed to load achievements.</p>`;
   }
 }
 
@@ -2110,7 +2249,7 @@ async function loadDayAchievements(dayId, cardEl) {
 function buildLinksHTML(links, cls = 'ach-link') {
   if (!links || !links.length) return '';
   return links.map((l, i) =>
-    `<a class="${cls}" href="${escHtml(l)}" target="_blank" rel="noopener noreferrer">🔗 Link ${links.length > 1 ? i + 1 : 'Proof'}</a>`
+    `<a class="${cls}" href="${escHtml(l)}" target="_blank" rel="noopener noreferrer"><i data-lucide="link"></i> Link ${links.length > 1 ? i + 1 : 'Proof'}</a>`
   ).join('');
 }
 
@@ -2124,7 +2263,7 @@ function renderDayAchievements(dayId, achievements, cardEl) {
   const section = document.createElement('div');
   section.className = 'achievements-section';
 
-  let html = `<div class="achievements-section-header"><span class="achievements-section-label">🏆 Wins Logged</span></div>`;
+  let html = `<div class="achievements-section-header"><span class="achievements-section-label"><i data-lucide="trophy"></i> Wins Logged</span></div>`;
 
   for (const a of achievements) {
     const linksHTML = buildLinksHTML(a.links || []);
@@ -2132,10 +2271,10 @@ function renderDayAchievements(dayId, achievements, cardEl) {
     html += `
       <div class="achievement-item" id="ach-item-${a._id}">
         <div class="achievement-item-top">
-          <span class="achievement-item-title">🎖️ ${escHtml(a.title)}</span>
+          <span class="achievement-item-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</span>
           <div class="achievement-item-actions">
-            <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit">✏️</button>
-            <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', '${dayId}')" title="Delete">🗑</button>
+            <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3"></i></button>
+            <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', '${dayId}')" title="Delete"><i data-lucide="trash-2"></i></button>
           </div>
         </div>
         ${descHTML}
@@ -2147,6 +2286,7 @@ function renderDayAchievements(dayId, achievements, cardEl) {
   const addRow = cardEl.querySelector('.ach-add-row');
   if (addRow) cardEl.insertBefore(section, addRow);
   else cardEl.appendChild(section);
+  if (window.lucide) lucide.createIcons({ root: section });
 }
 
 // ── Achievements Page ──────────────────────────────────────
@@ -2163,18 +2303,6 @@ async function loadAchievements() {
     renderAchievements();
   } catch (err) {
     console.error('Error loading achievements:', err);
-    let errorMessage = '⚠️ Failed to load achievements. Please check your connection.';
-
-    if (err.message) {
-      if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
-        errorMessage = '⚠️ Too many requests. Please try again later.';
-      } else if (err.message.includes('Server offline') || err.message.includes('fetch')) {
-        errorMessage = '⚠️ Server offline. Please check your connection.';
-      } else {
-        errorMessage = `⚠️ ${err.message}`;
-      }
-    }
-
     container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
@@ -2188,7 +2316,7 @@ function renderAchievements() {
   privacyBanner.className = 'ach-privacy-banner';
   privacyBanner.innerHTML = `
     <div class="ach-privacy-info">
-      <span class="ach-privacy-icon" id="ach-privacy-icon">${achievementsPublic ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDD12'}</span>
+      <span class="ach-privacy-icon" id="ach-privacy-icon">${achievementsPublic ? '<i data-lucide="eye"></i>' : '<i data-lucide="lock"></i>'}</span>
       <div>
         <p class="ach-privacy-title">Achievement Visibility</p>
         <p class="ach-privacy-label" id="ach-privacy-label">${achievementsPublic ? 'Visible to group members' : 'Hidden from group members'}</p>
@@ -2204,7 +2332,7 @@ function renderAchievements() {
   if (!allAchievements.length) {
     container.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">🏆</span>
+        <span class="empty-icon"><i data-lucide="trophy"></i></span>
         <h3>No achievements yet</h3>
         <p>Log your first win from any Daily Card!</p>
       </div>`;
@@ -2215,6 +2343,7 @@ function renderAchievements() {
   const fragment = document.createDocumentFragment();
   for (const a of allAchievements) fragment.appendChild(buildAchievementPageCard(a));
   container.appendChild(fragment);
+  if (window.lucide) lucide.createIcons({ root: container });
 
   if (window.gsap) {
     gsap.from('.achievement-page-card', { opacity: 0, y: 30, duration: 0.5, stagger: 0.07, ease: 'power3.out', clearProps: 'all' });
@@ -2234,14 +2363,15 @@ async function toggleAchievementPrivacy() {
     });
     achievementsPublic = res.achievementsPublic;
     if (toggleEl) { toggleEl.checked = achievementsPublic; toggleEl.disabled = false; }
-    if (iconEl)   iconEl.textContent  = achievementsPublic ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDD12';
+    if (iconEl)   iconEl.innerHTML  = achievementsPublic ? '<i data-lucide="eye"></i>' : '<i data-lucide="lock"></i>';
     if (labelEl)  labelEl.textContent = achievementsPublic ? 'Visible to group members' : 'Hidden from group members';
     showToast(
       achievementsPublic
-        ? '\uD83D\uDC41\uFE0F Achievements visible to your groups'
-        : '\uD83D\uDD12 Achievements hidden from group members',
+        ? 'Achievements visible to your groups'
+        : 'Achievements hidden from group members',
       'info'
     );
+    if (window.lucide) lucide.createIcons({ root: iconEl });
   } catch (err) {
     if (toggleEl) { toggleEl.checked = achievementsPublic; toggleEl.disabled = false; }
     showToast('Failed to update privacy setting.', 'error');
@@ -2260,16 +2390,17 @@ function buildAchievementPageCard(a) {
     <div class="ach-page-top">
       <div>
         <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
-        <h3 class="ach-page-title">🎖️ ${escHtml(a.title)}</h3>
+        <h3 class="ach-page-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</h3>
       </div>
       <div class="ach-page-actions">
-        <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit">✏️</button>
-        <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', null)" title="Delete">🗑</button>
+        <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3"></i></button>
+        <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', null)" title="Delete"><i data-lucide="trash-2"></i></button>
       </div>
     </div>
     ${descHTML}
     <div class="ach-links-row">${linksHTML}</div>
   `;
+  if (window.lucide) lucide.createIcons({ root: card });
   return card;
 }
 
@@ -2329,7 +2460,8 @@ async function submitAddAchievement() {
   if (links.length > 0 && hasInvalidLinks('ach-links-builder') && !_achAddLinkPending) {
     warnEl.style.display = 'block';
     _achAddLinkPending = true;
-    btn.textContent = '⚠️ Confirm & Save';
+    btn.innerHTML = '<i data-lucide="alert-triangle"></i> Confirm & Save';
+    if (window.lucide) lucide.createIcons({ root: btn });
     return;
   }
   warnEl.style.display = 'none';
@@ -2353,7 +2485,7 @@ async function submitAddAchievement() {
       const dayAchs = await apiFetch(`${API}/api/achievements/day/${dayId}`);
       renderDayAchievements(dayId, dayAchs, cardEl);
     }
-    showToast('Achievement logged! 🎉', 'success');
+    showToast(`Achievement logged! <i data-lucide="party-popper"></i>`, 'success');
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -2400,7 +2532,8 @@ async function submitEditAchievement() {
   if (links.length > 0 && hasInvalidLinks('edit-ach-links-builder') && !_achEditLinkPending) {
     warnEl.style.display = 'block';
     _achEditLinkPending = true;
-    btn.textContent = '⚠️ Confirm & Save';
+    btn.innerHTML = '<i data-lucide="alert-triangle"></i> Confirm & Save';
+    if (window.lucide) lucide.createIcons({ root: btn });
     return;
   }
   warnEl.style.display = 'none';
@@ -2630,6 +2763,7 @@ async function openProfileModal() {
 
     unameInput.value = res.username || '';
     if (res.username) {
+      localStorage.setItem('userUsername', res.username);
       unameInput.readOnly = true;
       if(unameHint) unameHint.style.display = 'none';
       if(unameWarn) unameWarn.style.display = 'block';
@@ -2702,6 +2836,10 @@ async function submitProfileSettings() {
       userProfilePicture = res.profilePicture;
       localStorage.setItem('userProfilePicture', userProfilePicture);
       updateNavAvatar();
+    }
+
+    if (res.username) {
+      localStorage.setItem('userUsername', res.username);
     }
 
     showToast('Profile updated successfully!', 'success');
@@ -2822,9 +2960,9 @@ async function verifyAndDeleteAccount() {
       .spinner { font-size: 40px; display: inline-block; animation: spin 2s linear infinite; }
     </style>
     <div style="text-align: center; padding: 20px 0;">
-      <div class="spinner">⏳</div>
+      <div class="spinner"><i data-lucide="loader-2" class="animate-spin"></i></div>
       <h3 style="color: var(--red); margin-top: 16px; margin-bottom: 8px; font-weight: 800;">DELETING ACCOUNT...</h3>
-      <p style="color: var(--text); font-weight: 700; background: var(--bg-muted); padding: 8px; border: 2px solid var(--black); border-radius: 4px; display: inline-block;">⚠️ DO NOT CLOSE OR REFRESH THIS PAGE ⚠️</p>
+      <p style="color: var(--text); font-weight: 700; background: var(--bg-muted); padding: 8px; border: 2px solid var(--black); border-radius: 4px; display: inline-block;"><i data-lucide="alert-triangle"></i> DO NOT CLOSE OR REFRESH THIS PAGE <i data-lucide="alert-triangle"></i></p>
       <p style="font-size: 14px; color: var(--text); margin-top: 12px; font-weight: 600;">Interrupting this process may cause data to not get deleted completely.</p>
     </div>
   `;
@@ -2976,8 +3114,8 @@ function renderTemplatesList() {
     item.innerHTML = `
       <div style="font-weight:800; font-size:14px; color:var(--text);">${escHtml(t.name)}</div>
       <div style="display:flex; gap:6px;">
-        <button class="btn-edit-ach ripple" onclick="openEditTemplateModal('${t._id}')">✏️</button>
-        <button class="btn-del-ach ripple" onclick="deleteTemplate('${t._id}')">🗑️</button>
+        <button class="btn-edit-ach ripple" onclick="openEditTemplateModal('${t._id}')"><i data-lucide="edit-3"></i></button>
+        <button class="btn-del-ach ripple" onclick="deleteTemplate('${t._id}')"><i data-lucide="trash-2"></i></button>
       </div>
     `;
     list.appendChild(item);
@@ -3114,11 +3252,12 @@ function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   if (input.type === 'password') {
     input.type = 'text';
-    btn.textContent = '🔓';
+    btn.innerHTML = '<i data-lucide="eye-off"></i>';
   } else {
     input.type = 'password';
-    btn.textContent = '👁️';
+    btn.innerHTML = '<i data-lucide="eye"></i>';
   }
+  if (window.lucide) lucide.createIcons({ root: btn });
 }
 
 // ── Init ───────────────────────────────────────────────────
@@ -3153,6 +3292,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNavAvatar();
       }
 
+      if (user.username) {
+        localStorage.setItem('userUsername', user.username);
+      }
+
       // Sync theme from backend if different
       if (user.theme && localStorage.getItem('theme') !== user.theme) {
         localStorage.setItem('theme', user.theme);
@@ -3177,8 +3320,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const chip = document.getElementById('motivation-chip');
   if (chip) {
     const m = MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)];
-    chip.querySelector('.motivation-icon').textContent = m.icon;
+    if (m.icon === '🔥') {
+      chip.querySelector('.motivation-icon').innerHTML = m.icon;
+    } else {
+      chip.querySelector('.motivation-icon').innerHTML = `<i data-lucide="${m.icon}"></i>`;
+    }
     chip.querySelector('.motivation-text').textContent = m.text;
+    if (window.lucide) lucide.createIcons({ root: chip });
   }
 
   // GSAP navbar entrance
@@ -3687,7 +3835,7 @@ function buildReadOnlyAchievementCard(ach) {
   
   card.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-      <h4 style="margin:0; font-size:16px;">🏆 ${ach.title}</h4>
+      <h4 style="margin:0; font-size:16px;"><i data-lucide="trophy"></i> ${ach.title}</h4>
       <span style="font-size:12px; color:var(--text-muted);">${new Date(ach.date).toLocaleDateString()}</span>
     </div>
     ${ach.description ? `<p style="margin:0; font-size:14px; color:var(--text-muted);">${ach.description}</p>` : ''}
@@ -3753,7 +3901,7 @@ async function generateLeetCodeCode() {
 
     // Update status
     const leetcodeStatus = document.getElementById('leetcode-status');
-    setLcStatus(leetcodeStatus, 'waiting', '⏳ Pending verification');
+    setLcStatus(leetcodeStatus, 'waiting', '<i data-lucide="clock"></i> Pending verification');
 
     showToast('Verification code generated! Add it to your LeetCode bio.', 'success');
   } catch (error) {
@@ -3802,7 +3950,7 @@ async function verifyLeetCodeProfile() {
     const leetcodeProfilePic      = document.getElementById('leetcode-profile-pic');
     const remainingChanges        = document.getElementById('leetcode-remaining-changes');
 
-    setLcStatus(leetcodeStatus, 'verified', '✅ Verified');
+    setLcStatus(leetcodeStatus, 'verified', '<i data-lucide="check-circle"></i> Verified');
     leetcodeUsernameDisplay.textContent = data.leetcodeUsername;
     remainingChanges.textContent = `Remaining changes: ${data.remainingChanges}`;
 
@@ -3838,7 +3986,7 @@ function showPendingRetryUI(retryAvailableAt, retryExpiresAt) {
 
   // Status badge
   const leetcodeStatus = document.getElementById('leetcode-status');
-  setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+  setLcStatus(leetcodeStatus, 'pending', '<i data-lucide="refresh-cw"></i> Verification pending');
 
   // Show the verification code in the pending section so user can double-check their bio
   const codeText = document.getElementById('leetcode-verification-code').textContent;
@@ -3883,12 +4031,12 @@ function startRetryCountdown(retryAvailableAt, retryExpiresAt) {
       const remMs  = availMs - now;
       const rMins  = Math.floor(remMs / 60000);
       const rSecs  = Math.floor((remMs % 60000) / 1000);
-      if (timerEl) timerEl.textContent = `⏳ Check available in ${rMins}:${rSecs.toString().padStart(2, '0')}`;
+      if (timerEl) timerEl.innerHTML = `<i data-lucide="clock"></i> Check available in ${rMins}:${rSecs.toString().padStart(2, '0')}`;
       if (btn) btn.disabled = true;
     } else {
       // Phase 2: button enabled
-      if (timerEl) timerEl.textContent = '✅ Ready — click Check Status below';
-      if (btn) { btn.disabled = false; btn.textContent = '🔄 Check Status'; }
+      if (timerEl) timerEl.innerHTML = '<i data-lucide="check-circle"></i> Ready — click Check Status below';
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Check Status'; }
     }
   }
 
@@ -3899,7 +4047,7 @@ function startRetryCountdown(retryAvailableAt, retryExpiresAt) {
 // Called when user clicks "Check Status" button (re-uses the same verify endpoint)
 async function checkLeetCodeVerificationStatus() {
   const btn = document.getElementById('leetcode-check-status-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Checking...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="clock"></i> Checking...'; }
 
   try {
     const data = await apiFetch(`${API}/api/leetcode/verify-profile`, {
@@ -3926,7 +4074,7 @@ async function checkLeetCodeVerificationStatus() {
     }
   } catch (error) {
     // Re-enable button so user can try again
-    if (btn) { btn.disabled = false; btn.textContent = '🔄 Check Status'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Check Status'; }
     if (error.status === 429 || (error.message && error.message.includes('429'))) {
       showToast('Please wait for the timer before retrying', 'warn');
     } else {
@@ -4004,7 +4152,7 @@ async function validateLeetCodeProblemForModal() {
       resultDiv.style.background = '#d1fae5';
       resultDiv.style.color = '#10b981';
       resultDiv.innerHTML = `
-        <div style="margin-bottom: 8px;">✅ <strong>Validation Successful!</strong></div>
+        <div style="margin-bottom: 8px;"><i data-lucide="check-circle"></i> <strong>Validation Successful!</strong></div>
         <div style="font-size: 13px; margin-bottom: 4px;">Problem: <strong>${validation.problemTitle || problemDetails.title}</strong></div>
         <div style="font-size: 13px; margin-bottom: 4px;">Difficulty: <strong>${validation.difficulty || problemDetails.difficulty}</strong></div>
         <div style="font-size: 13px; margin-bottom: 4px;">Accepted on: <strong>${formattedTime}</strong></div>
@@ -4269,11 +4417,11 @@ async function loadLeetCodeProfileStatus() {
                         new Date() > new Date(user.leetcodeVerificationExpiry);
 
       if (isExpired) {
-        setLcStatus(leetcodeStatus, 'error', '⏰ Code expired');
+        setLcStatus(leetcodeStatus, 'error', '<i data-lucide="alert-circle"></i> Code expired');
         hideAllSections();
         document.getElementById('leetcode-code-expired').style.display = 'block';
       } else {
-        setLcStatus(leetcodeStatus, 'waiting', '⏳ Pending verification');
+        setLcStatus(leetcodeStatus, 'waiting', '<i data-lucide="clock"></i> Pending verification');
 
         document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
         document.getElementById('leetcode-verification-code').style.display = 'block';
@@ -4610,6 +4758,101 @@ async function submitFeedback(e) {
     showToast('Network error while submitting feedback', 'error');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = '🚀 Submit Review';
+    submitBtn.innerHTML = '<i data-lucide="rocket"></i> Submit Review';
+    if (window.lucide) lucide.createIcons({ root: submitBtn });
   }
 }
+
+/**
+ * Share public profile link using Web Share API or Clipboard fallback
+ */
+async function sharePublicProfile() {
+  let username = localStorage.getItem('userUsername');
+  
+  // Fallback: try to get it from the profile modal input if it's open
+  if (!username) {
+    const input = document.getElementById('profile-username');
+    if (input && input.value) {
+      username = input.value.trim();
+      if (username) localStorage.setItem('userUsername', username);
+    }
+  }
+
+  if (!username) {
+    showToast('Please set a username in settings first.', 'warn');
+    return;
+  }
+
+  try {
+    const logData = await logShare(navigator.share ? 'native' : 'clipboard');
+    const shareCode = logData ? logData.shareCode : null;
+    const shareUrl = shareCode 
+      ? `${window.location.origin}/profile.html?u=${username}&code=${shareCode}`
+      : `${window.location.origin}/profile.html?u=${username}`;
+
+    const shareData = {
+      title: 'Consistency Daily Profile',
+      text: `Check out my consistency journey on Consistency Daily! ${backendStreak} day streak and counting!`,
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      await navigator.share(shareData);
+      showToast('Profile shared successfully!', 'success');
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast('Profile link copied to clipboard!', 'success');
+    }
+  } catch (err) {
+    console.error('Share failed:', err);
+    if (err.name !== 'AbortError') {
+      showToast('Could not share profile. Link copied to clipboard instead.', 'info');
+      navigator.clipboard.writeText(shareUrl);
+    }
+  }
+}
+
+/**
+ * Log the share event to the backend
+ */
+async function logShare(platform) {
+  try {
+    return await apiFetch(`${API}/api/users/log-share`, {
+      method: 'POST',
+      body: JSON.stringify({ platform })
+    });
+  } catch (err) {
+    console.error('Failed to log share:', err);
+    return null;
+  }
+}
+
+/**
+ * Open the public profile page in a new tab
+ */
+async function previewOwnProfile() {
+  let username = localStorage.getItem('userUsername');
+  if (!username) {
+    const input = document.getElementById('profile-username');
+    if (input && input.value) {
+      username = input.value.trim();
+      if (username) localStorage.setItem('userUsername', username);
+    }
+  }
+  if (!username) {
+    showToast('Please set a username in settings first.', 'warn');
+    return;
+  }
+  
+  try {
+    const logData = await logShare('preview');
+    const shareCode = logData ? logData.shareCode : null;
+    const url = shareCode 
+      ? `profile.html?u=${username}&code=${shareCode}`
+      : `profile.html?u=${username}`;
+    window.open(url, '_blank');
+  } catch (err) {
+    window.open(`profile.html?u=${username}`, '_blank');
+  }
+}
+

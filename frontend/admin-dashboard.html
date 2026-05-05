@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | Consistency Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <script src="/js/libs/lucide/lucide.min.js"></script>
   <style>
     :root {
       --yellow: #facc15;
@@ -409,7 +410,7 @@
       <div class="dashboard-header">
         <h2>Review Management</h2>
         <div class="header-actions">
-          <button class="btn-control" style="background: var(--blue); color: white;" onclick="openAddModal()">+ Add Review</button>
+          <button class="btn-control" style="background: var(--blue); color: white;" onclick="openAddModal()"><i data-lucide="plus"></i> Add Review</button>
           <div class="controls">
             <button class="btn-control active" id="sort-desc" onclick="loadReviews('desc')">Newest</button>
             <button class="btn-control" id="sort-asc"  onclick="loadReviews('asc')">Oldest</button>
@@ -486,5 +487,8 @@
   </div>
 
   <script src="admin-script.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 </html>

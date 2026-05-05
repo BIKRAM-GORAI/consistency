@@ -9,6 +9,16 @@
   padding: 0;
 }
 
+/* ── Lucide Icons ── */
+.lucide {
+  width: 1.2em;
+  height: 1.2em;
+  stroke-width: 2.5;
+  vertical-align: middle;
+  display: inline-block;
+  margin-top: -2px; /* Visual centering */
+}
+
 :root {
   /* ── Background ── */
   --bg:        #faf7f2;
@@ -708,8 +718,8 @@ body {
 }
 
 .summary-toggle:hover {
-  background: var(--yellow);
-  color: var(--text);
+  background: var(--orange);
+  color: var(--black);
   border-color: var(--black);
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 var(--black);

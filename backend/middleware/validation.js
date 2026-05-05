@@ -239,6 +239,13 @@ const removeMemberValidation = [
   validate
 ];
 
+const handleJoinRequestValidation = [
+  param('groupId').isMongoId().withMessage('Invalid group ID'),
+  param('targetUserId').isMongoId().withMessage('Invalid user ID'),
+  body('action').isIn(['approve', 'reject']).withMessage('Action must be approve or reject'),
+  validate
+];
+
 // Review validation rules
 const submitReviewValidation = [
   body('name')
@@ -287,6 +294,7 @@ module.exports = {
   joinGroupValidation,
   editGroupValidation,
   removeMemberValidation,
+  handleJoinRequestValidation,
   submitReviewValidation,
   userSearchValidation
 };

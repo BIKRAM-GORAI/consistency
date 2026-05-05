@@ -162,15 +162,16 @@
         <div style="position: relative;">
           <input type="password" id="password" required placeholder="••••••••" style="padding-right: 45px;">
           <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 20px; padding: 0; display: flex; align-items: center; justify-content: center;">
-            👁️
+            <i data-lucide="eye"></i>
           </button>
         </div>
       </div>
-      <button type="submit" class="btn-login">Secure Login →</button>
-      <a href="landing.html" class="back-home">← Back to home</a>
+      <button type="submit" class="btn-login">Secure Login <i data-lucide="shield-check"></i></button>
+      <a href="landing.html" class="back-home"><i data-lucide="arrow-left"></i> Back to home</a>
     </form>
   </div>
 
+  <script src="/js/libs/lucide/lucide.min.js"></script>
   <script>
     const togglePassword = document.getElementById('togglePassword');
     const password = document.getElementById('password');
@@ -178,8 +179,12 @@
     togglePassword.addEventListener('click', function () {
       const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
       password.setAttribute('type', type);
-      this.textContent = type === 'password' ? '👁️' : '🔒';
+      this.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
+      lucide.createIcons({ root: this });
     });
+
+    // Initial icons
+    lucide.createIcons();
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
