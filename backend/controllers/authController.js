@@ -82,6 +82,22 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // Check if user is blacklisted
+    if (user.isBlacklisted) {
+      if (!user.blacklistedUntil || user.blacklistedUntil > Date.now()) {
+        const until = user.blacklistedUntil ? ` until ${new Date(user.blacklistedUntil).toLocaleDateString()}` : ' indefinitely';
+        return res.status(403).json({ 
+          message: `Your account has been blacklisted${until}. Reason: ${user.blacklistReason || 'Violation of terms.'}`,
+          blacklisted: true 
+        });
+      } else {
+        // Blacklist period expired, auto-remove
+        user.isBlacklisted = false;
+        user.blacklistedUntil = null;
+        await user.save();
+      }
+    }
+
     // Verify password using bcrypt.compare
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -161,6 +177,21 @@ const oauthLogin = async (req, res) => {
       if (!providerExists) {
         user.authProviders.push({ provider, uid });
         await user.save();
+      }
+
+      // Check if user is blacklisted
+      if (user.isBlacklisted) {
+        if (!user.blacklistedUntil || user.blacklistedUntil > Date.now()) {
+          const until = user.blacklistedUntil ? ` until ${new Date(user.blacklistedUntil).toLocaleDateString()}` : ' indefinitely';
+          return res.status(403).json({ 
+            message: `Your account has been blacklisted${until}. Reason: ${user.blacklistReason || 'Violation of terms.'}`,
+            blacklisted: true 
+          });
+        } else {
+          user.isBlacklisted = false;
+          user.blacklistedUntil = null;
+          await user.save();
+        }
       }
     } else {
       // User does not exist. Create a new user account without a password

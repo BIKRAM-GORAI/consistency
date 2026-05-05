@@ -1,5 +1,12 @@
 const Review = require('../models/Review');
+const User = require('../models/User');
+const Day = require('../models/Day');
+const Goal = require('../models/Goal');
+const Achievement = require('../models/Achievement');
+const Group = require('../models/Group');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const ProfileShare = require('../models/ProfileShare');
 
 /**
  * Admin Login
@@ -111,10 +118,268 @@ async function deleteReview(req, res) {
   }
 }
 
+/* ============================================================
+   USER MANAGEMENT
+   ============================================================ */
+
+/**
+ * GET /api/admin/users
+ */
+async function getAdminUsers(req, res) {
+  try {
+    const { sort, query } = req.query;
+    const sortOrder = sort === 'asc' ? 1 : -1;
+    
+    let filter = {};
+    if (query) {
+      filter = {
+        $or: [
+          { name: { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } },
+          { username: { $regex: query, $options: 'i' } }
+        ]
+      };
+    }
+
+    const users = await User.find(filter)
+      .sort({ createdAt: sortOrder })
+      .select('name email username profilePicture isBlacklisted blacklistedUntil createdAt');
+
+    // Enhance users with summary stats
+    const enhancedUsers = await Promise.all(users.map(async (u) => {
+      const reviewCount = await Review.countDocuments({ email: u.email });
+      const groupCount = await Group.countDocuments({ members: u._id });
+      return { 
+        ...u.toObject(), 
+        reviewCount, 
+        groupCount 
+      };
+    }));
+
+    res.json(enhancedUsers);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * GET /api/admin/users/:id
+ */
+async function getAdminUserDetails(req, res) {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    const days = await Day.find({ userId: user._id }).sort({ date: -1 });
+    const goals = await Goal.find({ userId: user._id }).sort({ createdAt: -1 });
+    const achievements = await Achievement.find({ userId: user._id }).sort({ date: -1 });
+    const groups = await Group.find({ members: user._id })
+      .populate('owner', 'name profilePicture username')
+      .populate('members', 'name profilePicture username');
+
+    res.json({
+      user,
+      days,
+      goals,
+      achievements,
+      groups
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/users/:id/blacklist
+ */
+async function toggleUserBlacklist(req, res) {
+  try {
+    const { isBlacklisted, blacklistedUntil, blacklistReason } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBlacklisted, blacklistedUntil, blacklistReason },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'Blacklist status updated', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/users/:id
+ */
+async function updateAdminUser(req, res) {
+  try {
+    const { name, username } = req.body;
+    const userId = req.params.id;
+
+    // Validation
+    if (username) {
+      const existingUser = await User.findOne({ 
+        username: { $regex: new RegExp(`^${username}$`, 'i') },
+        _id: { $ne: userId }
+      });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username is already taken by another user.' });
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { name, username },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    res.json({ message: 'User updated successfully', user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * DELETE /api/admin/users/:id
+ */
+async function deleteUser(req, res) {
+  try {
+    const userId = req.params.id;
+    // Similar to authController.deleteAccount but for any user
+    await Day.deleteMany({ userId });
+    await Goal.deleteMany({ userId });
+    await Achievement.deleteMany({ userId });
+    await Review.deleteMany({ userId }); // Admin might want to keep or delete reviews
+    
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ message: 'User account and data deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/days/:id
+ */
+async function updateAdminDay(req, res) {
+  try {
+    const day = await Day.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!day) return res.status(404).json({ message: 'Day not found' });
+    res.json(day);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * DELETE /api/admin/days/:id
+ */
+async function deleteAdminDay(req, res) {
+  try {
+    const day = await Day.findByIdAndDelete(req.params.id);
+    if (!day) return res.status(404).json({ message: 'Day not found' });
+    res.json({ message: 'Day deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/goals/:id
+ */
+async function updateAdminGoal(req, res) {
+  try {
+    const goal = await Goal.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!goal) return res.status(404).json({ message: 'Goal not found' });
+    res.json(goal);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * DELETE /api/admin/goals/:id
+ */
+async function deleteAdminGoal(req, res) {
+  try {
+    const goal = await Goal.findByIdAndDelete(req.params.id);
+    if (!goal) return res.status(404).json({ message: 'Goal not found' });
+    res.json({ message: 'Goal deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/achievements/:id
+ */
+async function updateAdminAchievement(req, res) {
+  try {
+    const ach = await Achievement.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!ach) return res.status(404).json({ message: 'Achievement not found' });
+    res.json(ach);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * POST /api/admin/users/:id/preview-link
+ */
+async function generateAdminPreviewLink(req, res) {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const shareCode = crypto.randomBytes(16).toString('hex');
+    const share = new ProfileShare({
+      userId: user._id,
+      username: user.username,
+      platform: 'admin_preview',
+      shareCode
+    });
+
+    await share.save();
+    res.json({ shareCode, username: user.username });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * DELETE /api/admin/achievements/:id
+ */
+async function deleteAdminAchievement(req, res) {
+  try {
+    const ach = await Achievement.findByIdAndDelete(req.params.id);
+    if (!ach) return res.status(404).json({ message: 'Achievement not found' });
+    res.json({ message: 'Achievement deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
 module.exports = {
   adminLogin,
   getAdminReviews,
   createReview,
   updateReview,
-  deleteReview
+  deleteReview,
+  getAdminUsers,
+  getAdminUserDetails,
+  toggleUserBlacklist,
+  updateAdminUser,
+  deleteUser,
+  updateAdminDay,
+  deleteAdminDay,
+  updateAdminGoal,
+  deleteAdminGoal,
+  updateAdminAchievement,
+  deleteAdminAchievement,
+  generateAdminPreviewLink
 };

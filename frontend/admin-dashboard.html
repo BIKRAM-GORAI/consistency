@@ -69,13 +69,11 @@
       text-transform: uppercase;
       white-space: nowrap;
       flex-shrink: 0;
+      margin-right: 40px; /* Space out from links */
     }
 
     .nav-brand span {
-      background: var(--yellow);
-      padding: 0 8px;
-      border: 2px solid var(--black);
-      box-shadow: 2px 2px 0 var(--black);
+      padding: 0;
     }
 
     .nav-links {
@@ -171,6 +169,10 @@
       cursor: pointer;
       font-size: 13px;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .btn-control.active { background: var(--yellow); }
@@ -248,12 +250,48 @@
       cursor: pointer;
       border: 2px solid var(--black);
       font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    .btn-edit  { background: var(--green); }
-    .btn-delete { background: var(--pink); color: var(--white); }
+    .btn-edit  { background: #fb923c; color: var(--black); }
+    .btn-delete { background: #ef4444; color: var(--white); }
+    .btn-delete:hover { background: #dc2626; box-shadow: 2px 2px 0 var(--black); transform: translate(-1px, -1px); }
+    
+    .btn-save {
+      flex: 2;
+      background: var(--black);
+      color: var(--white);
+      padding: 12px;
+      font-family: inherit;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: 3px solid #fff;
+      box-shadow: 4px 4px 0 var(--black);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.1s;
+    }
+    .btn-save:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--black); border-color: var(--yellow); }
 
-    /* ── Modal ── */
+    .danger-zone {
+      margin-top: 32px;
+      padding: 32px 24px;
+      border: 3px solid #ef4444;
+      border-radius: 12px;
+      background: #fff5f5;
+      box-shadow: 6px 6px 0 #ef4444;
+    }
+
+    .success-zone {
+      background: #f0fdf4;
+      border: 3px solid #22c55e;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
     .modal-overlay {
       display: none;
       position: fixed;
@@ -340,18 +378,7 @@
       margin-top: 20px;
     }
 
-    .btn-save {
-      flex: 2;
-      background: var(--black);
-      color: var(--white);
-      padding: 12px;
-      font-family: inherit;
-      font-weight: 900;
-      text-transform: uppercase;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-    }
+
 
     .btn-cancel {
       flex: 1;
@@ -395,9 +422,7 @@
       <div class="nav-brand"><span>ADMIN</span></div>
       <div class="nav-links">
         <button class="nav-link active" onclick="showSection('reviews')">Reviews</button>
-        <button class="nav-link" onclick="showSection('days')">Days</button>
-        <button class="nav-link" onclick="showSection('groups')">Groups</button>
-        <button class="nav-link" onclick="showSection('achievements')">Achievements</button>
+        <button class="nav-link" onclick="showSection('users')">Users</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -420,19 +445,39 @@
       <div id="review-grid" class="review-grid"></div>
     </div>
 
-    <!-- Placeholder Sections -->
-    <div id="section-days" class="admin-section" style="display:none;">
-      <h2>Days Management</h2>
-      <p>Content for Days management will appear here.</p>
+    <!-- Users Section -->
+    <div id="section-users" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <h2>User Management</h2>
+        <div class="header-actions">
+          <input type="text" id="user-search" placeholder="Search by name/email/username..." class="btn-control" style="width: 300px; text-transform: none; text-align: left;" onkeyup="debouncedSearch()">
+          <div class="controls">
+            <button class="btn-control active" id="user-sort-desc" onclick="loadUsers('desc')">Newest</button>
+            <button class="btn-control" id="user-sort-asc" onclick="loadUsers('asc')">Oldest</button>
+          </div>
+        </div>
+      </div>
+      
+      <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+          <thead style="background: #f0f0f0; border-bottom: var(--border);">
+            <tr>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">S.No</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Profile</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">User Info</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Stats</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Status</th>
+              <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body">
+            <!-- Loaded via JS -->
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div id="section-groups" class="admin-section" style="display:none;">
-      <h2>Groups Management</h2>
-      <p>Content for Groups management will appear here.</p>
-    </div>
-    <div id="section-achievements" class="admin-section" style="display:none;">
-      <h2>Achievements Management</h2>
-      <p>Content for Achievements management will appear here.</p>
-    </div>
+
+
 
   </div>
 
@@ -483,6 +528,29 @@
           <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- User Detail Modal -->
+  <div id="user-detail-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 id="user-detail-title">User Management</h3>
+        <button class="btn-cancel" style="flex:none; padding: 6px 12px;" onclick="closeUserModal()">Close</button>
+      </div>
+
+      <!-- User Tabs -->
+      <div class="nav-links" style="margin-bottom: 20px; border-bottom: 2px solid #eee;">
+        <button class="nav-link active" id="tab-info" onclick="showUserTab('info')">Account</button>
+        <button class="nav-link" id="tab-days" onclick="showUserTab('days')">Days</button>
+        <button class="nav-link" id="tab-ach" onclick="showUserTab('ach')">Achievements</button>
+        <button class="nav-link" id="tab-goals" onclick="showUserTab('goals')">Goals</button>
+        <button class="nav-link" id="tab-groups" onclick="showUserTab('groups')">Groups</button>
+      </div>
+
+      <div id="user-modal-content" style="flex: 1; overflow-y: auto; padding-right: 10px;">
+        <!-- Tab Content Loaded via JS -->
+      </div>
     </div>
   </div>
 

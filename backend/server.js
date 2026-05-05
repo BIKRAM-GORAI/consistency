@@ -62,6 +62,8 @@ app.use((req, res, next) => {
     "https://www.gstatic.com",
     "https://apis.google.com",
     "https://unpkg.com",
+    "https://via.placeholder.com",
+    "https://placehold.co",
     "https://consistency-daily.vercel.app",
     "https://*.vercel.app"
   ];

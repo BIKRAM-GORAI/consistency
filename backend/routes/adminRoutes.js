@@ -42,4 +42,20 @@ router.post('/reviews', authenticateAdmin, adminController.createReview);
 router.put('/reviews/:id', authenticateAdmin, adminController.updateReview);
 router.delete('/reviews/:id', authenticateAdmin, adminController.deleteReview);
 
+// Protected Admin User Routes
+router.get('/users', authenticateAdmin, adminController.getAdminUsers);
+router.get('/users/:id', authenticateAdmin, adminController.getAdminUserDetails);
+router.patch('/users/:id', authenticateAdmin, adminController.updateAdminUser);
+router.post('/users/:id/preview-link', authenticateAdmin, adminController.generateAdminPreviewLink);
+router.patch('/users/:id/blacklist', authenticateAdmin, adminController.toggleUserBlacklist);
+router.delete('/users/:id', authenticateAdmin, adminController.deleteUser);
+
+// Protected Admin Data Management
+router.patch('/days/:id', authenticateAdmin, adminController.updateAdminDay);
+router.delete('/days/:id', authenticateAdmin, adminController.deleteAdminDay);
+router.patch('/goals/:id', authenticateAdmin, adminController.updateAdminGoal);
+router.delete('/goals/:id', authenticateAdmin, adminController.deleteAdminGoal);
+router.patch('/achievements/:id', authenticateAdmin, adminController.updateAdminAchievement);
+router.delete('/achievements/:id', authenticateAdmin, adminController.deleteAdminAchievement);
+
 module.exports = router;

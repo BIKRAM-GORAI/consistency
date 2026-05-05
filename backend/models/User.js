@@ -132,6 +132,19 @@ const UserSchema = new mongoose.Schema(
     resetOtpAttempts: {
       type: Number,
       default: 0,
+    },
+    // Blacklist management
+    isBlacklisted: {
+      type: Boolean,
+      default: false,
+    },
+    blacklistedUntil: {
+      type: Date,
+      default: null,
+    },
+    blacklistReason: {
+      type: String,
+      default: '',
     }
   },
   { timestamps: true }
