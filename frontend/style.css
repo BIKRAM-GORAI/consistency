@@ -14,9 +14,9 @@
   --bg:        #faf7f2;
   --bg-card:   #ffffff;
   --bg-input:  #ffffff;
-  --bg-muted:  #f0ece4;
+  --bg-muted:  #f5f2eb;
   --bg-readonly: #f8f8f8;
-  --graph-empty: #ebedf0;
+  --graph-empty: #d8d4c9;
 
   /* ── Text ── */
   --text:      #0a0a0a;
@@ -63,16 +63,16 @@
 }
 
 [data-theme="dark"] {
-  --bg:        #121212;
-  --bg-card:   #1e1e1e;
-  --bg-input:  #2a2a2a;
-  --bg-muted:  #252525;
-  --bg-readonly: #1a1a1a;
-  --graph-empty: #333333;
+  --bg:        #212121;
+  --bg-card:   #2d2d2d;
+  --bg-input:  #333333;
+  --bg-muted:  #292929;
+  --bg-readonly: #262626;
+  --graph-empty: #3a3a3a;
 
   --text:      #e0e0e0;
-  --text-muted:#a0a0a0;
-  --text-light:#707070;
+  --text-muted:#b0b0b0;
+  --text-light:#888888;
 
   --bg-goal-completed: #1b2e1f;
   --bg-cat-input:      #2d2a1a;
@@ -343,21 +343,28 @@ body {
 .header-motivation {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 8px 16px;
   border-radius: var(--r-sm);
   background: var(--teal);
-  border: var(--border);
-  box-shadow: var(--shadow-sm);
-  font-size: 12px;
-  font-weight: 800;
+  border: 3px solid var(--black);
+  box-shadow: 4px 4px 0 var(--black), 0 0 15px rgba(100, 255, 218, 0.3);
+  font-size: 11px;
+  font-weight: 900;
   color: var(--black);
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   flex-shrink: 0;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  cursor: default;
 }
 
-.motivation-icon { font-size: 14px; }
+.header-motivation:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--black), 0 0 20px rgba(100, 255, 218, 0.5);
+}
+
+.motivation-icon { font-size: 16px; }
 
 /* ============================================================
    LOADING

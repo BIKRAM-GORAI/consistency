@@ -2406,16 +2406,10 @@ async function openProfileModal() {
     unameInput.value = res.username || '';
     if (res.username) {
       unameInput.readOnly = true;
-      unameInput.style.background = '#f5f5f5';
-      unameInput.style.color = '#666';
-      unameInput.style.cursor = 'not-allowed';
       if(unameHint) unameHint.style.display = 'none';
       if(unameWarn) unameWarn.style.display = 'block';
     } else {
       unameInput.readOnly = false;
-      unameInput.style.background = '#fff';
-      unameInput.style.color = 'var(--black)';
-      unameInput.style.cursor = 'text';
       if(unameHint) unameHint.style.display = 'block';
       if(unameWarn) unameWarn.style.display = 'none';
     }
@@ -3301,7 +3295,7 @@ function renderContributionGraph(data) {
     
     if (curr.getMonth() !== lastMonth) {
       extraX += monthGap;
-      monthLabels += `<text x="${col * (cellSize + gap) + extraX}" y="12" dx="16" font-size="11" fill="#000" font-family="Inter, sans-serif" font-weight="600">${monthNames[curr.getMonth()]}</text>`;
+      monthLabels += `<text x="${col * (cellSize + gap) + extraX}" y="12" dx="16" font-size="11" fill="currentColor" style="color: var(--text);" font-family="Inter, sans-serif" font-weight="600">${monthNames[curr.getMonth()]}</text>`;
       lastMonth = curr.getMonth();
     }
     
@@ -3320,7 +3314,7 @@ function renderContributionGraph(data) {
       maxX = Math.max(maxX, x + cellSize);
       
       const fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
-      const stroke = completed > 0 ? 'rgba(0,0,0,0.2)' : 'rgba(27,31,35,0.06)';
+      const stroke = completed > 0 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
       const toastMsg = `${dateStr}\\n${completed} task${completed === 1 ? '' : 's'} completed`;
       const titleHover = `${dateStr}: ${completed} task${completed === 1 ? '' : 's'} completed`;
       

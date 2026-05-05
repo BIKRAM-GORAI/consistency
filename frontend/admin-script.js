@@ -105,8 +105,14 @@ function renderReviews(reviews) {
 }
 
 /**
- * Modal Logic
+ * Helper to format date for datetime-local input
  */
+function formatForInput(dateStr) {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const pad = (n) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function openAddModal() {
   document.getElementById('modal-title').textContent = 'Add New Review';
   document.getElementById('btn-save-text').textContent = 'Create Review';
@@ -114,10 +120,7 @@ function openAddModal() {
   document.getElementById('edit-name').value = '';
   document.getElementById('edit-email').value = '';
   document.getElementById('edit-text').value = '';
-  
-  const now = new Date();
-  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('edit-date').value = localDate;
+  document.getElementById('edit-date').value = formatForInput();
 
   document.querySelectorAll('input[name="badges"]').forEach(cb => cb.checked = false);
   document.getElementById('edit-modal').style.display = 'flex';
@@ -133,11 +136,7 @@ function openEditModal(index) {
   document.getElementById('edit-name').value = review.name || '';
   document.getElementById('edit-email').value = review.email || '';
   document.getElementById('edit-text').value = review.description;
-  
-  // Format date for datetime-local input
-  const date = new Date(review.createdAt);
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('edit-date').value = localDate;
+  document.getElementById('edit-date').value = formatForInput(review.createdAt);
 
   // Set checkboxes
   const checkboxes = document.querySelectorAll('input[name="badges"]');
