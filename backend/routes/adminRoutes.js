@@ -22,14 +22,15 @@ const authenticateAdmin = (req, res, next) => {
     }
     const decoded = jwt.verify(token, jwtSecret);
     
-    if (!decoded.isAdmin) {
-      return res.status(403).json({ message: 'Unauthorized. Not an admin.' });
+    // Extra security: Verify isAdmin flag AND match against environment ADMIN_EMAIL
+    if (!decoded.isAdmin || decoded.email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({ message: 'Unauthorized. Administrative access required.' });
     }
 
     req.admin = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({ message: 'Invalid or expired admin token.' });
+    return res.status(403).json({ message: 'Invalid, expired, or tampered admin token.' });
   }
 };
 
@@ -53,6 +54,7 @@ router.delete('/users/:id', authenticateAdmin, adminController.deleteUser);
 
 // Protected Admin Data Management
 router.patch('/days/:id', authenticateAdmin, adminController.updateAdminDay);
+router.post('/users/:id/days', authenticateAdmin, adminController.createAdminDay);
 router.delete('/days/:id', authenticateAdmin, adminController.deleteAdminDay);
 router.patch('/goals/:id', authenticateAdmin, adminController.updateAdminGoal);
 router.delete('/goals/:id', authenticateAdmin, adminController.deleteAdminGoal);

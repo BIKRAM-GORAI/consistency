@@ -137,14 +137,30 @@ async function getPublicProfile(req, res) {
 async function getPublicProfileDays(req, res) {
   try {
     const { username } = req.params;
+    const { code } = req.query;
+    const user = await User.findOne({ username: username.toLowerCase() });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Privacy Check
+    let canView = false;
+    if (code) {
+      const validShare = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
+      if (validShare) canView = true;
+    } else {
+      canView = user.isPublicProfile !== false;
+    }
+
+    if (!canView && req.user && req.user.userId) {
+      const sharedPublicGroup = await Group.findOne({ isPublic: true, members: { $all: [req.user.userId, user._id] } });
+      if (sharedPublicGroup) canView = true;
+    }
+
+    if (!canView) return res.status(403).json({ message: 'This profile is private' });
+
     const page = parseInt(req.query.page) || 1;
     const limit = 7;
     const skip = (page - 1) * limit;
 
-    const user = await User.findOne({ username: username.toLowerCase() });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    // Note: Privacy check omitted for simplicity here, assuming it's handled by frontend calling this only if public
     const daysRaw = await Day.find({ userId: user._id })
       .sort({ date: -1 })
       .skip(skip)
@@ -168,12 +184,30 @@ async function getPublicProfileDays(req, res) {
 async function getPublicProfileAchievements(req, res) {
   try {
     const { username } = req.params;
+    const { code } = req.query;
+    const user = await User.findOne({ username: username.toLowerCase() });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Privacy Check
+    let canView = false;
+    if (code) {
+      const validShare = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
+      if (validShare) canView = true;
+    } else {
+      canView = user.isPublicProfile !== false;
+    }
+
+    if (!canView && req.user && req.user.userId) {
+      const sharedPublicGroup = await Group.findOne({ isPublic: true, members: { $all: [req.user.userId, user._id] } });
+      if (sharedPublicGroup) canView = true;
+    }
+
+    if (!canView) return res.status(403).json({ message: 'This profile is private' });
+    if (user.achievementsPublic === false) return res.status(403).json({ message: 'Achievements are private' });
+
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const skip = (page - 1) * limit;
-
-    const user = await User.findOne({ username: username.toLowerCase() });
-    if (!user) return res.status(404).json({ message: 'User not found' });
 
     const achievements = await Achievement.find({ userId: user._id })
       .sort({ date: -1 })

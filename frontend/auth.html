@@ -204,6 +204,9 @@
       margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .auth-subtitle {
@@ -332,6 +335,10 @@
       margin-top: 4px;
       letter-spacing: 0.3px;
       text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .auth-submit-btn:hover:not(:disabled) {
@@ -535,32 +542,57 @@
             <span>Account created! Redirecting...</span>
           </div>
 
-          <div class="auth-field">
-            <label class="auth-label" for="register-name">Your Name</label>
-            <input class="auth-input" type="text" id="register-name" placeholder="e.g. Bikram" autocomplete="name" />
+          <div class="auth-field" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
+            <label class="auth-label" style="margin-bottom: 12px;">Profile Photo <span style="color:var(--red)">*</span></label>
+            <div id="register-avatar-wrap" style="position: relative; width: 100px; height: 100px; border: 3px solid var(--black); border-radius: 50%; background: var(--bg-muted); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; box-shadow: 4px 4px 0 var(--black);" onclick="document.getElementById('register-avatar-input').click()">
+              <img id="register-avatar-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+              <div id="register-avatar-placeholder" style="font-size: 32px; font-weight: 900; color: var(--text-muted);"><i data-lucide="camera"></i></div>
+              <div style="position: absolute; bottom: 0; right: 0; background: var(--yellow); border: 2px solid var(--black); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px;"><i data-lucide="plus" style="width: 16px; height: 16px;"></i></div>
+            </div>
+            <input type="file" id="register-avatar-input" style="display: none;" accept="image/*" onchange="handleRegisterProfilePicSelect(event)" />
+            <input type="hidden" id="register-profile-pic-dataurl" value="" />
+            <p id="register-photo-status" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-top: 8px; color: var(--text-muted);">Required</p>
           </div>
 
           <div class="auth-field">
-            <label class="auth-label" for="register-username">Username</label>
-            <input class="auth-input" type="text" id="register-username" placeholder="Choose a unique username" />
+            <label class="auth-label" for="register-name">Your Name <span style="color:var(--red)">*</span></label>
+            <input class="auth-input" type="text" id="register-name" placeholder="e.g. Bikram" autocomplete="name" oninput="validateRegisterForm()" />
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label" for="register-username">Username <span style="color:var(--red)">*</span></label>
+            <input class="auth-input" type="text" id="register-username" placeholder="Choose a unique username" oninput="validateRegisterForm()" />
             <p class="auth-hint">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).</p>
           </div>
 
           <div class="auth-field">
-            <label class="auth-label" for="register-email">Email</label>
-            <input class="auth-input" type="email" id="register-email" placeholder="you@example.com" autocomplete="email" />
+            <label class="auth-label" for="register-email">Email <span style="color:var(--red)">*</span></label>
+            <input class="auth-input" type="email" id="register-email" placeholder="you@example.com" autocomplete="email" oninput="validateRegisterForm()" />
           </div>
 
           <div class="auth-field">
-            <label class="auth-label" for="register-password">Password</label>
+            <label class="auth-label" for="register-password">Password <span style="color:var(--red)">*</span></label>
             <div class="password-wrapper">
-              <input class="auth-input has-toggle" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" />
+              <input class="auth-input has-toggle" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" oninput="validateRegisterForm()" />
               <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
             </div>
             <p class="auth-hint">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
+            <div class="auth-error" id="password-format-error" style="margin-top: 8px;">
+              <span><i data-lucide="alert-triangle"></i></span>
+              <span id="password-format-error-msg"></span>
+            </div>
           </div>
 
-          <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()">Create Account <i data-lucide="arrow-right"></i></button>
+          <div class="auth-field">
+            <label class="auth-label" for="register-confirm-password">Confirm Password <span style="color:var(--red)">*</span></label>
+            <div class="password-wrapper">
+              <input class="auth-input has-toggle" type="password" id="register-confirm-password" placeholder="Repeat your password" autocomplete="new-password" oninput="validateRegisterForm()" />
+              <button type="button" class="password-toggle" onclick="togglePassword('register-confirm-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+            </div>
+            <p id="password-match-hint" class="auth-hint" style="display: none; color: var(--red); font-weight: 800;">Passwords do not match!</p>
+          </div>
+
+          <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()" disabled>Create Account <i data-lucide="arrow-right"></i></button>
 
           <div class="oauth-divider"><span>Or sign up with</span></div>
           <div class="oauth-buttons">
@@ -733,15 +765,130 @@
     }
 
     // ── Register ───────────────────────────────────────────────
+    let isCompressing = false;
+
+    function validateRegisterForm() {
+      const name     = document.getElementById('register-name').value.trim();
+      const username = document.getElementById('register-username').value.trim();
+      const email    = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+      const pic      = document.getElementById('register-profile-pic-dataurl').value;
+      const btn      = document.getElementById('register-btn');
+      const matchHint = document.getElementById('password-match-hint');
+
+      const passwordsMatch = password === confirmPassword;
+      if (confirmPassword && !passwordsMatch) {
+        matchHint.style.display = 'block';
+      } else {
+        matchHint.style.display = 'none';
+      }
+
+      const formatErrorEl = document.getElementById('password-format-error');
+      let pwdError = '';
+      if (password.length > 0) {
+        if (password.length < 5) pwdError = 'Password must be at least 5 characters.';
+        else if (/\s/.test(password)) pwdError = 'Password must not contain any spaces.';
+        else if (!/[A-Z]/.test(password)) pwdError = 'Password must contain at least one uppercase letter.';
+        else if (!/[a-z]/.test(password)) pwdError = 'Password must contain at least one lowercase letter.';
+        else if (!/[^a-zA-Z0-9]/.test(password)) pwdError = 'Password must contain at least one special character.';
+      }
+
+      if (pwdError) {
+        document.getElementById('password-format-error-msg').textContent = pwdError;
+        formatErrorEl.classList.add('visible');
+      } else {
+        formatErrorEl.classList.remove('visible');
+      }
+
+      const isPasswordFormatValid = password.length > 0 && !pwdError;
+
+      const isFormValid = name && username && email && password && confirmPassword && passwordsMatch && isPasswordFormatValid && pic && !isCompressing;
+      btn.disabled = !isFormValid;
+    }
+
+    async function handleRegisterProfilePicSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File is too large. Max 5MB.');
+        event.target.value = '';
+        return;
+      }
+
+      const statusEl = document.getElementById('register-photo-status');
+      const btn = document.getElementById('register-btn');
+      
+      isCompressing = true;
+      statusEl.textContent = 'Compressing...';
+      statusEl.style.color = 'var(--purple)';
+      btn.disabled = true;
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+          } else {
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(async (blob) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+              const base64data = reader.result;
+              document.getElementById('register-profile-pic-dataurl').value = base64data;
+              
+              // Update UI Preview
+              const avatarImg = document.getElementById('register-avatar-img');
+              const avatarPlaceholder = document.getElementById('register-avatar-placeholder');
+              avatarImg.src = base64data;
+              avatarImg.style.display = 'block';
+              avatarPlaceholder.style.display = 'none';
+
+              isCompressing = false;
+              statusEl.textContent = 'Ready!';
+              statusEl.style.color = 'var(--green)';
+              validateRegisterForm();
+              event.target.value = '';
+            };
+          }, 'image/jpeg', 0.7);
+        };
+      };
+    }
+
     async function handleRegister() {
       clearErrors();
       const name     = document.getElementById('register-name').value.trim();
       const username = document.getElementById('register-username').value.trim();
       const email    = document.getElementById('register-email').value.trim();
       const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+      const profilePicture = document.getElementById('register-profile-pic-dataurl').value;
 
-      if (!name || !username || !email || !password) {
-        showError('register', 'Please fill in all fields.');
+      if (!name || !username || !email || !password || !confirmPassword || !profilePicture) {
+        showError('register', 'Please fill in all fields including the profile photo.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('register', 'Passwords do not match.');
         return;
       }
 
@@ -757,24 +904,16 @@
         return;
       }
 
-      if (password.length < 5) {
-        showError('register', 'Password must be at least 5 characters.');
-        return;
-      }
-      if (/\s/.test(password)) {
-        showError('register', 'Password must not contain any spaces.');
-        return;
-      }
-      if (!/[A-Z]/.test(password)) {
-        showError('register', 'Password must contain at least one uppercase letter.');
-        return;
-      }
-      if (!/[a-z]/.test(password)) {
-        showError('register', 'Password must contain at least one lowercase letter.');
-        return;
-      }
-      if (!/[^a-zA-Z0-9]/.test(password)) {
-        showError('register', 'Password must contain at least one special character.');
+      let pwdError = '';
+      if (password.length < 5) pwdError = 'Password must be at least 5 characters.';
+      else if (/\s/.test(password)) pwdError = 'Password must not contain any spaces.';
+      else if (!/[A-Z]/.test(password)) pwdError = 'Password must contain at least one uppercase letter.';
+      else if (!/[a-z]/.test(password)) pwdError = 'Password must contain at least one lowercase letter.';
+      else if (!/[^a-zA-Z0-9]/.test(password)) pwdError = 'Password must contain at least one special character.';
+      
+      if (pwdError) {
+        document.getElementById('password-format-error-msg').textContent = pwdError;
+        document.getElementById('password-format-error').classList.add('visible');
         return;
       }
 
@@ -786,7 +925,7 @@
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, username, email, password }),
+          body: JSON.stringify({ name, username, email, password, profilePicture }),
         });
         const data = await res.json();
 

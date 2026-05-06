@@ -19,10 +19,10 @@ const saltRounds = 10; // Number of salt rounds for bcrypt hashing
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, username } = req.body;
+    const { name, email, password, username, profilePicture } = req.body;
 
-    if (!name || !email || !password || !username) {
-      return res.status(400).json({ message: 'Name, username, email, and password are required' });
+    if (!name || !email || !password || !username || !profilePicture) {
+      return res.status(400).json({ message: 'Name, username, email, password, and profile picture are required' });
     }
 
     // Check if email already taken
@@ -40,11 +40,24 @@ const register = async (req, res) => {
     // Hash the password using bcrypt
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    let profileUrl = '';
+    let profileId = '';
+
+    if (profilePicture && profilePicture.startsWith('data:image')) {
+      const result = await cloudinary.uploader.upload(profilePicture, {
+        folder: 'consistency_app_profiles',
+      });
+      profileUrl = result.secure_url;
+      profileId = result.public_id;
+    }
+
     const user = new User({
       name,
       username: username.toLowerCase().trim(),
       email: email.toLowerCase().trim(),
-      password: hashedPassword
+      password: hashedPassword,
+      profilePicture: profileUrl,
+      profilePictureId: profileId
     });
     const saved = await user.save();
 

@@ -85,12 +85,28 @@ const getAchievementsByDay = async (req, res) => {
 
     // Check owner privacy (take userId from first doc)
     const User = require('../models/User');
-    const owner = await User.findById(docs[0].userId).select('achievementsPublic');
-    // If owner explicitly set private, return empty to member callers.
-    // The owner themselves always sees their own data — no auth layer here,
-    // so we use a query param ?own=1 from the frontend to bypass the check.
-    if (owner && owner.achievementsPublic === false && !req.query.own) {
-      return res.json([]);
+    const Group = require('../models/Group');
+    const ownerId = docs[0].userId;
+    const requesterId = req.user.userId;
+
+    const isOwner = String(ownerId) === String(requesterId);
+    let canView = isOwner;
+
+    if (!canView) {
+      // Check shared groups
+      const sharedGroups = await Group.find({
+        members: { $all: [ownerId, requesterId] }
+      });
+      if (sharedGroups.length > 0) {
+        const owner = await User.findById(ownerId).select('achievementsPublic');
+        if (owner && owner.achievementsPublic !== false) {
+          canView = true;
+        }
+      }
+    }
+
+    if (!canView) {
+      return res.status(403).json({ message: 'Access denied.' });
     }
 
     const results = docs.map(d => sanitizeAchievement(d));

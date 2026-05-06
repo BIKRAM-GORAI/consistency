@@ -563,18 +563,26 @@ function showUserTab(tab) {
       `;
       break;
     case 'days':
-      html = days.length ? days.map(d => `
-        <div id="day-card-${d._id}" style="padding:16px; border:3px solid #000; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow: 4px 4px 0 #000;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 12px; margin-bottom: 12px;">
-            <div style="font-weight:900; font-size: 18px; font-family: 'Space Grotesk';">${new Date(d.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-            <div style="display:flex; gap:10px;">
-              <button class="btn-save" style="padding:6px 16px; font-size:12px; flex:none; background: var(--yellow); color: #000; box-shadow: 2px 2px 0 #000;" onclick="openEditDay('${d._id}')">Edit Day</button>
-              <button class="btn-delete" style="padding:6px 16px; font-size:12px; flex:none; box-shadow: 2px 2px 0 #000;" onclick="adminDeleteDay('${d._id}')">Delete</button>
-            </div>
-          </div>
-          <div style="font-size:14px; font-weight: 700; color:#333;">${d.categories.length} Categories • ${d.categories.reduce((acc, c) => acc + c.tasks.length, 0)} Total Tasks</div>
+      html = `
+        <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px dashed #eee;">
+          <button class="btn-control" style="width: 100%; background: var(--blue); color: white; padding: 12px; box-shadow: 4px 4px 0 #000;" onclick="prepareAddNewDay('${user._id}')">
+            <i data-lucide="plus-circle"></i> + Add New Day Card
+          </button>
         </div>
-      `).join('') : '<p>No daily cards found.</p>';
+        <div id="new-day-placeholder"></div>
+        ${days.length ? days.map(d => `
+          <div id="day-card-${d._id}" style="padding:16px; border:3px solid #000; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow: 4px 4px 0 #000;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 12px; margin-bottom: 12px;">
+              <div style="font-weight:900; font-size: 18px; font-family: 'Space Grotesk';">${new Date(d.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+              <div style="display:flex; gap:10px;">
+                <button class="btn-save" style="padding:6px 16px; font-size:12px; flex:none; background: var(--yellow); color: #000; box-shadow: 2px 2px 0 #000;" onclick="openEditDay('${d._id}')">Edit Day</button>
+                <button class="btn-delete" style="padding:6px 16px; font-size:12px; flex:none; box-shadow: 2px 2px 0 #000;" onclick="adminDeleteDay('${d._id}')">Delete</button>
+              </div>
+            </div>
+            <div style="font-size:14px; font-weight: 700; color:#333;">${d.categories.length} Categories • ${d.categories.reduce((acc, c) => acc + c.tasks.length, 0)} Total Tasks</div>
+          </div>
+        `).join('') : '<p>No daily cards found.</p>'}
+      `;
       break;
     case 'ach':
       html = achievements.length ? achievements.map(a => `
@@ -814,7 +822,7 @@ function addCategoryLine() {
   div.style.overflow = 'hidden';
   div.innerHTML = `
     <div style="background: #fef9c3; padding: 10px; border-bottom: 2px solid #000; text-align: center;">
-      <input type="text" class="cat-name-input" value="NEW CATEGORY" style="font-weight:900; width:80%; text-align: center; background: transparent; border: none; font-size: 16px; text-transform: uppercase;">
+      <input type="text" class="cat-name-input" placeholder="NEW CATEGORY" style="font-weight:900; width:80%; text-align: center; background: transparent; border: none; font-size: 16px; text-transform: uppercase;">
     </div>
     <div style="padding: 15px;">
       <div class="edit-tasks-list"></div>
@@ -827,30 +835,85 @@ function addCategoryLine() {
   list.appendChild(div);
 }
 
-async function saveAdminDay(dayId) {
-  const card = document.getElementById(`day-card-${dayId}`);
+async function saveAdminDay(dayId, userId = null) {
+  const cardId = dayId ? `day-card-${dayId}` : 'day-card-new';
+  const card = document.getElementById(cardId);
+  if (!card) return;
+
+  const date = dayId ? null : document.getElementById('new-day-date').value;
+  
+  // Client-side duplicate check
+  if (!dayId && date) {
+    const exists = currentUserDetail.days.some(d => d.date === date);
+    if (exists) {
+      alert(`Conflict: A card for ${date} already exists for this user. Please edit the existing card instead.`);
+      return;
+    }
+  }
   const catBoxes = card.querySelectorAll('.edit-cat-box');
-  const categories = Array.from(catBoxes).map(box => {
-    const name = box.querySelector('.cat-name-input').value;
+  const categories = [];
+  
+  for (const box of catBoxes) {
+    const nameInput = box.querySelector('.cat-name-input');
+    const name = nameInput.value.trim();
+    if (!name) {
+      alert('Error: All categories must have a name.');
+      nameInput.focus();
+      box.style.borderColor = '#ef4444';
+      return;
+    }
+    
     const taskLines = box.querySelectorAll('.edit-tasks-list > div');
     const tasks = Array.from(taskLines).map(line => ({
       title: line.querySelector('.task-title-input').value,
       completed: line.querySelector('.task-comp-input').value === 'true'
     }));
-    return { name, tasks };
-  });
+    categories.push({ name, tasks });
+  }
 
   try {
-    const res = await fetch(`${API}/api/admin/days/${dayId}`, {
-      method: 'PATCH',
+    const url = dayId ? `${API}/api/admin/days/${dayId}` : `${API}/api/admin/users/${userId}/days`;
+    const method = dayId ? 'PATCH' : 'POST';
+    const payload = dayId ? { categories } : { date, categories };
+
+    const res = await fetch(url, {
+      method: method,
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ categories })
+      body: JSON.stringify(payload)
     });
+
     if (res.ok) {
       await openUserModal(currentUserDetail.user._id);
       showUserTab('days');
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to save day card');
     }
   } catch (err) { console.error(err); }
+}
+
+function prepareAddNewDay(userId) {
+  const placeholder = document.getElementById('new-day-placeholder');
+  placeholder.innerHTML = `
+    <div id="day-card-new" style="padding:20px; border:4px solid #000; margin-bottom:32px; background:#fff; border-radius:12px; box-shadow: 8px 8px 0 #000;">
+      <div style="font-weight:900; margin-bottom:20px; font-size: 20px; font-family:'Space Grotesk'; text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px;">
+        CREATE NEW DAY CARD
+      </div>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label>Select Date</label>
+        <input type="date" id="new-day-date" value="${new Date().toISOString().split('T')[0]}" style="font-weight: 900; font-size: 16px; border: 3px solid #000; padding: 10px; width: 100%;">
+      </div>
+      <div id="edit-categories-list">
+        <!-- New categories go here -->
+      </div>
+      <button class="btn-action" onclick="addCategoryLine()" style="width: 100%; background: #22c55e; color: white; border: 3px solid #000; padding: 12px; font-weight: 900; font-size: 14px; box-shadow: 4px 4px 0 #000; margin-top: 10px;">+ ADD NEW CATEGORY</button>
+      <div style="display:flex; gap:12px; margin-top:30px; padding-top: 20px; border-top: 2px dashed #000;">
+        <button class="btn-save" style="padding:14px; flex:1; background: #22c55e; box-shadow: 4px 4px 0 #000;" onclick="saveAdminDay(null, '${userId}')">CREATE CARD</button>
+        <button class="btn-cancel" style="padding:14px; flex:1; background: #fff; box-shadow: 4px 4px 0 #000;" onclick="document.getElementById('new-day-placeholder').innerHTML = ''">CANCEL</button>
+      </div>
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons({ root: placeholder });
 }
 
 function openEditGoal(goalId) {

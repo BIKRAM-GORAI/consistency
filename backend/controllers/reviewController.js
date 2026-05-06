@@ -9,11 +9,10 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const CREATOR_EMAILS = [
-  'bikram77620@gmail.com',
-  'gamingwithdeoxy@gmail.com',
-  'tanjirokamado777555@gmail.com' 
-];
+// Use environment variable for creator emails, fallback to primary if not set
+const CREATOR_EMAILS = process.env.REVIEW_RECIPIENT_EMAILS 
+  ? process.env.REVIEW_RECIPIENT_EMAILS.split(',').map(e => e.trim()) 
+  : ['bikram77620@gmail.com'];
 
 /**
  * Submit a new review

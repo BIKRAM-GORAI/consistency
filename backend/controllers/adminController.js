@@ -7,6 +7,8 @@ const Group = require('../models/Group');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
+const { cloudinary } = require('../config/cloudinary');
+const mongoose = require('mongoose');
 
 /**
  * Admin Login
@@ -512,6 +514,43 @@ async function updateAdminUserProfilePicture(req, res) {
   }
 }
 
+/**
+ * POST /api/admin/users/:id/days
+ */
+async function createAdminDay(req, res) {
+  try {
+    const userId = req.params.id;
+    const { date, categories, summary } = req.body;
+
+    // Fix: Validate userId format to prevent Mongoose cast errors (500)
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid User ID format.' });
+    }
+
+    if (!date) {
+      return res.status(400).json({ message: 'Date is required (YYYY-MM-DD).' });
+    }
+
+    const existingDay = await Day.findOne({ userId, date });
+    if (existingDay) {
+      return res.status(400).json({ message: 'A card already exists for this user on this date.' });
+    }
+
+    const newDay = new Day({
+      userId,
+      date,
+      categories: categories || [],
+      summary: summary || ''
+    });
+
+    await newDay.save();
+    res.status(201).json(newDay);
+  } catch (err) {
+    console.error('[ADMIN ERROR] createAdminDay:', err);
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+  }
+}
+
 module.exports = {
   adminLogin,
   getAdminReviews,
@@ -535,5 +574,6 @@ module.exports = {
   deleteGroup,
   updateAdminGroup,
   updateAdminUserProfilePicture,
-  updateAdminGroupIcon
+  updateAdminGroupIcon,
+  createAdminDay
 };
