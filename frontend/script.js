@@ -5549,15 +5549,15 @@ async function initFirebaseChat() {
   if (!userId || !token) return;
 
   try {
-    const res = await fetch(${API}/api/auth/firebase-token, {
-      headers: { 'Authorization': Bearer  }
+    const res = await fetch(`${API}/api/auth/firebase-token`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
     if (data.token) {
       const { firebaseAuth, signInWithFirebase } = window;
       if (firebaseAuth && signInWithFirebase) {
         await signInWithFirebase(firebaseAuth, data.token);
-        console.log('? Chat Session Synchronized');
+        console.log('✅ Chat Session Synchronized');
       }
     }
   } catch (err) {
