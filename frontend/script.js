@@ -3213,6 +3213,7 @@ function renderTemplatesList() {
     list.appendChild(item);
   }
   container.appendChild(list);
+  if (window.lucide) lucide.createIcons({ root: container });
 }
 
 let editTemplateCategoryCount = 0;
