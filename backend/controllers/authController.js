@@ -634,4 +634,18 @@ async function deleteAccount(req, res) {
   }
 }
 
-module.exports = { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount };
+async function getFirebaseToken(req, res) {
+  try {
+    const userId = req.user.userId;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    
+    // Generate a Firebase Custom Token using the user's MongoDB ID
+    const customToken = await admin.auth().createCustomToken(userId.toString());
+    res.json({ token: customToken });
+  } catch (error) {
+    console.error('Firebase Custom Token Error:', error);
+    res.status(500).json({ message: 'Failed to generate chat authentication token' });
+  }
+}
+
+module.exports = { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken };

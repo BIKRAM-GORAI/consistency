@@ -5537,3 +5537,30 @@ async function handleChatSubmit(e) {
     alert('Failed to send message.');
   }
 }
+
+// Sync Firebase Auth on page load
+document.addEventListener('DOMContentLoaded', () => {
+  initFirebaseChat();
+});
+
+async function initFirebaseChat() {
+  const userId = localStorage.getItem('userId');
+  const token = localStorage.getItem('token');
+  if (!userId || !token) return;
+
+  try {
+    const res = await fetch(${API}/api/auth/firebase-token, {
+      headers: { 'Authorization': Bearer  }
+    });
+    const data = await res.json();
+    if (data.token) {
+      const { firebaseAuth, signInWithFirebase } = window;
+      if (firebaseAuth && signInWithFirebase) {
+        await signInWithFirebase(firebaseAuth, data.token);
+        console.log('? Chat Session Synchronized');
+      }
+    }
+  } catch (err) {
+    console.error('Firebase Auth Sync Error:', err);
+  }
+}

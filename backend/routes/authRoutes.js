@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount } = require('../controllers/authController');
+const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken } = require('../controllers/authController');
 const { uploadProfile } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { registerValidation, loginValidation, updateProfileValidation, achievementPrivacyValidation } = require('../middleware/validation');
@@ -53,5 +53,8 @@ router.delete('/account', authenticateToken, deleteAccount);
 
 // POST upload profile picture (requires authentication)
 router.post('/profile-picture', authenticateToken, uploadProfile.single('image'), uploadProfilePicture);
+
+// GET firebase token for chat authentication (requires authentication)
+router.get('/firebase-token', authenticateToken, getFirebaseToken);
 
 module.exports = router;
