@@ -5491,11 +5491,13 @@ function renderChatMessage(msg, container) {
   bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'}`;
   
   bubble.innerHTML = `
-    <div class="chat-message-info">
-      <span class="chat-sender-name">${isSelf ? 'You' : escHtml(msg.senderName)}</span>
-      <span class="chat-time">${time}</span>
+    <div class="chat-message-header">
+      <span class="chat-sender-name">${isSelf ? 'YOU' : escHtml(msg.senderName)}</span>
     </div>
     <div class="chat-text">${escHtml(msg.text)}</div>
+    <div class="chat-message-footer">
+      <span class="chat-time">${time}</span>
+    </div>
   `;
   
   container.appendChild(bubble);

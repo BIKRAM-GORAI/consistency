@@ -2224,6 +2224,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   color: var(--text-light);
 }
 
+
 /* ── Always-visible "Log Win" row at bottom of every day card ── */
 .ach-add-row {
   display: flex;
@@ -3505,10 +3506,12 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 :root {
   --chat-self-bg: var(--yellow);
+  --chat-other-bg: #B5FF4D; /* Vibrant Neo-Brutalist Light Green */
 }
 
 [data-theme="dark"] {
   --chat-self-bg: #eab308; /* Slightly deeper gold for eye comfort */
+  --chat-other-bg: #4ade80; /* Brighter vibrant green for black text pop */
 }
 
 /* ── Refined Group Chat ── */
@@ -3539,35 +3542,42 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 .chat-bubble.other {
   align-self: flex-start;
-  background: var(--bg-card);
+  background: var(--chat-other-bg);
   border-bottom-left-radius: 4px;
-  color: var(--text);
+  color: #000000; /* Always black for high contrast in light green */
 }
 
-.chat-message-info {
+.chat-message-header {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.chat-sender-name {
+  font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.chat-bubble.self .chat-message-info { color: rgba(0,0,0,0.5); }
-.chat-bubble.other .chat-message-info { color: var(--purple); }
-
-.chat-time {
-  margin-left: auto;
-  opacity: 0.8;
-  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: rgba(0,0,0,0.65); /* High contrast dark shade */
 }
 
 .chat-text {
-  font-weight: 600;
   word-break: break-word;
-  color: inherit;
+  white-space: pre-wrap;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.chat-message-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.chat-time {
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.4);
+  text-transform: uppercase;
 }
 
 .chat-date-separator {
