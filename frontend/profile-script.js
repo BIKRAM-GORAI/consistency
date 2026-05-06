@@ -73,11 +73,17 @@ function renderProfile(data) {
 
   // Achievements
   if (data.achievements && data.achievements.length > 0) {
-    document.getElementById('prof-achievements-section').style.display = 'block';
     renderAchievements(data.achievements);
-    if (data.achievements.length >= 10) {
-      document.getElementById('load-more-ach').style.display = 'block';
-    }
+  } else {
+    const noAch = document.getElementById('no-achievements-msg');
+    if (noAch) noAch.style.display = 'block';
+  }
+  
+  // Badges
+  if (data.claimedBadges && data.claimedBadges.length > 0) {
+    renderBadges(data.claimedBadges);
+  } else {
+    document.getElementById('no-badges-msg').style.display = 'block';
   }
 
   // Days Section (Optimized for on-demand loading)
@@ -188,6 +194,30 @@ function renderAchievements(achievements, append = false) {
   if (append) container.innerHTML += html;
   else container.innerHTML = html;
   if (window.lucide) lucide.createIcons({ root: container });
+}
+
+function renderBadges(badges) {
+  const container = document.getElementById('streak-badges-grid');
+  const noMsg = document.getElementById('no-badges-msg');
+  if (!badges || badges.length === 0) {
+    noMsg.style.display = 'block';
+    return;
+  }
+  noMsg.style.display = 'none';
+  container.innerHTML = badges.map(b => `
+    <div style="width: 50px; height: 50px; border: 2px solid var(--black); background: #fff; border-radius: 6px; box-shadow: 2px 2px 0 var(--black); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="${escHtml(b.name)} (${b.requiredDays} Days)" onclick="openBadgeLightbox('${b.image}')">
+      <img src="${b.image}" style="width: 100%; height: 100%; object-fit: contain;">
+    </div>
+  `).join('');
+}
+
+function openBadgeLightbox(url) {
+  const modal = document.getElementById('image-modal');
+  const modalImg = document.getElementById('modal-img');
+  if (modal && modalImg) {
+    modalImg.src = url;
+    modal.style.display = 'flex';
+  }
 }
 
 function renderDays(days, append = false) {

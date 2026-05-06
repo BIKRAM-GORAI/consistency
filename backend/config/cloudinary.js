@@ -24,8 +24,18 @@ const groupStorage = new CloudinaryStorage({
   },
 });
 
+const badgeStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'consistency_app_badges',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    transformation: [], // No compression as requested
+  },
+});
+
 const uploadProfile = multer({ storage: profileStorage });
 const uploadGroup = multer({ storage: groupStorage });
+const uploadBadge = multer({ storage: badgeStorage });
 
 /**
  * Extracts public_id from a Cloudinary URL and deletes the image.
@@ -44,4 +54,4 @@ const deleteFromCloudinary = async (url) => {
   }
 };
 
-module.exports = { cloudinary, uploadProfile, uploadGroup, deleteFromCloudinary };
+module.exports = { cloudinary, uploadProfile, uploadGroup, uploadBadge, deleteFromCloudinary };

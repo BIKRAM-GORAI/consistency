@@ -4,6 +4,7 @@ const Day = require('../models/Day');
 const Goal = require('../models/Goal');
 const Achievement = require('../models/Achievement');
 const Group = require('../models/Group');
+const Badge = require('../models/Badge');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
@@ -169,7 +170,7 @@ async function getAdminUsers(req, res) {
  */
 async function getAdminUserDetails(req, res) {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).populate('claimedBadges');
     if (!user) return res.status(404).json({ message: 'User not found' });
     
     const days = await Day.find({ userId: user._id }).sort({ date: -1 });
@@ -575,5 +576,90 @@ module.exports = {
   updateAdminGroup,
   updateAdminUserProfilePicture,
   updateAdminGroupIcon,
-  createAdminDay
+  createAdminDay,
+  // Badge Management
+  getAdminBadges: async (req, res) => {
+    try {
+      const badges = await Badge.find().sort({ requiredDays: 1 });
+      res.json(badges);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  },
+  createBadge: async (req, res) => {
+    try {
+      const { name, requiredDays, image } = req.body;
+      if (!image) return res.status(400).json({ message: 'Badge image is required' });
+
+      // Check if badge with same days exists
+      const existing = await Badge.findOne({ requiredDays });
+      if (existing) return res.status(400).json({ message: `A badge for ${requiredDays} days already exists.` });
+
+      const result = await cloudinary.uploader.upload(image, {
+        folder: 'consistency_app_badges',
+      });
+
+      const newBadge = new Badge({
+        name,
+        requiredDays,
+        image: result.secure_url,
+        imageId: result.public_id
+      });
+
+      await newBadge.save();
+      res.status(201).json(newBadge);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  },
+  updateBadge: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, requiredDays, image } = req.body;
+
+      const badge = await Badge.findById(id);
+      if (!badge) return res.status(404).json({ message: 'Badge not found' });
+
+      // Check if threshold changed and is now conflicting
+      if (requiredDays !== badge.requiredDays) {
+        const existing = await Badge.findOne({ requiredDays, _id: { $ne: id } });
+        if (existing) return res.status(400).json({ message: `A badge for ${requiredDays} days already exists.` });
+      }
+
+      badge.name = name || badge.name;
+      badge.requiredDays = requiredDays !== undefined ? requiredDays : badge.requiredDays;
+
+      if (image && image.startsWith('data:image')) {
+        // Delete old image
+        if (badge.imageId) {
+          await cloudinary.uploader.destroy(badge.imageId);
+        }
+        const result = await cloudinary.uploader.upload(image, {
+          folder: 'consistency_app_badges',
+        });
+        badge.image = result.secure_url;
+        badge.imageId = result.public_id;
+      }
+
+      await badge.save();
+      res.json(badge);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  },
+  deleteBadge: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const badge = await Badge.findByIdAndDelete(id);
+      if (!badge) return res.status(404).json({ message: 'Badge not found' });
+
+      if (badge.imageId) {
+        await cloudinary.uploader.destroy(badge.imageId);
+      }
+
+      res.json({ message: 'Badge deleted successfully' });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
 };

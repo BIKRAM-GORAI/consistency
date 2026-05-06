@@ -466,7 +466,7 @@
     <div class="modal modal-wide" style="padding:0; border-radius:16px; overflow:hidden;">
       <div class="modal-header" style="background:var(--yellow); color:var(--black); border-bottom:var(--border); padding:16px 24px;">
         <h2 style="margin:0; font-family:'Space Grotesk', sans-serif; font-weight:900; font-size:18px; color:var(--black);">
-          <i data-lucide="user"></i> PUBLIC PROFILE
+          <i data-lucide="user" style="color: var(--black) !important;"></i> PUBLIC PROFILE
         </h2>
         <button class="modal-close" onclick="closeModal('modal-public-profile')" style="background:var(--bg-card); border:var(--border-2); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:var(--text);">
           <i data-lucide="x"></i>
@@ -491,6 +491,16 @@
           </div>
           <div class="qp-streak-pill highest">
             Highest<span class="lb-label-extra"> Streak</span> - <span id="qp-highest-streak">0</span> 🏆
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="qp-section-card qp-badge-section" id="qp-badges-section" style="border: 3px solid var(--black); border-radius: var(--r-lg); margin-bottom:24px; box-shadow: 6px 6px 0 var(--black); display:none; padding: 24px;">
+          <h4 class="qp-section-title" style="margin-bottom:20px; display: flex; align-items: center; gap: 8px; color: var(--text);">
+            <i data-lucide="award" style="width:20px; height:20px; color: var(--purple);"></i> STREAK BADGES
+          </h4>
+          <div id="qp-badges-container" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+            <!-- Injected via JS -->
           </div>
         </div>
 
@@ -742,6 +752,20 @@
               <span><i data-lucide="eye"></i> Preview Public Link</span>
             </button>
           </div>
+        </div>
+
+        <!-- Badges Section -->
+        <div class="badge-section-card">
+          <h3 class="badge-section-title"><i data-lucide="award"></i> My Streak Badges</h3>
+          
+          <div id="claimed-badges-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+            <!-- Claimed badges will be injected here -->
+            <p id="no-badges-msg" style="font-size: 13px; color: var(--text-muted); font-weight: 600;">No badges claimed yet. Start your journey!</p>
+          </div>
+
+          <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: #a855f7; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: #fff;" onclick="openBadgesModal()">
+            <span><i data-lucide="sparkles"></i> Claim Your Badges</span>
+          </button>
         </div>
 
         <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
@@ -1112,6 +1136,26 @@
       </div>
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-join-requests')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Claim Badges ===== -->
+  <div class="modal-overlay" id="modal-badges" onclick="closeModalOnOverlay(event, 'modal-badges')">
+    <div class="modal modal-wide" style="max-width: 800px;">
+      <div class="modal-header" style="background: #a855f7; color: #fff;">
+        <h2><i data-lucide="award"></i> Claim Your Streak Badges</h2>
+        <button class="modal-close" onclick="closeModal('modal-badges')" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.3); color: #fff;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <p style="font-weight: 700; margin-bottom: 20px; text-align: center; color: #666;">All badges in your journey are shown here. Only claim the ones you've earned!</p>
+        
+        <div id="all-badges-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
+          <!-- Badges injected here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-badges')">Close</button>
       </div>
     </div>
   </div>

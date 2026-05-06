@@ -458,6 +458,7 @@
         <button class="nav-link active" id="nav-reviews" onclick="showSection('reviews')">Reviews</button>
         <button class="nav-link" id="nav-users" onclick="showSection('users')">Users</button>
         <button class="nav-link" id="nav-groups" onclick="showSection('groups')">Groups</button>
+        <button class="nav-link" id="nav-badges" onclick="showSection('badges')">Badges</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -523,6 +524,19 @@
       </div>
     </div>
 
+    <!-- Badges Section -->
+    <div id="section-badges" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <h2>Streak Badge Management</h2>
+        <div class="header-actions">
+          <button class="btn-control" style="background: var(--purple); color: white;" onclick="openBadgeModal()"><i data-lucide="plus"></i> Add Badge</button>
+        </div>
+      </div>
+      <div id="badges-grid" class="review-grid">
+        <!-- Loaded via JS -->
+      </div>
+    </div>
+
 
 
   </div>
@@ -577,6 +591,40 @@
     </div>
   </div>
 
+  <!-- Badge Modal -->
+  <div id="badge-modal" class="modal-overlay">
+    <div class="modal">
+      <h3 id="badge-modal-title">Add Streak Badge</h3>
+      <form id="badge-form">
+        <input type="hidden" id="badge-id">
+        <div class="form-group">
+          <label>Badge Name</label>
+          <input type="text" id="badge-name" required placeholder="e.g. 50 Day Streak Master">
+        </div>
+        <div class="form-group">
+          <label>Required Days</label>
+          <input type="number" id="badge-days" required placeholder="e.g. 50">
+        </div>
+        <div class="form-group">
+          <label>Badge Image</label>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <div id="badge-image-preview" style="width: 120px; height: 120px; border: 3px solid var(--black); background: #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 4px 4px 0 var(--black);">
+              <img id="badge-preview-img" src="" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+              <span id="badge-preview-placeholder" style="font-size: 12px; color: #666; font-weight: 800; text-align: center; padding: 10px;">No Image Selected</span>
+            </div>
+            <input type="file" id="badge-image-input" accept="image/*" style="display: none;" onchange="handleBadgeImageSelect(event)">
+            <button type="button" class="btn-control" onclick="document.getElementById('badge-image-input').click()">Choose Image</button>
+            <div id="badge-upload-status" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-top: 5px; min-height: 15px;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn-save" id="btn-save-badge">Save Badge</button>
+          <button type="button" class="btn-cancel" onclick="closeBadgeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- User Detail Modal -->
   <div id="user-detail-modal" class="modal-overlay">
     <div class="modal" style="max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
@@ -592,6 +640,7 @@
         <button class="nav-link" id="tab-ach" onclick="showUserTab('ach')">Achievements</button>
         <button class="nav-link" id="tab-goals" onclick="showUserTab('goals')">Goals</button>
         <button class="nav-link" id="tab-groups" onclick="showUserTab('groups')">Groups</button>
+        <button class="nav-link" id="tab-user-badges" onclick="showUserTab('badges')">Badges</button>
       </div>
 
       <div id="user-modal-content" style="flex: 1; overflow-y: auto; padding-right: 10px;">

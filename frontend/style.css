@@ -1179,6 +1179,39 @@ body {
   border-radius: 0 0 var(--r-lg) var(--r-lg);
 }
 
+/* Badge Section Card (Theme Aware) */
+.badge-section-card {
+  padding: 16px;
+  background: #faf5ff; /* Light mode default */
+  border: 2px solid #a855f7;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+[data-theme="dark"] .badge-section-card {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: #a855f7;
+}
+
+.badge-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  color: #7e22ce;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-theme="dark"] .badge-section-title {
+  color: #c084fc;
+}
+
+.badge-section-title .lucide {
+  color: inherit !important;
+}
+
 /* ============================================================
    FORM ELEMENTS
    ============================================================ */
@@ -3406,6 +3439,14 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-radius: 16px;
   padding: 24px;
   box-shadow: 6px 6px 0 var(--black);
+}
+
+.qp-badge-section {
+  background: var(--bg-muted) !important;
+}
+
+[data-theme="dark"] .qp-badge-section {
+  background: #2a2a2a !important;
 }
 
 .qp-section-title {

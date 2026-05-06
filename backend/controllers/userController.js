@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Day = require('../models/Day');
 const Achievement = require('../models/Achievement');
 const Group = require('../models/Group');
+const Badge = require('../models/Badge');
 const ProfileShare = require('../models/ProfileShare');
 const crypto = require('crypto');
 
@@ -51,7 +52,7 @@ async function getPublicProfile(req, res) {
   try {
     const username = req.params.username.toLowerCase();
     
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).populate('claimedBadges');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -126,7 +127,8 @@ async function getPublicProfile(req, res) {
       days: [], // Now empty, fetched on demand
       contributionData: contributionData, // Full graph
       achievements: achievements,
-      totalDays: daysRaw.length
+      totalDays: daysRaw.length,
+      claimedBadges: user.claimedBadges || []
     });
 
   } catch (err) {
@@ -313,6 +315,54 @@ module.exports = {
   getPublicProfileAchievements,
   logProfileShare,
   getLeaderboard,
-  getPublicConfig
+  getPublicConfig,
+  // Badge Functions
+  getAllBadges: async (req, res) => {
+    try {
+      const badges = await Badge.find().sort({ requiredDays: 1 });
+      res.json(badges);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  },
+  claimBadge: async (req, res) => {
+    try {
+      const { badgeId } = req.params;
+      const { userId } = req.user;
+
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+
+      const badge = await Badge.findById(badgeId);
+      if (!badge) return res.status(404).json({ message: 'Badge not found' });
+
+      // Eligibility Check
+      if (user.highestStreak < badge.requiredDays) {
+        return res.status(400).json({ message: `You need a highest streak of ${badge.requiredDays} days to claim this badge.` });
+      }
+
+      // Check if already claimed
+      if (user.claimedBadges.includes(badgeId)) {
+        return res.status(400).json({ message: 'You have already claimed this badge.' });
+      }
+
+      user.claimedBadges.push(badgeId);
+      await user.save();
+
+      res.json({ message: 'Badge claimed successfully!', user });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  },
+  getClaimedBadges: async (req, res) => {
+    try {
+      const { userId } = req.user;
+      const user = await User.findById(userId).populate('claimedBadges');
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      res.json(user.claimedBadges);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
 };
 

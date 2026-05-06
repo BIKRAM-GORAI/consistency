@@ -66,4 +66,10 @@ router.patch('/groups/:id/icon', authenticateAdmin, adminController.updateAdminG
 router.delete('/groups/:id', authenticateAdmin, adminController.deleteGroup);
 router.delete('/groups/:groupId/members/:userId', authenticateAdmin, adminController.removeGroupMember);
 
+// Badge Management
+router.get('/badges', authenticateAdmin, adminController.getAdminBadges);
+router.post('/badges', authenticateAdmin, adminController.createBadge);
+router.put('/badges/:id', authenticateAdmin, adminController.updateBadge);
+router.delete('/badges/:id', authenticateAdmin, adminController.deleteBadge);
+
 module.exports = router;

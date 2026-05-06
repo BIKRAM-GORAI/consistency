@@ -364,6 +364,15 @@
           </a>
         </h2>
         <div class="graph-container">
+          <div style="background: var(--bg-muted); border: var(--border-2); border-radius: 12px; padding: 20px; box-shadow: 4px 4px 0 var(--black); margin-bottom: 24px;">
+            <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 15px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+              <i data-lucide="award" style="color: var(--purple);"></i> Streak Badges
+            </h3>
+            <div id="streak-badges-grid" style="display: flex; flex-wrap: wrap; gap: 12px; min-height: 40px;">
+              <!-- Badges will be injected here -->
+              <p id="no-badges-msg" style="font-size: 13px; color: #666; font-weight: 600; display: none;">No badges earned yet.</p>
+            </div>
+          </div>
           <div id="prof-contribution-graph"></div>
         </div>
       </section>
@@ -383,7 +392,7 @@
           <div style="margin-bottom: 24px; color: #111111;">
             <i data-lucide="calendar-days" style="width: 56px; height: 56px; stroke-width: 2px;"></i>
           </div>
-          <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 24px; margin-bottom: 12px; text-transform: uppercase; color: #111111;">Want  to see the daily grind?</h3>
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 24px; margin-bottom: 12px; text-transform: uppercase; color: #111111;">Want to see the daily grind?</h3>
           <p style="color: #120f0f; font-weight: 600; margin-bottom: 32px; max-width: 400px; margin-left: auto; margin-right: auto;">Explore the detailed daily tasks and progress cards from this consistency journey.</p>
           <button id="btn-view-progress" class="cta-btn" onclick="viewProgress()" style="box-shadow: 6px 6px 0px #111111; border: 2px solid #111111; padding: 18px 40px; font-size: 16px; background: #696b6a; color: #151212; border-radius: 12px; font-weight: 900; text-transform: uppercase; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;">
             <span>VIEW DAILY PROGRESS</span>

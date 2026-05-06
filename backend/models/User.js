@@ -145,7 +145,11 @@ const UserSchema = new mongoose.Schema(
     blacklistReason: {
       type: String,
       default: '',
-    }
+    },
+    claimedBadges: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Badge',
+    }]
   },
   { timestamps: true }
 );

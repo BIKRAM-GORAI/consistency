@@ -29,6 +29,7 @@ function showSection(section) {
   if (section === 'reviews') loadReviews();
   if (section === 'users') loadUsers();
   if (section === 'groups') loadGroups();
+  if (section === 'badges') loadBadges();
 }
 
 /**
@@ -645,6 +646,26 @@ function showUserTab(tab) {
         </div>
       `).join('') : '<p>User is not in any groups.</p>';
       break;
+    case 'badges':
+      const claimedBadges = user.claimedBadges || [];
+      html = `
+        <div style="padding: 20px;">
+          <h4 style="margin-bottom: 20px; font-family: 'Space Grotesk';">Claimed Badges (${claimedBadges.length})</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 20px;">
+            ${claimedBadges.length ? claimedBadges.map(b => `
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 #000; cursor: pointer; transition: all 0.2s;" 
+                   onclick="openImagePreview('${b.image}')"
+                   onmouseover="this.style.transform='translateY(-2px)'" 
+                   onmouseout="this.style.transform='translateY(0)'">
+                <img src="${b.image}" style="width: 80px; height: 80px; object-fit: contain;">
+                <div style="font-size: 12px; font-weight: 900; text-align: center; line-height: 1.2;">${b.name}</div>
+                <div style="font-size: 10px; font-weight: 700; color: #666;">${b.requiredDays} Days</div>
+              </div>
+            `).join('') : '<p style="grid-column: 1/-1; text-align: center; color: #666; font-weight: 700;">No badges claimed yet.</p>'}
+          </div>
+        </div>
+      `;
+      break;
   }
   container.innerHTML = html;
 }
@@ -1182,6 +1203,206 @@ async function handleAdminGroupIconUpload(event, groupId) {
 // Initial load
 if (window.location.pathname.includes('admin-dashboard.html')) {
   loadReviews();
+}
+
+/* ============================================================
+   BADGE MANAGEMENT LOGIC
+   ============================================================ */
+let allBadges = [];
+let selectedBadgeImage = null;
+
+async function loadBadges() {
+  const grid = document.getElementById('badges-grid');
+  grid.innerHTML = '<p>Loading badges...</p>';
+  try {
+    const res = await fetch(`${API}/api/admin/badges`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      allBadges = await res.json();
+      renderBadges(allBadges);
+    }
+  } catch (err) {
+    console.error(err);
+    grid.innerHTML = '<p style="color:red">Failed to load badges.</p>';
+  }
+}
+
+function renderBadges(badges) {
+  const grid = document.getElementById('badges-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (badges.length === 0) {
+    grid.innerHTML = '<p>No badges found. Create some to motivate users!</p>';
+    return;
+  }
+
+  badges.forEach((b, index) => {
+    const card = document.createElement('div');
+    card.className = 'review-card';
+    card.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 15px;">
+        <div style="width: 100px; height: 100px; border: 3px solid var(--black); box-shadow: 4px 4px 0 var(--black); overflow: hidden; background: #fff;">
+          <img src="${b.image}" style="width: 100%; height: 100%; object-fit: contain;">
+        </div>
+        <div>
+          <h4 style="font-family: 'Space Grotesk'; font-weight: 900; font-size: 18px; margin-bottom: 5px;">${b.name}</h4>
+          <span class="badge" style="background: var(--yellow); font-size: 12px; padding: 5px 10px;">${b.requiredDays} DAYS</span>
+        </div>
+        <div class="card-actions" style="width: 100%; margin-top: 10px;">
+          <button class="btn-action btn-edit" onclick="openBadgeModal(${index})"><i data-lucide="edit-3"></i> Edit</button>
+          <button class="btn-action btn-delete" onclick="deleteBadge('${b._id}')"><i data-lucide="trash-2"></i> Delete</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (window.lucide) {
+    lucide.createIcons({ root: grid });
+  }
+}
+
+function openBadgeModal(index = null) {
+  const modal = document.getElementById('badge-modal');
+  const title = document.getElementById('badge-modal-title');
+  const form = document.getElementById('badge-form');
+  const previewImg = document.getElementById('badge-preview-img');
+  const placeholder = document.getElementById('badge-preview-placeholder');
+  const statusEl = document.getElementById('badge-upload-status');
+
+  if (statusEl) statusEl.textContent = '';
+  form.reset();
+  selectedBadgeImage = null;
+  document.getElementById('badge-id').value = '';
+  previewImg.src = '';
+  previewImg.style.display = 'none';
+  placeholder.style.display = 'block';
+
+  if (index !== null) {
+    const b = allBadges[index];
+    title.textContent = 'Edit Streak Badge';
+    document.getElementById('badge-id').value = b._id;
+    document.getElementById('badge-name').value = b.name;
+    document.getElementById('badge-days').value = b.requiredDays;
+    previewImg.src = b.image;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    title.textContent = 'Add Streak Badge';
+  }
+
+  modal.classList.add('open');
+}
+
+function closeBadgeModal() {
+  document.getElementById('badge-modal').classList.remove('open');
+}
+
+function handleBadgeImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  const statusEl = document.getElementById('badge-upload-status');
+  const saveBtn = document.getElementById('btn-save-badge');
+
+  reader.onload = (e) => {
+    selectedBadgeImage = e.target.result;
+    const previewImg = document.getElementById('badge-preview-img');
+    const placeholder = document.getElementById('badge-preview-placeholder');
+    previewImg.src = selectedBadgeImage;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+
+    if (statusEl) {
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = '✅ Image ready for upload';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('badge-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('badge-id').value;
+  const name = document.getElementById('badge-name').value;
+  const requiredDays = document.getElementById('badge-days').value;
+  const statusEl = document.getElementById('badge-upload-status');
+  const btn = document.getElementById('btn-save-badge');
+  
+  const payload = { 
+    name, 
+    requiredDays: parseInt(requiredDays), 
+    image: selectedBadgeImage 
+  };
+  
+  try {
+    if (statusEl) {
+      statusEl.style.color = 'var(--purple)';
+      statusEl.textContent = '🚀 Uploading to Cloudinary...';
+    }
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Uploading...';
+    }
+
+    const url = id ? `${API}/api/admin/badges/${id}` : `${API}/api/admin/badges`;
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      if (statusEl) statusEl.textContent = '';
+      closeBadgeModal();
+      loadBadges();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Action failed');
+      if (statusEl) {
+        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = '❌ Upload failed';
+      }
+    }
+  } catch (err) {
+    console.error('Submit error:', err);
+    if (statusEl) {
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = '❌ Network error';
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Badge';
+    }
+  }
+});
+
+async function deleteBadge(id) {
+  if (!confirm('Are you sure you want to delete this badge?')) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/badges/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      loadBadges();
+    } else {
+      alert('Failed to delete badge');
+    }
+  } catch (err) {
+    console.error('Delete error:', err);
+  }
 }
 
 

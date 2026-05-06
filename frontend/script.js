@@ -739,6 +739,164 @@ async function saveSummary(dayId) {
   }
 }
 
+/* ============================================================
+   BADGE LOGIC (User Side)
+   ============================================================ */
+let userClaimedBadges = [];
+let allAvailableBadges = [];
+
+async function loadClaimedBadges() {
+  try {
+    const badges = await apiFetch(`${API}/api/users/badges/claimed`);
+    userClaimedBadges = badges;
+    renderClaimedBadges();
+  } catch (err) {
+    console.error('Error loading claimed badges:', err);
+  }
+}
+
+function renderClaimedBadges() {
+  const container = document.getElementById('claimed-badges-container');
+  const noMsg = document.getElementById('no-badges-msg');
+  if (!container) return;
+
+  container.innerHTML = '';
+  if (userClaimedBadges.length === 0) {
+    if (noMsg) noMsg.style.display = 'block';
+    return;
+  }
+
+  if (noMsg) noMsg.style.display = 'none';
+
+  userClaimedBadges.forEach(b => {
+    const badgeEl = document.createElement('div');
+    badgeEl.style.cssText = `
+      width: 60px; 
+      height: 60px; 
+      border: 2px solid var(--black); 
+      background: var(--bg-card); 
+      border-radius: 8px; 
+      box-shadow: 3px 3px 0 var(--black); 
+      overflow: hidden; 
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    badgeEl.title = `${b.name} (${b.requiredDays} Days)`;
+    badgeEl.innerHTML = `<img src="${b.image}" style="width: 100%; height: 100%; object-fit: contain;">`;
+    
+    badgeEl.onclick = () => {
+      openLightbox(b.image);
+      showToast(`<strong>${b.name}</strong><br>${b.requiredDays} Day Streak Badge`, 'info');
+    };
+
+    container.appendChild(badgeEl);
+  });
+}
+
+async function openBadgesModal() {
+  openModal('modal-badges');
+  await loadAllBadges();
+}
+
+async function loadAllBadges() {
+  const grid = document.getElementById('all-badges-grid');
+  grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Loading available badges...</p>';
+  
+  try {
+    const badges = await apiFetch(`${API}/api/users/badges/all`);
+    allAvailableBadges = badges;
+    renderAllBadges();
+  } catch (err) {
+    console.error('Error loading all badges:', err);
+    grid.innerHTML = '<p style="text-align:center; color: red; grid-column: 1/-1;">Failed to load badges.</p>';
+  }
+}
+
+function renderAllBadges() {
+  const grid = document.getElementById('all-badges-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const highestStreak = backendStreak; // Using backendStreak which is synced
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  allAvailableBadges.forEach(b => {
+    const isClaimed = userClaimedBadges.some(cb => cb._id === b._id);
+    const isEligible = highestStreak >= b.requiredDays;
+    
+    // Theme-aware backgrounds
+    const cardBg = isClaimed 
+      ? (isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4') 
+      : (isEligible ? 'var(--bg-card)' : (isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb'));
+    const borderCol = isClaimed ? (isDark ? '#22c55e' : 'var(--black)') : 'var(--black)';
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      padding: 16px; 
+      border: 3px solid ${borderCol}; 
+      background: ${cardBg}; 
+      border-radius: 12px; 
+      box-shadow: 4px 4px 0 var(--black); 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      text-align: center;
+      transition: all 0.2s;
+    `;
+
+    card.innerHTML = `
+      <div style="width: 80px; height: 80px; border: 2px solid var(--black); border-radius: 8px; overflow: hidden; background: var(--bg-input); margin-bottom: 12px; box-shadow: 2px 2px 0 var(--black); cursor: pointer;" onclick="openLightbox('${b.image}')">
+        <img src="${b.image}" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <h4 style="font-size: 14px; font-weight: 800; margin-bottom: 4px; line-height: 1.2; color: var(--text);">${b.name}</h4>
+      <div style="font-size: 11px; font-weight: 900; color: var(--text-muted); margin-bottom: 15px;">${b.requiredDays} DAYS STREAK</div>
+      
+      ${isClaimed ? `
+        <div style="background: #22c55e; color: #fff; padding: 6px 12px; border-radius: 6px; border: 2px solid #000; font-size: 11px; font-weight: 900; text-transform: uppercase;">
+          <i data-lucide="check"></i> Claimed
+        </div>
+      ` : (isEligible ? `
+        <button class="btn-primary ripple" style="padding: 6px 16px; font-size: 12px; background: #a855f7; width: 100%; justify-content: center; box-shadow: 2px 2px 0 #000;" onclick="claimBadge('${b._id}')">
+          Claim Now
+        </button>
+      ` : `
+        <div style="background: #94a3b8; color: #fff; padding: 6px 12px; border-radius: 6px; border: 2px solid #000; font-size: 11px; font-weight: 900; text-transform: uppercase;">
+          Locked
+        </div>
+      `)}
+    `;
+
+    grid.appendChild(card);
+  });
+
+  if (window.lucide) lucide.createIcons({ root: grid });
+}
+
+async function claimBadge(badgeId) {
+  try {
+    const res = await apiFetch(`${API}/api/users/badges/claim/${badgeId}`, {
+      method: 'POST'
+    });
+    
+    if (res.message) {
+      showToast(res.message, 'success');
+      // Refresh both lists
+      await loadClaimedBadges();
+      renderAllBadges();
+      
+      // Success animation on the profile section
+      if (window.gsap) {
+        gsap.from('#claimed-badges-container', { scale: 0.9, duration: 0.5, ease: 'back.out' });
+      }
+    }
+  } catch (err) {
+    showToast(err.message || 'Failed to claim badge', 'error');
+  }
+}
+
 // ── Add Day Modal ──────────────────────────────────────────
 let categoryCount = 0;
 
@@ -2872,6 +3030,8 @@ async function openProfileModal() {
 
     // Load LeetCode profile status
     await loadLeetCodeProfileStatus();
+
+    loadClaimedBadges();
   } catch (err) {
     console.error('Failed to load profile settings:', err);
     showToast('Failed to load profile', 'error');
@@ -3784,6 +3944,45 @@ async function openQuickView(username) {
     const qpHighest = document.getElementById('qp-highest-streak');
     if (qpCurr) qpCurr.textContent = u.currentStreak;
     if (qpHighest) qpHighest.textContent = u.highestStreak;
+
+    // 2.5 Badges
+    const badgeSection = document.getElementById('qp-badges-section');
+    const badgeContainer = document.getElementById('qp-badges-container');
+    if (badgeSection && badgeContainer) {
+      badgeContainer.innerHTML = '';
+      if (u.claimedBadges && u.claimedBadges.length > 0) {
+        badgeSection.style.display = 'block';
+        u.claimedBadges.forEach(b => {
+          const img = document.createElement('img');
+          img.src = b.image;
+          img.title = b.name;
+          img.style.cssText = `
+            width: 60px; 
+            height: 60px; 
+            object-fit: contain; 
+            cursor: pointer;
+            background: var(--bg-card); 
+            border: 3px solid var(--black);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 4px 4px 0 var(--black);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          `;
+          img.onmouseover = () => {
+            img.style.transform = 'translateY(-4px) scale(1.05)';
+            img.style.boxShadow = '6px 6px 0 var(--black)';
+          };
+          img.onmouseout = () => {
+            img.style.transform = 'translateY(0) scale(1)';
+            img.style.boxShadow = '4px 4px 0 var(--black)';
+          };
+          img.onclick = () => openLightbox(b.image);
+          badgeContainer.appendChild(img);
+        });
+      } else {
+        badgeSection.style.display = 'none';
+      }
+    }
 
     // 3. Graph
     renderContributionGraph(u.contributionData, 'qp-graph-container');
