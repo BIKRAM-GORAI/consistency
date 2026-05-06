@@ -63,7 +63,8 @@ async function getPublicProfile(req, res) {
       // If a code is provided, it MUST be valid for this user
       const validShare = await ProfileShare.findOne({ 
         userId: user._id, 
-        shareCode: code 
+        shareCode: code,
+        expiresAt: { $gt: new Date() }
       });
       if (validShare) {
         canView = true;
@@ -195,12 +196,21 @@ async function logProfileShare(req, res) {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const shareCode = crypto.randomBytes(16).toString('hex');
+    
+    // Set expiration based on platform
+    const expiresAt = new Date();
+    if (platform === 'preview' || platform === 'admin') {
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    }
 
     const share = new ProfileShare({
       userId: user._id,
       username: user.username,
       platform: platform || 'unknown',
-      shareCode
+      shareCode,
+      expiresAt
     });
 
     await share.save();
@@ -210,11 +220,65 @@ async function logProfileShare(req, res) {
   }
 }
 
+/**
+ * GET /api/users/leaderboard?sort=current&page=1&limit=10
+ * Returns a paginated list of public users sorted by currentStreak or highestStreak.
+ */
+async function getLeaderboard(req, res) {
+  try {
+    const sortField = req.query.sort === 'highest' ? 'highestStreak' : 'currentStreak';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = {
+      isPublicProfile: { $ne: false },
+      username: { $exists: true, $ne: null },
+      isBlacklisted: { $ne: true }
+    };
+
+    const usersRaw = await User.find(query)
+      .select('name username profilePicture currentStreak highestStreak lastActiveAt')
+      .sort({ [sortField]: -1, lastActiveAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const maxRankings = parseInt(process.env.MAX_RANKINGS_SHOWN) || 100;
+    const realTotal = await User.countDocuments(query);
+    const cappedTotal = Math.min(realTotal, maxRankings);
+    
+    // Capping the users list if it exceeds maxRankings
+    let users = usersRaw;
+    if (skip + users.length > maxRankings) {
+      users = users.slice(0, Math.max(0, maxRankings - skip));
+    }
+
+    res.json({
+      users,
+      total: cappedTotal,
+      page,
+      limit,
+      hasMore: cappedTotal > (skip + users.length),
+      maxRankingsShown: maxRankings
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function getPublicConfig(req, res) {
+  res.json({
+    maxRankingsShown: parseInt(process.env.MAX_RANKINGS_SHOWN) || 100
+  });
+}
+
 module.exports = {
   searchUsers,
   getPublicProfile,
   getPublicProfileDays,
   getPublicProfileAchievements,
-  logProfileShare
+  logProfileShare,
+  getLeaderboard,
+  getPublicConfig
 };
 

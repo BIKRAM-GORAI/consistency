@@ -46,6 +46,7 @@ router.delete('/reviews/:id', authenticateAdmin, adminController.deleteReview);
 router.get('/users', authenticateAdmin, adminController.getAdminUsers);
 router.get('/users/:id', authenticateAdmin, adminController.getAdminUserDetails);
 router.patch('/users/:id', authenticateAdmin, adminController.updateAdminUser);
+router.patch('/users/:id/profile-picture', authenticateAdmin, adminController.updateAdminUserProfilePicture);
 router.post('/users/:id/preview-link', authenticateAdmin, adminController.generateAdminPreviewLink);
 router.patch('/users/:id/blacklist', authenticateAdmin, adminController.toggleUserBlacklist);
 router.delete('/users/:id', authenticateAdmin, adminController.deleteUser);
@@ -57,5 +58,10 @@ router.patch('/goals/:id', authenticateAdmin, adminController.updateAdminGoal);
 router.delete('/goals/:id', authenticateAdmin, adminController.deleteAdminGoal);
 router.patch('/achievements/:id', authenticateAdmin, adminController.updateAdminAchievement);
 router.delete('/achievements/:id', authenticateAdmin, adminController.deleteAdminAchievement);
+router.get('/groups', authenticateAdmin, adminController.getAdminGroups);
+router.patch('/groups/:id', authenticateAdmin, adminController.updateAdminGroup);
+router.patch('/groups/:id/icon', authenticateAdmin, adminController.updateAdminGroupIcon);
+router.delete('/groups/:id', authenticateAdmin, adminController.deleteGroup);
+router.delete('/groups/:groupId/members/:userId', authenticateAdmin, adminController.removeGroupMember);
 
 module.exports = router;

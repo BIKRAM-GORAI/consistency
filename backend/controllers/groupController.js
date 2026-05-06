@@ -119,6 +119,11 @@ const joinGroup = async (req, res) => {
       return res.status(400).json({ message: 'You are already a member of this group.' });
     }
 
+    // Auto-remove any pending join request if this is a public group and they are joining via code
+    if (group.requests && group.requests.length > 0) {
+      group.requests = group.requests.filter(req => String(req.user) !== String(userId));
+    }
+
     group.members.push(userId);
     await group.save();
 
@@ -138,15 +143,33 @@ const myGroups = async (req, res) => {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
 
-    const groups = await Group.find({ members: userId })
+    const groupsRaw = await Group.find({ members: userId })
       .populate('members', 'name username profilePicture currentStreak highestStreak')
       .populate('owner', 'name username profilePicture')
       .populate('requests.user', 'name username profilePicture')
       .sort({ createdAt: -1 });
 
+    // Filter sensitive data before sending
+    const groups = groupsRaw.map(g => {
+      const groupObj = g.toObject();
+      const isOwner = String(groupObj.owner._id || groupObj.owner) === String(userId);
+      
+      // Only owner sees the join code and requests
+      if (!isOwner) {
+        delete groupObj.code;
+        delete groupObj.requests;
+      }
+      
+      // Add memberCount for UI convenience
+      groupObj.memberCount = g.members.length;
+      
+      return groupObj;
+    });
+
     res.json(groups);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error(`[ERROR] myGroups for user ${req.user?.userId}:`, err);
+    res.status(500).json({ message: 'Server error loading your groups.', error: err.message });
   }
 };
 
@@ -157,13 +180,23 @@ const myGroups = async (req, res) => {
 const publicGroups = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const groups = await Group.find({
+    const groupsRaw = await Group.find({
       isPublic: true,
       members: { $ne: userId }
     })
-    .select('name description isPublic icon members requests owner createdAt') // Exclude code
+    .select('name description isPublic icon members requests owner createdAt') 
     .populate('owner', 'name username profilePicture')
     .sort({ createdAt: -1 });
+
+    // Filter to hide member list and only show count
+    const groups = groupsRaw.map(g => {
+      const groupObj = g.toObject();
+      groupObj.memberCount = g.members ? g.members.length : 0;
+      groupObj.hasRequested = g.requests ? g.requests.some(r => String(r.user) === String(userId)) : false;
+      delete groupObj.members; 
+      delete groupObj.requests;
+      return groupObj;
+    });
 
     res.json(groups);
   } catch (err) {

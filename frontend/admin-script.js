@@ -7,25 +7,28 @@ if (!token && !window.location.pathname.includes('admin-login.html')) {
   window.location.href = 'admin-login.html';
 }
 
+function openImagePreview(url) {
+  if (!url) return;
+  const modal = document.getElementById('image-modal');
+  const img = document.getElementById('modal-img');
+  img.src = url;
+  modal.style.display = 'flex';
+}
+
 /**
  * SPA Navigation
  */
-function showSection(sectionId) {
-  // Update nav links
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.classList.toggle('active', link.getAttribute('onclick').includes(`'${sectionId}'`));
+function showSection(section) {
+  document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+  document.getElementById(`section-${section}`).style.display = 'block';
+  
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.toggle('active', l.id === `nav-${section}`);
   });
 
-  // Update sections
-  document.querySelectorAll('.admin-section').forEach(section => {
-    section.style.display = section.id === `section-${sectionId}` ? 'block' : 'none';
-  });
-
-  if (sectionId === 'reviews') {
-    loadReviews();
-  } else if (sectionId === 'users') {
-    loadUsers();
-  }
+  if (section === 'reviews') loadReviews();
+  if (section === 'users') loadUsers();
+  if (section === 'groups') loadGroups();
 }
 
 /**
@@ -91,7 +94,10 @@ function renderReviews(reviews) {
 
     card.innerHTML = `
       <div class="review-meta">
-        <span>${r.name || '<span style="color:red">No Name</span>'}</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          ${getAvatarHtml(r.userProfilePicture, r.name, 30)}
+          <span>${r.name || '<span style="color:red">No Name</span>'}</span>
+        </div>
         <span>${date}</span>
       </div>
       <div class="review-email">${r.email || 'no-email@provided.com'}</div>
@@ -221,10 +227,198 @@ async function deleteReview(id) {
 }
 
 /* ============================================================
+   GROUPS LOGIC
+   ============================================================ */
+async function loadGroups() {
+  const grid = document.getElementById('groups-grid');
+  grid.innerHTML = '<p>Loading groups...</p>';
+  try {
+    const res = await fetch(`${API}/api/admin/groups`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      allGroups = await res.json();
+      grid.innerHTML = allGroups.length ? allGroups.map(g => `
+        <div style="padding:24px; border:3px solid #000; background:#fff; border-radius:12px; box-shadow: 6px 6px 0 #000; position: relative; display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Header: Icon, Name, Buttons, Owner -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 15px;">
+             <!-- Left: Icon & Name -->
+             <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="group-icon-container-${g._id}">
+                  ${getAvatarHtml(g.icon, g.name, 56, '10px')}
+                </div>
+                <div>
+                  <div id="group-name-${g._id}" style="font-weight:900; font-size: 22px; font-family: 'Space Grotesk'; line-height: 1.1;">${g.name}</div>
+                  <div style="font-size:12px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 8px; height: 8px; border-radius: 50%; background: ${g.isPublic ? '#22c55e' : '#666'};"></span>
+                      ${g.isPublic ? 'Public Group' : 'Private Group'}
+                    </div>
+                    <span style="color: #ccc;">|</span>
+                    <div style="background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 11px; letter-spacing: 1px;">CODE: ${g.code}</div>
+                  </div>
+                </div>
+             </div>
+
+             <!-- Right: Actions & Owner -->
+             <div style="text-align: right; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                  <button class="btn-control" style="padding: 6px 10px; font-size: 11px; box-shadow: 2px 2px 0 #000; background: var(--blue); color: #fff;" onclick="document.getElementById('admin-group-pic-input-${g._id}').click()">Change Icon</button>
+                  <input type="file" id="admin-group-pic-input-${g._id}" style="display:none" accept="image/*" onchange="handleAdminGroupIconUpload(event, '${g._id}')">
+                  <button class="btn-control" style="padding: 6px 10px; font-size: 11px; box-shadow: 2px 2px 0 #000;" onclick="openEditGroup('${g._id}')">Edit Info</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; background: #f8f8f8; padding: 6px 10px; border: 2px solid #000; border-radius: 8px;">
+                  <div style="text-align: right;">
+                    <div style="font-size: 9px; font-weight: 900; color: #666; text-transform: uppercase; line-height: 1;">Owner</div>
+                    <div style="font-weight: 900; font-size: 13px;">${g.owner?.name || 'Unknown'}</div>
+                  </div>
+                  ${getAvatarHtml(g.owner?.profilePicture, g.owner?.name, 28)}
+                </div>
+             </div>
+          </div>
+          
+          <!-- Content: Description & Members -->
+          <div id="group-details-${g._id}" style="flex: 1;">
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; color: #666; display: flex; align-items: center; gap: 5px;">
+              <i data-lucide="info" style="width: 14px;"></i> Description
+            </div>
+            <p style="font-size: 14px; font-weight: 600; color: #444; background: #fef9c3; padding: 12px; border: 2px solid #000; border-radius: 8px; margin-bottom: 20px; line-height: 1.4;">
+              ${g.description || 'No description provided.'}
+            </p>
+            
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px; color: #666; display: flex; align-items: center; gap: 5px;">
+              <i data-lucide="users" style="width: 14px;"></i> Members (${g.members.length})
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;">
+              ${g.members.map(m => {
+                const isOwner = g.owner?._id === m._id;
+                return `
+                  <div style="position: relative;">
+                    <div onclick="openSecureProfile('${m._id}')" style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 2px solid #eee; border-radius: 10px; cursor: pointer; transition: all 0.2s; background: #fafafa;" onmouseover="this.style.borderColor='#000'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#eee'; this.style.transform='none'">
+                      ${getAvatarHtml(m.profilePicture, m.name, 28)}
+                      <div style="font-size: 12px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${m.name}</div>
+                    </div>
+                    ${!isOwner ? `
+                      <button onclick="adminRemoveMember('${g._id}', '${m._id}')" title="Remove from group" style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: white; border: 2px solid #000; font-size: 12px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; box-shadow: 2px 2px 0 rgba(0,0,0,0.2);">×</button>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Footer: Delete Action -->
+          <button class="btn-delete" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; box-shadow: 4px 4px 0 #000; margin-top: 10px;" onclick="adminDeleteGroup('${g._id}')">
+            Delete Group Permanently
+          </button>
+        </div>
+      `).join('') : '<p>No groups found on the platform.</p>';
+    }
+  } catch (err) {
+    console.error(err);
+    grid.innerHTML = '<p style="color:red">Failed to load groups.</p>';
+  }
+}
+
+async function adminDeleteGroup(id) {
+  if (!confirm('DELETE GROUP: This will dissolve the team for all members. Continue?')) return;
+  try {
+    const res = await fetch(`${API}/api/admin/groups/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      loadGroups();
+    }
+  } catch (err) { console.error(err); }
+}
+
+async function adminRemoveMember(groupId, userId) {
+  if (!confirm('Remove this member from the group?')) return;
+  try {
+    const res = await fetch(`${API}/api/admin/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      loadGroups();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to remove member');
+    }
+  } catch (err) { console.error(err); }
+}
+
+let allGroups = []; // Cache for editing
+async function openEditGroup(id) {
+  const g = allGroups.find(x => x._id === id);
+  if (!g) return;
+  
+  const detailBox = document.getElementById(`group-details-${id}`);
+  const nameBox = document.getElementById(`group-name-${id}`);
+  
+  nameBox.innerHTML = `
+    <input type="text" id="edit-group-name-${id}" value="${g.name}" style="font-family: inherit; font-weight: 900; font-size: 18px; border: 2px solid #000; padding: 4px; width: 100%; margin-bottom: 5px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 10px; font-weight: 900; color: #666; text-transform: uppercase;">Join Code:</span>
+      <input type="text" id="edit-group-code-${id}" value="${g.code}" style="font-family: monospace; font-weight: 900; font-size: 12px; border: 2px solid #000; padding: 2px 6px; width: 100px; text-transform: uppercase; background: #fff;">
+    </div>
+  `;
+  
+  detailBox.innerHTML = `
+    <textarea id="edit-group-desc-${id}" style="width: 100%; height: 80px; padding: 10px; border: 2px solid #000; border-radius: 8px; font-family: inherit; font-weight: 600; margin-bottom: 10px;">${g.description || ''}</textarea>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <button class="btn-save" style="padding: 8px; font-size: 12px; flex: 1; box-shadow: 2px 2px 0 #000;" onclick="saveAdminGroup('${id}')">Save Group Details</button>
+      <button class="btn-cancel" style="padding: 8px; font-size: 12px; flex: 1; box-shadow: 2px 2px 0 #000;" onclick="loadGroups()">Cancel</button>
+    </div>
+    <div style="font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px; color: #666;">Members (${g.members.length})</div>
+    <p style="font-size: 11px; color: #888;">(Member management disabled during edit)</p>
+  `;
+}
+
+async function saveAdminGroup(id) {
+  const name = document.getElementById(`edit-group-name-${id}`).value;
+  const description = document.getElementById(`edit-group-desc-${id}`).value;
+  const codeInput = document.getElementById(`edit-group-code-${id}`);
+  const code = codeInput ? codeInput.value : undefined;
+  
+  try {
+    const res = await fetch(`${API}/api/admin/groups/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ name, description, code })
+    });
+    if (res.ok) {
+      loadGroups();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to update group');
+    }
+  } catch (err) { console.error(err); }
+}
+
+/* ============================================================
    USER MANAGEMENT LOGIC
    ============================================================ */
 let allUsers = [];
 let currentUserDetail = null;
+
+// Helper for dynamic avatars (Initials vs Image)
+function getAvatarHtml(pic, name, size = 40, borderRadius = '50%') {
+  if (pic) {
+    return `<img src="${pic}" onclick="openImagePreview('${pic}')" style="width: ${size}px; height: ${size}px; border-radius: ${borderRadius}; border: 2px solid #000; object-fit: cover; display: block; cursor: zoom-in;" title="Click to view full size">`;
+  }
+  const initial = name ? name.charAt(0).toUpperCase() : '?';
+  const colors = ['#facc15', '#f472b6', '#60a5fa', '#4ade80', '#a78bfa', '#fb923c'];
+  const bgColor = colors[name ? name.length % colors.length : 0];
+  
+  return `
+    <div class="avatar-initial" style="width: ${size}px; height: ${size}px; border-radius: ${borderRadius}; background: ${bgColor}; font-size: ${size * 0.4}px; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 2px solid #000;">
+      ${initial}
+    </div>
+  `;
+}
 
 // Debounce helper
 function debounce(func, timeout = 500) {
@@ -273,7 +467,7 @@ function renderUsers(users) {
     row.innerHTML = `
       <td style="padding: 12px; font-weight: 800;">${index + 1}</td>
       <td style="padding: 12px;">
-        <img src="${u.profilePicture || 'https://placehold.co/40'}" style="width: 40px; height: 40px; border-radius: 8px; border: 2px solid #111; object-fit: cover;">
+        ${getAvatarHtml(u.profilePicture, u.name, 40, '8px')}
       </td>
       <td style="padding: 12px;">
         <div style="font-weight: 900; font-family: 'Space Grotesk';">${u.name}</div>
@@ -336,21 +530,32 @@ function showUserTab(tab) {
   switch (tab) {
     case 'info':
       html = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding-bottom: 24px; border-bottom: 2px dashed #eee; margin-bottom: 24px;">
+          <div id="admin-user-avatar-container">
+            ${getAvatarHtml(user.profilePicture, user.name, 120, '12px')}
+          </div>
+          <button class="btn-control" style="background: var(--yellow); font-size: 11px; padding: 8px 16px; box-shadow: 3px 3px 0 #000;" onclick="document.getElementById('admin-user-pic-input').click()">
+            <i data-lucide="camera"></i> Change Profile Picture
+          </button>
+          <input type="file" id="admin-user-pic-input" style="display:none" accept="image/*" onchange="handleAdminUserPicUpload(event, '${user._id}')">
+          <p style="font-size: 11px; color: #666; font-weight: 700;">Click to upload a new avatar for this user</p>
+        </div>
+
         <div class="form-group">
           <label>Full Name</label>
           <input type="text" id="user-edit-name" value="${user.name}">
         </div>
         <div class="form-group">
           <label>Email</label>
-          <input type="email" id="user-edit-email" value="${user.email}" readonly style="background:#f0f0f0;">
+          <input type="email" id="user-edit-email" value="${user.email}" readonly style="background:#f0f0f0; cursor: not-allowed;">
         </div>
         <div class="form-group">
           <label>Username</label>
           <input type="text" id="user-edit-username" value="${user.username || ''}">
         </div>
-        <button class="btn-save" onclick="saveUserBasicInfo('${user._id}')">Save Changes</button>
+        <button class="btn-save" style="width: 100%; padding: 14px; margin-top: 10px;" onclick="saveUserBasicInfo('${user._id}')">Save Account Details</button>
         
-        <div class="danger-zone">
+        <div class="danger-zone" style="margin-top: 40px; padding: 20px; border: 3px solid #ef4444; border-radius: 12px; background: #fff1f2;">
           <h4 style="color: #ef4444; margin-bottom: 12px; font-family:'Space Grotesk'; font-size: 18px;">🛑 DANGER ZONE</h4>
           <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Once you delete this account, all their data (days, goals, achievements) will be permanently erased. This cannot be undone.</p>
           <button class="btn-delete" style="width:100%; padding: 14px; font-size: 14px;" onclick="adminDeleteUser('${user._id}')">Delete User Account Completely</button>
@@ -423,7 +628,7 @@ function showUserTab(tab) {
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
               ${g.members.map(m => `
                 <div onclick="openSecureProfile('${m._id}')" style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 2px solid #eee; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#000'; this.style.background='#f9f9f9'" onmouseout="this.style.borderColor='#eee'; this.style.background='transparent'">
-                  <img src="${m.profilePicture || 'https://placehold.co/30'}" style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #000; object-fit: cover;">
+                  ${getAvatarHtml(m.profilePicture, m.name, 30)}
                   <div style="font-size: 13px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</div>
                 </div>
               `).join('')}
@@ -801,9 +1006,114 @@ async function openSecureProfile(userId) {
   }
 }
 
-function logout() {
+async function logout() {
   localStorage.removeItem('adminToken');
   window.location.href = 'admin-login.html';
+}
+
+async function handleAdminUserPicUpload(event, userId) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const container = document.getElementById('admin-user-avatar-container');
+  const originalHtml = container.innerHTML;
+  container.innerHTML = '<div style="width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; background: #eee; border: 2px solid #000; border-radius: 12px;"><div class="spinner-ring" style="width:40px; height:40px;"></div></div>';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        }
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        const res = await fetch(`${API}/api/admin/users/${userId}/profile-picture`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ profilePicture: dataUrl })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          currentUserDetail.user.profilePicture = data.profilePicture;
+          container.innerHTML = getAvatarHtml(data.profilePicture, currentUserDetail.user.name, 120, '12px');
+          loadUsers();
+        } else {
+          alert('Failed to update picture');
+          container.innerHTML = originalHtml;
+        }
+      };
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = originalHtml;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handleAdminGroupIconUpload(event, groupId) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const container = document.getElementById(`group-icon-container-${groupId}`);
+  const originalHtml = container.innerHTML;
+  container.innerHTML = '<div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: #eee; border: 2px solid #000; border-radius: 8px;"><div class="spinner-ring" style="width:20px; height:20px;"></div></div>';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        }
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        const res = await fetch(`${API}/api/admin/groups/${groupId}/icon`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ icon: dataUrl })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          container.innerHTML = getAvatarHtml(data.icon, 'Group', 48, '8px');
+          // Update cached allGroups if needed
+          const g = allGroups.find(x => x._id === groupId);
+          if (g) g.icon = data.icon;
+        } else {
+          alert('Failed to update group icon');
+          container.innerHTML = originalHtml;
+        }
+      };
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = originalHtml;
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 // Initial load

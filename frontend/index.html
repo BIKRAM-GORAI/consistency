@@ -39,7 +39,7 @@
   <!-- ===== NAVIGATION ===== -->
   <nav class="navbar" id="navbar">
     <div class="nav-brand">
-      <span class="brand-icon" style="font-size: 26px; color: var(--black); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);"><i data-lucide="zap"></i></span>
+      <span class="brand-icon" style="font-size: 26px; color: var(--black); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);"><i data-lucide="zap" class="no-theme"></i></span>
       <span class="brand-name">Consistency</span>
     </div>
 
@@ -61,6 +61,9 @@
       </button>
       <button class="nav-btn" id="btn-achievements" onclick="showPage('achievements')">
         <span><i data-lucide="trophy"></i></span><span class="btn-text"> Wins</span>
+      </button>
+      <button class="nav-btn" id="btn-leaderboard" onclick="showPage('leaderboard')">
+        <span><i data-lucide="crown"></i></span><span class="btn-text"> Rankings</span>
       </button>
     </div>
 
@@ -173,6 +176,47 @@
         <p>Loading achievements...</p>
       </div>
     </div>
+  </main>
+
+  <!-- ===== LEADERBOARD PAGE ===== -->
+  <main class="page" id="page-leaderboard">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i data-lucide="crown"></i> Global Rankings <span id="lb-title-extra" style="font-size: 0.6em; opacity: 0.7; vertical-align: middle; margin-left: 8px;"></span></h1>
+        <p class="page-subtitle" style="margin-bottom: 8px;">The top consistent legends of the platform</p>
+        <p style="font-size:11px; font-weight:700; color:var(--text-muted); margin-top:10px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.8;">
+          <i data-lucide="info" style="width:12px;height:12px;margin-right:4px;vertical-align:middle;margin-top:-2px;"></i> Only public profiles are shown in the rankings
+        </p>
+      </div>
+      <div class="lb-sort-buttons">
+        <button class="btn-lb-sort active" id="btn-sort-current" onclick="setLeaderboardSort('current')">
+          <i data-lucide="flame"></i> Current Streak
+        </button>
+        <button class="btn-lb-sort" id="btn-sort-highest" onclick="setLeaderboardSort('highest')">
+          <i data-lucide="trending-up"></i> All-Time Highest
+        </button>
+      </div>
+    </div>
+
+    <div class="leaderboard-wrapper">
+      <div id="leaderboard-list" class="leaderboard-list">
+        <!-- Leaderboard items injected here -->
+      </div>
+      
+      <div id="leaderboard-load-more-wrap" style="text-align:center; margin-top:32px; display:none;">
+        <button class="btn-ghost ripple" id="btn-load-more-lb" onclick="loadLeaderboard(false)" style="padding:12px 32px; font-weight:800; border:3px solid var(--black); background:var(--bg-card);">
+          Load More Legends
+        </button>
+      </div>
+
+      <div class="loading-spinner" id="lb-loading" style="display:none;">
+        <div class="spinner-ring"></div>
+        <p>Fetching rankings...</p>
+      </div>
+    </div>
+
+    <!-- My Rank Spotlight -->
+    <div id="lb-my-rank-area"></div>
   </main>
 
   <!-- ===== MODAL: Add New Day ===== -->
@@ -417,23 +461,59 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: Member Tasks (read-only) ===== -->
-  <div class="modal-overlay" id="modal-member-tasks" onclick="closeModalOnOverlay(event, 'modal-member-tasks')">
-    <div class="modal modal-wide">
-      <div class="modal-header">
-        <h2 id="member-tasks-title"><i data-lucide="user"></i> Member Tasks</h2>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <button class="btn-view-ach-all" id="btn-view-member-achievements" onclick="openMemberAllAchievements()" title="View all achievements"><i data-lucide="trophy" style="width: 14px; height: 14px;"></i> Wins</button>
-          <button class="modal-close" onclick="closeModal('modal-member-tasks')"><i data-lucide="x"></i></button>
+  <!-- ===== MODAL: Public Profile (Quick View) ===== -->
+  <div class="modal-overlay" id="modal-public-profile" onclick="closeModalOnOverlay(event, 'modal-public-profile')">
+    <div class="modal modal-wide" style="padding:0; border-radius:16px; overflow:hidden;">
+      <div class="modal-header" style="background:var(--yellow); color:var(--black); border-bottom:var(--border); padding:16px 24px;">
+        <h2 style="margin:0; font-family:'Space Grotesk', sans-serif; font-weight:900; font-size:18px; color:var(--black);">
+          <i data-lucide="user"></i> PUBLIC PROFILE
+        </h2>
+        <button class="modal-close" onclick="closeModal('modal-public-profile')" style="background:var(--bg-card); border:var(--border-2); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:var(--text);">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body" style="padding:32px; background:var(--bg-card); color:var(--text);">
+        <!-- Avatar & Name -->
+        <div style="text-align:center; margin-bottom:24px;">
+          <div id="qp-avatar-wrap" style="width:100px; height:100px; margin:0 auto 16px; border:var(--border); border-radius:50%; overflow:hidden; background:var(--bg-muted);">
+            <img id="qp-avatar-img" src="" alt="" style="width:100%; height:100%; object-fit:cover; display:none;">
+            <div id="qp-avatar-placeholder" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:40px; font-weight:900; color:var(--text-muted);">?</div>
+          </div>
+          <h3 id="qp-name" style="font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:900; margin:0; text-transform:uppercase;">User Name</h3>
+          <p id="qp-username" style="color:var(--text-muted); font-weight:600; margin:4px 0 0 0;">@username</p>
+        </div>
+
+        <!-- Streak Pills -->
+        <div style="display:flex; justify-content:center; gap:12px; margin-bottom:32px; flex-wrap:wrap;">
+          <div class="qp-streak-pill current">
+            Current<span class="lb-label-extra"> Streak</span> - <span id="qp-current-streak">0</span> 🔥
+          </div>
+          <div class="qp-streak-pill highest">
+            Highest<span class="lb-label-extra"> Streak</span> - <span id="qp-highest-streak">0</span> 🏆
+          </div>
+        </div>
+
+        <!-- Contributions -->
+        <div class="qp-section-card" style="background:var(--bg-muted); border:var(--border-2); border-radius:var(--r-lg);">
+          <h4 class="qp-section-title" style="margin-bottom:16px;">Activity Graph</h4>
+          <div id="qp-graph-container" style="overflow-x:auto; padding:10px 0;">
+            <!-- SVG will be injected here by JS -->
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div style="margin-top:32px;">
+          <h4 class="qp-section-title" style="border-bottom:var(--border-2); padding-bottom:8px; margin-bottom:16px;">Feed</h4>
+          <div id="qp-activity-list" class="qp-activity-list">
+            <!-- Items injected here -->
+          </div>
         </div>
       </div>
-      <div class="modal-body" id="member-tasks-body">
-        <!-- Populated by JS -->
-      </div>
-      <!-- Sticky close footer -->
-      <div class="modal-footer member-tasks-footer">
-        <button class="btn-member-close ripple" onclick="closeModal('modal-member-tasks')">
-          <span><i data-lucide="arrow-left"></i></span> Close
+
+      <div class="modal-footer" style="padding:20px 32px; background:var(--bg); border-top:var(--border-2); text-align:right;">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-public-profile')" style="background:var(--bg-card); color:var(--text); border:3px solid var(--black); padding:10px 32px; font-weight:900; border-radius:8px; box-shadow:4px 4px 0 var(--black);">
+          Close
         </button>
       </div>
     </div>
@@ -514,6 +594,10 @@
     <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
       <span class="bnav-icon"><i data-lucide="trophy"></i></span>
       <span>Wins</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-leaderboard" onclick="showPage('leaderboard')">
+      <span class="bnav-icon"><i data-lucide="crown"></i></span>
+      <span>Rankings</span>
     </button>
   </nav>
 
@@ -654,7 +738,7 @@
             <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--teal); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="sharePublicProfile()">
               <span><i data-lucide="share-2"></i> Share My Profile</span>
             </button>
-            <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid var(--black); font-size: 14px; text-transform: uppercase; font-weight: 700;" onclick="previewOwnProfile()">
+            <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid var(--black); font-size: 14px; text-transform: uppercase; font-weight: 700;" onclick="previewFullProfile()">
               <span><i data-lucide="eye"></i> Preview Public Link</span>
             </button>
           </div>
@@ -796,7 +880,7 @@
               </div>
             </div>
 
-            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="previewOwnProfile()" id="preview-profile-btn">
+            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="previewMinimalProfile()" id="preview-minimal-btn">
               <span><i data-lucide="eye"></i> How others view my profile</span>
             </button>
           </div>

@@ -5,8 +5,14 @@ const { userSearchValidation } = require('../middleware/validation');
 
 const { authenticateTokenOptional } = require('../middleware/auth');
 
+// Get public config
+router.get('/config', userController.getPublicConfig);
+
 // Search users
 router.get('/search', userSearchValidation, userController.searchUsers);
+
+// Global Leaderboard
+router.get('/leaderboard', userController.getLeaderboard);
 
 // Get public profile
 router.get('/:username', authenticateTokenOptional, userController.getPublicProfile);

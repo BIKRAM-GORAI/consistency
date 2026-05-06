@@ -59,6 +59,29 @@ const MAX_USERNAME_CHANGES = 3;
 // Current day ID for LeetCode problem addition
 let currentLeetCodeDayId = null;
 
+// Leaderboard state
+let lbPage = 1;
+let lbSort = 'current'; // 'current' or 'highest'
+let lbHasMore = false;
+let lbIsLoading = false;
+let globalConfig = {
+  maxRankingsShown: 100
+};
+
+async function fetchConfig() {
+  try {
+    const config = await apiFetch(`${API}/api/users/config`);
+    if (config && config.maxRankingsShown) {
+      globalConfig.maxRankingsShown = config.maxRankingsShown;
+      // Update UI title if it exists
+      const lbTitleExtra = document.getElementById('lb-title-extra');
+      if (lbTitleExtra) lbTitleExtra.textContent = ` (Top ${globalConfig.maxRankingsShown})`;
+    }
+  } catch (err) {
+    console.error('Failed to fetch config:', err);
+  }
+}
+
 // Cached validation result — reused in addLeetCodeProblem to avoid a second API call
 let currentLeetCodeValidation = null;
 
@@ -251,6 +274,7 @@ function showPage(page) {
   if (page === 'goals')        loadGoals();
   if (page === 'groups')       loadGroups();
   if (page === 'achievements') loadAchievements();
+  if (page === 'leaderboard')  loadLeaderboard(true);
 }
 
 // ── API ────────────────────────────────────────────────────
@@ -1446,7 +1470,6 @@ function renderGroups() {
   // ── Section 3: Joined Public Groups ──────────────────────
   renderGroupSection(container, '<i data-lucide="globe"></i> Joined Public Groups', joinedPublic, false, 'globe', 'You haven\'t joined any public groups yet.');
 
-  // ── Section 4: Available Public Groups ───────────────────
   if (availablePublicGroups.length > 0) {
     const divider = document.createElement('hr');
     divider.className = 'groups-divider';
@@ -1457,6 +1480,9 @@ function renderGroups() {
     let html = `
       <div class="groups-section-header">
         <h2 class="groups-section-title"><i data-lucide="sparkles"></i> Discover Public Groups</h2>
+        <button class="btn-ghost ripple groups-join-btn" onclick="openJoinGroupModal()" style="font-size: 11px; padding: 6px 12px; border: 2px solid var(--black); border-radius: 8px;">
+          <span><i data-lucide="hash"></i></span> Join via Code
+        </button>
       </div>
       <div class="groups-list">
     `;
@@ -1476,9 +1502,9 @@ function renderGroups() {
             <span class="group-owner-badge" style="background: var(--bg-muted); border: 1px solid var(--green); color: var(--green); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 10px; text-transform: uppercase;">BY ${escHtml(group.owner.name || 'Admin')}</span>
           </div>
           ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
-          <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.members.length} members</p>
+          <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.memberCount || 0} members</p>
           <div style="display: flex; justify-content: center; width: 100%;">
-            ${group.requests && group.requests.some(r => String(r.user._id || r.user) === String(userId)) ? 
+            ${group.hasRequested ? 
               `<button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--red); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800; color: #fff;" onclick="cancelJoinRequest('${group._id}', '${escJs(group.name)}')"><i data-lucide="x-circle"></i> Cancel Request</button>` :
               `<button class="btn-primary ripple" style="width: 80%; justify-content: center; background: var(--green); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 12px; font-size: 16px; font-weight: 800;" onclick="joinPublicGroup('${group._id}', '${escJs(group.name)}')"><i data-lucide="user-plus"></i> Request to Join</button>`
             }
@@ -1491,7 +1517,6 @@ function renderGroups() {
     container.appendChild(publicSection);
   }
 
-  // GSAP entrance
   if (window.gsap) {
     gsap.from('.group-card, .group-empty-card', {
       opacity: 0,
@@ -1546,27 +1571,45 @@ function renderSingleGroupCard(group, emoji) {
   return `
     <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}">
       <div class="group-card-top">
-        <div class="group-name-wrap">
-          ${iconHtml}
-          <span class="group-name">${escHtml(group.name)}</span>
-          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;margin-left:4px;" onclick="openEditGroupModal('${group._id}', '${escJs(group.name)}', '${group.icon || ''}', '${escJs(group.description || '')}')"><i data-lucide="edit-3"></i></button>` : ''}
-          ${isMyOwned ? `<button class="btn-ghost" style="padding:4px;font-size:12px;color:#ef4444;margin-left:4px;" onclick="deleteGroup('${group._id}')"><i data-lucide="trash-2"></i></button>` : ''}
-        </div>
-        ${!isPublic && isMyOwned ? `
-          <div class="team-code-wrap">
-            <span class="team-code-label">Join Code</span>
-            <button class="team-code-pill" onclick="copyTeamCode('${group.code}')" title="Click to copy">
-              <span class="team-code-text">${group.code}</span>
-              <span class="team-code-copy"><i data-lucide="copy"></i></span>
-            </button>
+        <!-- Left Side: Identity & Core Actions -->
+        <div class="group-card-left">
+          <div class="group-name-wrap">
+            ${iconHtml}
+            <div style="min-width: 0;">
+              <span class="group-name" style="font-size: 1.15rem; font-weight: 800;">${escHtml(group.name)}</span>
+              ${!isMyOwned ? `<span class="group-owner-badge" style="border: 1px solid var(--text-muted); padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 9px; text-transform: uppercase;">by ${escHtml(group.owner.name || 'Unknown')}</span>` : ''}
+            </div>
           </div>
-        ` : ''}
-        ${isMyOwned && group.requests && group.requests.length > 0 ? `
-          <button class="btn-ghost ripple" style="padding: 4px 10px; font-size: 11px; background: var(--pink); color: #fff; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); font-weight: 800; text-transform: uppercase;" onclick="openRequestsModal('${group._id}')">
-            <i data-lucide="user-plus"></i> ${group.requests.length} Request${group.requests.length !== 1 ? 's' : ''}
-          </button>
-        ` : ''}
-        ${!isMyOwned ? `<span class="group-owner-badge" style="border: 1px solid var(--text-muted); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px;">by ${escHtml(group.owner.name || 'Unknown')}</span>` : ''}
+          
+          ${isMyOwned ? `
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn-group-admin" onclick="openEditGroupModal('${group._id}', '${escJs(group.name)}', '${group.icon || ''}', '${escJs(group.description || '')}')">
+                <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Edit
+              </button>
+              <button class="btn-group-admin delete" onclick="deleteGroup('${group._id}')">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete
+              </button>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Right Side: Access & Metadata -->
+        <div class="group-card-right">
+          ${isMyOwned ? `
+            <div class="team-code-wrap" style="margin: 0;">
+              <button class="team-code-pill" style="height: 34px; background: var(--yellow); padding: 0 12px; border: 2px solid #000; box-shadow: 3px 3px 0 #000; display: flex; align-items: center; gap: 8px;" onclick="copyTeamCode('${group.code}')" title="Click to copy">
+                <span class="team-code-text" style="font-size: 13px; font-weight: 900; letter-spacing: 1px;">${group.code}</span>
+                <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          ` : ''}
+
+          ${isMyOwned && group.requests && group.requests.length > 0 ? `
+            <button class="btn-ghost ripple" style="height: 34px; padding: 0 14px; font-size: 11px; background: var(--pink); color: #fff; border: 2px solid var(--black); box-shadow: 3px 3px 0 var(--black); font-weight: 900; text-transform: uppercase; display: flex; align-items: center; gap: 8px;" onclick="openRequestsModal('${group._id}')">
+              <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i> ${group.requests.length} Request${group.requests.length !== 1 ? 's' : ''}
+            </button>
+          ` : ''}
+        </div>
       </div>
       ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
       <p class="group-meta">${group.members.length} member${group.members.length !== 1 ? 's' : ''}</p>
@@ -1636,7 +1679,7 @@ async function openRequestsModal(groupId) {
             <div style="display: flex; align-items: center; gap: 12px;">
               ${avatarHtml}
               <div>
-                <p style="font-weight: 800; margin: 0; cursor:pointer;" onclick="closeModal('modal-join-requests'); openPublicProfile('${u.username}')" title="View Profile">${escHtml(u.name)}</p>
+                <p style="font-weight: 800; margin: 0; cursor:pointer;" onclick="closeModal('modal-join-requests'); openQuickView('${u.username}')" title="View Profile">${escapeHTML(u.name)}</p>
                 <p style="font-size: 12px; color: var(--text-muted); margin: 0;">@${escHtml(u.username)}</p>
               </div>
             </div>
@@ -1805,14 +1848,14 @@ function buildMembersHTML(members, groupId, isOwner = false) {
     const avatarClick = profilePic ? `onclick="openLightbox('${profilePic}')"` : '';
 
     const nameClick = (!isSelf && member.username) 
-      ? `onclick="openPublicProfile('${member.username}')" style="cursor: pointer; color: inherit;" title="View Profile"` 
+      ? `onclick="openQuickView('${member.username}')" style="cursor: pointer; color: inherit;" title="View Profile"` 
       : '';
 
     return `
       <div class="member-pill">
         <div class="member-avatar" style="background:${memberAvatarColor(memberName)}" ${avatarClick}>${avatarContent}</div>
         <span class="member-name" ${nameClick}>${escHtml(memberName)}${isSelf ? ' (you)' : ''}</span>
-        ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escJs(memberName)}')">View Tasks</button>` : ''}
+        ${!isSelf ? `<button class="member-view-btn ripple" onclick="openMemberTasks('${memberId}', '${escJs(memberName)}', '${member.username || ''}')"><span class="vbtn-full">View Tasks</span><span class="vbtn-short">Tasks</span></button>` : ''}
         ${removeBtn}
       </div>
     `;
@@ -1829,7 +1872,7 @@ function memberAvatarColor(name) {
 
 function copyTeamCode(code) {
   navigator.clipboard.writeText(code).then(() => {
-    showToast(`Code "${code}" copied to clipboard!`, 'success');
+    showToast(`Code "${code}" copied! ⚠️ Warning: Anyone with this code can join directly without request.`, 'success');
   }).catch(() => {
     showToast(`Your code: ${code}`, 'info');
   });
@@ -2049,14 +2092,20 @@ let memberDaysHasMore = false;
 let memberCurrentStreak = 0;
 let memberHighestStreak = 0;
 
-async function openMemberTasks(memberId, memberName) {
+async function openMemberTasks(memberId, memberName, username = null) {
   const titleEl = document.getElementById('member-tasks-title');
-  const bodyEl  = document.getElementById('member-tasks-body');
+  const bodyEl  = document.getElementById('member-tasks-list-area');
+  const insightsArea = document.getElementById('member-insights-area');
 
-  titleEl.innerHTML = `<i data-lucide="clipboard-list"></i> ${escHtml(memberName)}'s Tasks`;
+  titleEl.innerHTML = `<i data-lucide="user"></i> ${escapeHTML(memberName)}'s Insights`;
   if (window.lucide) lucide.createIcons({ root: titleEl });
-  bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+  
+  bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading journey...</p></div>`;
+  insightsArea.style.display = 'none';
+  insightsArea.innerHTML = '';
+  
   openModal('modal-member-tasks');
+  
   _currentMemberId   = memberId;
   _currentMemberName = memberName;
   memberDaysPage = 1;
@@ -2065,12 +2114,39 @@ async function openMemberTasks(memberId, memberName) {
   memberCurrentStreak = 0;
   memberHighestStreak = 0;
 
+  // If username is provided, fetch extra insights (graph, etc.)
+  if (username) {
+    (async () => {
+      try {
+        const res = await apiFetch(`/api/users/${username}`);
+        if (res && res.user) {
+          insightsArea.style.display = 'block';
+          insightsArea.innerHTML = `
+            <div class="quick-insights-grid">
+              <div class="insight-pill">
+                <span class="insight-val">${res.user.currentStreak}</span>
+                <span class="insight-lbl">Current</span>
+              </div>
+              <div class="insight-pill">
+                <span class="insight-val">${res.user.highestStreak}</span>
+                <span class="insight-lbl">Highest</span>
+              </div>
+            </div>
+            <div id="quick-view-graph" class="quick-view-graph-container" style="overflow-x:auto; margin-top:16px; background:var(--bg); padding:16px; border:2px solid var(--black); border-radius:12px;">
+              <svg id="quick-profile-graph" width="800" height="150"></svg>
+            </div>
+          `;
+          renderContributionGraph(res.user.contributionData, 'quick-profile-graph');
+        }
+      } catch (e) { console.error('Insights load fail', e); }
+    })();
+  }
+
   await loadMemberDays();
 }
 
 async function loadMemberDays() {
-  const titleEl = document.getElementById('member-tasks-title');
-  const bodyEl  = document.getElementById('member-tasks-body');
+  const bodyEl  = document.getElementById('member-tasks-list-area');
 
   try {
     const response = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(_currentMemberId)}&page=${memberDaysPage}&limit=10`);
@@ -2080,29 +2156,10 @@ async function loadMemberDays() {
     memberDaysData = memberDaysData.concat(days);
     memberDaysHasMore = response.pagination ? response.pagination.hasMore : false;
 
-    // Use streak from backend response if available, otherwise calculate from loaded days
     if (response.streak) {
       memberCurrentStreak = response.streak.current || 0;
       memberHighestStreak = response.streak.highest || 0;
-    } else {
-      // Fallback to calculation for backward compatibility
-      const streakInfo = calculateStreak(memberDaysData);
-      memberCurrentStreak = streakInfo.count;
-      memberHighestStreak = memberCurrentStreak; // Can't calculate highest from partial data
     }
-
-    const isTodayDone = memberCurrentStreak > 0; // Simplified check
-    const icon = isTodayDone ? '🔥' : (memberCurrentStreak > 0 ? '<i data-lucide="alert-circle"></i>' : '<i data-lucide="sprout"></i>');
-    const streakBadge = memberCurrentStreak > 0
-      ? ` <span class="member-streak-badge">${icon} ${memberCurrentStreak} day streak</span>`
-      : ` <span class="member-streak-badge member-streak-zero">${icon} No streak yet</span>`;
-
-    const highestBadge = memberHighestStreak > 0
-      ? ` <span class="member-streak-badge" style="background:#fef3c7; color:#d97706;"><i data-lucide="trophy"></i> ${memberHighestStreak} highest</span>`
-      : '';
-
-    titleEl.innerHTML = `<i data-lucide="clipboard-list"></i> ${escHtml(_currentMemberName)}'s Tasks${streakBadge}${highestBadge}`;
-    if (window.lucide) lucide.createIcons({ root: titleEl });
 
     if (!memberDaysData.length) {
       bodyEl.innerHTML = `
@@ -2210,7 +2267,7 @@ async function openMemberAllAchievements() {
   const titleEl = document.getElementById('member-tasks-title');
   titleEl.innerHTML = `<button id="btn-back-to-tasks" style="background:var(--bg-card);border:var(--border-2);border-radius:var(--r-sm);padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;margin-right:8px;box-shadow:2px 2px 0 var(--black);font-family:'Inter',sans-serif;text-transform:uppercase;color:var(--text);" title="Back to daily tasks"><i data-lucide="arrow-left"></i> Back</button><i data-lucide="trophy"></i> ${escHtml(_currentMemberName)}'s Achievements`;
   const backBtn = document.getElementById('btn-back-to-tasks');
-  if (backBtn) backBtn.addEventListener('click', () => openMemberTasks(_currentMemberId, _currentMemberName));
+  if (backBtn) backBtn.addEventListener('click', () => openMemberTasks(_currentMemberId, _currentMemberName, _currentMemberUsername));
   bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
   try {
     let achs = [];
@@ -2267,6 +2324,7 @@ async function openMemberAllAchievements() {
 // Track which memberId is currently open in the member-tasks modal
 let _currentMemberId   = null;
 let _currentMemberName = null;
+let _currentMemberUsername = null;
 
 // ── Inline day card: load + render achievements ────────────
 async function loadDayAchievements(dayId, cardEl) {
@@ -3303,6 +3361,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (themeToggle) themeToggle.checked = true;
   }
 
+  fetchConfig();
+
   // Today's date subtitle
   const display = document.getElementById('today-date-display');
   if (display) {
@@ -3663,7 +3723,7 @@ async function performSearch(query) {
           searchDropdown.style.display = 'none';
           if (searchInput) searchInput.value = '';
           if (window.collapseSearchInput) window.collapseSearchInput();
-          openPublicProfile(u.username);
+          openQuickView(u.username);
         };
         
         searchDropdown.appendChild(item);
@@ -3676,72 +3736,176 @@ async function performSearch(query) {
 }
 
 // ── Public Profile ──────────────────────────────────────────
-async function openPublicProfile(targetUsername) {
+/**
+ * Opens the high-fidelity Quick View modal for a user.
+ * This is the standard "In-App" profile view.
+ */
+async function openQuickView(username) {
+  if (!username) {
+    showToast('Username not set for this user.', 'warn');
+    return;
+  }
+  
   try {
-    const profile = await apiFetch(`${API}/api/users/${encodeURIComponent(targetUsername)}`);
-    
-    // Header
-    const imgEl = document.getElementById('public-profile-img');
-    const initEl = document.getElementById('public-profile-init');
-    if (profile.profilePicture) {
-      imgEl.src = profile.profilePicture;
-      imgEl.style.display = 'block';
-      initEl.style.display = 'none';
-    } else {
-      imgEl.src = '';
-      imgEl.style.display = 'none';
-      initEl.style.display = 'block';
-      initEl.textContent = profile.username.charAt(0).toUpperCase();
+    // Show a loading state if needed or just fetch fast
+    const u = await apiFetch(`${API}/api/users/${encodeURIComponent(username)}`);
+    if (!u || !u.username) {
+      showToast('Profile not found or private.', 'error');
+      return;
     }
+
+    _currentMemberId = u._id;
+    _currentMemberName = u.name;
+    _currentMemberUsername = u.username;
     
-    document.getElementById('public-profile-name').textContent = profile.name || profile.username;
-    document.getElementById('public-profile-username').textContent = `@${profile.username}`;
-    document.getElementById('public-profile-streak').textContent = profile.currentStreak;
-    document.getElementById('public-profile-highest-streak').textContent = profile.highestStreak || 0;
+    // 1. Identity
+    const qpName = document.getElementById('qp-name');
+    const qpUsername = document.getElementById('qp-username');
+    if (qpName) qpName.textContent = u.name;
+    if (qpUsername) qpUsername.textContent = `@${u.username}`;
     
-    // Graph
-    renderContributionGraph(profile.contributionData);
-    
-    // Activity (Cards & Achievements)
-    const actContainer = document.getElementById('public-profile-activity');
-    actContainer.innerHTML = '';
-    
-    // Mix days and achievements, sort by date desc
-    const combined = [];
-    if (profile.days) {
-      profile.days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
+    const avatarImg = document.getElementById('qp-avatar-img');
+    const avatarPlc = document.getElementById('qp-avatar-placeholder');
+    if (avatarImg && avatarPlc) {
+      if (u.profilePicture) {
+        avatarImg.src = u.profilePicture;
+        avatarImg.style.display = 'block';
+        avatarPlc.style.display = 'none';
+      } else {
+        avatarImg.style.display = 'none';
+        avatarPlc.style.display = 'flex';
+        avatarPlc.textContent = u.name.charAt(0).toUpperCase();
+      }
     }
-    if (profile.achievements) {
-      profile.achievements.forEach(a => {
-        const dStr = new Date(a.date).toISOString().split('T')[0];
-        combined.push({ type: 'achievement', date: dStr, data: a });
-      });
-    }
-    combined.sort((a, b) => b.date.localeCompare(a.date));
-    
-    const maxItems = 15; // Limit recent activity
-    const toRender = combined.slice(0, maxItems);
-    
-    if (toRender.length === 0) {
-      actContainer.innerHTML = '<p style="color:var(--text-muted);">No recent activity.</p>';
-    } else {
-      toRender.forEach(item => {
-        if (item.type === 'day') {
-          actContainer.appendChild(buildReadOnlyDayCard(item.data));
-        } else {
-          actContainer.appendChild(buildReadOnlyAchievementCard(item.data));
+
+    // 2. Streaks
+    const qpCurr = document.getElementById('qp-current-streak');
+    const qpHighest = document.getElementById('qp-highest-streak');
+    if (qpCurr) qpCurr.textContent = u.currentStreak;
+    if (qpHighest) qpHighest.textContent = u.highestStreak;
+
+    // 3. Graph
+    renderContributionGraph(u.contributionData, 'qp-graph-container');
+
+    // 4. Feed (Mixed Days & Achievements)
+    const activityList = document.getElementById('qp-activity-list');
+    if (activityList) {
+      activityList.innerHTML = '<div class="loading-spinner" style="padding:20px;"><div class="spinner-ring"></div></div>';
+      
+      try {
+        // Fetch first page of days to show task progress in feed
+        const days = await apiFetch(`${API}/api/users/${encodeURIComponent(username)}/days?page=1&limit=5`);
+        
+        const combined = [];
+        if (days && days.length > 0) {
+          days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
         }
-      });
+        if (u.achievements && u.achievements.length > 0) {
+          u.achievements.forEach(a => combined.push({ type: 'achievement', date: a.date, data: a }));
+        }
+        
+        // Sort newest first
+        combined.sort((a, b) => b.date.localeCompare(a.date));
+        
+        activityList.innerHTML = '';
+        const recent = combined.slice(0, 10);
+        
+        if (recent.length === 0) {
+          activityList.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No recent activity recorded yet.</p>';
+        } else {
+          recent.forEach(item => {
+            if (item.type === 'day') {
+              activityList.appendChild(buildReadOnlyDayCard(item.data));
+            } else {
+              activityList.appendChild(buildReadOnlyAchievementCard(item.data));
+            }
+          });
+          
+          if (u.achievements.length > 5) {
+            const moreBtn = document.createElement('button');
+            moreBtn.className = 'btn-ghost ripple';
+            moreBtn.style.width = '100%';
+            moreBtn.style.marginTop = '12px';
+            moreBtn.style.fontSize = '12px';
+            moreBtn.style.fontWeight = '800';
+            moreBtn.innerHTML = `View All ${u.achievements.length} Wins <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>`;
+            moreBtn.onclick = () => {
+              _currentMemberId = u._id;
+              _currentMemberName = u.name;
+              openMemberAllAchievements();
+            };
+            activityList.appendChild(moreBtn);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading feed:', err);
+        activityList.innerHTML = '<p style="text-align:center; color:var(--red); font-size:12px;">Failed to load recent activity.</p>';
+      }
     }
-    
+
     openModal('modal-public-profile');
+    if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-public-profile') });
+
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Quick view error:', err);
+    showToast('Failed to load profile summary.', 'error');
   }
 }
 
-function renderContributionGraph(data) {
-  const container = document.getElementById('public-profile-graph');
+async function previewFullProfile() {
+  const input = document.getElementById('profile-username');
+  const username = input ? input.value.trim() : localStorage.getItem('userUsername');
+  
+  if (!username) {
+    showToast('Please set a username in settings first.', 'warn');
+    return;
+  }
+  
+  try {
+    const logData = await logShare('preview');
+    const shareCode = logData ? logData.shareCode : null;
+    
+    closeModal('modal-profile');
+    if (shareCode) {
+      window.open(`profile.html?u=${username}&code=${shareCode}`, '_blank');
+    } else {
+      window.open(`profile.html?u=${username}`, '_blank');
+    }
+  } catch (err) {
+    closeModal('modal-profile');
+    window.open(`profile.html?u=${username}`, '_blank');
+  }
+}
+
+function previewMinimalProfile() {
+  const input = document.getElementById('profile-username');
+  const username = input ? input.value.trim() : localStorage.getItem('userUsername');
+  
+  if (!username) {
+    showToast('Please set a username in settings first.', 'warn');
+    return;
+  }
+  
+  // Close the settings modal first to avoid overlap
+  closeModal('modal-profile');
+  openQuickView(username);
+}
+
+async function openMemberTasks(memberId, memberName, username = null) {
+  _currentMemberId = memberId;
+  _currentMemberName = memberName;
+  
+  // If we have a username, use the new high-fidelity view
+  if (username) {
+    return openQuickView(username);
+  }
+  
+  // Fallback to legacy member tasks if no username
+  showToast('Profile info unavailable for this member.', 'info');
+}
+
+function renderContributionGraph(data, targetId = 'public-profile-graph') {
+  const container = document.getElementById(targetId);
   
   // Create a map of date -> completedCount
   const dateMap = {};
@@ -3799,7 +3963,7 @@ function renderContributionGraph(data) {
       maxX = Math.max(maxX, x + cellSize);
       
       const fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
-      const stroke = completed > 0 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
+      const stroke = 'rgba(0,0,0,0.1)';
       const toastMsg = `${dateStr}\\n${completed} task${completed === 1 ? '' : 's'} completed`;
       const titleHover = `${dateStr}: ${completed} task${completed === 1 ? '' : 's'} completed`;
       
@@ -3821,9 +3985,13 @@ function renderContributionGraph(data) {
 
 function buildReadOnlyDayCard(day) {
   const card = document.createElement('div');
-  card.className = 'card neo-card';
+  card.className = 'qp-activity-item';
+  card.style.background = 'var(--bg-muted)';
+  card.style.border = 'var(--border-2)';
+  card.style.borderRadius = 'var(--r-md)';
   card.style.padding = '16px';
-  card.style.marginBottom = '0';
+  card.style.marginBottom = '12px';
+  card.style.display = 'block';
   
   let totalTasks = 0, completedTasks = 0;
   let tasksHtml = '<div style="margin-top:12px; display:none; flex-direction:column; gap:8px;" class="public-day-tasks">';
@@ -3862,10 +4030,14 @@ function buildReadOnlyDayCard(day) {
 
 function buildReadOnlyAchievementCard(ach) {
   const card = document.createElement('div');
-  card.className = 'card neo-card';
+  card.className = 'qp-activity-item';
+  card.style.background = 'rgba(255, 62, 165, 0.08)';
+  card.style.border = '2px solid var(--pink)';
+  card.style.borderRadius = 'var(--r-md)';
   card.style.padding = '16px';
-  card.style.marginBottom = '0';
-  card.style.borderLeft = '4px solid var(--pink)';
+  card.style.marginBottom = '12px';
+  card.style.display = 'block';
+  card.style.borderLeftWidth = '6px';
   
   card.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -3877,17 +4049,6 @@ function buildReadOnlyAchievementCard(ach) {
   return card;
 }
 
-function previewOwnProfile() {
-  const unameInput = document.getElementById('profile-username');
-  if (!unameInput) return;
-  const uname = unameInput.value.trim();
-  if (!uname) {
-    showToast('You must set a username first before previewing your profile.', 'warn');
-    return;
-  }
-  closeModal('modal-profile');
-  openPublicProfile(uname);
-}
 
 // ── LeetCode Integration ──────────────────────────────────────────
 
@@ -4890,3 +5051,141 @@ async function previewOwnProfile() {
   }
 }
 
+
+// ── Leaderboard ───────────────────────────────────────────
+
+function setLeaderboardSort(type) {
+  if (lbSort === type && lbPage > 1) return; 
+  lbSort = type;
+  
+  // UI feedback for buttons
+  const btnCurrent = document.getElementById('btn-sort-current');
+  const btnHighest = document.getElementById('btn-sort-highest');
+  if (btnCurrent) btnCurrent.classList.toggle('active', lbSort === 'current');
+  if (btnHighest) btnHighest.classList.toggle('active', lbSort === 'highest');
+  
+  loadLeaderboard(true);
+}
+
+async function loadLeaderboard(reset = false) {
+  if (lbIsLoading) return;
+  if (reset) {
+    lbPage = 1;
+    const listContainer = document.getElementById('leaderboard-list');
+    if (listContainer) listContainer.innerHTML = '';
+    const myRankArea = document.getElementById('lb-my-rank-area');
+    if (myRankArea) myRankArea.innerHTML = '';
+  }
+
+  lbIsLoading = true;
+  const loadingEl = document.getElementById('lb-loading');
+  if (loadingEl) loadingEl.style.display = 'block';
+  const loadMoreWrap = document.getElementById('leaderboard-load-more-wrap');
+  if (loadMoreWrap) loadMoreWrap.style.display = 'none';
+
+  try {
+    const res = await apiFetch(`/api/users/leaderboard?sort=${lbSort}&page=${lbPage}&limit=10`);
+    if (!res) return;
+
+    const { users, total, hasMore } = res;
+    lbHasMore = hasMore;
+    
+    const listContainer = document.getElementById('leaderboard-list');
+    if (listContainer) {
+      if (users.length === 0 && reset) {
+        listContainer.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:700;">No legends found yet. Be the first!</div>`;
+      } else {
+        users.forEach((user, index) => {
+          const rank = ((lbPage - 1) * 10) + index + 1;
+          listContainer.appendChild(renderLeaderboardItem(user, rank));
+        });
+      }
+    }
+
+    const loadMoreWrapFinal = document.getElementById('leaderboard-load-more-wrap');
+    if (loadMoreWrapFinal) loadMoreWrapFinal.style.display = lbHasMore ? 'block' : 'none';
+    lbPage++;
+
+    // My Rank Spotlight (if first page)
+    if (reset) {
+      const myUsername = localStorage.getItem('userUsername');
+      const isMeInTop10 = users.some(u => u.username === myUsername);
+      
+      if (!isMeInTop10 && myUsername) {
+        const me = {
+          name: localStorage.getItem('userName') || 'You',
+          username: myUsername,
+          profilePicture: localStorage.getItem('userProfilePicture'),
+          currentStreak: parseInt(localStorage.getItem('userCurrentStreak')) || 0,
+          highestStreak: parseInt(localStorage.getItem('userHighestStreak')) || 0
+        };
+        
+        const myRankArea = document.getElementById('lb-my-rank-area');
+        if (myRankArea) {
+          const myRankCard = renderLeaderboardItem(me, '?', true);
+          myRankCard.classList.add('my-rank-card');
+          myRankArea.appendChild(myRankCard);
+        }
+      }
+    }
+
+    // Refresh icons
+    if (window.lucide) lucide.createIcons();
+
+  } catch (err) {
+    console.error('Leaderboard load error:', err);
+  } finally {
+    lbIsLoading = false;
+    const loadingElFinal = document.getElementById('lb-loading');
+    if (loadingElFinal) loadingElFinal.style.display = 'none';
+  }
+}
+
+function renderLeaderboardItem(user, rank, isSpotlight = false) {
+  const card = document.createElement('div');
+  card.className = 'lb-card';
+  
+  let rankClass = '';
+  if (rank === 1) {
+    rankClass = 'rank-1';
+    card.classList.add('card-rank-1');
+  } else if (rank === 2) {
+    rankClass = 'rank-2';
+    card.classList.add('card-rank-2');
+  } else if (rank === 3) {
+    rankClass = 'rank-3';
+    card.classList.add('card-rank-3');
+  }
+
+  const avatarHtml = user.profilePicture 
+    ? `<img src="${user.profilePicture}" class="lb-avatar" onclick="event.stopPropagation(); openLightbox('${user.profilePicture}')" alt="${escapeHTML(user.username)}">`
+    : `<div class="lb-avatar" style="display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; background:var(--bg-muted); color:var(--text-muted);">${(user.username || '?').charAt(0).toUpperCase()}</div>`;
+
+  card.innerHTML = `
+    <div class="lb-rank ${rankClass}">${rank === '?' ? '<i data-lucide="user"></i>' : rank}</div>
+    ${avatarHtml}
+    <div class="lb-info">
+      <div class="lb-name-row">
+        <span class="lb-name">${escapeHTML(user.name)}</span>
+        ${rank === 1 ? '<span>👑</span>' : ''}
+      </div>
+      <div class="lb-username">@${escapeHTML(user.username)}</div>
+    </div>
+    <div class="lb-stats">
+      <div class="lb-streak-box current" title="Current Streak">
+        <span class="lb-streak-val">${user.currentStreak}</span>
+        <span class="lb-streak-label"><span class="lb-label-main">Current</span><span class="lb-label-extra"> Streak</span></span>
+      </div>
+      <div class="lb-streak-box highest" title="Highest Streak">
+        <span class="lb-streak-val">${user.highestStreak || 0}</span>
+        <span class="lb-streak-label"><span class="lb-label-main">Highest</span><span class="lb-label-extra"> Streak</span></span>
+      </div>
+    </div>
+  `;
+
+  card.onclick = () => {
+    openQuickView(user.username);
+  };
+
+  return card;
+}

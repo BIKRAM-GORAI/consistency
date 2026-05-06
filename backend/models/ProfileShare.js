@@ -22,6 +22,11 @@ const ProfileShareSchema = new mongoose.Schema({
   sharedAt: {
     type: Date,
     default: Date.now
+  },
+  expiresAt: {
+    type: Date,
+    required: true,
+    index: { expires: '0s' } // Deletes the document exactly at the expiresAt timestamp
   }
 });
 

@@ -676,6 +676,34 @@
       box-shadow: 6px 6px 0 var(--black);
     }
     .upcoming-icon { font-size: 20px; }
+    .upcoming-card.done {
+      background: #f0ece4;
+      color: #999;
+      opacity: 0.8;
+      box-shadow: 2px 2px 0 var(--black);
+      position: relative;
+      overflow: hidden;
+    }
+    .upcoming-card.done .upcoming-text {
+      text-decoration: line-through;
+      text-decoration-thickness: 3px;
+      text-decoration-color: var(--red);
+    }
+    .upcoming-card.done::after {
+      content: 'DONE';
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #22c55e;
+      color: #fff;
+      font-size: 8px;
+      padding: 2px 6px;
+      font-weight: 900;
+      border: 1px solid var(--black);
+      box-shadow: 1px 1px 0 var(--black);
+      transform: rotate(10deg);
+      border-radius: 4px;
+    }
 
     /* ── Team / Contact ── */
     .landing-team {
@@ -1062,13 +1090,13 @@
     <div class="upcoming-grid">
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="users"></i></span> Add Friends</div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="trophy"></i></span> Leaderboards & Challenges</div>
-      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="globe"></i></span> Public Groups</div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="globe"></i></span> <span class="upcoming-text">Public Groups</span></div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="swords"></i></span> Group Competitions</div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="medal"></i></span> Streak Badges</div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="palette"></i></span> Shareable Stats & Stickers</div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="message-square"></i></span> Live Group Chat</div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="message-circle"></i></span> Comments on Daily Cards</div>
-      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="lock"></i></span> Advanced Privacy Controls</div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="lock"></i></span> <span class="upcoming-text">Advanced Privacy Controls</span></div>
     </div>
   </section>
 

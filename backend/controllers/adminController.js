@@ -303,6 +303,122 @@ async function updateAdminGoal(req, res) {
 }
 
 /**
+ * GET /api/admin/groups
+ */
+async function getAdminGroups(req, res) {
+  try {
+    const groups = await Group.find()
+      .populate('owner', 'name username profilePicture')
+      .populate('members', 'name username profilePicture')
+      .sort({ createdAt: -1 });
+    res.json(groups);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * DELETE /api/admin/groups/:groupId/members/:userId
+ */
+async function removeGroupMember(req, res) {
+  try {
+    const { groupId, userId } = req.params;
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    if (group.owner.toString() === userId) {
+      return res.status(400).json({ message: 'Cannot remove the owner from the group.' });
+    }
+
+    group.members = group.members.filter(m => m.toString() !== userId);
+    await group.save();
+
+    res.json({ message: 'Member removed successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * DELETE /api/admin/groups/:id
+ */
+async function deleteGroup(req, res) {
+  try {
+    const group = await Group.findByIdAndDelete(req.params.id);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    res.json({ message: 'Group deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/groups/:id
+ */
+async function updateAdminGroup(req, res) {
+  try {
+    const { name, description, code } = req.body;
+    const updates = { name, description };
+
+    if (code) {
+      const normalizedCode = code.toUpperCase().trim();
+      
+      // Check if code exists for another group
+      const existing = await Group.findOne({ 
+        code: normalizedCode, 
+        _id: { $ne: req.params.id } 
+      });
+      if (existing) {
+        return res.status(400).json({ message: 'This join code is already in use by another group.' });
+      }
+      updates.code = normalizedCode;
+    }
+
+    const group = await Group.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    );
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    res.json({ message: 'Group updated successfully', group });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * PATCH /api/admin/groups/:id/icon
+ */
+async function updateAdminGroupIcon(req, res) {
+  try {
+    const { icon } = req.body;
+    if (!icon || !icon.startsWith('data:image')) {
+      return res.status(400).json({ message: 'Invalid image data' });
+    }
+
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    // Delete old one if exists
+    if (group.iconId) {
+      await cloudinary.uploader.destroy(group.iconId);
+    }
+
+    const result = await cloudinary.uploader.upload(icon, {
+      folder: 'consistency_app_groups',
+    });
+
+    group.icon = result.secure_url;
+    group.iconId = result.public_id;
+    await group.save();
+
+    res.json({ icon: group.icon, message: 'Group icon updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
  * DELETE /api/admin/goals/:id
  */
 async function deleteAdminGoal(req, res) {
@@ -364,6 +480,38 @@ async function deleteAdminAchievement(req, res) {
   }
 }
 
+/**
+ * PATCH /api/admin/users/:id/profile-picture
+ */
+async function updateAdminUserProfilePicture(req, res) {
+  try {
+    const { profilePicture } = req.body;
+    if (!profilePicture || !profilePicture.startsWith('data:image')) {
+      return res.status(400).json({ message: 'Invalid image data' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Delete old one if exists
+    if (user.profilePictureId) {
+      await cloudinary.uploader.destroy(user.profilePictureId);
+    }
+
+    const result = await cloudinary.uploader.upload(profilePicture, {
+      folder: 'consistency_app_profiles',
+    });
+
+    user.profilePicture = result.secure_url;
+    user.profilePictureId = result.public_id;
+    await user.save();
+
+    res.json({ profilePicture: user.profilePicture, message: 'Profile picture updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
 module.exports = {
   adminLogin,
   getAdminReviews,
@@ -381,5 +529,11 @@ module.exports = {
   deleteAdminGoal,
   updateAdminAchievement,
   deleteAdminAchievement,
-  generateAdminPreviewLink
+  generateAdminPreviewLink,
+  getAdminGroups,
+  removeGroupMember,
+  deleteGroup,
+  updateAdminGroup,
+  updateAdminUserProfilePicture,
+  updateAdminGroupIcon
 };

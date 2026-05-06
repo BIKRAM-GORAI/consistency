@@ -45,7 +45,7 @@ app.use((req, res, next) => {
   // Disable browser features the app doesn't use
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
-  // Content Security Policy — permissive enough not to break scripts/styles
+  // Content Security Policy — robust for production
   const isDev = process.env.NODE_ENV === 'development';
   const connectSrc = [
     "'self'",
@@ -65,23 +65,32 @@ app.use((req, res, next) => {
     "https://via.placeholder.com",
     "https://placehold.co",
     "https://consistency-daily.vercel.app",
-    "https://*.vercel.app"
+    "https://*.vercel.app",
+    "https://vercel.live",
+    "wss://*.vercel.live"
   ];
-  if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001");
+  if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001", "ws://localhost:5000", "ws://localhost:5001");
 
   res.setHeader(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
-      "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
-      "img-src 'self' data: blob: https:",
+      "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com",
       `connect-src ${connectSrc.join(' ')}`,
-      "frame-src 'self' https://*.firebaseapp.com",
+      "frame-src 'self' https://*.firebaseapp.com https://vercel.live",
       "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
     ].join('; ')
   );
+
+  // Strict Transport Security (HSTS) - only in production
+  if (!isDev) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
 
   // Allow Firebase Auth popups
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
