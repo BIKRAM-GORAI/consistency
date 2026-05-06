@@ -1248,9 +1248,71 @@
     </div>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
+      authDomain: "consistency-daily.firebaseapp.com",
+      projectId: "consistency-daily",
+      storageBucket: "consistency-daily.firebasestorage.app",
+      messagingSenderId: "760797805516",
+      appId: "1:760797805516:web:ab7a76cd4f3b2d2232bb69",
+      measurementId: "G-GQCYL05KBH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Export to global scope for script.js
+    window.firebaseDb = db;
+    window.firebaseAuth = auth;
+    window.firestore = { collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp };
+  </script>
+
   <script src="script.js"></script>
   <script>
     lucide.createIcons();
   </script>
+
+  <!-- ===== MODAL: Group Chat ===== -->
+  <div class="modal-overlay" id="modal-group-chat" onclick="closeModalOnOverlay(event, 'modal-group-chat')">
+    <div class="modal" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column; border-width: 4px;">
+      <div class="modal-header" style="flex-shrink: 0; background: var(--bg-card); border-bottom: 4px solid var(--black);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="chat-group-icon-wrap" style="width: 45px; height: 45px; border: 3px solid var(--black); border-radius: 50%; overflow: hidden; background: var(--chat-self-bg); display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--black);">
+            <!-- Icon injected here -->
+          </div>
+          <div>
+            <h2 id="chat-group-name" style="font-size: 18px; margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; text-transform: uppercase;">Group Chat</h2>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="blink" style="width: 8px; height: 8px; background: var(--green); border-radius: 50%; border: 1px solid var(--black);"></span>
+              <p style="font-size: 10px; font-weight: 900; color: var(--green); text-transform: uppercase; letter-spacing: 1px; margin: 0;">Live Connection</p>
+            </div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeChatModal()" style="background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
+          <i data-lucide="x" style="width: 20px; height: 20px; color: #fff;"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body" id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 24px; background: var(--bg-muted); display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth;">
+        <!-- Messages injected here -->
+      </div>
+
+      <div class="modal-footer" style="flex-shrink: 0; padding: 14px 16px; background: var(--bg-card); border-top: 4px solid var(--black); box-sizing: border-box;">
+        <form id="chat-form" onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px; width: 100%; align-items: center; box-sizing: border-box;">
+          <input type="text" id="chat-input" class="form-control" placeholder="Type a message..." autocomplete="off" style="flex: 1; width: 0; min-width: 0; height: 48px; font-size: 15px; border-width: 3px; box-shadow: 4px 4px 0 var(--black); margin: 0;" />
+          <button type="submit" class="btn-primary ripple" style="flex: 0 0 48px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: var(--purple); border: 3px solid var(--black); box-shadow: 4px 4px 0 var(--black); padding: 0;">
+            <i data-lucide="send" style="width: 20px; height: 20px; color: #fff;"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

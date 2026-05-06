@@ -349,7 +349,7 @@ module.exports = {
       user.claimedBadges.push(badgeId);
       await user.save();
 
-      res.json({ message: 'Badge claimed successfully!', user });
+      res.json({ message: 'Badge claimed successfully!', claimedBadges: user.claimedBadges });
     } catch (err) {
       res.status(500).json({ message: 'Server error', error: err.message });
     }

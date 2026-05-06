@@ -1770,6 +1770,14 @@ function renderSingleGroupCard(group, emoji) {
         </div>
       </div>
       ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
+      
+      <!-- Live Chat Button -->
+      <div style="margin: 12px 0;">
+        <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--pink); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 4px 4px 0 var(--black);" onclick="openGroupChat('${group._id}', '${escJs(group.name)}', '${group.icon || ''}')">
+          <i data-lucide="message-square" style="width: 18px; height: 18px;"></i> Live Chat
+        </button>
+      </div>
+
       <p class="group-meta">${group.members.length} member${group.members.length !== 1 ? 's' : ''}</p>
       <div class="members-row" id="members-row-${group._id}">
         ${buildMembersHTML(group.members, group._id, isMyOwned)}
@@ -5388,4 +5396,144 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
   };
 
   return card;
+}
+
+// ── GROUP CHAT LOGIC ────────────────────────────────────────
+
+let activeChatGroupId = null;
+let chatUnsubscribe = null;
+
+function openGroupChat(groupId, groupName, groupIcon) {
+  activeChatGroupId = groupId;
+  document.getElementById('chat-group-name').textContent = groupName;
+  
+  const modal = document.getElementById('modal-group-chat');
+  openModal('modal-group-chat');
+
+  // Re-initialize all icons in the modal (Fixes missing Close/Send icons)
+  if (window.lucide) lucide.createIcons({ root: modal });
+
+  const iconWrap = document.getElementById('chat-group-icon-wrap');
+  iconWrap.innerHTML = groupIcon 
+    ? `<img src="${groupIcon}" style="width:100%;height:100%;object-fit:cover;" />`
+    : `<i data-lucide="users" style="width:24px;height:24px;color:var(--black);"></i>`;
+  if (window.lucide) lucide.createIcons({ root: iconWrap });
+
+  // Clear previous messages
+  const container = document.getElementById('chat-messages-container');
+  container.innerHTML = '<div style="text-align:center; padding:40px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; animation: pulse 1.5s infinite;">Connecting to stream...</div>';
+
+  // Set up real-time listener
+  const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) {
+    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">FIREBASE OFFLINE</div>';
+    return;
+  }
+
+  const msgsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'messages');
+  const q = firestore.query(msgsRef, firestore.orderBy('timestamp', 'asc'), firestore.limit(100));
+
+  chatUnsubscribe = firestore.onSnapshot(q, (snapshot) => {
+    container.innerHTML = '';
+    let lastDateLabel = '';
+
+    if (snapshot.empty) {
+      container.innerHTML = `
+        <div style="text-align:center; padding:60px 20px; color:var(--text-light);">
+          <div style="font-size:40px; margin-bottom:16px;">💬</div>
+          <h3 style="font-family:'Space Grotesk', sans-serif; font-weight:900; text-transform:uppercase;">No messages yet</h3>
+          <p style="font-size:13px; font-weight:600; opacity:0.7;">Be the first to break the ice!</p>
+        </div>
+      `;
+      return;
+    }
+
+    snapshot.forEach((doc) => {
+      const msg = doc.data();
+      const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
+      const dateLabel = timestamp.toLocaleDateString();
+
+      // Date Separator
+      if (dateLabel !== lastDateLabel) {
+        const sep = document.createElement('div');
+        sep.className = 'chat-date-separator';
+        sep.textContent = getFriendlyDate(timestamp);
+        container.appendChild(sep);
+        lastDateLabel = dateLabel;
+      }
+
+      renderChatMessage(msg, container);
+    });
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+  }, (err) => {
+    console.error('Chat error:', err);
+    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">CONNECTION ERROR</div>';
+  });
+}
+
+function getFriendlyDate(date) {
+  const today = new Date().toLocaleDateString();
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+  const d = date.toLocaleDateString();
+  if (d === today) return 'Today';
+  if (d === yesterday) return 'Yesterday';
+  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+function renderChatMessage(msg, container) {
+  const userId = localStorage.getItem('userId');
+  const isSelf = String(msg.senderId) === String(userId);
+  const time = msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'}`;
+  
+  bubble.innerHTML = `
+    <div class="chat-message-info">
+      <span class="chat-sender-name">${isSelf ? 'You' : escHtml(msg.senderName)}</span>
+      <span class="chat-time">${time}</span>
+    </div>
+    <div class="chat-text">${escHtml(msg.text)}</div>
+  `;
+  
+  container.appendChild(bubble);
+}
+
+function closeChatModal() {
+  if (chatUnsubscribe) {
+    chatUnsubscribe();
+    chatUnsubscribe = null;
+  }
+  activeChatGroupId = null;
+  closeModal('modal-group-chat');
+}
+
+async function handleChatSubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !activeChatGroupId) return;
+
+  const { firebaseDb, firestore } = window;
+  const userId = localStorage.getItem('userId');
+  const userName = localStorage.getItem('userName');
+  const userPhoto = localStorage.getItem('userProfilePicture');
+
+  input.value = ''; // Clear immediately
+  
+  try {
+    const msgsRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'messages');
+    await firestore.addDoc(msgsRef, {
+      text,
+      senderId: userId,
+      senderName: userName,
+      senderPhoto: userPhoto,
+      timestamp: firestore.serverTimestamp()
+    });
+  } catch (err) {
+    console.error('Send error:', err);
+    alert('Failed to send message.');
+  }
 }

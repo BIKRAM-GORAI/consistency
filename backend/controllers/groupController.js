@@ -87,7 +87,7 @@ const createGroup = async (req, res) => {
     });
 
     const saved = await group.save();
-    const populated = await Group.findById(saved._id).populate('members', 'name username email profilePicture');
+    const populated = await Group.findById(saved._id).populate('members', 'name username profilePicture');
     res.status(201).json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -127,7 +127,7 @@ const joinGroup = async (req, res) => {
     group.members.push(userId);
     await group.save();
 
-    const populated = await Group.findById(group._id).populate('members', 'name username email profilePicture');
+    const populated = await Group.findById(group._id).populate('members', 'name username profilePicture');
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -243,7 +243,7 @@ const getRequests = async (req, res) => {
     const userId = req.user.userId;
     const { groupId } = req.params;
 
-    const group = await Group.findById(groupId).populate('requests.user', 'name username email profilePicture');
+    const group = await Group.findById(groupId).populate('requests.user', 'name username profilePicture');
     if (!group) return res.status(404).json({ message: 'Group not found.' });
 
     if (String(group.owner) !== String(userId)) {
@@ -554,7 +554,7 @@ const editGroup = async (req, res) => {
     
     await group.save();
     
-    const populated = await Group.findById(group._id).populate('members', 'name username email profilePicture').populate('owner', 'name username email profilePicture');
+    const populated = await Group.findById(group._id).populate('members', 'name username profilePicture').populate('owner', 'name username profilePicture');
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -620,7 +620,7 @@ const removeMember = async (req, res) => {
     group.members = group.members.filter(m => String(m) !== String(targetUserId));
     await group.save();
 
-    const populated = await Group.findById(group._id).populate('members', 'name username email profilePicture').populate('owner', 'name username email profilePicture');
+    const populated = await Group.findById(group._id).populate('members', 'name username profilePicture').populate('owner', 'name username profilePicture');
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

@@ -20,7 +20,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-comp
 
 firebase.initializeApp({
   projectId: "consistency-daily",
-  messagingSenderId: "567475143375", // This should be your sender ID, but if you don't have it, FCM might complain.
+  messagingSenderId: "760797805516", // Synchronized with index.html
   // We actually need the config from auth.html
 });
 

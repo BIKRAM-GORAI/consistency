@@ -3503,3 +3503,107 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-radius: 2px;
 }
 
+:root {
+  --chat-self-bg: var(--yellow);
+}
+
+[data-theme="dark"] {
+  --chat-self-bg: #eab308; /* Slightly deeper gold for eye comfort */
+}
+
+/* ── Refined Group Chat ── */
+.chat-bubble {
+  max-width: 85%;
+  padding: 12px 18px;
+  border-radius: 16px;
+  border: 3px solid var(--black);
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 4px 4px 0 var(--black);
+  margin-bottom: 4px;
+  animation: bubbleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: scale(0.9) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.chat-bubble.self {
+  align-self: flex-end;
+  background: var(--chat-self-bg);
+  border-bottom-right-radius: 4px;
+  color: var(--black);
+}
+
+.chat-bubble.other {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+
+.chat-message-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.chat-bubble.self .chat-message-info { color: rgba(0,0,0,0.5); }
+.chat-bubble.other .chat-message-info { color: var(--purple); }
+
+.chat-time {
+  margin-left: auto;
+  opacity: 0.8;
+  font-weight: 700;
+}
+
+.chat-text {
+  font-weight: 600;
+  word-break: break-word;
+  color: inherit;
+}
+
+.chat-date-separator {
+  align-self: center;
+  background: var(--black);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 16px 0;
+  box-shadow: 3px 3px 0 var(--purple);
+  border: 2px solid var(--purple);
+}
+
+.blink {
+  animation: blink-anim 1.5s infinite;
+}
+
+@keyframes blink-anim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Scrollbar for chat messages */
+#chat-messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+#chat-messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+#chat-messages-container::-webkit-scrollbar-thumb {
+  background: var(--black);
+  border-radius: 10px;
+  border: 2px solid var(--bg-muted);
+}
+
