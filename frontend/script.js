@@ -5485,9 +5485,9 @@ if ('serviceWorker' in navigator) {
         console.log('Old SW unregistered');
       }
 
-      // 2. Register the fresh v3 worker
-      const reg = await navigator.serviceWorker.register('sw.js');
-      console.log('Fresh SW registered:', reg);
+      // 2. Register the fresh v4 worker with a version query to force-bypass cache
+      const reg = await navigator.serviceWorker.register('sw.js?v=4');
+      console.log('Fresh SW registered (v4):', reg);
       
       // Force immediate takeover
       if (reg.waiting) {
