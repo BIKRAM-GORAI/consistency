@@ -3563,6 +3563,61 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   stroke: #3b82f6 !important;
 }
 
+/* ── Real-time Presence Indicators ── */
+.chat-status-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  background: var(--green);
+  border: 2px solid var(--black);
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.chat-presence-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.chat-online-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chat-face-pile {
+  display: flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+.chat-face-pile img, .chat-face-pile .mini-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--black);
+  margin-left: -6px;
+  background: var(--bg-card);
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.chat-face-pile img:first-child, .chat-face-pile .mini-avatar:first-child {
+  margin-left: 0;
+}
+
+.chat-face-pile img:hover {
+  transform: translateY(-2px) scale(1.2);
+  z-index: 10;
+}
+
 /* ── Refined Group Chat ── */
 .chat-messages-container {
   display: flex;
@@ -3632,14 +3687,16 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .chat-bubble {
-  padding: 8px 12px 24px; /* Added bottom padding for absolute footer */
+  padding: 10px 14px 8px;
   border-radius: 16px;
   border: 3px solid var(--black);
   position: relative;
   font-size: 14px;
   line-height: 1.4;
   box-shadow: 4px 4px 0 var(--black);
-  min-width: 85px; /* Ensure space for timestamp/tick */
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
   transition: all 0.2s ease;
   animation: bubbleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
@@ -3737,12 +3794,11 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .chat-message-footer {
-  position: absolute;
-  bottom: 6px;
-  right: 10px;
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-top: 4px;
+  align-self: flex-end;
 }
 
 .chat-tick {

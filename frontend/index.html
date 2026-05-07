@@ -1253,12 +1253,14 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-    import { getFirestore, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
       authDomain: "consistency-daily.firebaseapp.com",
       projectId: "consistency-daily",
+      databaseURL: "https://consistency-daily-default-rtdb.asia-southeast1.firebasedatabase.app",
       storageBucket: "consistency-daily.firebasestorage.app",
       messagingSenderId: "760797805516",
       appId: "1:760797805516:web:ab7a76cd4f3b2d2232bb69",
@@ -1267,13 +1269,21 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    
+    // Modern way to enable persistence
+    const db = initializeFirestore(app, {
+      localCache: persistentLocalCache()
+    });
+    
+    const rtdb = getDatabase(app);
 
     // Export to global scope for script.js
     window.firebaseDb = db;
     window.firebaseAuth = auth;
+    window.firebaseRtdb = rtdb;
     window.signInWithFirebase = signInWithCustomToken;
-    window.firestore = { collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp };
+    window.firestore = { collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp: firestoreTimestamp };
+    window.rtdb = { ref, set, onValue, onDisconnect, serverTimestamp: rtdbTimestamp, remove };
   </script>
 
   <script src="script.js"></script>
@@ -1286,14 +1296,17 @@
     <div class="modal" style="max-width: clamp(350px, 95vw, 850px); height: 85vh; display: flex; flex-direction: column; border-width: 4px;">
       <div class="modal-header" style="flex-shrink: 0; background: var(--bg-card); border-bottom: 4px solid var(--black);">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div id="chat-group-icon-wrap" style="width: 45px; height: 45px; border: 3px solid var(--black); border-radius: 50%; overflow: hidden; background: var(--chat-self-bg); display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--black);">
-            <!-- Icon injected here -->
+          <div style="position: relative;">
+            <div id="chat-group-icon-wrap" style="width: 45px; height: 45px; border: 3px solid var(--black); border-radius: 50%; overflow: hidden; background: var(--chat-self-bg); display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--black);">
+              <!-- Icon injected here -->
+            </div>
+            <span class="chat-status-badge blink"></span>
           </div>
           <div>
             <h2 id="chat-group-name" style="font-size: 18px; margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; text-transform: uppercase;">Group Chat</h2>
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div id="chat-presence-container" class="chat-presence-container">
               <span class="blink" style="width: 8px; height: 8px; background: var(--green); border-radius: 50%; border: 1px solid var(--black);"></span>
-              <p style="font-size: 10px; font-weight: 900; color: var(--green); text-transform: uppercase; letter-spacing: 1px; margin: 0;">Live Connection</p>
+              <p class="chat-online-count" style="margin:0;">Connecting...</p>
             </div>
           </div>
         </div>

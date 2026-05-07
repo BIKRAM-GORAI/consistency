@@ -5451,6 +5451,8 @@ let lastReadUpdate = 0;
 let myHighestReadTimestamp = 0;
 let readStatusUnsubscribe = null;
 let readObserver = null;
+let presenceUnsubscribe = null;
+let presenceHeartbeatInterval = null;
 
 function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   activeChatGroupId = groupId;
@@ -5476,6 +5478,10 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
 
   // Re-initialize all icons in the modal (Fixes missing Close/Send icons)
   if (window.lucide) lucide.createIcons({ root: modal });
+
+  // Real-time Presence
+  updatePresence(groupId, true);
+  subscribeToPresence(groupId);
 
   const iconWrap = document.getElementById('chat-group-icon-wrap');
   iconWrap.innerHTML = groupIcon 
@@ -5505,7 +5511,7 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   // Set up infinite scroll observer if not already done
   setupChatInfiniteScroll();
 
-  chatUnsubscribe = firestore.onSnapshot(q, (snapshot) => {
+  chatUnsubscribe = firestore.onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
     const container = document.getElementById('chat-messages-container');
     const msgsList = document.getElementById('chat-messages-list');
     const loadMoreBtn = document.getElementById('chat-load-more-container');
@@ -5572,12 +5578,14 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
       // Incremental update
       snapshot.docChanges().forEach(change => {
         const msg = { ...change.doc.data(), id: change.doc.id };
+        const isPending = change.doc.metadata.hasPendingWrites;
         const existing = document.getElementById(`chat-msg-${msg.id}`);
+        
         if (change.type === 'added' && !existing) {
-          renderChatMessage(msg, msgsList, true);
+          renderChatMessage(msg, msgsList, true, isPending);
         } else if (change.type === 'modified' && existing) {
-          // If the message is modified (e.g. server timestamp assigned), update its metadata
-          updateMessageInDOM(msg);
+          // Update the existing message if it's no longer pending or has changed
+          updateMessageInDOM(msg, isPending);
           updateExistingMessage(msg, existing);
         } else if (change.type === 'removed' && existing) {
           existing.remove();
@@ -5622,7 +5630,7 @@ function getFriendlyDate(date) {
   return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-function renderChatMessage(msg, container, animate = false) {
+function renderChatMessage(msg, container, animate = false, isPending = false) {
   const userId = localStorage.getItem('userId');
   const isSelf = String(msg.senderId) === String(userId);
   const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
@@ -5721,8 +5729,8 @@ function renderChatMessage(msg, container, animate = false) {
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
       <span class="chat-time">${time}</span>
       ${isSelf ? `
-        <span class="chat-tick ${isBlue ? 'blue' : ''}" id="tick-${docId}">
-          <i data-lucide="check-check" style="width:14px;height:14px;"></i>
+        <span class="chat-tick ${isBlue ? 'blue' : ''} ${isPending ? 'pending' : ''}" id="tick-${docId}">
+          <i data-lucide="${isPending ? 'clock' : 'check-check'}" style="width:14px;height:14px;"></i>
         </span>
       ` : ''}
     </div>
@@ -5818,6 +5826,16 @@ function closeChatModal() {
   }
   memberReadStatuses = {};
   myHighestReadTimestamp = 0;
+  
+  // Stop presence
+  updatePresence(activeChatGroupId, false);
+  if (presenceUnsubscribe) {
+    presenceUnsubscribe();
+    presenceUnsubscribe = null;
+  }
+  clearInterval(presenceHeartbeatInterval);
+  presenceHeartbeatInterval = null;
+
   // Clear own typing status
   updateTypingStatus(false);
   activeChatGroupId = null;
@@ -6281,7 +6299,7 @@ function throttledUpdateReadStatus() {
   
   const now = Date.now();
   const timeSinceLast = now - lastReadUpdate;
-  const delay = Math.max(0, 2000 - timeSinceLast); // 2 second throttle
+  const delay = Math.max(0, 5000 - timeSinceLast); // 5 second throttle for batching
   
   readStatusTimeout = setTimeout(async () => {
     readStatusTimeout = null;
@@ -6343,7 +6361,7 @@ function updateExistingTicks() {
   });
 }
 
-function updateMessageInDOM(msg) {
+function updateMessageInDOM(msg, isPending = false) {
   const el = document.getElementById(`chat-msg-${msg.id}`);
   if (!el) return;
   
@@ -6355,18 +6373,27 @@ function updateMessageInDOM(msg) {
   
   if (isSelf) {
     const tick = el.querySelector('.chat-tick');
-    if (tick && !tick.classList.contains('blue')) {
-      const group = allJoinedGroups.find(g => g._id === activeChatGroupId);
-      const totalOthers = group ? Math.max(1, group.members.length - 1) : 1;
-      const readCount = Object.values(memberReadStatuses).filter(lr => lr >= timestamp.getTime()).length;
-      const pct = (readCount / totalOthers) * 100;
-
-      if (pct >= globalConfig.chatReadThresholdPct) {
-        tick.classList.add('blue');
-        if (window.lucide) lucide.createIcons({ root: tick });
+    if (tick) {
+      if (isPending) {
+        tick.classList.add('pending');
+        tick.innerHTML = '<i data-lucide="clock" style="width:14px;height:14px;"></i>';
+      } else {
+        tick.classList.remove('pending');
+        const isBlue = calculateBlueStatus(msg);
+        tick.className = `chat-tick ${isBlue ? 'blue' : ''}`;
+        tick.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;"></i>';
       }
+      if (window.lucide) lucide.createIcons({ root: tick });
     }
   }
+}
+
+function calculateBlueStatus(msg) {
+  const tsMillis = msg.timestamp?.toMillis ? msg.timestamp.toMillis() : (msg.timestamp?.toDate ? msg.timestamp.toDate().getTime() : Date.now());
+  const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) ? allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
+  const totalOthers = group ? Math.max(1, group.members.length - 1) : 1;
+  const readCount = Object.values(memberReadStatuses).filter(lr => lr >= tsMillis).length;
+  return (readCount / totalOthers) * 100 >= (globalConfig.chatReadThresholdPct || 10);
 }
 
 function clearReply() {
@@ -6413,45 +6440,45 @@ function handleTyping() {
 
 async function updateTypingStatus(isTyping) {
   if (!activeChatGroupId) return;
-  const { firebaseDb, firestore } = window;
+  const { firebaseRtdb, rtdb } = window;
   const userId = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName');
   
-  const typingRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'typing', userId);
+  const typingRef = rtdb.ref(firebaseRtdb, `typing/${activeChatGroupId}/${userId}`);
   
   try {
     if (isTyping) {
-      await firestore.setDoc(typingRef, {
+      await rtdb.set(typingRef, {
         name: userName,
-        typing: true,
-        timestamp: firestore.serverTimestamp()
+        timestamp: rtdb.serverTimestamp()
       });
+      rtdb.onDisconnect(typingRef).remove();
     } else {
-      await firestore.deleteDoc(typingRef);
+      await rtdb.remove(typingRef);
     }
   } catch (err) {
-    // Silent fail for typing indicator
+    // Silent fail
   }
 }
 
 function listenForTyping() {
-  if (typingUnsubscribe) typingUnsubscribe();
+  if (typingUnsubscribe) {
+    if (typeof typingUnsubscribe === 'function') typingUnsubscribe();
+    typingUnsubscribe = null;
+  }
 
-  const { firebaseDb, firestore } = window;
+  const { firebaseRtdb, rtdb } = window;
   const userId = localStorage.getItem('userId');
-  const typingRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'typing');
+  const typingRef = rtdb.ref(firebaseRtdb, `typing/${activeChatGroupId}`);
   
-  typingUnsubscribe = firestore.onSnapshot(typingRef, (snapshot) => {
+  typingUnsubscribe = rtdb.onValue(typingRef, (snapshot) => {
     const typers = [];
-    snapshot.forEach(doc => {
-      if (doc.id !== userId) {
-        typers.push(doc.data().name);
+    snapshot.forEach(child => {
+      if (child.key !== userId) {
+        typers.push(child.val().name);
       }
     });
     renderTypingIndicator(typers);
-  }, (err) => {
-    console.warn('Typing indicator permission denied or error:', err);
-    // Gracefully fail - just don't show typing indicators
   });
 }
 
@@ -6765,4 +6792,98 @@ async function executeBulkDelete() {
     btn.disabled = false;
     btn.innerHTML = originalText;
   }
+}
+
+/** ── REAL-TIME PRESENCE (WHO'S ONLINE) ── **/
+
+async function updatePresence(groupId, isOnline) {
+  if (!groupId) return;
+  const { firebaseRtdb, rtdb } = window;
+  const userId = localStorage.getItem('userId');
+  const userName = localStorage.getItem('userName');
+  const userPic = localStorage.getItem('userProfilePicture');
+  
+  const presenceRef = rtdb.ref(firebaseRtdb, `presence/${groupId}/${userId}`);
+  
+  try {
+    if (isOnline) {
+      const updateData = {
+        userId,
+        name: userName,
+        profilePicture: userPic || '',
+        lastSeen: rtdb.serverTimestamp()
+      };
+      await rtdb.set(presenceRef, updateData);
+      rtdb.onDisconnect(presenceRef).remove();
+
+      if (!presenceHeartbeatInterval) {
+        presenceHeartbeatInterval = setInterval(() => updatePresence(groupId, true), 120000);
+      }
+    } else {
+      await rtdb.remove(presenceRef);
+    }
+  } catch (err) {
+    // Fail silently
+  }
+}
+
+function subscribeToPresence(groupId) {
+  if (presenceUnsubscribe) {
+    if (typeof presenceUnsubscribe === 'function') presenceUnsubscribe();
+    presenceUnsubscribe = null;
+  }
+  
+  const { firebaseRtdb, rtdb } = window;
+  const presenceRef = rtdb.ref(firebaseRtdb, `presence/${groupId}`);
+  const myId = localStorage.getItem('userId');
+  
+  presenceUnsubscribe = rtdb.onValue(presenceRef, (snapshot) => {
+    const now = Date.now();
+    const activeViewers = [];
+    
+    snapshot.forEach(child => {
+      if (child.key === myId) return; // Exclude self
+      
+      const data = child.val();
+      const lastSeen = data.lastSeen || now;
+      
+      if (now - lastSeen < 300000) {
+        activeViewers.push(data);
+      }
+    });
+    
+    renderPresenceUI(activeViewers);
+  });
+}
+
+function renderPresenceUI(viewers) {
+  const container = document.getElementById('chat-presence-container');
+  if (!container) return;
+
+  const count = viewers.length;
+  if (count <= 0) {
+    container.innerHTML = `
+      <span class="blink" style="width: 8px; height: 8px; background: var(--green); border-radius: 50%; border: 1px solid var(--black);"></span>
+      <p class="chat-online-count" style="margin:0;">Live Feed</p>
+    `;
+    return;
+  }
+
+  // Build Avatar Stack
+  let facePileHtml = '<div class="chat-face-pile">';
+  viewers.slice(0, 3).forEach(v => {
+    if (v.profilePicture) {
+      facePileHtml += `<img src="${v.profilePicture}" title="${escHtml(v.name)}" />`;
+    } else {
+      facePileHtml += `<div class="mini-avatar" title="${escHtml(v.name)}" style="background:var(--yellow); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:900;">${v.name ? v.name.charAt(0).toUpperCase() : '?'}</div>`;
+    }
+  });
+  facePileHtml += '</div>';
+
+  container.innerHTML = `
+    <span class="blink" style="width: 8px; height: 8px; background: var(--green); border-radius: 50%; border: 1px solid var(--black);"></span>
+    <p class="chat-online-count" style="margin:0;">${count} Online</p>
+    ${facePileHtml}
+    ${count > 3 ? `<span style="font-size:10px; font-weight:800; color:var(--text-muted); margin-left:4px;">+${count-3}</span>` : ''}
+  `;
 }
