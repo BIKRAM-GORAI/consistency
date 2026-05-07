@@ -6821,7 +6821,7 @@ async function updatePresence(groupId, isOnline) {
           if (document.visibilityState === 'visible') {
             updatePresence(groupId, true);
           }
-        }, 60000); // 60s heartbeat
+        }, 30000); // 30s heartbeat
       }
     } else {
       await rtdb.remove(presenceRef);
@@ -6851,8 +6851,8 @@ function subscribeToPresence(groupId) {
       const data = child.val();
       const lastSeen = data.lastSeen || now;
       
-      // Tightened: Only count users active in the last 150 seconds (2.5 mins)
-      if (now - lastSeen < 150000) {
+      // Tightened: Only count users active in the last 75 seconds
+      if (now - lastSeen < 75000) {
         activeViewers.push(data);
       }
     });
