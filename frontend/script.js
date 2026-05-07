@@ -5476,23 +5476,27 @@ function getDifficultyColor(difficulty) {
 let deferredPrompt;
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(reg => {
-      console.log('SW registered:', reg);
+  window.addEventListener('load', async () => {
+    try {
+      // 1. Force unregister any old/stale workers to clear the "Not Supported" ghost code
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let registration of registrations) {
+        await registration.unregister();
+        console.log('Old SW unregistered');
+      }
+
+      // 2. Register the fresh v3 worker
+      const reg = await navigator.serviceWorker.register('sw.js');
+      console.log('Fresh SW registered:', reg);
       
-      // Check for updates periodically
-      reg.onupdatefound = () => {
-        const installingWorker = reg.installing;
-        installingWorker.onstatechange = () => {
-          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('New content is available; please refresh.');
-            // Optional: showToast('New update available! Refresh to apply.', 'info');
-          }
-        };
-      };
-    }).catch(err => {
-      console.log('ServiceWorker registration failed: ', err);
-    });
+      // Force immediate takeover
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+    } catch (err) {
+      console.error('ServiceWorker registration failed:', err);
+    }
   });
 }
 
