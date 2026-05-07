@@ -5432,6 +5432,20 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   const modal = document.getElementById('modal-group-chat');
   openModal('modal-group-chat');
 
+  // Check if current user is the owner of this group
+  const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) 
+    ? allJoinedGroups.find(g => g._id === groupId) 
+    : null;
+  const myUserId = localStorage.getItem('userId');
+  
+  // The group.owner can be an object with _id or just an ID string
+  const isOwner = group && String(group.owner._id || group.owner) === String(myUserId);
+  
+  const bulkDeleteBtn = document.getElementById('chat-bulk-delete-btn');
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.style.display = isOwner ? 'flex' : 'none';
+  }
+
   // Re-initialize all icons in the modal (Fixes missing Close/Send icons)
   if (window.lucide) lucide.createIcons({ root: modal });
 
@@ -6286,5 +6300,74 @@ async function deleteFirestoreGroupData(groupId) {
     console.log(`🔥 Firestore data for group ${groupId} purged.`);
   } catch (err) {
     console.error('Error purging Firestore group data:', err);
+  }
+}
+
+/** ── BULK DELETE BY TIME RANGE (OWNER ONLY) ── **/
+function openBulkDeleteModal() {
+  // Clear previous values
+  document.getElementById('bulk-delete-start').value = '';
+  document.getElementById('bulk-delete-end').value = '';
+  document.getElementById('bulk-delete-confirm-check').checked = false;
+  openModal('modal-bulk-delete');
+}
+
+async function executeBulkDelete() {
+  if (!activeChatGroupId) return;
+  
+  const startStr = document.getElementById('bulk-delete-start').value;
+  const endStr = document.getElementById('bulk-delete-end').value;
+  const confirmed = document.getElementById('bulk-delete-confirm-check').checked;
+
+  if (!startStr || !endStr) {
+    return showToast('Please select both start and end times.', 'warn');
+  }
+  if (!confirmed) {
+    return showToast('Please confirm that you understand the consequences.', 'warn');
+  }
+
+  const startDate = new Date(startStr);
+  const endDate = new Date(endStr);
+
+  if (endDate <= startDate) {
+    return showToast('End time must be after start time.', 'warn');
+  }
+
+  const btn = document.getElementById('btn-execute-bulk-delete');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-inline"></span> Deleting...';
+
+  const { firebaseDb, firestore } = window;
+  try {
+    const msgsRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'messages');
+    
+    // Query messages within range
+    const q = firestore.query(
+      msgsRef,
+      firestore.orderBy('timestamp', 'asc'),
+      firestore.where('timestamp', '>=', startDate),
+      firestore.where('timestamp', '<=', endDate)
+    );
+
+    const snapshot = await firestore.getDocs(q);
+    if (snapshot.empty) {
+      showToast('No messages found in this time range.', 'info');
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return;
+    }
+
+    const deletePromises = snapshot.docs.map(doc => firestore.deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+
+    showToast(`Successfully deleted ${snapshot.size} messages.`, 'success');
+    closeModal('modal-bulk-delete');
+  } catch (err) {
+    console.error('Bulk delete error:', err);
+    showToast('Error performing bulk delete.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
   }
 }

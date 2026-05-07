@@ -1272,6 +1272,21 @@ input:-webkit-autofill:active {
     -webkit-text-fill-color: #f0f0f0 !important;
 }
 
+.form-control::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+[data-theme="dark"] .form-control::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.8;
+}
+
+.form-control::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .form-control:focus {
   border-color: var(--black);
   box-shadow: 4px 4px 0 var(--yellow);
