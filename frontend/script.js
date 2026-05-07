@@ -1666,7 +1666,7 @@ function renderGroups() {
 
     for (const group of availablePublicGroups) {
       const iconHtml = group.icon 
-        ? `<img src="${group.icon}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
+        ? `<img src="${group.icon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='8px'; this.style.background='var(--yellow)';" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
         : `<span class="group-emoji"><i data-lucide="globe"></i></span>`;
 
       html += `
@@ -1742,7 +1742,7 @@ function renderSingleGroupCard(group, emoji) {
   const isPublic = group.isPublic;
   
   const iconHtml = group.icon 
-    ? `<img src="${group.icon}" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
+    ? `<img src="${group.icon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='8px'; this.style.background='var(--yellow)';" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
     : `<span class="group-emoji"><i data-lucide="${emoji}"></i></span>`;
 
   return `
@@ -5459,7 +5459,7 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
 
   const iconWrap = document.getElementById('chat-group-icon-wrap');
   iconWrap.innerHTML = groupIcon 
-    ? `<img src="${groupIcon}" style="width:100%;height:100%;object-fit:cover;" />`
+    ? `<img src="${groupIcon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='4px'; this.style.background='var(--yellow)';" style="width:100%;height:100%;object-fit:cover;" />`
     : `<i data-lucide="users" style="width:24px;height:24px;color:var(--black);"></i>`;
   if (window.lucide) lucide.createIcons({ root: iconWrap });
 
@@ -5739,7 +5739,7 @@ function renderChatMessage(msg, container, animate = false) {
       
       // Threshold to trigger reply
       if (Math.abs(diff) > 50) {
-        setReplyTo(docId, msg.text, msg.senderName);
+        setReplyTo(docId, msg.text || '', msg.senderName, msg.mediaUrl || '');
         if (window.navigator.vibrate) window.navigator.vibrate(15);
       }
     }
@@ -5830,18 +5830,35 @@ async function handleChatSubmit(e) {
     }
     const msgsRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'messages');
     const msgData = {
-      text,
-      senderId: userId,
-      senderName: userName,
+      text: text || '',
+      senderId: userId || '',
+      senderName: userName || 'User',
       senderUsername: localStorage.getItem('userUsername') || '',
-      senderPhoto: userPhoto,
+      senderPhoto: userPhoto || null,
       timestamp: firestore.serverTimestamp(),
-      mediaUrl,
-      mediaType
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaType || null
     };
 
     if (activeReplyTo) {
-      msgData.replyTo = activeReplyTo;
+      // Ensure NO undefined fields are sent to Firestore (causes crash)
+      // We use null or empty string as explicit fallbacks
+      msgData.replyTo = {
+        docId: activeReplyTo.docId || '',
+        text: activeReplyTo.text || '',
+        senderName: activeReplyTo.senderName || '',
+        mediaUrl: activeReplyTo.mediaUrl || null
+      };
+    }
+
+    // FINAL SANITY CHECK: Ensure NO property in msgData is undefined
+    Object.keys(msgData).forEach(key => {
+      if (msgData[key] === undefined) msgData[key] = null;
+    });
+    if (msgData.replyTo) {
+      Object.keys(msgData.replyTo).forEach(key => {
+        if (msgData.replyTo[key] === undefined) msgData.replyTo[key] = null;
+      });
     }
 
     await firestore.addDoc(msgsRef, msgData);

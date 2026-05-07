@@ -3616,6 +3616,32 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   gap: 10px;
 }
 
+.chat-message-actions-outside .chat-edit-btn {
+  opacity: 0.6;
+  background: var(--bg-card);
+  border: 2px solid var(--black);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 0 var(--black);
+  cursor: pointer;
+  color: var(--black);
+  transition: all 0.2s;
+}
+
+[data-theme="dark"] .chat-message-actions-outside .chat-edit-btn {
+  color: #fff;
+}
+
+.chat-message-actions-outside .chat-edit-btn:hover {
+  opacity: 1;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
 .chat-sender-name {
   font-size: 11px;
   font-weight: 900;
