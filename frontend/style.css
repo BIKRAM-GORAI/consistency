@@ -3544,8 +3544,23 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 [data-theme="dark"] .chat-sender-name,
 [data-theme="dark"] .chat-time,
+[data-theme="dark"] .chat-tick,
 [data-theme="dark"] .chat-edited-tag {
-  color: rgba(0, 0, 0, 0.6) !important;
+  color: #000000 !important;
+  opacity: 0.9 !important; /* Increased opacity for better visibility */
+}
+
+[data-theme="dark"] .chat-tick svg {
+  stroke: #000000 !important;
+}
+
+[data-theme="dark"] .chat-tick.blue {
+  color: #3b82f6 !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .chat-tick.blue svg {
+  stroke: #3b82f6 !important;
 }
 
 /* ── Refined Group Chat ── */
@@ -3563,7 +3578,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     padding: 32px;
   }
   .chat-bubble {
-    padding: 14px 20px !important;
+    padding: 12px 18px 8px !important;
     font-size: 16px !important;
   }
   .chat-text {
@@ -3617,13 +3632,14 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .chat-bubble {
-  padding: 10px 14px;
+  padding: 8px 12px 24px; /* Added bottom padding for absolute footer */
   border-radius: 16px;
   border: 3px solid var(--black);
   position: relative;
   font-size: 14px;
   line-height: 1.4;
   box-shadow: 4px 4px 0 var(--black);
+  min-width: 85px; /* Ensure space for timestamp/tick */
   transition: all 0.2s ease;
   animation: bubbleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
@@ -3721,11 +3737,12 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .chat-message-footer {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
 }
 
 .chat-tick {
@@ -3744,14 +3761,6 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 .chat-tick.blue svg {
   stroke: #3b82f6 !important;
-}
-
-[data-theme="dark"] .chat-tick.blue {
-  color: #60a5fa !important;
-}
-
-[data-theme="dark"] .chat-tick.blue svg {
-  stroke: #60a5fa !important;
 }
 
 .chat-time {

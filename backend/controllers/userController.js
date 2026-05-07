@@ -303,7 +303,8 @@ async function getLeaderboard(req, res) {
 
 async function getPublicConfig(req, res) {
   res.json({
-    maxRankingsShown: parseInt(process.env.MAX_RANKINGS_SHOWN) || 100
+    maxRankingsShown: parseInt(process.env.MAX_RANKINGS_SHOWN) || 100,
+    chatReadThresholdPct: parseInt(process.env.CHAT_READ_THRESHOLD_PCT) || 10
   });
 }
 

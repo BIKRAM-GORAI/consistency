@@ -78,17 +78,22 @@ let lbSort = 'current'; // 'current' or 'highest'
 let lbHasMore = false;
 let lbIsLoading = false;
 let globalConfig = {
-  maxRankingsShown: 100
+  maxRankingsShown: 100,
+  chatReadThresholdPct: 10
 };
 
 async function fetchConfig() {
   try {
     const config = await apiFetch(`${API}/api/users/config`);
-    if (config && config.maxRankingsShown) {
-      globalConfig.maxRankingsShown = config.maxRankingsShown;
-      // Update UI title if it exists
-      const lbTitleExtra = document.getElementById('lb-title-extra');
-      if (lbTitleExtra) lbTitleExtra.textContent = ` (Top ${globalConfig.maxRankingsShown})`;
+    if (config) {
+      if (config.maxRankingsShown) {
+        globalConfig.maxRankingsShown = config.maxRankingsShown;
+        const lbTitleExtra = document.getElementById('lb-title-extra');
+        if (lbTitleExtra) lbTitleExtra.textContent = ` (Top ${globalConfig.maxRankingsShown})`;
+      }
+      if (config.chatReadThresholdPct !== undefined) {
+        globalConfig.chatReadThresholdPct = config.chatReadThresholdPct;
+      }
     }
   } catch (err) {
     console.error('Failed to fetch config:', err);
@@ -5441,7 +5446,7 @@ let selectedMediaType = null; // 'image' or 'video'
 
 // --- READ RECEIPTS STATE ---
 let memberReadStatuses = {}; // { userId: timestamp }
-let maxOtherReadTimestamp = 0;
+let chatReadThresholdPct = 10; // Default threshold for blue ticks
 let lastReadUpdate = 0;
 let myHighestReadTimestamp = 0;
 let readStatusUnsubscribe = null;
@@ -5632,6 +5637,16 @@ function renderChatMessage(msg, container, animate = false) {
   const bubble = document.createElement('div');
   bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'}`;
   
+  // Calculate Blue Tick status based on threshold percentage
+  let isBlue = false;
+  if (isSelf) {
+    const tsMillis = timestamp.getTime();
+    const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) ? allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
+    const totalOthers = group ? Math.max(1, group.members.length - 1) : 1;
+    const readCount = Object.values(memberReadStatuses).filter(lr => lr >= tsMillis).length;
+    isBlue = (readCount / totalOthers) * 100 >= (globalConfig.chatReadThresholdPct || 10);
+  }
+  
   // Check if editable (15 mins)
   const isEditable = isSelf && (Date.now() - timestamp.getTime() < 15 * 60 * 1000);
   const editBtn = isEditable ? `<button class="chat-edit-btn" onclick="startEditChatMessage('${docId}', '${escJs(msg.text)}')"><i data-lucide="pencil" style="width:12px;height:12px;"></i></button>` : '';
@@ -5706,12 +5721,13 @@ function renderChatMessage(msg, container, animate = false) {
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
       <span class="chat-time">${time}</span>
       ${isSelf ? `
-        <span class="chat-tick ${(msg.timestamp && msg.timestamp.toMillis && msg.timestamp.toMillis() <= maxOtherReadTimestamp) ? 'blue' : ''}" id="tick-${docId}">
+        <span class="chat-tick ${isBlue ? 'blue' : ''}" id="tick-${docId}">
           <i data-lucide="check-check" style="width:14px;height:14px;"></i>
         </span>
       ` : ''}
     </div>
   `;
+  if (window.lucide) lucide.createIcons({ root: bubble });
   
   if (isSelf) {
     wrapper.appendChild(buttonsHtmlToElement(buttonsHtml));
@@ -5801,7 +5817,6 @@ function closeChatModal() {
     readObserver = null;
   }
   memberReadStatuses = {};
-  maxOtherReadTimestamp = 0;
   myHighestReadTimestamp = 0;
   // Clear own typing status
   updateTypingStatus(false);
@@ -6287,13 +6302,13 @@ function throttledUpdateReadStatus() {
 
 function subscribeToReadStatuses(groupId) {
   if (readStatusUnsubscribe) readStatusUnsubscribe();
+  memberReadStatuses = {}; // Reset for new group
   
   const { firebaseDb, firestore } = window;
   const userId = localStorage.getItem('userId');
   const readsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'last_reads');
   
   readStatusUnsubscribe = firestore.onSnapshot(readsRef, (snapshot) => {
-    let newMax = 0;
     // Process all docs to ensure we have the absolute latest state
     snapshot.docs.forEach(doc => {
       const data = doc.data();
@@ -6303,24 +6318,27 @@ function subscribeToReadStatuses(groupId) {
       }
     });
     
-    // Recalculate max other read
-    Object.values(memberReadStatuses).forEach(ts => {
-      if (ts > newMax) newMax = ts;
-    });
-    
-    // Even if newMax is the same, we might need to update UI for new messages
-    maxOtherReadTimestamp = newMax;
     updateExistingTicks();
   });
 }
 
 function updateExistingTicks() {
+  const group = allJoinedGroups.find(g => g._id === activeChatGroupId);
+  if (!group) return;
+  const totalOthers = Math.max(1, group.members.length - 1);
+  
   const selfMessages = document.querySelectorAll('.chat-bubble-wrapper.self');
   selfMessages.forEach(msgEl => {
     const ts = parseInt(msgEl.dataset.ts || '0');
     const tick = msgEl.querySelector('.chat-tick');
-    if (tick && ts <= maxOtherReadTimestamp && !tick.classList.contains('blue')) {
+    if (!tick || tick.classList.contains('blue')) return;
+
+    const readCount = Object.values(memberReadStatuses).filter(lastRead => lastRead >= ts).length;
+    const pct = (readCount / totalOthers) * 100;
+    
+    if (pct >= globalConfig.chatReadThresholdPct) {
       tick.classList.add('blue');
+      if (window.lucide) lucide.createIcons({ root: tick });
     }
   });
 }
@@ -6337,9 +6355,16 @@ function updateMessageInDOM(msg) {
   
   if (isSelf) {
     const tick = el.querySelector('.chat-tick');
-    if (tick && timestamp.getTime() <= maxOtherReadTimestamp && !tick.classList.contains('blue')) {
-      tick.classList.add('blue');
-      if (window.lucide) lucide.createIcons({ root: tick });
+    if (tick && !tick.classList.contains('blue')) {
+      const group = allJoinedGroups.find(g => g._id === activeChatGroupId);
+      const totalOthers = group ? Math.max(1, group.members.length - 1) : 1;
+      const readCount = Object.values(memberReadStatuses).filter(lr => lr >= timestamp.getTime()).length;
+      const pct = (readCount / totalOthers) * 100;
+
+      if (pct >= globalConfig.chatReadThresholdPct) {
+        tick.classList.add('blue');
+        if (window.lucide) lucide.createIcons({ root: tick });
+      }
     }
   }
 }
