@@ -3691,9 +3691,24 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dark"] .chat-reaction-pill {
-  background: #333;
-  color: #fff;
-  border-color: #000;
+  background: #b2d1a1; /* Slightly lighter Solid Pink-200 */
+  color: #000000;
+  border: 2px solid var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+[data-theme="dark"] .chat-reaction-pill.active {
+  background: var(--lime);
+  color: #000;
+  border: 2px solid var(--black);
+}
+
+.chat-reaction-emoji {
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.1));
+}
+
+[data-theme="dark"] .chat-reaction-emoji {
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.3));
 }
 
 .chat-reaction-pill:hover {
@@ -3736,6 +3751,8 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 /* ── Reply Preview (above input) ── */
@@ -3809,9 +3826,71 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-[data-theme="dark"] .reaction-picker {
+/* ── Reaction Info Popup ── */
+.reaction-info-popup {
+  position: fixed;
+  background: var(--bg-card);
+  border: 3px solid var(--black);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 6px 6px 0 var(--black);
+  z-index: 2200;
+  min-width: 160px;
+  max-width: 240px;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+[data-theme="dark"] .reaction-info-popup {
   background: #222;
   border-color: #000;
+}
+
+.reaction-info-header {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.reaction-info-btn {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--red);
+  color: #fff;
+  border: 2px solid var(--black);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: transform 0.1s;
+}
+
+.reaction-info-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--black);
+}
+
+.reaction-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.reaction-info-user {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+[data-theme="dark"] .reaction-info-user {
+  border-bottom-color: rgba(255,255,255,0.05);
 }
 
 @keyframes popIn {

@@ -5632,19 +5632,22 @@ function renderChatMessage(msg, container, animate = false) {
     <div class="chat-message-actions-outside" style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-self: center; margin: 0 12px; transition: opacity 0.2s;">
       <button class="chat-edit-btn" onclick="toggleReactionPicker(event, '${docId}')" title="React"><i data-lucide="smile" style="width:16px;height:16px;"></i></button>
       <button class="chat-edit-btn" onclick="setReplyTo('${docId}', '${escJs(msg.text)}', '${escJs(msg.senderName)}')" title="Reply"><i data-lucide="reply" style="width:16px;height:16px;"></i></button>
-      ${editBtn ? `<button class="chat-edit-btn" onclick="startEditChatMessage('${docId}', '${escJs(msg.text)}')" title="Edit"><i data-lucide="pencil" style="width:16px;height:16px;"></i></button>` : ''}
+      ${editBtn ? `
+        <button class="chat-edit-btn" onclick="startEditChatMessage('${docId}', '${escJs(msg.text)}')" title="Edit"><i data-lucide="pencil" style="width:16px;height:16px;"></i></button>
+        <button class="chat-edit-btn" onclick="deleteChatMessage('${docId}')" title="Delete" style="color:var(--red);"><i data-lucide="trash-2" style="width:16px;height:16px;"></i></button>
+      ` : ''}
     </div>
   `;
 
   bubble.innerHTML = `
-    ${replySnippetHtml}
-    <div class="chat-message-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <div class="chat-message-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
       <div style="display: flex; align-items: center; gap: 4px; ${clickableStyle}" ${onclickHtml}>
         ${avatarHtml}
         <span class="chat-sender-name">${isSelf ? 'YOU' : escHtml(msg.senderName)}</span>
       </div>
     </div>
-    <div class="chat-text" id="chat-text-${docId}" style="margin-top: 6px;">${escHtml(msg.text)}</div>
+    ${replySnippetHtml}
+    <div class="chat-text" id="chat-text-${docId}" style="margin-top: 4px;">${escHtml(msg.text)}</div>
     ${reactionsHtml}
     <div class="chat-message-footer">
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
@@ -5838,7 +5841,7 @@ async function submitEditChatMessage(docId) {
   }
 }
 
-// ── REACTIONS & REPLIES ──────────────────────────────────────
+// ── REACTIONS & REPLIES ─────────────────────────────────────
 
 async function toggleReaction(docId, emoji = '❤️') {
   const { firebaseDb, firestore } = window;
@@ -5861,12 +5864,27 @@ async function toggleReaction(docId, emoji = '❤️') {
     
     await firestore.updateDoc(docRef, { reactions });
     
-    // Tiny pop animation if GSAP exists
+    // Tiny pop animation
     const bubble = document.getElementById(`chat-msg-${docId}`);
     if (bubble && window.gsap) {
       gsap.to(bubble.querySelector('.chat-bubble'), { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 });
     }
   } catch (err) { console.error('Reaction error:', err); }
+}
+
+async function deleteChatMessage(docId) {
+  if (!confirm('Are you sure you want to delete this message for everyone?')) return;
+  const { firebaseDb, firestore } = window;
+  if (!activeChatGroupId) return;
+  const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
+  
+  try {
+    await firestore.deleteDoc(docRef);
+    showToast('Message deleted.', 'info');
+  } catch (err) {
+    console.error('Delete error:', err);
+    showToast('Failed to delete message.', 'error');
+  }
 }
 
 function renderReactionsHTML(reactions, docId) {
@@ -5876,7 +5894,7 @@ function renderReactionsHTML(reactions, docId) {
   for (const [emoji, users] of Object.entries(reactions)) {
     const isActive = users.includes(userId);
     html += `
-      <div class="chat-reaction-pill ${isActive ? 'active' : ''}" onclick="showReactionUsers('${docId}', '${emoji}')">
+      <div class="chat-reaction-pill ${isActive ? 'active' : ''}" onclick="showReactionUsers(event, this, '${docId}', '${emoji}')">
         <span class="chat-reaction-emoji">${emoji}</span>
         <span class="chat-reaction-count">${users.length}</span>
       </div>
@@ -5919,22 +5937,25 @@ function toggleReactionPicker(e, docId) {
   // Position picker above the button, centered horizontally relative to it
   document.body.appendChild(picker);
   
-  const pWidth = picker.offsetWidth || 280;
-  const pHeight = picker.offsetHeight || 50;
-  
-  let top = rect.top - pHeight - 12;
-  let left = rect.left + (rect.width / 2) - (pWidth / 2);
-  
-  // Viewport safety
-  const margin = 16;
-  if (top < margin) top = rect.bottom + 12; // Flip to bottom if no space above
-  if (left < margin) left = margin;
-  if (left + pWidth > window.innerWidth - margin) {
-    left = window.innerWidth - pWidth - margin;
-  }
-  
-  picker.style.top = `${top}px`;
-  picker.style.left = `${left}px`;
+  requestAnimationFrame(() => {
+    const pWidth = picker.offsetWidth || 280;
+    const pHeight = picker.offsetHeight || 50;
+    
+    let top = rect.top - pHeight - 12;
+    let left = rect.left + (rect.width / 2) - (pWidth / 2);
+    
+    // Viewport safety
+    const margin = 16;
+    if (top < margin) top = rect.bottom + 12; // Flip to bottom if no space above
+    if (left < margin) left = margin;
+    if (left + pWidth > window.innerWidth - margin) {
+      left = window.innerWidth - pWidth - margin;
+    }
+    
+    picker.style.top = `${top}px`;
+    picker.style.left = `${left}px`;
+    picker.style.visibility = 'visible';
+  });
 
   // Close when clicking outside
   const closer = (ev) => {
@@ -5948,19 +5969,99 @@ function toggleReactionPicker(e, docId) {
   setTimeout(() => document.addEventListener('mousedown', closer), 10);
 }
 
-async function showReactionUsers(docId, emoji) {
+async function showReactionUsers(e, targetEl, docId, emoji) {
+  if (e) e.stopPropagation();
+  console.log('🚀 [DEBUG] showReactionUsers triggered:', { emoji, docId, activeGroupId: activeChatGroupId });
+  
   const { firebaseDb, firestore } = window;
-  if (!activeChatGroupId) return;
+  if (!activeChatGroupId) return console.warn('❌ [DEBUG] No activeChatGroupId');
+  
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
   
   try {
+    console.log('📡 [DEBUG] Fetching document...');
     const docSnap = await firestore.getDoc(docRef);
+    console.log('📦 [DEBUG] Fetch complete. Exists:', docSnap.exists());
+    
     if (!docSnap.exists()) return;
     const reactions = docSnap.data().reactions || {};
     const userIds = reactions[emoji] || [];
+    console.log('📊 [DEBUG] User IDs for emoji:', userIds);
+
     if (userIds.length === 0) return;
 
-    showToast(`${userIds.length} person/people reacted with ${emoji}`, 'info');
+    // Get current user ID
+    const myUserId = localStorage.getItem('userId');
+    const hasReacted = userIds.includes(myUserId);
+
+    // Create popup
+    const existing = document.querySelector('.reaction-info-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'reaction-info-popup';
+    
+    let html = `<span class="reaction-info-header">${emoji} Reactions</span>`;
+    
+    if (hasReacted) {
+      html += `<button class="reaction-info-btn" onclick="toggleReaction('${docId}', '${emoji}'); document.querySelector('.reaction-info-popup').remove();">Remove My Reaction</button>`;
+    }
+    
+    html += `<div class="reaction-info-list">`;
+    
+    // Try to find names from allJoinedGroups members
+    const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) 
+      ? allJoinedGroups.find(g => g._id === activeChatGroupId) 
+      : null;
+    
+    userIds.forEach(uid => {
+      let name = 'Anonymous';
+      if (uid === myUserId) name = 'You';
+      else if (group && group.members) {
+        const member = group.members.find(m => (m._id || m) === uid);
+        if (member) name = member.name || 'Member';
+      }
+      console.log('👤 [DEBUG] User name resolved:', name);
+      html += `<div class="reaction-info-user">${escapeHTML(name)}</div>`;
+    });
+    
+    html += `</div>`;
+    popup.innerHTML = html;
+    popup.style.zIndex = '99999';
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+      console.log('📍 [DEBUG] Positioning popup...');
+      const anchor = targetEl || (e ? e.currentTarget : null);
+      if (anchor) {
+        const rect = anchor.getBoundingClientRect();
+        const pWidth = popup.offsetWidth || 180;
+        const pHeight = popup.offsetHeight || 100;
+
+        let top = rect.top - pHeight - 10;
+        let left = rect.left + (rect.width / 2) - (pWidth / 2);
+        
+        if (top < 10) top = rect.bottom + 10;
+        if (left < 10) left = 10;
+        if (left + pWidth > window.innerWidth - 10) left = window.innerWidth - pWidth - 10;
+        
+        popup.style.top = `${top}px`;
+        popup.style.left = `${left}px`;
+        popup.style.visibility = 'visible';
+        console.log('✅ [DEBUG] Popup displayed at:', top, left);
+      } else {
+        console.warn('❌ [DEBUG] No anchor element found for positioning');
+      }
+    }, 0);
+
+    // Close on outside click
+    const closePopup = (ev) => {
+      if (!popup.contains(ev.target)) {
+        popup.remove();
+        document.removeEventListener('mousedown', closePopup);
+      }
+    };
+    setTimeout(() => document.addEventListener('mousedown', closePopup), 10);
   } catch (err) { console.error(err); }
 }
 
