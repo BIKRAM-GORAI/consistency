@@ -79,6 +79,7 @@ app.use((req, res, next) => {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
       "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com",
+      "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       `connect-src ${connectSrc.join(' ')}`,
       "frame-src 'self' https://*.firebaseapp.com https://vercel.live",
       "object-src 'none'",
