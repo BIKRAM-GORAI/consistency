@@ -3526,21 +3526,58 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 :root {
-  --chat-self-bg: var(--yellow);
-  --chat-other-bg: #B5FF4D; /* Vibrant Neo-Brutalist Light Green */
+  --chat-self-bg: #fef9c3; /* Soft Light Yellow */
+  --chat-other-bg: #ecfdf5; /* Soft Mint Green */
 }
 
 [data-theme="dark"] {
-  --chat-self-bg: #eab308; /* Slightly deeper gold for eye comfort */
-  --chat-other-bg: #4ade80; /* Brighter vibrant green for black text pop */
+  --chat-self-bg: #fef08a; /* Soft Pastel Yellow - Better for Blue Ticks */
+  --chat-other-bg: #d1fae5; /* Soft Pastel Mint - High Contrast */
+}
+
+/* Ensure text is readable in Dark Mode on the light pastel backgrounds */
+[data-theme="dark"] .chat-bubble.self,
+[data-theme="dark"] .chat-bubble.other,
+[data-theme="dark"] .category-builder-item .form-control {
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .chat-sender-name,
+[data-theme="dark"] .chat-time,
+[data-theme="dark"] .chat-edited-tag {
+  color: rgba(0, 0, 0, 0.6) !important;
 }
 
 /* ── Refined Group Chat ── */
 .chat-messages-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   padding: 24px;
+}
+
+/* Responsive Scaling for Laptops/Desktops */
+@media (min-width: 768px) {
+  .chat-messages-container {
+    gap: 24px;
+    padding: 32px;
+  }
+  .chat-bubble {
+    padding: 14px 20px !important;
+    font-size: 16px !important;
+  }
+  .chat-text {
+    font-size: 16px !important;
+  }
+  .chat-avatar {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+  .chat-bubble-wrapper {
+    max-width: 75% !important;
+    margin-bottom: 20px !important;
+  }
 }
 
 .chat-bubble-wrapper {
@@ -3689,6 +3726,32 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+}
+
+.chat-tick {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.chat-tick.blue {
+  color: #3b82f6 !important; /* Modern Blue */
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.4));
+}
+
+.chat-tick.blue svg {
+  stroke: #3b82f6 !important;
+}
+
+[data-theme="dark"] .chat-tick.blue {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .chat-tick.blue svg {
+  stroke: #60a5fa !important;
 }
 
 .chat-time {
@@ -4267,3 +4330,59 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   50% { transform: translateY(-4px); opacity: 1; }
 }
 
+
+/* ============================================================
+   RESPONSIVE SCALING FOR DESKTOP
+   ============================================================ */
+@media (min-width: 1024px) {
+  :root {
+    --page-max-width: 1000px;
+  }
+  body {
+    font-size: 16px;
+  }
+  .page {
+    max-width: var(--page-max-width);
+    padding: 40px 32px 140px;
+  }
+  .day-card, .goal-card {
+    padding: 26px 24px;
+    box-shadow: 6px 6px 0 var(--black);
+  }
+  .day-card:hover, .goal-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0 var(--black);
+  }
+  .form-control {
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+  .btn-primary, .btn-ghost {
+    padding: 12px 26px;
+    font-size: 15px;
+  }
+  .page-title {
+    font-size: 42px;
+  }
+  .category-header {
+    padding: 12px 18px;
+  }
+  .task-item {
+    padding: 10px 18px;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --page-max-width: 1200px;
+  }
+  body {
+    font-size: 17px;
+  }
+  .page {
+    max-width: var(--page-max-width);
+  }
+  .day-card, .goal-card {
+    padding: 30px 28px;
+  }
+}

@@ -1283,7 +1283,7 @@
 
   <!-- ===== MODAL: Group Chat ===== -->
   <div class="modal-overlay" id="modal-group-chat" onclick="closeModalOnOverlay(event, 'modal-group-chat')">
-    <div class="modal" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column; border-width: 4px;">
+    <div class="modal" style="max-width: clamp(350px, 95vw, 850px); height: 85vh; display: flex; flex-direction: column; border-width: 4px;">
       <div class="modal-header" style="flex-shrink: 0; background: var(--bg-card); border-bottom: 4px solid var(--black);">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div id="chat-group-icon-wrap" style="width: 45px; height: 45px; border: 3px solid var(--black); border-radius: 50%; overflow: hidden; background: var(--chat-self-bg); display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--black);">

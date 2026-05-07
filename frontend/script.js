@@ -937,12 +937,13 @@ function addCategoryField() {
   item.innerHTML = `
     <div class="cat-top-row">
       <input type="text" class="form-control" placeholder="Category name (e.g. Work, Fitness...)" id="cat-name-${idx}" />
-      <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="x"></i></button>
+      <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
     </div>
     <div class="tasks-builder" id="tasks-build-${idx}"></div>
     <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
   `;
   builder.appendChild(item);
+  if (window.lucide) lucide.createIcons({ root: item });
   addTaskField(idx);
 }
 
@@ -962,9 +963,10 @@ function addTaskField(catIdx) {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Task title..." />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 async function submitAddDay() {
@@ -1054,9 +1056,10 @@ function addNewCatTaskField() {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Task title..." />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 async function submitAddCategory() {
@@ -1133,9 +1136,10 @@ function addEditCatTaskField(title = '', taskId = '', completed = false) {
   row.dataset.completed = completed ? 'true' : 'false';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(title)}" />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 async function submitEditCategory() {
@@ -1222,9 +1226,10 @@ function addEditGoalTaskField(title = '', taskId = '', completed = false) {
   row.dataset.completed = completed ? 'true' : 'false';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Subtask title..." value="${escHtml(title)}" />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="x"></i></button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 async function submitEditGoal() {
@@ -1526,9 +1531,10 @@ function addGoalTaskField() {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Subtask title..." />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="x"></i></button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 async function submitAddGoal() {
@@ -2693,9 +2699,10 @@ function addAchLinkField(builderId, value = '') {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="url" class="form-control" placeholder="https://..." value="${escHtml(value)}" />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 function getLinksFromBuilder(builderId) {
@@ -5432,6 +5439,14 @@ let prevScrollHeight = 0;
 let selectedMediaBlob = null; // Stores the compressed blob to be uploaded
 let selectedMediaType = null; // 'image' or 'video'
 
+// --- READ RECEIPTS STATE ---
+let memberReadStatuses = {}; // { userId: timestamp }
+let maxOtherReadTimestamp = 0;
+let lastReadUpdate = 0;
+let myHighestReadTimestamp = 0;
+let readStatusUnsubscribe = null;
+let readObserver = null;
+
 function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   activeChatGroupId = groupId;
   if (resetLimit) chatMessagesLimit = 30; 
@@ -5468,6 +5483,9 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   if (msgsList) {
     msgsList.innerHTML = '<div style="text-align:center; padding:40px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; animation: pulse 1.5s infinite;">Connecting to stream...</div>';
   }
+
+  // Subscribe to read receipts
+  subscribeToReadStatuses(groupId);
 
   // Set up real-time listener
   const { firebaseDb, firestore } = window;
@@ -5553,6 +5571,8 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
         if (change.type === 'added' && !existing) {
           renderChatMessage(msg, msgsList, true);
         } else if (change.type === 'modified' && existing) {
+          // If the message is modified (e.g. server timestamp assigned), update its metadata
+          updateMessageInDOM(msg);
           updateExistingMessage(msg, existing);
         } else if (change.type === 'removed' && existing) {
           existing.remove();
@@ -5607,6 +5627,7 @@ function renderChatMessage(msg, container, animate = false) {
   const wrapper = document.createElement('div');
   wrapper.className = `chat-bubble-wrapper ${isSelf ? 'self' : 'other'}`;
   wrapper.id = `chat-msg-${docId}`;
+  wrapper.dataset.ts = timestamp.getTime().toString();
 
   const bubble = document.createElement('div');
   bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'}`;
@@ -5684,6 +5705,11 @@ function renderChatMessage(msg, container, animate = false) {
     <div class="chat-message-footer">
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
       <span class="chat-time">${time}</span>
+      ${isSelf ? `
+        <span class="chat-tick ${(msg.timestamp && msg.timestamp.toMillis && msg.timestamp.toMillis() <= maxOtherReadTimestamp) ? 'blue' : ''}" id="tick-${docId}">
+          <i data-lucide="check-check" style="width:14px;height:14px;"></i>
+        </span>
+      ` : ''}
     </div>
   `;
   
@@ -5697,8 +5723,9 @@ function renderChatMessage(msg, container, animate = false) {
   
   container.appendChild(wrapper);
   
-  // Initialize Lazy Loading for the new elements
+  // Initialize Lazy Loading and Read Tracker for the new elements
   initLazyLoading();
+  initReadTracker();
 
   // ── Swipe to Reply Logic ──
   let touchStartX = 0;
@@ -5764,6 +5791,18 @@ function closeChatModal() {
     typingUnsubscribe();
     typingUnsubscribe = null;
   }
+  // Stop listening for read receipts
+  if (readStatusUnsubscribe) {
+    readStatusUnsubscribe();
+    readStatusUnsubscribe = null;
+  }
+  if (readObserver) {
+    readObserver.disconnect();
+    readObserver = null;
+  }
+  memberReadStatuses = {};
+  maxOtherReadTimestamp = 0;
+  myHighestReadTimestamp = 0;
   // Clear own typing status
   updateTypingStatus(false);
   activeChatGroupId = null;
@@ -6065,22 +6104,18 @@ function toggleReactionPicker(e, docId) {
 
 async function showReactionUsers(e, targetEl, docId, emoji) {
   if (e) e.stopPropagation();
-  console.log('🚀 [DEBUG] showReactionUsers triggered:', { emoji, docId, activeGroupId: activeChatGroupId });
   
   const { firebaseDb, firestore } = window;
-  if (!activeChatGroupId) return console.warn('❌ [DEBUG] No activeChatGroupId');
+  if (!activeChatGroupId) return;
   
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
   
   try {
-    console.log('📡 [DEBUG] Fetching document...');
     const docSnap = await firestore.getDoc(docRef);
-    console.log('📦 [DEBUG] Fetch complete. Exists:', docSnap.exists());
     
     if (!docSnap.exists()) return;
     const reactions = docSnap.data().reactions || {};
     const userIds = reactions[emoji] || [];
-    console.log('📊 [DEBUG] User IDs for emoji:', userIds);
 
     if (userIds.length === 0) return;
 
@@ -6115,7 +6150,6 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
         const member = group.members.find(m => (m._id || m) === uid);
         if (member) name = member.name || 'Member';
       }
-      console.log('👤 [DEBUG] User name resolved:', name);
       html += `<div class="reaction-info-user">${escapeHTML(name)}</div>`;
     });
     
@@ -6123,9 +6157,8 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
     popup.innerHTML = html;
     popup.style.zIndex = '99999';
     document.body.appendChild(popup);
-
+ 
     setTimeout(() => {
-      console.log('📍 [DEBUG] Positioning popup...');
       const anchor = targetEl || (e ? e.currentTarget : null);
       if (anchor) {
         const rect = anchor.getBoundingClientRect();
@@ -6142,9 +6175,8 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
         popup.style.top = `${top}px`;
         popup.style.left = `${left}px`;
         popup.style.visibility = 'visible';
-        console.log('✅ [DEBUG] Popup displayed at:', top, left);
       } else {
-        console.warn('❌ [DEBUG] No anchor element found for positioning');
+        // No anchor
       }
     }, 0);
 
@@ -6183,7 +6215,7 @@ function setReplyTo(docId, text, senderName, mediaUrl) {
   document.getElementById('chat-input').focus();
 }
 
-/** ── LAZY LOADING LOGIC ── **/
+/** ── LAZY LOADING & READ RECEIPTS LOGIC ── **/
 let lazyObserver;
 function initLazyLoading() {
   if (!lazyObserver) {
@@ -6199,10 +6231,117 @@ function initLazyLoading() {
           observer.unobserve(media);
         }
       });
-    }, { rootMargin: '200px' }); // Start loading 200px before it enters
+    }, { rootMargin: '200px' });
   }
   
   document.querySelectorAll('.lazy-media').forEach(m => lazyObserver.observe(m));
+}
+
+function initReadTracker() {
+  if (!readObserver) {
+    readObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const msgId = entry.target.id.replace('chat-msg-', '');
+          const msgEl = entry.target;
+          const msgTimestamp = msgEl.dataset.ts ? parseInt(msgEl.dataset.ts) : 0;
+          
+          if (msgTimestamp > myHighestReadTimestamp) {
+            myHighestReadTimestamp = msgTimestamp;
+            throttledUpdateReadStatus();
+          }
+        }
+      });
+    }, { threshold: 0.1 }); // 10% of message visible is enough
+  }
+  
+  // Observe all messages that are NOT from the current user
+  const userId = localStorage.getItem('userId');
+  document.querySelectorAll('.chat-bubble-wrapper.other').forEach(m => readObserver.observe(m));
+}
+
+let readStatusTimeout = null;
+function throttledUpdateReadStatus() {
+  if (readStatusTimeout) return;
+  
+  const now = Date.now();
+  const timeSinceLast = now - lastReadUpdate;
+  const delay = Math.max(0, 2000 - timeSinceLast); // 2 second throttle
+  
+  readStatusTimeout = setTimeout(async () => {
+    readStatusTimeout = null;
+    if (!activeChatGroupId || !myHighestReadTimestamp) return;
+    
+    const { firebaseDb, firestore } = window;
+    const userId = localStorage.getItem('userId');
+    const readRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'last_reads', userId);
+    
+    try {
+      await firestore.setDoc(readRef, { timestamp: myHighestReadTimestamp });
+      lastReadUpdate = Date.now();
+    } catch (err) {
+      console.error('Failed to sync read status:', err);
+    }
+  }, delay);
+}
+
+function subscribeToReadStatuses(groupId) {
+  if (readStatusUnsubscribe) readStatusUnsubscribe();
+  
+  const { firebaseDb, firestore } = window;
+  const userId = localStorage.getItem('userId');
+  const readsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'last_reads');
+  
+  readStatusUnsubscribe = firestore.onSnapshot(readsRef, (snapshot) => {
+    let newMax = 0;
+    // Process all docs to ensure we have the absolute latest state
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const uid = doc.id;
+      if (uid !== userId) {
+        memberReadStatuses[uid] = data.timestamp || 0;
+      }
+    });
+    
+    // Recalculate max other read
+    Object.values(memberReadStatuses).forEach(ts => {
+      if (ts > newMax) newMax = ts;
+    });
+    
+    // Even if newMax is the same, we might need to update UI for new messages
+    maxOtherReadTimestamp = newMax;
+    updateExistingTicks();
+  });
+}
+
+function updateExistingTicks() {
+  const selfMessages = document.querySelectorAll('.chat-bubble-wrapper.self');
+  selfMessages.forEach(msgEl => {
+    const ts = parseInt(msgEl.dataset.ts || '0');
+    const tick = msgEl.querySelector('.chat-tick');
+    if (tick && ts <= maxOtherReadTimestamp && !tick.classList.contains('blue')) {
+      tick.classList.add('blue');
+    }
+  });
+}
+
+function updateMessageInDOM(msg) {
+  const el = document.getElementById(`chat-msg-${msg.id}`);
+  if (!el) return;
+  
+  const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
+  el.dataset.ts = timestamp.getTime().toString();
+  
+  const userId = localStorage.getItem('userId');
+  const isSelf = String(msg.senderId) === String(userId);
+  
+  if (isSelf) {
+    const tick = el.querySelector('.chat-tick');
+    if (tick && timestamp.getTime() <= maxOtherReadTimestamp && !tick.classList.contains('blue')) {
+      tick.classList.add('blue');
+      if (window.lucide) lucide.createIcons({ root: tick });
+    }
+  }
 }
 
 function clearReply() {
@@ -6398,8 +6537,6 @@ async function deleteFirestoreGroupData(groupId) {
     const msgsSnap = await firestore.getDocs(msgsRef);
     const msgsPromises = msgsSnap.docs.map(doc => firestore.deleteDoc(doc.ref));
     await Promise.all(msgsPromises);
-
-    console.log(`🔥 Firestore data for group ${groupId} purged.`);
   } catch (err) {
     console.error('Error purging Firestore group data:', err);
   }
