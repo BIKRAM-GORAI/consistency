@@ -6817,7 +6817,11 @@ async function updatePresence(groupId, isOnline) {
       rtdb.onDisconnect(presenceRef).remove();
 
       if (!presenceHeartbeatInterval) {
-        presenceHeartbeatInterval = setInterval(() => updatePresence(groupId, true), 120000);
+        presenceHeartbeatInterval = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            updatePresence(groupId, true);
+          }
+        }, 60000); // 60s heartbeat
       }
     } else {
       await rtdb.remove(presenceRef);
@@ -6847,7 +6851,8 @@ function subscribeToPresence(groupId) {
       const data = child.val();
       const lastSeen = data.lastSeen || now;
       
-      if (now - lastSeen < 300000) {
+      // Tightened: Only count users active in the last 150 seconds (2.5 mins)
+      if (now - lastSeen < 150000) {
         activeViewers.push(data);
       }
     });
@@ -6855,6 +6860,18 @@ function subscribeToPresence(groupId) {
     renderPresenceUI(activeViewers);
   });
 }
+
+// Handle PWA/Mobile App Backgrounding and Closure
+window.addEventListener('pagehide', () => {
+  if (activeChatGroupId) updatePresence(activeChatGroupId, false);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (activeChatGroupId) {
+    const isVisible = document.visibilityState === 'visible';
+    updatePresence(activeChatGroupId, isVisible);
+  }
+});
 
 function renderPresenceUI(viewers) {
   const container = document.getElementById('chat-presence-container');
