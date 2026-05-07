@@ -15,6 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
   <script src="/js/libs/lucide/lucide.min.js"></script>
   <script>
     // Auth guard — redirect to landing if not logged in
@@ -1077,53 +1078,6 @@
     <span id="toast-msg"></span>
   </div>
 
-  <!-- ===== MODAL: Public Profile ===== -->
-  <div class="modal-overlay" id="modal-public-profile" onclick="closeModalOnOverlay(event, 'modal-public-profile')">
-    <div class="modal modal-wide">
-      <div class="modal-header">
-        <h2>👤 Public Profile</h2>
-        <button class="modal-close" onclick="closeModal('modal-public-profile')">✕</button>
-      </div>
-      <div class="modal-body" id="public-profile-body" style="padding: 24px; text-align: center; min-width: 0;">
-        <!-- Header Info -->
-        <div style="margin-bottom: 24px; display: flex; flex-direction: column; align-items: center;">
-          <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 40px; color: #fff; border: 2px solid var(--black); box-shadow: 4px 4px 0 var(--black); margin-bottom: 12px;">
-            <img id="public-profile-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
-            <span id="public-profile-init">?</span>
-          </div>
-          <h2 id="public-profile-name" style="margin: 0; font-size: 24px;">Name</h2>
-          <p id="public-profile-username" style="margin: 4px 0 12px 0; color: var(--text-muted); font-size: 14px;">@username</p>
-          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-muted); padding: 8px 16px; border: 2px solid var(--black); border-radius: 20px; box-shadow: 2px 2px 0 var(--black); font-weight: bold;">
-              <span>Current Streak -</span> <span id="public-profile-streak">0</span> 🔥
-            </div>
-            <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-muted); padding: 8px 16px; border: 2px solid var(--black); border-radius: 20px; box-shadow: 2px 2px 0 var(--black); font-weight: bold;" title="Highest Streak">
-              <span>Highest Streak -</span> <span id="public-profile-highest-streak">0</span><i data-lucide="trophy"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Contribution Graph -->
-        <div style="flex-shrink: 0; min-width: 0; margin-bottom: 32px; text-align: left; background: var(--bg-muted); padding: 16px; border: 2px solid var(--black); box-shadow: 4px 4px 0 var(--black); border-radius: 8px; overflow-x: auto; width: 100%; max-width: 100%;">
-          <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text);">Contributions</h3>
-          <div id="public-profile-graph" style="display: block; flex-shrink: 0; min-width: 0;">
-            <!-- Rendered via JS -->
-          </div>
-        </div>
-
-        <!-- Cards / Achievements -->
-        <div style="text-align: left;">
-          <h3 style="font-size: 18px; margin-bottom: 16px; border-bottom: 2px solid var(--black); padding-bottom: 8px;">Recent Activity</h3>
-          <div id="public-profile-activity" style="display: flex; flex-direction: column; gap: 16px;">
-            <!-- Read-only days and achievements injected here -->
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-ghost ripple" onclick="closeModal('modal-public-profile')">Close</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== MODAL: Join Requests ===== -->
   <div class="modal-overlay" id="modal-join-requests" onclick="closeModalOnOverlay(event, 'modal-join-requests')">
@@ -1284,6 +1238,20 @@
     window.signInWithFirebase = signInWithCustomToken;
     window.firestore = { collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp: firestoreTimestamp };
     window.rtdb = { ref, set, onValue, onDisconnect, serverTimestamp: rtdbTimestamp, remove };
+
+    // ── INDEXED DB INITIALIZATION (OFFLINE-FIRST) ──
+    const dbLocal = new Dexie("ConsistencyDb");
+    dbLocal.version(3).stores({
+      days: "_id, date, status, tasks, userId",
+      goals: "_id, title, targetDate, status, userId",
+      groups: "_id, name, code, isPublic",
+      achievements: "_id, title, date, userId",
+      syncQueue: "++id, action, entity, data, timestamp",
+      leaderboard: "sort",
+      userProfile: "userId",
+      badges: "_id"
+    });
+    window.localDb = dbLocal;
   </script>
 
   <script src="script.js"></script>

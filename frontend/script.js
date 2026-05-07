@@ -331,30 +331,68 @@ async function apiFetch(url, options = {}) {
 
 // ── Days ───────────────────────────────────────────────────
 async function loadDays(page = 1) {
+  const localDb = window.localDb;
+  const loadingEl = document.getElementById('loading-days');
+
+  // 1. STALE: Load from IndexedDB instantly if it's the first page
+  if (page === 1) {
+    try {
+      const cached = await localDb.days.toArray();
+      if (cached.length > 0) {
+        allDays = cached;
+        renderDays();
+        updateStreak();
+        if (loadingEl) loadingEl.innerHTML = '';
+      }
+    } catch (err) {
+      console.warn('Dexie read error:', err);
+    }
+  }
+
+  // 2. REVALIDATE: Load from Server
   try {
     const data = await apiFetch(`${API}/api/days?page=${page}&limit=${daysPerPage}`);
     
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      if (page === 1) allDays = data.days;
-      else allDays.push(...data.days);
+      if (page === 1) {
+        allDays = data.days;
+        // Update Local Cache (Source of Truth)
+        await localDb.days.clear();
+        await localDb.days.bulkAdd(data.days);
+      } else {
+        allDays.push(...data.days);
+        await localDb.days.bulkPut(data.days);
+      }
       
       backendStreak = data.streak || 0;
       hasMoreDays = data.hasMore || false;
     } else {
       // Fallback for non-paginated API
-      if (page === 1) allDays = data;
-      else allDays.push(...data);
+      if (page === 1) {
+        allDays = data;
+        await localDb.days.clear();
+        await localDb.days.bulkAdd(data);
+      } else {
+        allDays.push(...data);
+        await localDb.days.bulkPut(data);
+      }
       hasMoreDays = false;
     }
 
     currentPage = page;
     renderDays();
     updateStreak();
+    if (loadingEl) loadingEl.innerHTML = '';
   } catch (err) {
     console.error('Error loading days:', err);
-    let errorMessage = '⚠️ Failed to load days. Please check your connection.';
+    
+    // If we have cached data, don't show a big error, just a small notice
+    if (allDays.length > 0) {
+      if (loadingEl) loadingEl.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;">Showing offline data</p>';
+      return;
+    }
 
-    // Check for rate limiting or specific error messages
+    let errorMessage = '⚠️ Failed to load days. Please check your connection.';
     if (err.message) {
       if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
         errorMessage = '⚠️ Too many requests. Please try again later.';
@@ -365,8 +403,9 @@ async function loadDays(page = 1) {
       }
     }
 
-    document.getElementById('loading-days').innerHTML =
-      `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
+    if (loadingEl) {
+      loadingEl.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
+    }
   }
 }
 
@@ -375,33 +414,51 @@ function loadMoreDays() {
 }
 
 function updateStreak() {
-  const { todayDone } = calculateStreak(allDays);
-  const streak = backendStreak;
-  const el = document.getElementById('streak-display');
-  const fireEl = document.querySelector('.streak-fire');
+  // Use a IIFE to get full local data for streak calculation without affecting global allDays
+  (async () => {
+    const fullLocalDays = await window.localDb.days.toArray();
+    const { count, todayDone } = calculateStreak(fullLocalDays);
+    
+    // Use local count if offline or if local count is higher (unsynced wins)
+    const streak = (!navigator.onLine || count > backendStreak) ? count : backendStreak;
+    
+    const el = document.getElementById('streak-display');
+    const fireEl = document.querySelector('.streak-fire');
 
-  // Show exclamation mark if streak > 0 but today is not done yet
-  if (fireEl) {
-    fireEl.innerHTML = (streak > 0 && !todayDone) ? '<i data-lucide="alert-circle"></i>' : '🔥';
-    if (window.lucide) lucide.createIcons({ root: fireEl });
-  }
-
-  // Animate streak number with GSAP counter
-  if (window.gsap) {
-    gsap.to({ val: parseInt(el.textContent) || 0 }, {
-      val: streak,
-      duration: 0.8,
-      ease: 'power2.out',
-      onUpdate() { el.textContent = Math.round(this.targets()[0].val); },
+    // Update all streak displays (Main UI, Quick View, etc.)
+    const allDisplays = document.querySelectorAll('#streak-display, #qp-current-streak, #public-profile-streak');
+    allDisplays.forEach(display => {
+      if (display && display !== el) display.textContent = streak;
     });
-    // Pulse the streak pill if streak > 0 and today is complete
-    if (streak > 0 && todayDone) {
-      gsap.fromTo('#nav-streak', { scale: 1 }, { scale: 1.06, duration: 0.2, yoyo: true, repeat: 1, ease: 'power1.inOut' });
+
+    // Show exclamation mark if streak > 0 but today is not done yet
+    if (fireEl) {
+      fireEl.innerHTML = (streak > 0 && !todayDone) ? '<i data-lucide="alert-circle"></i>' : '🔥';
+      if (window.lucide) lucide.createIcons({ root: fireEl });
     }
-  } else {
-    el.textContent = streak;
-  }
+    
+    if (el) {
+      if (window.gsap) {
+        gsap.to({ val: parseInt(el.textContent) || 0 }, {
+          val: streak,
+          duration: 0.8,
+          ease: 'power2.out',
+          onUpdate() { el.textContent = Math.round(this.targets()[0].val); },
+        });
+      } else {
+        el.textContent = streak;
+      }
+      if (streak >= 100) el.classList.add('legendary');
+      else el.classList.remove('legendary');
+
+      // Pulse the streak pill if streak > 0 and today is complete
+      if (streak > 0 && todayDone && window.gsap) {
+        gsap.fromTo('#nav-streak', { scale: 1 }, { scale: 1.06, duration: 0.2, yoyo: true, repeat: 1, ease: 'power1.inOut' });
+      }
+    }
+  })();
 }
+
 
 function renderDays() {
   const container = document.getElementById('cards-container');
@@ -598,7 +655,12 @@ function buildDayCard(day) {
   });
 
   // Load achievements for this card asynchronously (non-blocking)
-  loadDayAchievements(day._id, card);
+  if (!String(day._id).startsWith('temp_')) {
+    loadDayAchievements(day._id, card);
+  } else {
+    // For temp days, achievements are only in memory/local until synced
+    renderDayAchievements(day._id, allAchievements.filter(a => a.dayId === day._id), card);
+  }
 
   // Initialize Lucide icons after building the card content
   if (window.lucide) {
@@ -639,19 +701,131 @@ async function toggleTask(dayId, catId, taskId, checked) {
   }
 
   try {
-    await apiFetch(`${API}/api/days/${dayId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ categories: day.categories }),
-    });
+    // 1. Update Local DB immediately
+    await window.localDb.days.put(day);
+    
+    // 2. Add to Sync Queue
+    syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+    
     updateStreak();
   } catch (err) {
-    task.completed = !checked;
-    const checkbox = document.getElementById(`chk-${taskId}`);
-    if (checkbox) checkbox.checked = !checked;
-    updateProgressBar(dayId, day.categories);
-    showToast('Failed to save. Check connection.', 'error');
+    console.error('Offline write error:', err);
+    // Even if local write fails, we try to keep going
   }
 }
+
+const syncManager = {
+  async addToQueue(method, entity, id, data, localId = null) {
+    const db = window.localDb;
+    try {
+      // ── SPECIAL CASE: If updating a temp item that hasn't synced yet ──
+      if (method === 'PUT' && String(id).startsWith('temp_')) {
+        const pending = await db.syncQueue
+          .filter(x => x.entity === entity && x.localId === id && x.method === 'POST')
+          .first();
+        
+        if (pending) {
+          // Merge the update into the original creation request
+          pending.data = { ...pending.data, ...data };
+          await db.syncQueue.put(pending);
+          console.log(`Merged update into pending ${entity} creation:`, id);
+          return;
+        }
+      }
+
+      await db.syncQueue.add({
+        method,
+        entity,
+        targetId: id,
+        data,
+        localId,
+        timestamp: Date.now()
+      });
+      this.processQueue();
+    } catch (err) {
+      console.warn('Sync queue add failed:', err);
+    }
+  },
+
+  async processQueue() {
+    if (!navigator.onLine) return;
+    
+    const localDb = window.localDb;
+    const queue = await localDb.syncQueue.orderBy('timestamp').toArray();
+    if (queue.length === 0) return;
+
+    // Helper to strip temp IDs so MongoDB doesn't reject them
+    const stripTempIds = (data) => {
+      if (Array.isArray(data)) return data.map(stripTempIds);
+      if (data !== null && typeof data === 'object') {
+        const cleaned = {};
+        for (const key in data) {
+          if (key === '_id' && String(data[key]).startsWith('temp_')) continue;
+          cleaned[key] = stripTempIds(data[key]);
+        }
+        return cleaned;
+      }
+      return data;
+    };
+
+    for (const item of queue) {
+      try {
+        let url = '';
+        if (item.entity === 'days') url = `${API}/api/days/${item.targetId || ''}`;
+        else if (item.entity === 'goals') url = `${API}/api/goals/${item.targetId || ''}`;
+        else if (item.entity === 'achievements') url = `${API}/api/achievements/${item.targetId || ''}`;
+        else if (item.entity === 'groups') url = `${API}/api/groups/${item.targetId || ''}`;
+        else if (item.entity === 'auth/settings') url = `${API}/api/auth/settings`;
+
+        const response = await apiFetch(url, {
+          method: item.method,
+          body: JSON.stringify(stripTempIds(item.data))
+        });
+
+        // SUCCESS: Remove from queue
+        await localDb.syncQueue.delete(item.id);
+        
+        // ... rest of response logic
+        // Check if there are newer pending updates for this same record in the queue
+        const remainingForThis = await localDb.syncQueue
+          .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
+          .count();
+
+        if (response && response._id) {
+          // If this was a POST for a temp item, we MUST swap the ID everywhere
+          if (item.localId && item.localId !== response._id) {
+            await localDb[item.entity].delete(item.localId);
+            // Update memory references
+            if (item.entity === 'days') {
+              const idx = allDays.findIndex(d => d._id === item.localId);
+              if (idx !== -1) allDays[idx] = response;
+            } else if (item.entity === 'goals') {
+              const idx = allGoals.findIndex(g => g._id === item.localId);
+              if (idx !== -1) allGoals[idx] = response;
+            }
+          }
+
+          // ONLY overwrite local if this was the LAST update in the queue for this item
+          // This prevents "Reversion" where a mid-sync server response overwrites local work
+          if (remainingForThis === 0) {
+            await localDb[item.entity].put(response);
+          }
+        }
+      } catch (err) {
+        console.warn('Sync failed for item:', item.id, err);
+        if (err.message && !err.message.includes('fetch')) {
+          await localDb.syncQueue.delete(item.id);
+          if (item.entity === 'days') loadDays();
+          else if (item.entity === 'goals') loadGoals();
+        }
+        break; 
+      }
+    }
+  }
+};
+
+// Also listen for online event to trigger sync
+window.addEventListener('online', () => syncManager.processQueue());
 
 // ── Delete category ────────────────────────────────────────
 async function deleteCategory(dayId, catId) {
@@ -663,27 +837,18 @@ async function deleteCategory(dayId, catId) {
   const catName = day.categories[catIndex].name;
   if (!confirm(`Delete the "${catName}" category and all its tasks?`)) return;
 
-  // Optimistic update
+  // 1. Update UI and Local DB instantly
   const removed = day.categories.splice(catIndex, 1)[0];
   updateProgressBar(dayId, day.categories);
+  await window.localDb.days.put(day);
 
-  try {
-    await apiFetch(`${API}/api/days/${dayId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ categories: day.categories }),
-    });
-    // Re-render only this card
-    const cardEl = document.getElementById(`day-card-${dayId}`);
-    if (cardEl) cardEl.replaceWith(buildDayCard(day));
-    showToast(`"${catName}" deleted`, 'success');
-  } catch (err) {
-    // Rollback
-    day.categories.splice(catIndex, 0, removed);
-    updateProgressBar(dayId, day.categories);
-    const cardEl = document.getElementById(`day-card-${dayId}`);
-    if (cardEl) cardEl.replaceWith(buildDayCard(day));
-    showToast('Failed to delete category', 'error');
-  }
+  // 2. Queue for sync
+  syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+
+  // Re-render only this card
+  const cardEl = document.getElementById(`day-card-${dayId}`);
+  if (cardEl) cardEl.replaceWith(buildDayCard(day));
+  showToast(`"${catName}" deleted locally`, 'success');
 }
 
 // ── Delete individual task ──────────────────────────────────
@@ -698,26 +863,17 @@ async function deleteTask(dayId, catId, taskId) {
   const taskTitle = cat.tasks[taskIndex].title;
   if (!confirm(`Delete task "${taskTitle}"?`)) return;
 
-  // Optimistic update
+  // 1. Update UI and Local DB instantly
   const removed = cat.tasks.splice(taskIndex, 1)[0];
   updateProgressBar(dayId, day.categories);
+  await window.localDb.days.put(day);
 
-  try {
-    await apiFetch(`${API}/api/days/${dayId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ categories: day.categories }),
-    });
-    const cardEl = document.getElementById(`day-card-${dayId}`);
-    if (cardEl) cardEl.replaceWith(buildDayCard(day));
-    showToast('Task deleted', 'success');
-  } catch (err) {
-    // Rollback
-    cat.tasks.splice(taskIndex, 0, removed);
-    updateProgressBar(dayId, day.categories);
-    const cardEl = document.getElementById(`day-card-${dayId}`);
-    if (cardEl) cardEl.replaceWith(buildDayCard(day));
-    showToast('Failed to delete task', 'error');
-  }
+  // 2. Queue for sync
+  syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+
+  const cardEl = document.getElementById(`day-card-${dayId}`);
+  if (cardEl) cardEl.replaceWith(buildDayCard(day));
+  showToast('Task deleted locally', 'success');
 }
 
 function updateProgressBar(dayId, categories) {
@@ -750,16 +906,17 @@ async function saveSummary(dayId) {
   const textarea = document.getElementById(`summary-edit-${dayId}`);
   if (!textarea) return;
   const summary = textarea.value.trim();
+  const day = allDays.find(d => d._id === dayId);
+  if (day) day.summary = summary;
+
   try {
-    await apiFetch(`${API}/api/days/${dayId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ summary }),
-    });
-    const day = allDays.find(d => d._id === dayId);
-    if (day) day.summary = summary;
-    showToast('Notes saved!', 'success');
+    // 1. Update Local
+    await window.localDb.days.put(day);
+    // 2. Queue Sync
+    syncManager.addToQueue('PUT', 'days', dayId, { summary });
+    showToast('Notes saved locally!', 'success');
   } catch (err) {
-    showToast('Failed to save notes.', 'error');
+    console.error('Offline save error:', err);
   }
 }
 
@@ -770,9 +927,22 @@ let userClaimedBadges = [];
 let allAvailableBadges = [];
 
 async function loadClaimedBadges() {
+  // 1. STALE: Load from cache
+  try {
+    const cached = await window.localDb.badges.toArray();
+    if (cached.length > 0) {
+      userClaimedBadges = cached;
+      renderClaimedBadges();
+    }
+  } catch (e) {}
+
+  // 2. REVALIDATE: Fetch fresh
   try {
     const badges = await apiFetch(`${API}/api/users/badges/claimed`);
     userClaimedBadges = badges;
+    // Cache for next time
+    await window.localDb.badges.clear();
+    await window.localDb.badges.bulkAdd(badges);
     renderClaimedBadges();
   } catch (err) {
     console.error('Error loading claimed badges:', err);
@@ -998,13 +1168,24 @@ async function submitAddDay() {
   btn.disabled = true;
   btn.textContent = 'Creating...';
 
+  const tempId = `temp_${Date.now()}`;
+  const localDay = { _id: tempId, date, categories, summary, userId: localStorage.getItem('userId'), tasks: [] };
+
   try {
-    const newDay = await apiFetch(`${API}/api/days`, {
-      method: 'POST',
-      body: JSON.stringify({ date, categories, summary }),
-    });
-    allDays.push(newDay);
+    // 1. Update UI and Local DB instantly
+    allDays.push(localDay);
+    await window.localDb.days.add(localDay);
     closeModal('modal-add-day');
+    renderDays();
+
+    // 2. Queue for sync
+    syncManager.addToQueue('POST', 'days', null, { date, categories, summary }, tempId);
+
+    // Reset button for next time
+    btn.disabled = false;
+    btn.textContent = 'Create Day Card';
+    
+    const newDay = localDay; // Use local version for UI animation below
 
     // ── On mobile, just prepend the new card (newest-first) without
     //    re-rendering all cards (avoids GSAP stagger lag on modal close)
@@ -1079,32 +1260,34 @@ async function submitAddCategory() {
     if (title) tasks.push({ title, completed: false });
   }
 
-  const day = allDays.find(d => d._id === dayId);
-  if (!day) return;
-  const updatedCategories = [...day.categories, { name: catName, tasks }];
-
   const btn = document.getElementById('submit-cat-btn');
   btn.disabled = true; btn.textContent = 'Adding...';
 
+  const day = allDays.find(d => d._id === dayId);
+  if (!day) return;
+  // Give temp IDs to the new category and tasks for local UI
+  const tempCatId = `temp_cat_${Date.now()}`;
+  const updatedCategories = [...day.categories, { _id: tempCatId, name: catName, tasks: tasks.map(t => ({...t, _id: `temp_task_${Math.random()}`})) }];
+  day.categories = updatedCategories;
+
   try {
-    const updatedDay = await apiFetch(`${API}/api/days/${dayId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ categories: updatedCategories }),
-    });
-    const idx = allDays.findIndex(d => d._id === dayId);
-    if (idx !== -1) allDays[idx] = updatedDay;
+    // 1. Update Local
+    await window.localDb.days.put(day);
+    // 2. Queue Sync
+    syncManager.addToQueue('PUT', 'days', dayId, { categories: updatedCategories });
+
     closeModal('modal-add-category');
     const oldCard = document.getElementById(`day-card-${dayId}`);
     if (oldCard) {
-      const newCard = buildDayCard(updatedDay);
+      const newCard = buildDayCard(day);
       if (window.gsap) gsap.set(newCard, { opacity: 0, y: 10 });
       oldCard.replaceWith(newCard);
       if (window.gsap) gsap.to(newCard, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'all' });
-      requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`pct-fill-${dayId}`, calcProgress(updatedDay.categories))));
+      requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`pct-fill-${dayId}`, calcProgress(day.categories))));
     }
-    showToast('Category added!', 'success');
+    showToast('Category added locally!', 'success');
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Offline category add error:', err);
   } finally {
     btn.disabled = false; btn.textContent = 'Add Category';
   }
@@ -1158,45 +1341,40 @@ async function submitEditCategory() {
   const origCat = day.categories.find(c => c._id === catId);
 
   const taskRows = document.querySelectorAll('#edit-cat-tasks-builder .task-input-row');
-  const newTasks = [];
+  const tasks = [];
   for (const row of taskRows) {
     const title = row.querySelector('input').value.trim();
     if (!title) continue;
-    const tId  = row.dataset.taskId;
+    const tId = row.dataset.taskId;
     const existing = origCat ? origCat.tasks.find(t => t._id === tId) : null;
-    newTasks.push({ ...(tId ? { _id: tId } : {}), title, completed: existing ? existing.completed : false });
+    tasks.push({ _id: tId || `temp_task_${Math.random()}`, title, completed: existing ? existing.completed : false });
   }
 
-  const updatedCategories = day.categories.map(cat =>
-    String(cat._id) === String(catId)
-      ? { ...cat, name: catName, tasks: newTasks }
-      : cat
+  day.categories = day.categories.map(cat =>
+    String(cat._id) === String(catId) ? { ...cat, name: catName, tasks } : cat
   );
 
   const btn = document.getElementById('submit-edit-cat-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
 
   try {
-    const updatedDay = await apiFetch(`${API}/api/days/${dayId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ categories: updatedCategories }),
-    });
-    const idx = allDays.findIndex(d => d._id === dayId);
-    if (idx !== -1) allDays[idx] = updatedDay;
+    // 1. Update Local
+    await window.localDb.days.put(day);
+    // 2. Queue Sync
+    syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+
     closeModal('modal-edit-category');
     const oldCard = document.getElementById(`day-card-${dayId}`);
     if (oldCard) {
-      const newCard = buildDayCard(updatedDay);
-      if (window.gsap) gsap.set(newCard, { opacity: 0, y: 10 });
+      const newCard = buildDayCard(day);
       oldCard.replaceWith(newCard);
-      if (window.gsap) gsap.to(newCard, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'all' });
-      requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`pct-fill-${dayId}`, calcProgress(updatedDay.categories))));
+      requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`pct-fill-${dayId}`, calcProgress(day.categories))));
     }
-    showToast('Category updated!', 'success');
+    showToast('Category updated locally!', 'success');
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Offline category edit error:', err);
   } finally {
-    btn.disabled = false; btn.textContent = 'Save Changes';
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
   }
 }
 
@@ -1284,15 +1462,34 @@ async function submitEditGoal() {
 
 // ── Goals ──────────────────────────────────────────────────
 async function loadGoals() {
+  const localDb = window.localDb;
   const container = document.getElementById('goals-container');
-  container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+
+  // 1. STALE: Load from IndexedDB
+  try {
+    const cached = await localDb.goals.toArray();
+    if (cached.length > 0) {
+      allGoals = cached;
+      renderGoals();
+    } else {
+      container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+    }
+  } catch (err) {
+    console.warn('Dexie read error:', err);
+  }
+
+  // 2. REVALIDATE: Load from Server
   try {
     allGoals = await apiFetch(`${API}/api/goals`);
+    // Sync Local Cache
+    await localDb.goals.clear();
+    await localDb.goals.bulkAdd(allGoals);
     renderGoals();
   } catch (err) {
     console.error('Error loading goals:', err);
-    let errorMessage = '<i data-lucide="alert-triangle"></i> Failed to load goals. Please check your connection.';
+    if (allGoals.length > 0) return; // Silent fail if we have cache
 
+    let errorMessage = '<i data-lucide="alert-triangle"></i> Failed to load goals. Please check your connection.';
     if (err.message) {
       if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
         errorMessage = '<i data-lucide="alert-triangle"></i> Too many requests. Please try again later.';
@@ -1302,7 +1499,6 @@ async function loadGoals() {
         errorMessage = `<i data-lucide="alert-triangle"></i> ${err.message}`;
       }
     }
-
     container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
@@ -1457,10 +1653,10 @@ async function toggleGoalTask(goalId, taskId, checked) {
   }
 
   try {
-    await apiFetch(`${API}/api/goals/${goalId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ tasks: goal.tasks }),
-    });
+    // 1. Update Local
+    await window.localDb.goals.put(goal);
+    // 2. Queue Sync
+    syncManager.addToQueue('PUT', 'goals', goalId, { tasks: goal.tasks });
 
     // If now 100% complete, re-render the card to apply green theme
     const pct = calcProgress([{ tasks: goal.tasks }]);
@@ -1476,12 +1672,7 @@ async function toggleGoalTask(goalId, taskId, checked) {
       }
     }
   } catch (err) {
-    task.completed = !checked;
-    if (label) { label.style.textDecoration = !checked ? 'line-through' : 'none'; label.style.color = !checked ? 'var(--lt-green)' : ''; }
-    const checkbox = document.getElementById(`gtask-${taskId}`);
-    if (checkbox) checkbox.checked = !checked;
-    updateGoalProgressBar(goalId, goal.tasks);
-    showToast('Failed to save task.', 'error');
+    console.error('Offline goal write error:', err);
   }
 }
 
@@ -1504,8 +1695,10 @@ function updateGoalProgressBar(goalId, tasks) {
 async function deleteGoal(goalId) {
   if (!confirm('Delete this goal? This cannot be undone.')) return;
   try {
-    await apiFetch(`${API}/api/goals/${goalId}`, { method: 'DELETE' });
+    // 1. Update UI and Local DB instantly
     allGoals = allGoals.filter(g => g._id !== goalId);
+    await window.localDb.goals.delete(goalId);
+
     const card = document.getElementById(`goal-card-${goalId}`);
     if (card) {
       if (window.gsap) {
@@ -1515,9 +1708,13 @@ async function deleteGoal(goalId) {
         if (!allGoals.length) renderGoals();
       }
     }
-    showToast('Goal deleted.', 'info');
-  } catch(err) {
-    showToast('Failed to delete goal.', 'error');
+    showToast('Goal deleted locally.', 'info');
+
+    // 2. Queue for sync
+    syncManager.addToQueue('DELETE', 'goals', goalId);
+  } catch (err) {
+    console.error('Offline delete error:', err);
+    showToast('Failed to delete goal locally.', 'error');
   }
 }
 
@@ -1558,18 +1755,22 @@ async function submitAddGoal() {
   const btn = document.getElementById('submit-goal-btn');
   btn.disabled = true; btn.textContent = 'Creating...';
 
+  const tempId = `temp_${Date.now()}`;
+  const localGoal = { _id: tempId, title, deadline, tasks, userId, status: 'active', createdAt: new Date().toISOString() };
+
   try {
-    const newGoal = await apiFetch(`${API}/api/goals`, {
-      method: 'POST',
-      body: JSON.stringify({ userId, title, deadline, tasks }),
-    });
-    allGoals.push(newGoal);
+    // 1. Update UI and Local DB instantly
+    allGoals.push(localGoal);
     allGoals.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    await window.localDb.goals.add(localGoal);
     closeModal('modal-add-goal');
     renderGoals();
-    showToast('Goal created!', 'success');
+    showToast('Goal created locally!', 'success');
+
+    // 2. Queue for sync
+    syncManager.addToQueue('POST', 'goals', null, { title, deadline, tasks }, tempId);
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Offline write error:', err);
   } finally {
     btn.disabled = false; btn.textContent = 'Create Goal';
   }
@@ -1585,8 +1786,23 @@ let allJoinedGroups = [];
 let availablePublicGroups = [];
 
 async function loadGroups() {
+  const localDb = window.localDb;
   const container = document.getElementById('groups-container');
-  container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading groups...</p></div>`;
+
+  // 1. STALE: Load from IndexedDB
+  try {
+    const cached = await localDb.groups.toArray();
+    if (cached.length > 0) {
+      allJoinedGroups = cached;
+      renderGroups();
+    } else {
+      container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading groups...</p></div>`;
+    }
+  } catch (err) {
+    console.warn('Dexie read error:', err);
+  }
+
+  // 2. REVALIDATE: Load from Server
   try {
     const [joined, public] = await Promise.all([
       apiFetch(`${API}/api/groups/mine`),
@@ -1594,11 +1810,17 @@ async function loadGroups() {
     ]);
     allJoinedGroups = joined;
     availablePublicGroups = public;
+
+    // Sync Local Cache (Only cache joined groups for now to save space)
+    await localDb.groups.clear();
+    await localDb.groups.bulkAdd(allJoinedGroups);
+
     renderGroups();
   } catch (err) {
     console.error('Error loading groups:', err);
-    let errorMessage = '<i data-lucide="alert-triangle"></i> Failed to load groups. Please check your connection.';
+    if (allJoinedGroups.length > 0) return; // Silent fail if we have cache
 
+    let errorMessage = '<i data-lucide="alert-triangle"></i> Failed to load groups. Please check your connection.';
     if (err.message) {
       if (err.message.includes('Too many requests') || err.message.includes('rate limit') || err.message.includes('429')) {
         errorMessage = '<i data-lucide="alert-triangle"></i> Too many requests. Please try again later.';
@@ -1608,7 +1830,6 @@ async function loadGroups() {
         errorMessage = `<i data-lucide="alert-triangle"></i> ${err.message}`;
       }
     }
-
     container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
   }
 }
@@ -2242,18 +2463,20 @@ async function submitEditGroup() {
 async function deleteGroup(groupId) {
   if (!confirm('Are you sure you want to completely delete this team? This action is permanent.')) return;
   try {
-    await apiFetch(`${API}/api/groups/${groupId}`, {
-      method: 'DELETE',
-      body: JSON.stringify({ userId }),
-    });
-    
-    // Clear Firestore Chat Data
-    await deleteFirestoreGroupData(groupId);
+    // 1. Update UI and Local DB instantly
+    allJoinedGroups = allJoinedGroups.filter(g => g._id !== groupId);
+    await window.localDb.groups.delete(groupId);
+    renderGroups();
 
-    showToast('Team deleted.', 'info');
-    loadGroups();
+    // 2. Queue for sync
+    syncManager.addToQueue('DELETE', 'groups', groupId, { userId });
+    
+    // Clear Firestore Chat Data (Background)
+    deleteFirestoreGroupData(groupId).catch(console.error);
+
+    showToast('Team deleted locally.', 'info');
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Offline delete error:', err);
   }
 }
 
@@ -2583,8 +2806,23 @@ function renderDayAchievements(dayId, achievements, cardEl) {
 
 // ── Achievements Page ──────────────────────────────────────
 async function loadAchievements() {
+  const localDb = window.localDb;
   const container = document.getElementById('achievements-container');
-  container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+
+  // 1. STALE: Load from IndexedDB
+  try {
+    const cached = await localDb.achievements.toArray();
+    if (cached.length > 0) {
+      allAchievements = cached;
+      renderAchievements();
+    } else {
+      container.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading...</p></div>`;
+    }
+  } catch (err) {
+    console.warn('Dexie read error:', err);
+  }
+
+  // 2. REVALIDATE: Load from Server
   try {
     const [privacyRes, achs] = await Promise.all([
       apiFetch(`${API}/api/auth/achievements-privacy`),
@@ -2592,10 +2830,16 @@ async function loadAchievements() {
     ]);
     achievementsPublic = privacyRes.achievementsPublic !== false;
     allAchievements    = achs.achievements || [];
+    
+    // Sync Cache
+    await localDb.achievements.clear();
+    await localDb.achievements.bulkAdd(allAchievements);
+    
     renderAchievements();
   } catch (err) {
     console.error('Error loading achievements:', err);
-    container.innerHTML = `<p style="color:#ef4444;text-align:center">${errorMessage}</p>`;
+    if (allAchievements.length > 0) return; // Silent fail if we have cache
+    container.innerHTML = `<p style="color:#ef4444;text-align:center">⚠️ Failed to load achievements. Check your connection.</p>`;
   }
 }
 
@@ -2747,8 +2991,8 @@ async function submitAddAchievement() {
 
   if (!title) { showToast('Achievement title is required.', 'warn'); return; }
 
-  const warnEl = document.getElementById('ach-link-warning');
   const btn    = document.getElementById('submit-ach-btn');
+  const warnEl = document.getElementById('ach-link-warning');
 
   if (links.length > 0 && hasInvalidLinks('ach-links-builder') && !_achAddLinkPending) {
     warnEl.style.display = 'block';
@@ -2764,23 +3008,27 @@ async function submitAddAchievement() {
   const day   = allDays.find(d => d._id === dayId);
   const date  = day ? day.date : todayStr();
 
-  btn.disabled = true; btn.textContent = 'Saving...';
+  const tempId = `temp_${Date.now()}`;
+  const localAch = { _id: tempId, userId, dayId, date, title, description: desc, links };
 
   try {
-    const newAch = await apiFetch(`${API}/api/achievements`, {
-      method: 'POST',
-      body: JSON.stringify({ userId, dayId, date, title, description: desc, links }),
-    });
-    allAchievements.unshift(newAch);
+    // 1. Update UI and Local DB instantly
+    allAchievements.unshift(localAch);
+    await window.localDb.achievements.add(localAch);
     closeModal('modal-add-achievement');
+
     const cardEl = document.getElementById(`day-card-${dayId}`);
     if (cardEl) {
-      const dayAchs = await apiFetch(`${API}/api/achievements/day/${dayId}`);
+      // Filter locally instead of fetching
+      const dayAchs = allAchievements.filter(a => a.dayId === dayId);
       renderDayAchievements(dayId, dayAchs, cardEl);
     }
-    showToast(`Achievement logged! <i data-lucide="party-popper"></i>`, 'success');
+    showToast(`Achievement logged locally! <i data-lucide="party-popper"></i>`, 'success');
+
+    // 2. Queue for sync
+    syncManager.addToQueue('POST', 'achievements', null, { userId, dayId, date, title, description: desc, links }, tempId);
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Offline achievement write error:', err);
   } finally {
     btn.disabled = false; btn.textContent = 'Save Achievement';
   }
@@ -2862,25 +3110,28 @@ async function submitEditAchievement() {
 async function deleteAchievement(achId, dayId) {
   if (!confirm('Delete this achievement? This cannot be undone.')) return;
   try {
-    await apiFetch(`${API}/api/achievements/${achId}`, { method: 'DELETE' });
-    allAchievements = allAchievements.filter(x => x._id !== achId);
-
-    // Remove from inline card if dayId is known
     const knownDayId = dayId || allAchievements.find(x => x._id === achId)?.dayId;
+
+    // 1. Update UI and Local DB instantly
+    allAchievements = allAchievements.filter(x => x._id !== achId);
+    await window.localDb.achievements.delete(achId);
+
     if (knownDayId) {
       const cardEl = document.getElementById(`day-card-${knownDayId}`);
       if (cardEl) {
-        const dayAchs = await apiFetch(`${API}/api/achievements/day/${knownDayId}`);
+        const dayAchs = allAchievements.filter(a => a.dayId === knownDayId);
         renderDayAchievements(knownDayId, dayAchs, cardEl);
       }
     }
-    // If achievements page is open, re-render it
-    if (document.getElementById('page-achievements').classList.contains('active')) {
+    if (document.getElementById('page-achievements')?.classList.contains('active')) {
       renderAchievements();
     }
-    showToast('Achievement deleted.', 'info');
+    showToast('Achievement deleted locally.', 'success');
+
+    // 2. Queue for sync
+    syncManager.addToQueue('DELETE', 'achievements', achId);
   } catch (err) {
-    showToast('Failed to delete achievement.', 'error');
+    console.error('Offline delete error:', err);
   }
 }
 
@@ -3019,65 +3270,72 @@ async function openProfileModal() {
   const pwdIcon = document.getElementById('toggle-pwd-icon');
   if (pwdIcon) pwdIcon.textContent = '▼';
 
+  // 1. STALE: Load from cache instantly
+  const userId = localStorage.getItem('userId');
+  try {
+    const cached = await window.localDb.userProfile.get(userId);
+    if (cached) renderProfileData(cached);
+  } catch (e) {}
+
+  // 2. REVALIDATE: Load from server
+  try {
+    const res = await apiFetch(`${API}/api/auth/settings`);
+    res.userId = userId;
+    await window.localDb.userProfile.put(res);
+    renderProfileData(res);
+  } catch (err) {
+    console.error('Error loading profile:', err);
+    if (!navigator.onLine) showToast('Showing offline profile data.', 'info');
+  }
+}
+
+/** Helper to populate profile fields from a user object */
+function renderProfileData(user) {
+  if (!user) return;
+  
+  if (user.profilePicture) {
+    userProfilePicture = user.profilePicture;
+    localStorage.setItem('userProfilePicture', userProfilePicture);
+    updateNavAvatar();
+  }
+
   const avatarImg = document.getElementById('profile-avatar-img');
   const avatarInit = document.getElementById('profile-avatar-initial');
-  if (userProfilePicture) {
-    avatarImg.src = userProfilePicture;
+  if (user.profilePicture) {
+    avatarImg.src = user.profilePicture;
     avatarImg.style.display = 'block';
     avatarInit.style.display = 'none';
   } else {
     avatarImg.src = '';
     avatarImg.style.display = 'none';
     avatarInit.style.display = 'block';
-    avatarInit.textContent = userName.charAt(0).toUpperCase();
+    avatarInit.textContent = (user.name || userName || 'U').charAt(0).toUpperCase();
   }
 
-  try {
-    const res = await apiFetch(`${API}/api/auth/settings`);
-    
-    // Sync latest profile picture from backend
-    if (res.profilePicture) {
-      userProfilePicture = res.profilePicture;
-      localStorage.setItem('userProfilePicture', userProfilePicture);
-      updateNavAvatar();
-      
-      const avatarImg = document.getElementById('profile-avatar-img');
-      const avatarInit = document.getElementById('profile-avatar-initial');
-      avatarImg.src = userProfilePicture;
-      avatarImg.style.display = 'block';
-      avatarInit.style.display = 'none';
-    }
-
-    document.getElementById('profile-email').value = res.email || '';
-
-    const unameInput = document.getElementById('profile-username');
-    const unameHint = document.getElementById('profile-username-hint');
-    const unameWarn = document.getElementById('profile-username-warning');
-
-    unameInput.value = res.username || '';
-    if (res.username) {
-      localStorage.setItem('userUsername', res.username);
+  const emailInput = document.getElementById('profile-email');
+  if (emailInput) emailInput.value = user.email || '';
+  
+  const toggle = document.getElementById('email-notif-toggle');
+  if (toggle) toggle.checked = user.emailNotifications;
+  const publicToggle = document.getElementById('public-profile-toggle');
+  if (publicToggle) publicToggle.checked = user.isPublicProfile !== false;
+  
+  const unameInput = document.getElementById('profile-username');
+  if (unameInput) {
+    unameInput.value = user.username || '';
+    if (user.username) {
       unameInput.readOnly = true;
-      if(unameHint) unameHint.style.display = 'none';
-      if(unameWarn) unameWarn.style.display = 'block';
-    } else {
-      unameInput.readOnly = false;
-      if(unameHint) unameHint.style.display = 'block';
-      if(unameWarn) unameWarn.style.display = 'none';
+      const hint = document.getElementById('profile-username-hint');
+      if (hint) hint.innerHTML = '<i data-lucide="check-circle" style="width:14px;height:14px;color:var(--green)"></i> Username is locked.';
+      if (window.lucide) lucide.createIcons({ root: hint });
     }
-
-    const toggle = document.getElementById('email-notif-toggle');
-    if (toggle) toggle.checked = res.emailNotifications;
-    const publicToggle = document.getElementById('public-profile-toggle');
-    if (publicToggle) publicToggle.checked = res.isPublicProfile !== false;
-
-    // Load LeetCode profile status
-    await loadLeetCodeProfileStatus();
-
-    loadClaimedBadges();
-  } catch (err) {
-    console.error('Failed to load profile settings:', err);
-    showToast('Failed to load profile', 'error');
+  }
+  
+  loadClaimedBadges();
+  
+  // Also load LeetCode status
+  if (typeof loadLeetCodeProfileStatus === 'function') {
+    loadLeetCodeProfileStatus();
   }
 }
 
@@ -3156,23 +3414,43 @@ async function submitPasswordChange() {
     showToast('Please fill all password fields.', 'warn');
     return;
   }
+  
+  // 1. FRONTEND VALIDATION (Aligned with Backend Rules)
+  // Rules: 5+ chars, 1 uppercase, 1 lowercase, 1 special char, no spaces
+  const hasMinLength = newPassword.length >= 5;
+  const hasNoSpaces  = !/\s/.test(newPassword);
+  const hasUpper     = /[A-Z]/.test(newPassword);
+  const hasLower     = /[a-z]/.test(newPassword);
+  const hasSpecial   = /[^a-zA-Z0-9]/.test(newPassword);
+
+  if (!hasMinLength || !hasNoSpaces || !hasUpper || !hasLower || !hasSpecial) {
+    showToast('Password must be 5+ characters with 1 uppercase, 1 lowercase, 1 special char, and no spaces.', 'warn');
+    return;
+  }
+
   if (newPassword !== confirmPassword) {
     showToast('New passwords do not match.', 'warn');
     return;
   }
-  if (newPassword.length < 5 || /\s/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
-    showToast('New password must be 5+ chars with 1 uppercase, 1 lowercase, 1 special char.', 'warn');
-    return;
-  }
 
   const btn = document.getElementById('submit-pwd-btn');
+  const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Updating...';
 
   try {
+    const payload = { oldPassword, newPassword };
+    // 2. OFFLINE QUEUING
+    if (!navigator.onLine) {
+      syncManager.addToQueue('PATCH', 'auth/settings', 'current', payload);
+      showToast('Password change queued! Will sync when online.', 'success');
+      closeModal('modal-profile');
+      return;
+    }
+
     await apiFetch(`${API}/api/auth/settings`, {
       method: 'PATCH',
-      body: JSON.stringify({ oldPassword, newPassword })
+      body: JSON.stringify(payload)
     });
     showToast('Password updated successfully!', 'success');
     
@@ -3184,7 +3462,7 @@ async function submitPasswordChange() {
     showToast(err.message || 'Failed to update password', 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Update Password';
+    btn.textContent = originalText;
   }
 }
 
@@ -3657,6 +3935,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  proactiveSync();
   loadDays();
   loadTemplates();
 });
@@ -3949,9 +4228,96 @@ async function openQuickView(username) {
     showToast('Username not set for this user.', 'warn');
     return;
   }
-  
+
+  const myUsername = localStorage.getItem('userUsername');
+  const myId = localStorage.getItem('userId');
+  const isMe = (username === myUsername);
+
+  // 1. OFFLINE HANDLING
+  if (!navigator.onLine) {
+    if (isMe) {
+      // Reconstruct view from local data
+      const qpName = document.getElementById('qp-name');
+      const qpUsername = document.getElementById('qp-username');
+      if (qpName) qpName.textContent = localStorage.getItem('userName') || 'You';
+      if (qpUsername) qpUsername.textContent = `@${myUsername}`;
+      
+      const avatarImg = document.getElementById('qp-avatar-img');
+      const avatarPlc = document.getElementById('qp-avatar-placeholder');
+      const myPic = localStorage.getItem('userProfilePicture');
+      if (avatarImg && avatarPlc) {
+        if (myPic) {
+          avatarImg.src = myPic;
+          avatarImg.style.display = 'block';
+          avatarPlc.style.display = 'none';
+        } else {
+          avatarImg.style.display = 'none';
+          avatarPlc.style.display = 'flex';
+          avatarPlc.textContent = (localStorage.getItem('userName') || 'U').charAt(0).toUpperCase();
+        }
+      }
+
+      // Streaks (from memory/local)
+      const qpCurr = document.getElementById('qp-current-streak');
+      const qpHighest = document.getElementById('qp-highest-streak');
+      if (qpCurr) qpCurr.textContent = backendStreak || 0;
+      if (qpHighest) qpHighest.textContent = backendStreak || 0; // fallback
+
+      // Badges (from cache)
+      const badgeContainer = document.getElementById('qp-badges-container');
+      const badgeSection = document.getElementById('qp-badges-section');
+      if (badgeContainer && badgeSection) {
+        badgeContainer.innerHTML = '';
+        const cachedBadges = await window.localDb.badges.toArray();
+        if (cachedBadges.length > 0) {
+          badgeSection.style.display = 'block';
+          cachedBadges.forEach(b => {
+             const img = document.createElement('img');
+             img.src = b.image;
+             img.title = b.name;
+             img.className = 'qp-badge-icon'; // assuming styles exist or use inline
+             img.style.cssText = 'width:60px; height:60px; object-fit:contain; border:3px solid var(--black); border-radius:12px; padding:8px; box-shadow:4px 4px 0 var(--black);';
+             img.onclick = () => openLightbox(b.image);
+             badgeContainer.appendChild(img);
+          });
+        } else {
+          badgeSection.style.display = 'none';
+        }
+      }
+
+      // Activity Graph (Reconstruct from local data)
+      const graphData = [];
+      const allLocal = await window.localDb.days.toArray();
+      allLocal.forEach(d => {
+        const completed = (d.categories || []).reduce((acc, cat) => 
+          acc + (cat.tasks || []).filter(t => t.completed).length, 0);
+        if (completed > 0) graphData.push({ date: d.date, completedCount: completed });
+      });
+      renderContributionGraph(graphData, 'qp-graph-container');
+
+      // Activity Feed (from local allDays)
+      const activityList = document.getElementById('qp-activity-list');
+      if (activityList) {
+        activityList.innerHTML = '';
+        const recentDays = [...allDays].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 5);
+        if (recentDays.length === 0) {
+          activityList.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No recent activity offline.</p>';
+        } else {
+          recentDays.forEach(d => activityList.appendChild(buildReadOnlyDayCard(d)));
+        }
+      }
+
+      openModal('modal-public-profile');
+      if (window.lucide) lucide.createIcons();
+      return;
+    } else {
+      showToast('Offline: Cannot view other profiles.', 'info');
+      return;
+    }
+  }
+
+  // 2. ONLINE HANDLING (Original logic)
   try {
-    // Show a loading state if needed or just fetch fast
     const u = await apiFetch(`${API}/api/users/${encodeURIComponent(username)}`);
     if (!u || !u.username) {
       showToast('Profile not found or private.', 'error');
@@ -4779,120 +5145,151 @@ async function openLeetCodeProblemModal(dayId, dayDate) {
 // Load LeetCode profile status
 async function loadLeetCodeProfileStatus() {
   try {
-    const user = await apiFetch(`${API}/api/auth/settings`);
-
-    const leetcodeUsernameDisplay = document.getElementById('leetcode-username-display');
-    const leetcodeStatus         = document.getElementById('leetcode-status');
-    const leetcodeProfilePic     = document.getElementById('leetcode-profile-pic');
-    const leetcodeUsernameInput  = document.getElementById('leetcode-username');
-    const remainingChanges       = document.getElementById('leetcode-remaining-changes');
-
-    // Derived state
-    const isVerified  = !!(user.leetcodeUsername && user.leetcodeLastVerifiedAt);
-    const hasPending  = !!(user.leetcodePendingUsername && user.leetcodeVerificationCode);
-    const displayName = user.leetcodeUsername || user.leetcodePendingUsername || null;
-    const inputName   = user.leetcodePendingUsername || user.leetcodeUsername || '';
-
-    if (inputName)   leetcodeUsernameInput.value = inputName;
-    if (displayName) leetcodeUsernameDisplay.textContent = displayName;
-
-    // Helper — hides all sub-sections
-    function hideAllSections() {
-      document.getElementById('leetcode-not-connected').style.display   = 'none';
-      document.getElementById('leetcode-code-generated').style.display  = 'none';
-      document.getElementById('leetcode-code-expired').style.display    = 'none';
-      document.getElementById('leetcode-pending-retry').style.display   = 'none';
-      document.getElementById('leetcode-connected').style.display       = 'none';
+    // 1. STALE: Try cache first
+    const userId = localStorage.getItem('userId');
+    if (userId && window.localDb) {
+      const cached = await window.localDb.userProfile.get(userId);
+      if (cached) renderLeetCodeUI(cached);
     }
 
-    const isPendingRetryActive = user.leetcodeVerificationStatus === 'pending_retry' && 
-                                 user.leetcodeRetryScheduledAt && 
-                                 Date.now() < (new Date(user.leetcodeRetryScheduledAt).getTime() + 15 * 60 * 1000);
+    // 2. REVALIDATE: Fetch fresh if online
+    if (navigator.onLine) {
+      const user = await apiFetch(`${API}/api/auth/settings`);
+      renderLeetCodeUI(user);
+    }
+  } catch (error) {
+    console.error('Error loading LeetCode profile status:', error);
+  }
+}
 
-    if (isPendingRetryActive) {
-      // ── STATE 3: PENDING RETRY ────────────────────────────────
-      // This must come BEFORE the isVerified check because a user changing
-      // their username still has the old leetcodeUsername/lastVerifiedAt in DB.
-      const scheduledMs    = new Date(user.leetcodeRetryScheduledAt).getTime();
-      const retryAvailMs   = scheduledMs + 5  * 60 * 1000;
-      const retryExpiresMs = scheduledMs + 15 * 60 * 1000;
+/** Helper to render LeetCode UI components from user data */
+function renderLeetCodeUI(user) {
+  if (!user) return;
+  
+  const leetcodeUsernameDisplay = document.getElementById('leetcode-username-display');
+  const leetcodeStatus         = document.getElementById('leetcode-status');
+  const leetcodeProfilePic     = document.getElementById('leetcode-profile-pic');
+  const leetcodeUsernameInput  = document.getElementById('leetcode-username');
+  const remainingChanges       = document.getElementById('leetcode-remaining-changes');
+  
+  if (!leetcodeUsernameDisplay || !leetcodeStatus) return;
 
-      // Window still active — show pending retry UI with live timers
-      setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+  // Derived state
+  const isVerified  = !!(user.leetcodeUsername && user.leetcodeLastVerifiedAt);
+  const hasPending  = !!(user.leetcodePendingUsername && user.leetcodeVerificationCode);
+  const displayName = user.leetcodeUsername || user.leetcodePendingUsername || null;
+  const inputName   = user.leetcodePendingUsername || user.leetcodeUsername || '';
 
-      if (user.leetcodeVerificationCode) {
-        document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
-        document.getElementById('leetcode-pending-code-display').textContent = user.leetcodeVerificationCode;
-      }
+  if (leetcodeUsernameInput) leetcodeUsernameInput.value = inputName;
+  if (displayName) leetcodeUsernameDisplay.textContent = displayName;
 
-      hideAllSections();
-      document.getElementById('leetcode-pending-retry').style.display = 'block';
+  // Helper — hides all sub-sections
+  function hideAllSections() {
+    ['leetcode-not-connected', 'leetcode-code-generated', 'leetcode-code-expired', 'leetcode-pending-retry', 'leetcode-connected'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  const isPendingRetryActive = user.leetcodeVerificationStatus === 'pending_retry' && 
+                               user.leetcodeRetryScheduledAt && 
+                               Date.now() < (new Date(user.leetcodeRetryScheduledAt).getTime() + 15 * 60 * 1000);
+
+  if (isPendingRetryActive) {
+    const scheduledMs    = new Date(user.leetcodeRetryScheduledAt).getTime();
+    const retryAvailMs   = scheduledMs + 5  * 60 * 1000;
+    const retryExpiresMs = scheduledMs + 15 * 60 * 1000;
+
+    setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+
+    if (user.leetcodeVerificationCode) {
+      const vCode = document.getElementById('leetcode-verification-code');
+      const pCode = document.getElementById('leetcode-pending-code-display');
+      if (vCode) vCode.textContent = user.leetcodeVerificationCode;
+      if (pCode) pCode.textContent = user.leetcodeVerificationCode;
+    }
+
+    hideAllSections();
+    const prSec = document.getElementById('leetcode-pending-retry');
+    if (prSec) prSec.style.display = 'block';
+    
+    // Only start countdown if we are in the active window
+    if (typeof startRetryCountdown === 'function') {
       startRetryCountdown(
         new Date(retryAvailMs).toISOString(),
         new Date(retryExpiresMs).toISOString()
       );
-      updateLeetCodeButtonsStatus(false);
+    }
+    updateLeetCodeButtonsStatus(false);
 
-    } else if (isVerified) {
-      // ── STATE 5: VERIFIED ─────────────────────────────────────
-      setLcStatus(leetcodeStatus, 'verified', '✅ Verified');
+  } else if (isVerified) {
+    setLcStatus(leetcodeStatus, 'verified', '✅ Verified');
 
-      hideAllSections();
-      document.getElementById('leetcode-connected').style.display = 'block';
-      document.getElementById('leetcode-connected-username').textContent = user.leetcodeUsername;
-      document.getElementById('leetcode-changes-remaining').textContent =
-        MAX_USERNAME_CHANGES - user.leetcodeUsernameChangeCount;
-
-      if (user.leetcodeProfilePicture) {
-        leetcodeProfilePic.src = user.leetcodeProfilePicture;
-        leetcodeProfilePic.style.display = 'block';
-      }
-      updateLeetCodeButtonsStatus(true);
-
-    } else if (hasPending) {
-      // ── STATE 2: CODE GENERATED ───────────────────────────────
-      const isExpired = user.leetcodeVerificationExpiry &&
-                        new Date() > new Date(user.leetcodeVerificationExpiry);
-
-      if (isExpired) {
-        setLcStatus(leetcodeStatus, 'error', '<i data-lucide="alert-circle"></i> Code expired');
-        hideAllSections();
-        document.getElementById('leetcode-code-expired').style.display = 'block';
-      } else {
-        setLcStatus(leetcodeStatus, 'waiting', '<i data-lucide="clock"></i> Pending verification');
-
-        document.getElementById('leetcode-verification-code').textContent = user.leetcodeVerificationCode;
-        document.getElementById('leetcode-verification-code').style.display = 'block';
-
-        if (user.leetcodeVerificationExpiry) {
-          const expiryTime = new Date(user.leetcodeVerificationExpiry);
-          const timeLeft   = Math.max(0, Math.floor((expiryTime - new Date()) / 60000));
-          let msg = `Expires: ${expiryTime.toLocaleString()}`;
-          if (timeLeft > 0 && timeLeft < 60) msg += ` (${timeLeft} min left)`;
-          document.getElementById('leetcode-code-expiry').textContent = msg;
-          document.getElementById('leetcode-code-expiry').style.display = 'block';
-        }
-
-        hideAllSections();
-        document.getElementById('leetcode-code-generated').style.display = 'block';
-      }
-      updateLeetCodeButtonsStatus(false);
-
-    } else {
-      // ── STATE 1: NOT CONNECTED ────────────────────────────────
-      leetcodeUsernameDisplay.textContent = 'Not connected';
-      setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
-      leetcodeProfilePic.style.display = 'none';
-      hideAllSections();
-      document.getElementById('leetcode-not-connected').style.display = 'block';
-      updateLeetCodeButtonsStatus(false);
+    hideAllSections();
+    const connSec = document.getElementById('leetcode-connected');
+    if (connSec) {
+      connSec.style.display = 'block';
+      const connUser = document.getElementById('leetcode-connected-username');
+      const remChanges = document.getElementById('leetcode-changes-remaining');
+      if (connUser) connUser.textContent = user.leetcodeUsername;
+      if (remChanges) remChanges.textContent = MAX_USERNAME_CHANGES - (user.leetcodeUsernameChangeCount || 0);
     }
 
+    if (user.leetcodeProfilePicture && leetcodeProfilePic) {
+      leetcodeProfilePic.src = user.leetcodeProfilePicture;
+      leetcodeProfilePic.style.display = 'block';
+    }
+    updateLeetCodeButtonsStatus(true);
+
+  } else if (hasPending) {
+    const isExpired = user.leetcodeVerificationExpiry &&
+                      new Date() > new Date(user.leetcodeVerificationExpiry);
+
+    if (isExpired) {
+      setLcStatus(leetcodeStatus, 'error', '<i data-lucide="alert-circle"></i> Code expired');
+      hideAllSections();
+      const expSec = document.getElementById('leetcode-code-expired');
+      if (expSec) expSec.style.display = 'block';
+    } else {
+      setLcStatus(leetcodeStatus, 'waiting', '<i data-lucide="clock"></i> Pending verification');
+
+      const vCode = document.getElementById('leetcode-verification-code');
+      if (vCode) {
+        vCode.textContent = user.leetcodeVerificationCode;
+        vCode.style.display = 'block';
+      }
+
+      if (user.leetcodeVerificationExpiry) {
+        const expiryTime = new Date(user.leetcodeVerificationExpiry);
+        const timeLeft   = Math.max(0, Math.floor((expiryTime - new Date()) / 60000));
+        let msg = `Expires: ${expiryTime.toLocaleString()}`;
+        if (timeLeft > 0 && timeLeft < 60) msg += ` (${timeLeft} min left)`;
+        const expEl = document.getElementById('leetcode-code-expiry');
+        if (expEl) {
+          expEl.textContent = msg;
+          expEl.style.display = 'block';
+        }
+      }
+
+      hideAllSections();
+      const genSec = document.getElementById('leetcode-code-generated');
+      if (genSec) genSec.style.display = 'block';
+    }
+    updateLeetCodeButtonsStatus(false);
+
+  } else {
+    if (leetcodeUsernameDisplay) leetcodeUsernameDisplay.textContent = 'Not connected';
+    setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+    if (leetcodeProfilePic) leetcodeProfilePic.style.display = 'none';
+    hideAllSections();
+    const ncSec = document.getElementById('leetcode-not-connected');
+    if (ncSec) ncSec.style.display = 'block';
+    updateLeetCodeButtonsStatus(false);
+  }
+
+  if (remainingChanges) {
     remainingChanges.textContent =
       `Remaining changes: ${MAX_USERNAME_CHANGES - (user.leetcodeUsernameChangeCount || 0)}`;
-
-  } catch (error) {
-    console.error('Error loading LeetCode profile status:', error);
   }
 }
 
@@ -5326,24 +5723,31 @@ async function loadLeaderboard(reset = false) {
   const loadMoreWrap = document.getElementById('leaderboard-load-more-wrap');
   if (loadMoreWrap) loadMoreWrap.style.display = 'none';
 
+  // 1. STALE: If first page, try loading from cache instantly
+  if (reset) {
+    try {
+      const cached = await window.localDb.leaderboard.get(lbSort);
+      if (cached && cached.users) {
+        renderLeaderboardData(cached.users, true);
+        if (loadingEl) loadingEl.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
+  // 2. REVALIDATE: Fetch from server
   try {
-    const res = await apiFetch(`/api/users/leaderboard?sort=${lbSort}&page=${lbPage}&limit=10`);
+    const res = await apiFetch(`${API}/api/users/leaderboard?sort=${lbSort}&page=${lbPage}&limit=10`);
     if (!res) return;
 
     const { users, total, hasMore } = res;
     lbHasMore = hasMore;
     
-    const listContainer = document.getElementById('leaderboard-list');
-    if (listContainer) {
-      if (users.length === 0 && reset) {
-        listContainer.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:700;">No legends found yet. Be the first!</div>`;
-      } else {
-        users.forEach((user, index) => {
-          const rank = ((lbPage - 1) * 10) + index + 1;
-          listContainer.appendChild(renderLeaderboardItem(user, rank));
-        });
-      }
+    // Cache the first page for offline access
+    if (reset && users.length > 0) {
+      await window.localDb.leaderboard.put({ sort: lbSort, users, timestamp: Date.now() });
     }
+
+    renderLeaderboardData(users, reset);
 
     const loadMoreWrapFinal = document.getElementById('leaderboard-load-more-wrap');
     if (loadMoreWrapFinal) loadMoreWrapFinal.style.display = lbHasMore ? 'block' : 'none';
@@ -5877,13 +6281,12 @@ async function handleChatSubmit(e) {
 
   const btn = e.target.querySelector('button[type="submit"]');
   const originalHtml = btn.innerHTML;
-  btn.disabled = true;
   
-  // Show specialized loading if media is selected
+  // Only block the button if uploading media (needs wait)
+  // For text messages, we allow "rapid fire" even offline
   if (selectedMediaBlob) {
+    btn.disabled = true;
     btn.innerHTML = '<i data-lucide="upload-cloud" class="loading-bounce"></i>';
-  } else {
-    btn.innerHTML = '<i data-lucide="send" class="loading-bounce"></i>';
   }
   if (window.lucide) lucide.createIcons({ root: btn });
 
@@ -5933,13 +6336,14 @@ async function handleChatSubmit(e) {
       });
     }
 
-    await firestore.addDoc(msgsRef, msgData);
-
+    // Clear input instantly for better UX
     input.value = ''; 
     updateTypingStatus(false);
     activeReplyTo = null;
     clearMediaPreview();
     clearReply();
+
+    await firestore.addDoc(msgsRef, msgData);
   } catch (err) {
     console.error('Send error:', err);
     alert('Failed to send message.');
@@ -6904,3 +7308,75 @@ function renderPresenceUI(viewers) {
     ${count > 3 ? `<span style="font-size:10px; font-weight:800; color:var(--text-muted); margin-left:4px;">+${count-3}</span>` : ''}
   `;
 }
+
+/** Proactively cache profile and leaderboard for offline access */
+async function proactiveSync() {
+  if (!navigator.onLine) return;
+  const userId = localStorage.getItem('userId');
+  if (!userId) return;
+
+  try {
+    // 1. Sync Profile
+    const profile = await apiFetch(`${API}/api/auth/settings`);
+    profile.userId = userId;
+    await window.localDb.userProfile.put(profile);
+
+    // 2. Sync Leaderboard (Top 10 of each sort)
+    const current = await apiFetch(`${API}/api/users/leaderboard?sort=current&page=1&limit=10`);
+    if (current && current.users) {
+      await window.localDb.leaderboard.put({ sort: 'current', users: current.users, timestamp: Date.now() });
+    }
+    const highest = await apiFetch(`${API}/api/users/leaderboard?sort=highest&page=1&limit=10`);
+    if (highest && highest.users) {
+      await window.localDb.leaderboard.put({ sort: 'highest', users: highest.users, timestamp: Date.now() });
+    }
+
+    // 3. Sync Days (for Streak calculation)
+    const daysData = await apiFetch(`${API}/api/days?page=1&limit=100`);
+    if (daysData && daysData.days) {
+      // Preserve local-only changes (those not yet synced)
+      const localOnly = await window.localDb.syncQueue.where('entity').equals('days').toArray();
+      const localIds = localOnly.map(q => q.targetId);
+      
+      const toUpdate = daysData.days.filter(d => !localIds.includes(d._id));
+      await window.localDb.days.bulkPut(toUpdate);
+      
+      // Update in-memory state if on first page
+      if (currentPage === 1) {
+        allDays = (await window.localDb.days.toArray()).sort((a,b) => b.date.localeCompare(a.date)).slice(0, daysPerPage);
+        renderDays();
+        updateStreak();
+      }
+    }
+  } catch (err) {
+    console.warn('Proactive sync partial fail:', err);
+  }
+}
+
+/** Helper to render leaderboard rows */
+function renderLeaderboardData(users, reset) {
+  const listContainer = document.getElementById('leaderboard-list');
+  if (!listContainer) return;
+  
+  if (reset) listContainer.innerHTML = '';
+  
+  if (users.length === 0 && reset) {
+    listContainer.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:700;">No legends found yet. Be the first!</div>`;
+  } else {
+    users.forEach((user, index) => {
+      const rank = ((lbPage - 1) * 10) + index + 1;
+      listContainer.appendChild(renderLeaderboardItem(user, rank));
+    });
+  }
+}
+
+/** Handle automatic sync when connection returns */
+window.addEventListener('online', async () => {
+  showToast('Back online! Syncing your progress...', 'info');
+  if (window.syncManager) {
+    await syncManager.processQueue();
+  }
+  // Refresh data from server
+  loadDays(1);
+  proactiveSync(); 
+});
