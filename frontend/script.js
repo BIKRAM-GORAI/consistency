@@ -23,6 +23,19 @@ const userId   = localStorage.getItem('userId')   || '';
 const userName = localStorage.getItem('userName') || 'User';
 let userProfilePicture = localStorage.getItem('userProfilePicture') || '';
 
+// ── Sync Username if missing ───────────────────────────────
+if (userId && !localStorage.getItem('userUsername')) {
+  (async () => {
+    try {
+      const res = await apiFetch(`${API}/api/auth/settings`);
+      if (res && res.username) {
+        localStorage.setItem('userUsername', res.username);
+        console.log('✅ Username synchronized');
+      }
+    } catch (e) { console.error('Failed to sync username', e); }
+  })();
+}
+
 function logout() {
   localStorage.clear();
   window.location.replace('landing.html');
@@ -2216,6 +2229,10 @@ async function deleteGroup(groupId) {
       method: 'DELETE',
       body: JSON.stringify({ userId }),
     });
+    
+    // Clear Firestore Chat Data
+    await deleteFirestoreGroupData(groupId);
+
     showToast('Team deleted.', 'info');
     loadGroups();
   } catch (err) {
@@ -5402,9 +5419,14 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
 
 let activeChatGroupId = null;
 let chatUnsubscribe = null;
+let chatMessagesLimit = 30;
+let activeReplyTo = null;
+let isPaginating = false;
+let prevScrollHeight = 0;
 
-function openGroupChat(groupId, groupName, groupIcon) {
+function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   activeChatGroupId = groupId;
+  if (resetLimit) chatMessagesLimit = 30; 
   document.getElementById('chat-group-name').textContent = groupName;
   
   const modal = document.getElementById('modal-group-chat');
@@ -5419,9 +5441,11 @@ function openGroupChat(groupId, groupName, groupIcon) {
     : `<i data-lucide="users" style="width:24px;height:24px;color:var(--black);"></i>`;
   if (window.lucide) lucide.createIcons({ root: iconWrap });
 
-  // Clear previous messages
-  const container = document.getElementById('chat-messages-container');
-  container.innerHTML = '<div style="text-align:center; padding:40px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; animation: pulse 1.5s infinite;">Connecting to stream...</div>';
+  // Clear previous messages and show loading in the list container
+  const msgsList = document.getElementById('chat-messages-list');
+  if (msgsList) {
+    msgsList.innerHTML = '<div style="text-align:center; padding:40px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; animation: pulse 1.5s infinite;">Connecting to stream...</div>';
+  }
 
   // Set up real-time listener
   const { firebaseDb, firestore } = window;
@@ -5431,46 +5455,115 @@ function openGroupChat(groupId, groupName, groupIcon) {
   }
 
   const msgsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'messages');
-  const q = firestore.query(msgsRef, firestore.orderBy('timestamp', 'asc'), firestore.limit(100));
+  const q = firestore.query(msgsRef, firestore.orderBy('timestamp', 'desc'), firestore.limit(chatMessagesLimit));
+
+  // Set up infinite scroll observer if not already done
+  setupChatInfiniteScroll();
 
   chatUnsubscribe = firestore.onSnapshot(q, (snapshot) => {
-    container.innerHTML = '';
-    let lastDateLabel = '';
+    const container = document.getElementById('chat-messages-container');
+    const msgsList = document.getElementById('chat-messages-list');
+    const loadMoreBtn = document.getElementById('chat-load-more-container');
+    
+    if (!msgsList || !container) return;
 
     if (snapshot.empty) {
-      container.innerHTML = `
-        <div style="text-align:center; padding:60px 20px; color:var(--text-light);">
+      msgsList.innerHTML = `
+        <div id="chat-empty-state" style="text-align:center; padding:60px 20px; color:var(--text-light);">
           <div style="font-size:40px; margin-bottom:16px;">💬</div>
           <h3 style="font-family:'Space Grotesk', sans-serif; font-weight:900; text-transform:uppercase;">No messages yet</h3>
           <p style="font-size:13px; font-weight:600; opacity:0.7;">Be the first to break the ice!</p>
         </div>
       `;
+      loadMoreBtn.style.display = 'none';
       return;
     }
 
-    snapshot.forEach((doc) => {
-      const msg = doc.data();
-      const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
-      const dateLabel = timestamp.toLocaleDateString();
+    // Remove empty state if it exists
+    const emptyState = document.getElementById('chat-empty-state');
+    if (emptyState) emptyState.remove();
+    if (msgsList.querySelector('.pulse')) msgsList.innerHTML = '';
 
-      // Date Separator
-      if (dateLabel !== lastDateLabel) {
-        const sep = document.createElement('div');
-        sep.className = 'chat-date-separator';
-        sep.textContent = getFriendlyDate(timestamp);
-        container.appendChild(sep);
-        lastDateLabel = dateLabel;
+    loadMoreBtn.style.display = snapshot.size >= chatMessagesLimit ? 'block' : 'none';
+
+    // We still need to maintain order, especially when loading older messages.
+    // However, for real-time updates (new messages), we want to append without wiping.
+    
+    const isInitialLoad = msgsList.children.length <= 1; // Only load-more btn or empty
+    const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+
+    // To handle pagination correctly (where older messages are added at the TOP), 
+    // we'll clear and re-render ONLY if the snapshot size changed significantly (pagination).
+    // Otherwise, we update incrementally.
+    
+    const docs = [...snapshot.docs].reverse();
+    const currentRenderedIds = new Set([...msgsList.querySelectorAll('.chat-bubble-wrapper')].map(el => el.id.replace('chat-msg-', '')));
+
+    if (docs.length > currentRenderedIds.size + 1) {
+      msgsList.innerHTML = '';
+      let lastDateLabel = '';
+      docs.forEach(doc => {
+        const msg = { ...doc.data(), id: doc.id };
+        const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
+        const dateLabel = timestamp.toLocaleDateString();
+        if (dateLabel !== lastDateLabel) {
+          const sep = document.createElement('div');
+          sep.className = 'chat-date-separator';
+          sep.textContent = getFriendlyDate(timestamp);
+          msgsList.appendChild(sep);
+          lastDateLabel = dateLabel;
+        }
+        renderChatMessage(msg, msgsList, false);
+      });
+      
+      // If we were paginating, maintain scroll position accurately
+      if (isPaginating) {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight - prevScrollHeight;
+          isPaginating = false;
+        });
       }
+    } else {
+      // Incremental update
+      snapshot.docChanges().forEach(change => {
+        const msg = { ...change.doc.data(), id: change.doc.id };
+        const existing = document.getElementById(`chat-msg-${msg.id}`);
+        if (change.type === 'added' && !existing) {
+          renderChatMessage(msg, msgsList, true);
+        } else if (change.type === 'modified' && existing) {
+          updateExistingMessage(msg, existing);
+        } else if (change.type === 'removed' && existing) {
+          existing.remove();
+        }
+      });
+    }
 
-      renderChatMessage(msg, container);
-    });
-
-    // Scroll to bottom
-    container.scrollTop = container.scrollHeight;
+    if (!isPaginating && (isInitialLoad || wasAtBottom)) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, (err) => {
-    console.error('Chat error:', err);
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">CONNECTION ERROR</div>';
+    console.error('🔥 Firestore Messages Error:', err.code, err.message);
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">CONNECTION ERROR: ${err.code}</div>`;
   });
+
+  // Start listening for typing indicators
+  listenForTyping();
+}
+
+function loadMoreChatMessages() {
+  const btn = document.getElementById('btn-chat-load-more');
+  if (btn) btn.disabled = true; // Prevent double loading
+
+  const container = document.getElementById('chat-messages-container');
+  prevScrollHeight = container.scrollHeight;
+  isPaginating = true;
+  chatMessagesLimit += 30;
+  const groupName = document.getElementById('chat-group-name').textContent;
+  const groupIconWrap = document.getElementById('chat-group-icon-wrap');
+  const groupIcon = groupIconWrap.querySelector('img')?.src || '';
+  
+  // Re-open chat with new limit, but keep the current limit
+  openGroupChat(activeChatGroupId, groupName, groupIcon, false);
 }
 
 function getFriendlyDate(date) {
@@ -5482,25 +5575,146 @@ function getFriendlyDate(date) {
   return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-function renderChatMessage(msg, container) {
+function renderChatMessage(msg, container, animate = false) {
   const userId = localStorage.getItem('userId');
   const isSelf = String(msg.senderId) === String(userId);
-  const time = msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+  const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
+  const time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const docId = msg.id || '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = `chat-bubble-wrapper ${isSelf ? 'self' : 'other'}`;
+  wrapper.id = `chat-msg-${docId}`;
 
   const bubble = document.createElement('div');
   bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'}`;
   
-  bubble.innerHTML = `
-    <div class="chat-message-header">
-      <span class="chat-sender-name">${isSelf ? 'YOU' : escHtml(msg.senderName)}</span>
+  // Check if editable (15 mins)
+  const isEditable = isSelf && (Date.now() - timestamp.getTime() < 15 * 60 * 1000);
+  const editBtn = isEditable ? `<button class="chat-edit-btn" onclick="startEditChatMessage('${docId}', '${escJs(msg.text)}')"><i data-lucide="pencil" style="width:12px;height:12px;"></i></button>` : '';
+
+  // Avatar HTML with clickable link to profile
+  let avatarHtml = '';
+  const senderUsername = msg.senderUsername || '';
+  
+  // If we don't have a username (old message), we'll try to use a fallback helper
+  const onclickHtml = senderUsername 
+    ? `onclick="openQuickView('${escJs(senderUsername)}'); event.stopPropagation();"` 
+    : `onclick="openQuickViewByMemberId('${msg.senderId}', '${escJs(msg.senderName)}'); event.stopPropagation();"`;
+  
+  const clickableStyle = 'cursor: pointer;'; // Always clickable now
+
+  if (msg.senderPhoto) {
+    avatarHtml = `<div class="chat-avatar" style="margin-right: 8px; ${clickableStyle}" ${onclickHtml}><img src="${msg.senderPhoto}" alt="${escHtml(msg.senderName)}" /></div>`;
+  } else {
+    const colors = ['#FFD60A', '#FF3EA5', '#64FFDA', '#FF6B35', '#7B5EA7', '#B5FF4D', '#3B82F6'];
+    const colorIdx = (msg.senderName || '?').charCodeAt(0) % colors.length;
+    const initial = msg.senderName ? msg.senderName.charAt(0).toUpperCase() : '?';
+    avatarHtml = `<div class="chat-avatar" style="margin-right: 8px; background: ${colors[colorIdx]}; color: #000; ${clickableStyle}" ${onclickHtml}>${initial}</div>`;
+  }
+
+  // Reply Snippet
+  let replySnippetHtml = '';
+  if (msg.replyTo) {
+    replySnippetHtml = `
+      <div class="chat-reply-snippet" onclick="scrollToMessage('${msg.replyTo.docId}')">
+        <span class="chat-reply-sender">${escHtml(msg.replyTo.senderName)}</span>
+        <div class="chat-reply-text">${escHtml(msg.replyTo.text)}</div>
+      </div>
+    `;
+  }
+
+  // Reactions HTML
+  const reactionsHtml = renderReactionsHTML(msg.reactions, docId);
+
+  // Buttons Row (Outside) - Permanently visible for mobile friendliness
+  const buttonsHtml = `
+    <div class="chat-message-actions-outside" style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-self: center; margin: 0 12px; transition: opacity 0.2s;">
+      <button class="chat-edit-btn" onclick="toggleReactionPicker(event, '${docId}')" title="React"><i data-lucide="smile" style="width:16px;height:16px;"></i></button>
+      <button class="chat-edit-btn" onclick="setReplyTo('${docId}', '${escJs(msg.text)}', '${escJs(msg.senderName)}')" title="Reply"><i data-lucide="reply" style="width:16px;height:16px;"></i></button>
+      ${editBtn ? `<button class="chat-edit-btn" onclick="startEditChatMessage('${docId}', '${escJs(msg.text)}')" title="Edit"><i data-lucide="pencil" style="width:16px;height:16px;"></i></button>` : ''}
     </div>
-    <div class="chat-text">${escHtml(msg.text)}</div>
+  `;
+
+  bubble.innerHTML = `
+    ${replySnippetHtml}
+    <div class="chat-message-header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 4px; ${clickableStyle}" ${onclickHtml}>
+        ${avatarHtml}
+        <span class="chat-sender-name">${isSelf ? 'YOU' : escHtml(msg.senderName)}</span>
+      </div>
+    </div>
+    <div class="chat-text" id="chat-text-${docId}" style="margin-top: 6px;">${escHtml(msg.text)}</div>
+    ${reactionsHtml}
     <div class="chat-message-footer">
+      ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
       <span class="chat-time">${time}</span>
     </div>
   `;
   
-  container.appendChild(bubble);
+  if (isSelf) {
+    wrapper.appendChild(buttonsHtmlToElement(buttonsHtml));
+    wrapper.appendChild(bubble);
+  } else {
+    wrapper.appendChild(bubble);
+    wrapper.appendChild(buttonsHtmlToElement(buttonsHtml));
+  }
+  
+  container.appendChild(wrapper);
+
+  // ── Swipe to Reply Logic ──
+  let touchStartX = 0;
+  let touchMoveX = 0;
+  let isSwiping = false;
+
+  bubble.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchMoveX = touchStartX;
+    bubble.style.transition = 'none';
+    isSwiping = false;
+  }, { passive: true });
+
+  bubble.addEventListener('touchmove', (e) => {
+    touchMoveX = e.touches[0].clientX;
+    const diff = touchMoveX - touchStartX;
+    
+    // Check if it's a horizontal swipe
+    if (Math.abs(diff) > 10) isSwiping = true;
+
+    if (isSwiping) {
+      // Swipe Right for 'other', Swipe Left for 'self'
+      if (!isSelf && diff > 0) {
+        const move = Math.min(diff, 70);
+        bubble.style.transform = `translateX(${move}px)`;
+      } else if (isSelf && diff < 0) {
+        const move = Math.max(diff, -70);
+        bubble.style.transform = `translateX(${move}px)`;
+      }
+    }
+  }, { passive: true });
+
+  bubble.addEventListener('touchend', () => {
+    if (isSwiping) {
+      const diff = touchMoveX - touchStartX;
+      bubble.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      bubble.style.transform = 'translateX(0)';
+      
+      // Threshold to trigger reply
+      if (Math.abs(diff) > 50) {
+        setReplyTo(docId, msg.text, msg.senderName);
+        if (window.navigator.vibrate) window.navigator.vibrate(15);
+      }
+    }
+    isSwiping = false;
+  });
+
+  if (window.lucide) lucide.createIcons({ root: wrapper });
+}
+
+function buttonsHtmlToElement(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html.trim();
+  return div.firstChild;
 }
 
 function closeChatModal() {
@@ -5508,8 +5722,39 @@ function closeChatModal() {
     chatUnsubscribe();
     chatUnsubscribe = null;
   }
+  if (typingUnsubscribe) {
+    typingUnsubscribe();
+    typingUnsubscribe = null;
+  }
+  // Clear own typing status
+  updateTypingStatus(false);
   activeChatGroupId = null;
   closeModal('modal-group-chat');
+}
+
+function updateExistingMessage(msg, el) {
+  const bubble = el.querySelector('.chat-bubble');
+  if (!bubble) return;
+  
+  // Update text
+  const textEl = bubble.querySelector('.chat-text');
+  if (textEl && textEl.textContent !== msg.text) {
+    textEl.textContent = msg.text;
+  }
+  
+  // Update reactions
+  const existingReactions = bubble.querySelector('.chat-reactions');
+  const newReactionsHtml = renderReactionsHTML(msg.reactions, msg.id);
+  
+  if (existingReactions) {
+    if (!newReactionsHtml) existingReactions.remove();
+    else existingReactions.outerHTML = newReactionsHtml;
+  } else if (newReactionsHtml) {
+    const footer = bubble.querySelector('.chat-message-footer');
+    const temp = document.createElement('div');
+    temp.innerHTML = newReactionsHtml;
+    bubble.insertBefore(temp.firstElementChild, footer);
+  }
 }
 
 async function handleChatSubmit(e) {
@@ -5524,20 +5769,334 @@ async function handleChatSubmit(e) {
   const userPhoto = localStorage.getItem('userProfilePicture');
 
   input.value = ''; // Clear immediately
+  updateTypingStatus(false); // Stop typing status
   
   try {
     const msgsRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'messages');
-    await firestore.addDoc(msgsRef, {
+    const msgData = {
       text,
       senderId: userId,
       senderName: userName,
+      senderUsername: localStorage.getItem('userUsername') || '',
       senderPhoto: userPhoto,
       timestamp: firestore.serverTimestamp()
-    });
+    };
+
+    if (activeReplyTo) {
+      msgData.replyTo = activeReplyTo;
+      clearReply();
+    }
+
+    await firestore.addDoc(msgsRef, msgData);
   } catch (err) {
     console.error('Send error:', err);
     alert('Failed to send message.');
   }
+}
+
+// ── EDIT MESSAGE LOGIC ───────────────────────────────────────
+
+function startEditChatMessage(docId, currentText) {
+  const textEl = document.getElementById(`chat-text-${docId}`);
+  if (!textEl) return;
+
+  const originalHTML = textEl.innerHTML;
+  textEl.innerHTML = `
+    <div class="chat-edit-input-container">
+      <textarea id="edit-input-${docId}" class="chat-edit-textarea">${currentText}</textarea>
+      <div class="chat-edit-actions">
+        <button class="btn-chat-edit btn-chat-cancel" onclick="cancelEditChatMessage('${docId}', '${escJs(currentText)}')">Cancel</button>
+        <button class="btn-chat-edit btn-chat-save" onclick="submitEditChatMessage('${docId}')">Save</button>
+      </div>
+    </div>
+  `;
+}
+
+function cancelEditChatMessage(docId, originalText) {
+  const textEl = document.getElementById(`chat-text-${docId}`);
+  if (textEl) textEl.textContent = originalText;
+}
+
+async function submitEditChatMessage(docId) {
+  const input = document.getElementById(`edit-input-${docId}`);
+  const newText = input.value.trim();
+  if (!newText || !activeChatGroupId) return;
+
+  const { firebaseDb, firestore } = window;
+  const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
+
+  try {
+    await firestore.updateDoc(docRef, {
+      text: newText,
+      edited: true,
+      editedAt: firestore.serverTimestamp()
+    });
+    showToast('Message updated', 'success');
+  } catch (err) {
+    console.error('Edit error:', err);
+    showToast('Failed to edit message', 'error');
+  }
+}
+
+// ── REACTIONS & REPLIES ──────────────────────────────────────
+
+async function toggleReaction(docId, emoji = '❤️') {
+  const { firebaseDb, firestore } = window;
+  const userId = localStorage.getItem('userId');
+  if (!activeChatGroupId) return;
+  const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
+  
+  try {
+    const docSnap = await firestore.getDoc(docRef);
+    if (!docSnap.exists()) return;
+    const data = docSnap.data();
+    const reactions = data.reactions || {};
+    
+    if (!reactions[emoji]) reactions[emoji] = [];
+    const idx = reactions[emoji].indexOf(userId);
+    if (idx > -1) reactions[emoji].splice(idx, 1);
+    else reactions[emoji].push(userId);
+    
+    if (reactions[emoji].length === 0) delete reactions[emoji];
+    
+    await firestore.updateDoc(docRef, { reactions });
+    
+    // Tiny pop animation if GSAP exists
+    const bubble = document.getElementById(`chat-msg-${docId}`);
+    if (bubble && window.gsap) {
+      gsap.to(bubble.querySelector('.chat-bubble'), { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 });
+    }
+  } catch (err) { console.error('Reaction error:', err); }
+}
+
+function renderReactionsHTML(reactions, docId) {
+  if (!reactions || Object.keys(reactions).length === 0) return '';
+  const userId = localStorage.getItem('userId');
+  let html = '<div class="chat-reactions">';
+  for (const [emoji, users] of Object.entries(reactions)) {
+    const isActive = users.includes(userId);
+    html += `
+      <div class="chat-reaction-pill ${isActive ? 'active' : ''}" onclick="showReactionUsers('${docId}', '${emoji}')">
+        <span class="chat-reaction-emoji">${emoji}</span>
+        <span class="chat-reaction-count">${users.length}</span>
+      </div>
+    `;
+  }
+  html += '</div>';
+  return html;
+}
+
+function toggleReactionPicker(e, docId) {
+  e.stopPropagation();
+  // Remove existing pickers
+  const existing = document.querySelector('.reaction-picker');
+  if (existing) {
+    const wasSame = existing.dataset.docId === docId;
+    existing.remove();
+    if (wasSame) return;
+  }
+
+  const emojis = ['👍', '❤️', '😂', '🎉', '😮', '🔥'];
+  const picker = document.createElement('div');
+  picker.className = 'reaction-picker';
+  picker.style.position = 'fixed';
+  picker.dataset.docId = docId;
+  
+  emojis.forEach(emoji => {
+    const span = document.createElement('span');
+    span.className = 'reaction-emoji';
+    span.textContent = emoji;
+    span.onclick = () => {
+      toggleReaction(docId, emoji);
+      picker.remove();
+    };
+    picker.appendChild(span);
+  });
+
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  
+  // Position picker above the button, centered horizontally relative to it
+  document.body.appendChild(picker);
+  
+  const pWidth = picker.offsetWidth || 280;
+  const pHeight = picker.offsetHeight || 50;
+  
+  let top = rect.top - pHeight - 12;
+  let left = rect.left + (rect.width / 2) - (pWidth / 2);
+  
+  // Viewport safety
+  const margin = 16;
+  if (top < margin) top = rect.bottom + 12; // Flip to bottom if no space above
+  if (left < margin) left = margin;
+  if (left + pWidth > window.innerWidth - margin) {
+    left = window.innerWidth - pWidth - margin;
+  }
+  
+  picker.style.top = `${top}px`;
+  picker.style.left = `${left}px`;
+
+  // Close when clicking outside
+  const closer = (ev) => {
+    // Only close if we didn't click the emoji button again or the picker itself
+    if (!picker.contains(ev.target)) {
+      picker.remove();
+      document.removeEventListener('mousedown', closer);
+    }
+  };
+  // Use mousedown to catch clicks before they trigger other things
+  setTimeout(() => document.addEventListener('mousedown', closer), 10);
+}
+
+async function showReactionUsers(docId, emoji) {
+  const { firebaseDb, firestore } = window;
+  if (!activeChatGroupId) return;
+  const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
+  
+  try {
+    const docSnap = await firestore.getDoc(docRef);
+    if (!docSnap.exists()) return;
+    const reactions = docSnap.data().reactions || {};
+    const userIds = reactions[emoji] || [];
+    if (userIds.length === 0) return;
+
+    showToast(`${userIds.length} person/people reacted with ${emoji}`, 'info');
+  } catch (err) { console.error(err); }
+}
+
+function setReplyTo(docId, text, senderName) {
+  activeReplyTo = { docId, text, senderName };
+  let preview = document.getElementById('chat-reply-preview');
+  if (!preview) {
+    const footer = document.querySelector('#modal-group-chat .modal-footer');
+    preview = document.createElement('div');
+    preview.id = 'chat-reply-preview';
+    preview.className = 'chat-reply-preview';
+    footer.parentNode.insertBefore(preview, footer);
+  }
+  
+  preview.innerHTML = `
+    <div class="chat-reply-preview-content">
+      <div class="chat-reply-preview-name">Replying to ${senderName}</div>
+      <div class="chat-reply-preview-text">${text}</div>
+    </div>
+    <button class="chat-edit-btn" onclick="clearReply()" style="opacity:1;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+  `;
+  preview.style.display = 'flex';
+  if (window.lucide) lucide.createIcons({ root: preview });
+  document.getElementById('chat-input').focus();
+}
+
+function clearReply() {
+  activeReplyTo = null;
+  const preview = document.getElementById('chat-reply-preview');
+  if (preview) preview.style.display = 'none';
+}
+
+function scrollToMessage(docId) {
+  const el = document.getElementById(`chat-msg-${docId}`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (window.gsap) {
+      gsap.fromTo(el.querySelector('.chat-bubble'), { backgroundColor: 'var(--yellow)' }, { backgroundColor: '', duration: 1 });
+    }
+  } else {
+    showToast('Original message is too old to jump to.', 'info');
+  }
+}
+
+// ── TYPING INDICATOR LOGIC ───────────────────────────────────
+
+let isCurrentlyTyping = false;
+let lastTypingUpdate = 0;
+let typingUnsubscribe = null;
+let typingTimeout = null;
+
+function handleTyping() {
+  const now = Date.now();
+  
+  // Debounce Firestore updates: only update every 2 seconds while typing
+  if (!isCurrentlyTyping || (now - lastTypingUpdate > 2000)) {
+    isCurrentlyTyping = true;
+    lastTypingUpdate = now;
+    updateTypingStatus(true);
+  }
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    isCurrentlyTyping = false;
+    updateTypingStatus(false);
+  }, 1500); // Stop after 1.5s of inactivity
+}
+
+async function updateTypingStatus(isTyping) {
+  if (!activeChatGroupId) return;
+  const { firebaseDb, firestore } = window;
+  const userId = localStorage.getItem('userId');
+  const userName = localStorage.getItem('userName');
+  
+  const typingRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'typing', userId);
+  
+  try {
+    if (isTyping) {
+      await firestore.setDoc(typingRef, {
+        name: userName,
+        typing: true,
+        timestamp: firestore.serverTimestamp()
+      });
+    } else {
+      await firestore.deleteDoc(typingRef);
+    }
+  } catch (err) {
+    // Silent fail for typing indicator
+  }
+}
+
+function listenForTyping() {
+  if (typingUnsubscribe) typingUnsubscribe();
+
+  const { firebaseDb, firestore } = window;
+  const userId = localStorage.getItem('userId');
+  const typingRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'typing');
+  
+  typingUnsubscribe = firestore.onSnapshot(typingRef, (snapshot) => {
+    const typers = [];
+    snapshot.forEach(doc => {
+      if (doc.id !== userId) {
+        typers.push(doc.data().name);
+      }
+    });
+    renderTypingIndicator(typers);
+  }, (err) => {
+    console.warn('Typing indicator permission denied or error:', err);
+    // Gracefully fail - just don't show typing indicators
+  });
+}
+
+function renderTypingIndicator(typers) {
+  const container = document.getElementById('typing-indicator-container');
+  if (!container) return;
+
+  if (typers.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let text = '';
+  if (typers.length === 1) text = `<strong>${escHtml(typers[0])}</strong> is typing`;
+  else if (typers.length === 2) text = `<strong>${escHtml(typers[0])}</strong> and <strong>${escHtml(typers[1])}</strong> are typing`;
+  else text = 'Multiple people are typing';
+
+  container.innerHTML = `
+    <div class="typing-indicator">
+      <span>${text}</span>
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
 }
 
 // Sync Firebase Auth on page load
@@ -5564,5 +6123,67 @@ async function initFirebaseChat() {
     }
   } catch (err) {
     console.error('Firebase Auth Sync Error:', err);
+  }
+}
+
+async function openQuickViewByMemberId(memberId, memberName) {
+  try {
+    const userId = localStorage.getItem('userId');
+    if (memberId === userId) {
+      const myUsername = localStorage.getItem('userUsername');
+      if (myUsername) return openQuickView(myUsername);
+    }
+    if (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) {
+      const group = allJoinedGroups.find(g => g._id === activeChatGroupId);
+      if (group && group.members) {
+        const member = group.members.find(m => (m._id || m) === memberId);
+        if (member && typeof member === 'object' && member.username) {
+          return openQuickView(member.username);
+        }
+      }
+    }
+    showToast(`Profile link unavailable for older messages by ${memberName}.`, 'info');
+  } catch (err) { console.error('Fallback error:', err); }
+}
+
+let chatObserver = null;
+function setupChatInfiniteScroll() {
+  if (chatObserver) return;
+  const loadMoreTrigger = document.getElementById('chat-load-more-container');
+  if (!loadMoreTrigger) return;
+
+  chatObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && activeChatGroupId && !isPaginating) {
+      const msgsList = document.getElementById('chat-messages-list');
+      if (msgsList && msgsList.children.length >= 30) {
+        loadMoreChatMessages();
+      }
+    }
+  }, { threshold: 0.1 });
+  
+  chatObserver.observe(loadMoreTrigger);
+}
+
+/** ── PURGE FIRESTORE DATA ON DELETE ── **/
+async function deleteFirestoreGroupData(groupId) {
+  const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) return;
+
+  try {
+    // 1. Delete typing indicators
+    const typingRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'typing');
+    const typingSnap = await firestore.getDocs(typingRef);
+    const typingPromises = typingSnap.docs.map(doc => firestore.deleteDoc(doc.ref));
+    await Promise.all(typingPromises);
+
+    // 2. Delete all messages
+    const msgsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'messages');
+    const msgsSnap = await firestore.getDocs(msgsRef);
+    const msgsPromises = msgsSnap.docs.map(doc => firestore.deleteDoc(doc.ref));
+    await Promise.all(msgsPromises);
+
+    console.log(`🔥 Firestore data for group ${groupId} purged.`);
+  } catch (err) {
+    console.error('Error purging Firestore group data:', err);
   }
 }

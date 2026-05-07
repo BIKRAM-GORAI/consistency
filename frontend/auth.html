@@ -754,6 +754,7 @@
         localStorage.setItem('userEmail', data.email);
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userUsername', data.username || '');
 
         window.location.replace('index.html');
       } catch (err) {
@@ -941,6 +942,7 @@
         localStorage.setItem('userEmail', data.email);
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userUsername', data.username || '');
 
         setTimeout(() => window.location.replace('index.html'), 800);
 
@@ -1123,6 +1125,7 @@
         localStorage.setItem('userEmail', data.email);
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userUsername', data.username || '');
 
         // Redirect to dashboard
         window.location.replace('index.html');

@@ -81,11 +81,10 @@ async function getPublicProfile(req, res) {
     // If still not allowed (private and no/invalid code), check shared public groups
     if (!canView && req.user && req.user.userId) {
       const requestingUserId = req.user.userId;
-      const sharedPublicGroup = await Group.findOne({
-        isPublic: true,
+      const sharedGroup = await Group.findOne({
         members: { $all: [requestingUserId, user._id] }
       });
-      if (sharedPublicGroup) {
+      if (sharedGroup) {
         canView = true;
       }
     }
@@ -153,7 +152,7 @@ async function getPublicProfileDays(req, res) {
     }
 
     if (!canView && req.user && req.user.userId) {
-      const sharedPublicGroup = await Group.findOne({ isPublic: true, members: { $all: [req.user.userId, user._id] } });
+      const sharedPublicGroup = await Group.findOne({ members: { $all: [req.user.userId, user._id] } });
       if (sharedPublicGroup) canView = true;
     }
 
@@ -200,7 +199,7 @@ async function getPublicProfileAchievements(req, res) {
     }
 
     if (!canView && req.user && req.user.userId) {
-      const sharedPublicGroup = await Group.findOne({ isPublic: true, members: { $all: [req.user.userId, user._id] } });
+      const sharedPublicGroup = await Group.findOne({ members: { $all: [req.user.userId, user._id] } });
       if (sharedPublicGroup) canView = true;
     }
 
