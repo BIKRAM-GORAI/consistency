@@ -5477,7 +5477,20 @@ let deferredPrompt;
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      console.log('SW registered:', reg);
+      
+      // Check for updates periodically
+      reg.onupdatefound = () => {
+        const installingWorker = reg.installing;
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('New content is available; please refresh.');
+            // Optional: showToast('New update available! Refresh to apply.', 'info');
+          }
+        };
+      };
+    }).catch(err => {
       console.log('ServiceWorker registration failed: ', err);
     });
   });

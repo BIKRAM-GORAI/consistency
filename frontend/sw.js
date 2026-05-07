@@ -1,11 +1,11 @@
-const CACHE_NAME = 'consistency-cache-v2';
+const CACHE_NAME = 'consistency-cache-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/landing.html',
-  '/script.js',
-  '/style.css',
-  '/manifest.json',
+  './',
+  './index.html',
+  './landing.html',
+  './script.js',
+  './style.css',
+  './manifest.json',
   'https://cdn.jsdelivr.net/npm/lucide-static@0.400.0/font/lucide.css',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@300;400;500;700&display=swap'
 ];
@@ -18,10 +18,10 @@ self.addEventListener('install', (event) => {
       return cache.addAll(STATIC_ASSETS);
     })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Force the waiting service worker to become the active service worker
 });
 
-// 2. ACTIVATE: Cleanup old caches
+// 2. ACTIVATE: Cleanup old caches and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -30,44 +30,43 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // Immediately take control of all open clients
 });
 
 // 3. FETCH: Smart Caching Strategies
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip API calls (handled by script.js and IndexedDB)
-  if (url.pathname.startsWith('/api/')) return;
+  // Skip API calls and non-GET requests
+  if (url.pathname.includes('/api/') || event.request.method !== 'GET') return;
 
-  // Strategy: Network-First with Cache-Fallback for Navigation (HTML)
+  // For navigation requests, try network first, then cache index.html
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match('/index.html') || caches.match('/landing.html');
+        return caches.match('./index.html') || caches.match('./landing.html') || caches.match('./');
       })
     );
     return;
   }
 
-  // Strategy: Cache-First with Network-Fallback for Static Assets
+  // Strategy: Cache-First, then Network
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
       
       return fetch(event.request).then((networkResponse) => {
-        // Don't cache range requests or non-GETs
-        if (!networkResponse || networkResponse.status !== 200 || event.request.method !== 'GET') {
-          return networkResponse;
+        // Cache external assets or core files on the fly
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
         }
-        
-        // Cache external assets (like Google Fonts or Lucide)
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
-        
         return networkResponse;
+      }).catch(() => {
+        // Fallback for failed fetches
+        return new Response('Offline resource not found.', { status: 404 });
       });
     })
   );
