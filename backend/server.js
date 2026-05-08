@@ -24,8 +24,16 @@ const app = express();
 app.set("trust proxy", 1); // ✅ ADD THIS HERE
 
 
-// Connect to MongoDB
-connectDB();
+// Ensure database is connected for every request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection middleware error:', err);
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
 
 // ── Middleware ─────────────────────────────────────────────
 app.use(cors());
