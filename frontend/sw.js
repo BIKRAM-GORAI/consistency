@@ -51,48 +51,49 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// 4. FETCH: Smart Caching Strategies
+// 4. FETCH: Network-First Strategy for core assets, Cache-First for others
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET and API calls
+  // Skip non-GET and API calls (let them go to network)
   if (event.request.method !== 'GET' || url.pathname.includes('/api/')) return;
 
-  // SPECIAL CACHE RULE: Fonts and Cloudinary Images
-  const isFont = event.request.destination === 'font' || url.hostname.includes('gstatic.com') || url.hostname.includes('googleapis.com');
-  const isImage = event.request.destination === 'image' || url.hostname.includes('cloudinary.com');
+  const isCoreAsset = STATIC_ASSETS.includes(url.pathname) || 
+                     url.pathname === '/' || 
+                     url.pathname.endsWith('.js') || 
+                     url.pathname.endsWith('.css') || 
+                     url.pathname.endsWith('.html');
 
-  if (isFont || isImage) {
+  if (isCoreAsset) {
+    // Network-First for core application files
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.status === 200) {
+            const resClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, resClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request)) // Fallback to cache if offline
+    );
+  } else {
+    // Cache-First for other assets (images, fonts, etc.)
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
         return fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          if (response.status === 200) {
+            const resClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, resClone);
+            });
+          }
           return response;
-        }).catch(() => {
-          return new Response('Network error occurred', { status: 408 });
         });
       })
     );
-    return;
   }
-
-  // STANDARD CACHE RULE: Cache-First, then Network
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // Only cache successful static responses
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => {
-        if (event.request.mode === 'navigate') return caches.match('index.html') || caches.match('/');
-        return new Response('Offline resource not found.', { status: 404 });
-      });
-    })
-  );
 });

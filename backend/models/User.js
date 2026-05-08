@@ -149,7 +149,16 @@ const UserSchema = new mongoose.Schema(
     claimedBadges: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Badge',
-    }]
+    }],
+    // Account Lockout fields
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    }
   },
   { timestamps: true }
 );

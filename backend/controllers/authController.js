@@ -111,6 +111,11 @@ const login = async (req, res) => {
       }
     }
 
+    // Prevent bcrypt crash if account has no password (OAuth-only account)
+    if (!user.password) {
+      return res.status(401).json({ message: 'This account was created via Social Login. Please sign in with Google/GitHub/Facebook.' });
+    }
+
     // Verify password using bcrypt.compare
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -286,9 +291,10 @@ async function getProfileSettings(req, res) {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
 
-    const user = await User.findById(userId).select('emailNotifications achievementsPublic email username profilePicture isPublicProfile theme leetcodeUsername leetcodePendingUsername leetcodeVerificationCode leetcodeVerificationExpiry leetcodeLastVerifiedAt leetcodeUsernameChangeCount leetcodeProfilePicture leetcodeVerificationStatus leetcodeRetryScheduledAt');
+    const user = await User.findById(userId).select('name emailNotifications achievementsPublic email username profilePicture isPublicProfile theme leetcodeUsername leetcodePendingUsername leetcodeVerificationCode leetcodeVerificationExpiry leetcodeLastVerifiedAt leetcodeUsernameChangeCount leetcodeProfilePicture leetcodeVerificationStatus leetcodeRetryScheduledAt');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({
+      name: user.name,
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',

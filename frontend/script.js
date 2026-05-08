@@ -20,7 +20,7 @@ function escapeHTML(str) {
 
 // ── Auth ───────────────────────────────────────────────────
 const userId   = localStorage.getItem('userId')   || '';
-const userName = localStorage.getItem('userName') || 'User';
+let   userName = localStorage.getItem('userName') || 'User';
 let userProfilePicture = localStorage.getItem('userProfilePicture') || '';
 
 // ── Sync Username if missing ───────────────────────────────
@@ -4036,7 +4036,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Populate user chip in navbar
   const chipName   = document.getElementById('user-chip-name');
-  if (chipName)   chipName.textContent   = userName;
+  const storedName = localStorage.getItem('userName');
+  if (chipName)   chipName.textContent = storedName || userName;
   updateNavAvatar();
 
   // Load badges into memory immediately for offline access
@@ -7545,10 +7546,14 @@ async function proactiveSync(force = false) {
         userProfilePicture = profile.profilePicture;
         localStorage.setItem('userProfilePicture', userProfilePicture);
       }
+      if (profile.name) {
+        userName = profile.name;
+        localStorage.setItem('userName', profile.name);
+        const chipName = document.getElementById('user-chip-name');
+        if (chipName) chipName.textContent = profile.name;
+      }
       if (profile.username) {
         localStorage.setItem('userUsername', profile.username);
-        const chipName = document.getElementById('user-chip-name');
-        if (chipName) chipName.textContent = profile.username;
       }
       updateNavAvatar();
     }
