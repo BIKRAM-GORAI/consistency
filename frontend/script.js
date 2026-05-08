@@ -7638,3 +7638,4 @@ window.addEventListener('online', async () => {
   loadDays(1);
   proactiveSync(); 
 });
+}
