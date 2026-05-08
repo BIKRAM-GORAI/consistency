@@ -4335,18 +4335,11 @@ async function performSearch(query) {
     } else {
       users.forEach(u => {
         const item = document.createElement('div');
-        item.style.padding = '8px 12px';
-        item.style.display = 'flex';
-        item.style.alignItems = 'center';
-        item.style.gap = '12px';
-        item.style.cursor = 'pointer';
-        item.style.borderBottom = '1px solid #eee';
-        item.onmouseover = () => item.style.background = '#f5f5f5';
-        item.onmouseout = () => item.style.background = 'transparent';
+        item.className = 'search-item';
 
-        let avatarHtml = `<div style="width:30px; height:30px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
+        let avatarHtml = `<div class="search-avatar" style="background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
         if (u.profilePicture) {
-          avatarHtml = `<img src="${u.profilePicture}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; flex-shrink:0; border:1px solid #ccc;" />`;
+          avatarHtml = `<img src="${u.profilePicture}" class="search-avatar" />`;
         }
 
         const streakBadge = u.highestStreak > 0
@@ -4355,8 +4348,8 @@ async function performSearch(query) {
 
         item.innerHTML = `
           ${avatarHtml}
-          <div style="flex:1;">
-            <div style="font-weight:600; font-size:14px; color:#000;">${u.username}</div>
+          <div class="search-info">
+            <div class="search-name">${u.username}</div>
             ${streakBadge ? `<div style="margin-top:2px;">${streakBadge}</div>` : ''}
           </div>
         `;

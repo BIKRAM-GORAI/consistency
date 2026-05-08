@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consistency-cache-v18';
+const CACHE_NAME = 'consistency-cache-v20';
 const STATIC_ASSETS = [
   '/',
   'index.html',

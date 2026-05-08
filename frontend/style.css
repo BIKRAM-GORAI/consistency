@@ -1253,6 +1253,7 @@ body {
 }
 
 .form-control::placeholder { color: var(--text-light); }
+[data-theme="dark"] .form-control::placeholder { color: #bbbbbb; }
 
 /* Fix WebKit Autofill Background */
 input:-webkit-autofill,
@@ -1278,9 +1279,9 @@ input:-webkit-autofill:active {
   transition: opacity 0.2s ease;
 }
 
-[data-theme="dark"] .form-control::-webkit-calendar-picker-indicator {
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
-  opacity: 0.8;
+  cursor: pointer;
 }
 
 .form-control::-webkit-calendar-picker-indicator:hover {
@@ -1295,8 +1296,11 @@ input:-webkit-autofill:active {
 textarea.form-control { resize: vertical; min-height: 72px; }
 
 input[type="date"].form-control::-webkit-calendar-picker-indicator {
-  filter: none;
   cursor: pointer;
+}
+
+[data-theme="dark"] input[type="date"].form-control::-webkit-calendar-picker-indicator {
+  filter: invert(1) !important;
 }
 
 /* ============================================================
@@ -1324,18 +1328,29 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 /* Highlight category inputs to distinguish them from task inputs */
 .cat-top-row .form-control {
-  background: var(--bg-cat-input);
-  border-color: var(--amber);
-  font-weight: 800;
-  text-align: center;
+  background: transparent;
+  border: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
   color: var(--black);
+  width: 100%;
+  padding: 0;
+  outline: none;
+}
+
+[data-theme="dark"] .cat-top-row .form-control {
+  color: var(--text);
+  background: #2a2a2a;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .cat-top-row .form-control:focus {
-  background: #ffffff;
+  background: var(--bg-card);
   border-color: var(--black);
   box-shadow: 4px 4px 0 var(--amber);
-  color: #000000;
+  color: var(--text);
 }
 
 .btn-remove {
@@ -1369,7 +1384,46 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   animation: slideIn 0.2s var(--ease);
 }
 
+.task-input-row .form-control {
+  background: transparent;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--black);
+  width: 100%;
+  padding: 0;
+  outline: none;
+}
+
+[data-theme="dark"] .task-input-row .form-control {
+  color: var(--text);
+  background: #222;
+  border-radius: 4px;
+}
+
 .task-input-row .form-control { flex: 1; padding: 8px 12px; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.goal-task-builder-item .form-control {
+  background: transparent;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--black);
+  width: 100%;
+  padding: 4px 0;
+  outline: none;
+}
+
+[data-theme="dark"] .goal-task-builder-item .form-control,
+[data-theme="dark"] .template-category-item .form-control,
+[data-theme="dark"] .edit-template-category-item .form-control {
+  color: var(--text);
+}
 
 /* ============================================================
    TOAST
@@ -3086,6 +3140,11 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
+[data-theme="dark"] .lb-rank:not(.rank-1):not(.rank-2):not(.rank-3) {
+  color: #ffffff !important;
+  background: #444 !important;
+}
+
 .lb-rank.rank-1 { background: #fbbf24; box-shadow: 2px 2px 0 var(--black); } /* Gold */
 .lb-rank.rank-2 { background: #cbd5e1; box-shadow: 2px 2px 0 var(--black); } /* Silver */
 .lb-rank.rank-3 { background: #fca5a1; box-shadow: 2px 2px 0 var(--black); } /* Bronze */
@@ -3106,6 +3165,11 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .lb-card.card-rank-3 .lb-username,
 .lb-card.card-rank-3 .lb-rank {
   color: #0a0a0a !important;
+}
+
+[data-theme="dark"] .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3) {
+  background: #2a2a2a;
+  border-color: #444;
 }
 
 .lb-card.card-rank-1 .lb-streak-box.current,
@@ -3537,8 +3601,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 /* Ensure text is readable in Dark Mode on the light pastel backgrounds */
 [data-theme="dark"] .chat-bubble.self,
-[data-theme="dark"] .chat-bubble.other,
-[data-theme="dark"] .category-builder-item .form-control {
+[data-theme="dark"] .chat-bubble.other {
   color: #000000 !important;
 }
 
@@ -3799,6 +3862,74 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   gap: 4px;
   margin-top: 4px;
   align-self: flex-end;
+}
+
+/* -- Search Dropdown Styles -- */
+.nav-search-dropdown {
+  background: var(--bg-card);
+  border: 3px solid var(--black);
+  border-radius: 12px;
+  box-shadow: 6px 6px 0 var(--black);
+}
+
+.search-item {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item:hover {
+  background: var(--bg-muted);
+}
+
+.search-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--black);
+  object-fit: cover;
+}
+
+.search-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-name {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.search-username {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .nav-search-dropdown {
+  background: #2a2a2a;
+  border: 2px solid #555;
+  box-shadow: 6px 6px 0 var(--black);
+}
+
+[data-theme="dark"] .search-item:hover {
+  background: #2a2a2a;
+}
+
+[data-theme="dark"] .search-name {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .search-username {
+  color: #bbbbbb;
 }
 
 .chat-tick {
