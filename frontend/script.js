@@ -4012,6 +4012,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await fetchConfig();
   await checkAppVersion();
+  initFirebaseChat();
 
   // Today's date subtitle
   const display = document.getElementById('today-date-display');
@@ -4695,18 +4696,7 @@ function previewMinimalProfile() {
   openQuickView(username);
 }
 
-async function openMemberTasks(memberId, memberName, username = null) {
-  _currentMemberId = memberId;
-  _currentMemberName = memberName;
-  
-  // If we have a username, use the new high-fidelity view
-  if (username) {
-    return openQuickView(username);
-  }
-  
-  // Fallback to legacy member tasks if no username
-  showToast('Profile info unavailable for this member.', 'info');
-}
+
 
 function renderContributionGraph(data, targetId = 'public-profile-graph') {
   const container = document.getElementById(targetId);
@@ -7163,10 +7153,7 @@ function renderTypingIndicator(typers) {
   `;
 }
 
-// Sync Firebase Auth on page load
-document.addEventListener('DOMContentLoaded', () => {
-  initFirebaseChat();
-});
+
 
 async function initFirebaseChat() {
   const userId = localStorage.getItem('userId');
