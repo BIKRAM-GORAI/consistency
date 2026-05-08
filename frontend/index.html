@@ -1096,6 +1096,23 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: Member Journey (Tasks & Insights) ===== -->
+  <div class="modal-overlay" id="modal-member-tasks" onclick="closeModalOnOverlay(event, 'modal-member-tasks')">
+    <div class="modal modal-wide">
+      <div class="modal-header" style="background: linear-gradient(135deg, var(--primary), #60a5fa); color: var(--black);">
+        <h2 id="member-tasks-title"><i data-lucide="user"></i> Member Journey</h2>
+        <button class="modal-close" onclick="closeModal('modal-member-tasks')" style="color: var(--black);">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="member-insights-area"></div>
+        <div id="member-tasks-list-area"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-member-tasks')">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: Claim Badges ===== -->
   <div class="modal-overlay" id="modal-badges" onclick="closeModalOnOverlay(event, 'modal-badges')">
     <div class="modal modal-wide" style="max-width: 800px;">

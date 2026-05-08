@@ -2661,7 +2661,7 @@ async function openMemberTasks(memberId, memberName, username = null) {
   if (username) {
     (async () => {
       try {
-        const res = await apiFetch(`/api/users/${username}`);
+        const res = await apiFetch(`${API}/api/users/${username}`);
         if (res && res.user) {
           insightsArea.style.display = 'block';
           insightsArea.innerHTML = `
