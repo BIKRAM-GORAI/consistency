@@ -96,6 +96,10 @@ async function fetchConfig() {
       }
     }
   } catch (err) {
+    console.error('Failed to fetch config:', err);
+  }
+}
+
 /** Forcefully updates the app if a new version is released on the backend */
 async function checkAppVersion() {
   try {
@@ -7638,4 +7642,3 @@ window.addEventListener('online', async () => {
   loadDays(1);
   proactiveSync(); 
 });
-}
