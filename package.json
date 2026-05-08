@@ -31,5 +31,20 @@
   },
   "engines": {
     "node": "22.x"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "backend"
+    ],
+    "ext": "js,json",
+    "ignore": [
+      "frontend",
+      "brain",
+      "artifacts",
+      "node_modules",
+      ".git",
+      "knowledge"
+    ],
+    "delay": "1000"
   }
 }

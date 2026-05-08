@@ -17,6 +17,7 @@ const reviewRoutes      = require('./routes/reviewRoutes');
 const userRoutes        = require('./routes/userRoutes');
 const leetcodeRoutes    = require('./routes/leetcodeRoutes');
 const adminRoutes       = require('./routes/adminRoutes');
+const systemRoutes      = require('./routes/systemRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -69,7 +70,9 @@ app.use((req, res, next) => {
     "https://consistency-daily.vercel.app",
     "https://*.vercel.app",
     "https://vercel.live",
-    "wss://*.vercel.live"
+    "wss://*.vercel.live",
+    "https://cdn.jsdelivr.net",
+    "https://www.google.com"
   ];
   if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001", "ws://localhost:5000", "ws://localhost:5001");
 
@@ -81,7 +84,7 @@ app.use((req, res, next) => {
       "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
       "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
-      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com",
+      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com",
       "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       `connect-src ${connectSrc.join(' ')}`,
       "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live",
@@ -122,6 +125,7 @@ app.use('/api/reviews',      reviewRoutes); // Public review submission
 app.use('/api/users',        readOnlyLimiter, userRoutes); // Public user profiles
 app.use('/api/leetcode',    authenticateToken, dataModificationLimiter, leetcodeRoutes); // LeetCode integration
 app.use('/api/admin',       adminRoutes); // Admin routes
+app.use('/api/system',      systemRoutes); // System routes
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

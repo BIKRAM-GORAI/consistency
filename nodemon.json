@@ -1,0 +1,14 @@
+{
+  "watch": ["backend"],
+  "ext": "js,json",
+  "ignore": [
+    "frontend",
+    "brain",
+    "artifacts",
+    "node_modules",
+    ".git",
+    "*.test.js",
+    "knowledge"
+  ],
+  "delay": "1000"
+}

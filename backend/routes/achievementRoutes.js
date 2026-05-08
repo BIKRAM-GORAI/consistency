@@ -6,6 +6,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 router.get('/', authenticateToken, ctrl.getAllAchievements);
 router.get('/day/:dayId', authenticateToken, ctrl.getAchievementsByDay);
+router.post('/days-batch', authenticateToken, ctrl.getAchievementsByDaysBatch);
 router.get('/user/:userId', authenticateToken, ctrl.getAchievementsByUser);
 
 router.post('/', authenticateToken, createAchievementValidation, ctrl.createAchievement);
