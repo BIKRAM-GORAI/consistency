@@ -1,36 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Consistency Tracker — Track your daily habits, build streaks, and crush your long-term goals. Built for you and your friends.,Track daily goals, long-term goals, habits, achievements, streaks, and group challenges with Consistency Daily. Stay productive and consistent every day."/>
+  <meta name="description"
+    content="Track habits, maintain streaks, manage daily goals,Connect with others, and build consistent routines with Consistency Daily." />
+  <meta name="keywords"
+    content="Consistency, Consistency Daily, Habit Tracker, Daily Goals, Goal Tracker, Streak Tracker, Productivity App, Daily Routine, Personal Growth, Self Improvement, Task Manager, Life Organizer, Consistency Tracker, Daily Habits, Habit Building, Goal Setting, Streak App, Routine Manager, Consistency App, Productivity Tracker" />
   <meta name="google-site-verification" content="5fhZ5LDFZifF1cMeJ8gy4RqvxZ9akS4R3GKzD4fol9w" />
-  <title>Consistency Daily | Habit & Goal Tracker</title>
+  <link rel="canonical" href="https://consistency-daily.vercel.app/" />
+  <meta name="theme-color" content="#FF6B35" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://consistency-daily.vercel.app/" />
+  <meta property="og:title" content="Consistency Daily | Habit & Goal Tracker" />
+  <meta property="og:description"
+    content="Track daily goals, build streaks, and stay consistent with Consistency Daily. The best platform for managing your routines and reaching your full potential." />
+  <meta property="og:image" content="https://consistency-daily.vercel.app/icon-512.png" />
+  <meta property="og:site_name" content="Consistency Daily" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://consistency-daily.vercel.app/" />
+  <meta property="twitter:title" content="Consistency Daily | Habit & Goal Tracker" />
+  <meta property="twitter:description"
+    content="Track daily goals, build streaks, and stay consistent with Consistency Daily." />
+  <meta property="twitter:image" content="https://consistency-daily.vercel.app/icon-512.png" />
+
+  <!-- Structured Data for Google Site Name -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Consistency Daily",
+    "alternateName": ["Consistency", "Consistency Tracker"],
+    "url": "https://consistency-daily.vercel.app/"
+  }
+  </script>
+
+  <title>Consistency Daily — Habit Tracker & Daily Goal Manager</title>
   <link rel="icon" href="/checklist.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
   <script src="/js/libs/lucide/lucide.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --bg:        #faf7f2;
-      --black:     #0a0a0a;
-      --yellow:    #FFD60A;
-      --pink:      #FF3EA5;
-      --teal:      #00C9A7;
-      --coral:     #FF6B35;
-      --purple:    #7B5EA7;
-      --lime:      #B5FF4D;
-      --red:       #EF4444;
-      --border:    3px solid #0a0a0a;
-      --shadow:    4px 4px 0px #0a0a0a;
+      --bg: #faf7f2;
+      --black: #0a0a0a;
+      --yellow: #FFD60A;
+      --pink: #FF3EA5;
+      --teal: #00C9A7;
+      --coral: #FF6B35;
+      --purple: #7B5EA7;
+      --lime: #B5FF4D;
+      --red: #EF4444;
+      --border: 3px solid #0a0a0a;
+      --shadow: 4px 4px 0px #0a0a0a;
       --shadow-lg: 6px 6px 0px #0a0a0a;
     }
 
-    html, body {
+    html,
+    body {
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--black);
@@ -93,6 +138,7 @@
       color: var(--black);
       box-shadow: 3px 3px 0 var(--black);
     }
+
     .btn-nav-ghost:hover {
       transform: translate(-1px, -1px);
       box-shadow: 4px 4px 0 var(--black);
@@ -103,6 +149,7 @@
       color: var(--yellow);
       box-shadow: 3px 3px 0 var(--yellow);
     }
+
     .btn-nav-solid:hover {
       transform: translate(-1px, -1px);
       box-shadow: 5px 5px 0 var(--yellow);
@@ -127,64 +174,88 @@
       border: var(--border);
       pointer-events: none;
     }
+
     .shape-1 {
-      width: 90px; height: 90px;
+      width: 90px;
+      height: 90px;
       background: var(--yellow);
-      top: 8%; left: 4%;
+      top: 8%;
+      left: 4%;
       border-radius: 6px;
       transform: rotate(15deg);
       box-shadow: 4px 4px 0 var(--black);
     }
+
     .shape-2 {
-      width: 60px; height: 60px;
+      width: 60px;
+      height: 60px;
       background: var(--pink);
-      top: 18%; right: 6%;
+      top: 18%;
+      right: 6%;
       border-radius: 50%;
       box-shadow: 4px 4px 0 var(--black);
     }
+
     .shape-3 {
-      width: 50px; height: 50px;
+      width: 50px;
+      height: 50px;
       background: var(--teal);
-      bottom: 22%; left: 8%;
+      bottom: 22%;
+      left: 8%;
       border-radius: 6px;
       transform: rotate(-12deg);
       box-shadow: 4px 4px 0 var(--black);
     }
+
     .shape-4 {
-      width: 80px; height: 80px;
+      width: 80px;
+      height: 80px;
       background: var(--coral);
-      bottom: 15%; right: 5%;
+      bottom: 15%;
+      right: 5%;
       border-radius: 50%;
       box-shadow: 4px 4px 0 var(--black);
     }
+
     .shape-5 {
-      width: 40px; height: 40px;
+      width: 40px;
+      height: 40px;
       background: var(--lime);
-      top: 50%; left: 3%;
+      top: 50%;
+      left: 3%;
       border-radius: 4px;
       transform: rotate(8deg);
       box-shadow: 3px 3px 0 var(--black);
     }
+
     .shape-6 {
-      width: 55px; height: 55px;
+      width: 55px;
+      height: 55px;
       background: var(--purple);
-      top: 60%; right: 3%;
+      top: 60%;
+      right: 3%;
       border-radius: 6px;
       transform: rotate(-20deg);
       box-shadow: 3px 3px 0 var(--black);
     }
+
     .shape-7 {
-      width: 30px; height: 100px;
+      width: 30px;
+      height: 100px;
       background: var(--yellow);
-      top: 5%; right: 20%;
+      top: 5%;
+      right: 20%;
       border-radius: 4px;
       transform: rotate(25deg);
       box-shadow: 3px 3px 0 var(--black);
     }
+
     .shape-8 {
-      width: 70px; height: 30px;
+      width: 70px;
+      height: 30px;
       background: var(--teal);
-      bottom: 8%; left: 25%;
+      bottom: 8%;
+      left: 25%;
       border-radius: 4px;
       transform: rotate(-8deg);
       box-shadow: 3px 3px 0 var(--black);
@@ -219,8 +290,17 @@
     }
 
     @keyframes blink {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
     }
 
     /* ── Hero Title ── */
@@ -364,17 +444,31 @@
       transition: transform 0.15s, box-shadow 0.15s;
     }
 
-    .feature-pill:nth-child(1) { background: var(--yellow); }
-    .feature-pill:nth-child(2) { background: var(--lime); }
-    .feature-pill:nth-child(3) { background: var(--pink); color: #fff; }
-    .feature-pill:nth-child(4) { background: var(--teal); }
+    .feature-pill:nth-child(1) {
+      background: var(--yellow);
+    }
+
+    .feature-pill:nth-child(2) {
+      background: var(--lime);
+    }
+
+    .feature-pill:nth-child(3) {
+      background: var(--pink);
+      color: #fff;
+    }
+
+    .feature-pill:nth-child(4) {
+      background: var(--teal);
+    }
 
     .feature-pill:hover {
       transform: translate(-1px, -1px);
       box-shadow: 4px 4px 0 var(--black);
     }
 
-    .feature-pill-icon { font-size: 16px; }
+    .feature-pill-icon {
+      font-size: 16px;
+    }
 
     /* ── Footer note ── */
     .landing-footer-note {
@@ -390,32 +484,78 @@
     }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* ── Mobile responsive ── */
     @media (max-width: 768px) {
-      .landing-nav { padding: 0 16px; }
-      .landing-nav-brand { font-size: 15px; }
-      .btn-nav { padding: 7px 14px; font-size: 13px; }
+      .landing-nav {
+        padding: 0 16px;
+      }
 
-      .shape-1 { width: 60px; height: 60px; top: 3%; left: 2%; }
-      .shape-2 { width: 40px; height: 40px; top: 6%; right: 3%; }
-      .shape-3 { width: 35px; height: 35px; }
-      .shape-4 { width: 50px; height: 50px; }
-      .shape-5, .shape-6, .shape-7, .shape-8 { display: none; }
+      .landing-nav-brand {
+        font-size: 15px;
+      }
+
+      .btn-nav {
+        padding: 7px 14px;
+        font-size: 13px;
+      }
+
+      .shape-1 {
+        width: 60px;
+        height: 60px;
+        top: 3%;
+        left: 2%;
+      }
+
+      .shape-2 {
+        width: 40px;
+        height: 40px;
+        top: 6%;
+        right: 3%;
+      }
+
+      .shape-3 {
+        width: 35px;
+        height: 35px;
+      }
+
+      .shape-4 {
+        width: 50px;
+        height: 50px;
+      }
+
+      .shape-5,
+      .shape-6,
+      .shape-7,
+      .shape-8 {
+        display: none;
+      }
 
       .landing-hero-title {
         font-size: clamp(36px, 10vw, 58px);
         letter-spacing: -2px;
       }
 
-      .landing-subtitle { font-size: 15px; margin: 16px auto 36px; }
+      .landing-subtitle {
+        font-size: 15px;
+        margin: 16px auto 36px;
+      }
     }
 
     @media (max-width: 480px) {
-      .landing-wrap { padding: 40px 16px 60px; }
+      .landing-wrap {
+        padding: 40px 16px 60px;
+      }
 
       .landing-actions {
         flex-direction: column;
@@ -430,9 +570,19 @@
         font-size: 14px;
       }
 
-      .landing-features { gap: 8px; margin-top: 40px; }
-      .feature-pill { font-size: 12px; padding: 8px 14px; }
-      .landing-footer-note { margin-top: 36px; }
+      .landing-features {
+        gap: 8px;
+        margin-top: 40px;
+      }
+
+      .feature-pill {
+        font-size: 12px;
+        padding: 8px 14px;
+      }
+
+      .landing-footer-note {
+        margin-top: 36px;
+      }
     }
 
     @media (max-width: 360px) {
@@ -440,7 +590,11 @@
         font-size: clamp(30px, 11vw, 40px);
         letter-spacing: -1.5px;
       }
-      .feature-pill { font-size: 11px; padding: 7px 10px; }
+
+      .feature-pill {
+        font-size: 11px;
+        padding: 7px 10px;
+      }
     }
 
     /* ── About Section ── */
@@ -453,6 +607,7 @@
       align-items: center;
       text-align: center;
     }
+
     .landing-section-title {
       font-family: 'Space Grotesk', sans-serif;
       font-size: clamp(32px, 6vw, 48px);
@@ -464,14 +619,19 @@
       display: inline-block;
       color: var(--black);
     }
+
     .landing-section-title::after {
       content: '';
       position: absolute;
-      bottom: 2px; left: -5px; width: calc(100% + 10px); height: 12px;
+      bottom: 2px;
+      left: -5px;
+      width: calc(100% + 10px);
+      height: 12px;
       background: var(--teal);
       z-index: -1;
       border-radius: 2px;
     }
+
     .about-grid {
       display: flex;
       flex-wrap: wrap;
@@ -481,6 +641,7 @@
       margin-top: 50px;
       padding-bottom: 50px;
     }
+
     .about-card {
       border: 3px solid var(--black);
       border-radius: 12px;
@@ -499,11 +660,13 @@
       --y-offset: 0px;
       transform: translate(var(--x-offset), var(--y-offset)) rotate(var(--rot));
     }
+
     .about-card:hover {
       z-index: 10;
       transform: translate(calc(var(--x-offset) - 6px), calc(var(--y-offset) - 6px)) rotate(var(--rot)) scale(1.05);
       box-shadow: 12px 12px 0 var(--black);
     }
+
     .about-card h3 {
       font-size: 20px;
       font-weight: 900;
@@ -513,6 +676,7 @@
       line-height: 1.2;
       color: inherit;
     }
+
     .about-card p {
       font-size: 15px;
       font-weight: 600;
@@ -521,20 +685,103 @@
       opacity: 0.95;
       color: inherit;
     }
-    
+
     /* 12 randomized scattering patterns */
-    .about-card:nth-child(12n + 1)  { background: #ffb3ba; color: var(--black); --rot: -4deg; --x-offset: -15px; --y-offset: 20px; } 
-    .about-card:nth-child(12n + 2)  { background: #baffc9; color: var(--black); --rot: 2deg;  --x-offset: 10px;  --y-offset: -10px; } 
-    .about-card:nth-child(12n + 3)  { background: #ffffba; color: var(--black); --rot: 5deg;  --x-offset: 25px;  --y-offset: 15px; } 
-    .about-card:nth-child(12n + 4)  { background: #e2baff; color: var(--black); --rot: -3deg; --x-offset: -20px; --y-offset: -15px; } 
-    .about-card:nth-child(12n + 5)  { background: #bae1ff; color: var(--black); --rot: 4deg;  --x-offset: 15px;  --y-offset: 25px; } 
-    .about-card:nth-child(12n + 6)  { background: #ffdfba; color: var(--black); --rot: -5deg; --x-offset: -5px;  --y-offset: -25px; } 
-    .about-card:nth-child(12n + 7)  { background: #baffc9; color: var(--black); --rot: -2deg; --x-offset: 18px;  --y-offset: 30px; } 
-    .about-card:nth-child(12n + 8)  { background: #ffb3ba; color: var(--black); --rot: 3deg;  --x-offset: -25px; --y-offset: -12px; } 
-    .about-card:nth-child(12n + 9)  { background: #bae1ff; color: var(--black); --rot: -6deg; --x-offset: 22px;  --y-offset: 5px; } 
-    .about-card:nth-child(12n + 10) { background: #ffdfba; color: var(--black); --rot: 4deg;  --x-offset: -8px;  --y-offset: 22px; } 
-    .about-card:nth-child(12n + 11) { background: #ffffba; color: var(--black); --rot: -1deg; --x-offset: 10px;  --y-offset: -18px; } 
-    .about-card:nth-child(12n + 12) { background: #e2baff; color: var(--black); --rot: 2deg;  --x-offset: -30px; --y-offset: 8px; }
+    .about-card:nth-child(12n + 1) {
+      background: #ffb3ba;
+      color: var(--black);
+      --rot: -4deg;
+      --x-offset: -15px;
+      --y-offset: 20px;
+    }
+
+    .about-card:nth-child(12n + 2) {
+      background: #baffc9;
+      color: var(--black);
+      --rot: 2deg;
+      --x-offset: 10px;
+      --y-offset: -10px;
+    }
+
+    .about-card:nth-child(12n + 3) {
+      background: #ffffba;
+      color: var(--black);
+      --rot: 5deg;
+      --x-offset: 25px;
+      --y-offset: 15px;
+    }
+
+    .about-card:nth-child(12n + 4) {
+      background: #e2baff;
+      color: var(--black);
+      --rot: -3deg;
+      --x-offset: -20px;
+      --y-offset: -15px;
+    }
+
+    .about-card:nth-child(12n + 5) {
+      background: #bae1ff;
+      color: var(--black);
+      --rot: 4deg;
+      --x-offset: 15px;
+      --y-offset: 25px;
+    }
+
+    .about-card:nth-child(12n + 6) {
+      background: #ffdfba;
+      color: var(--black);
+      --rot: -5deg;
+      --x-offset: -5px;
+      --y-offset: -25px;
+    }
+
+    .about-card:nth-child(12n + 7) {
+      background: #baffc9;
+      color: var(--black);
+      --rot: -2deg;
+      --x-offset: 18px;
+      --y-offset: 30px;
+    }
+
+    .about-card:nth-child(12n + 8) {
+      background: #ffb3ba;
+      color: var(--black);
+      --rot: 3deg;
+      --x-offset: -25px;
+      --y-offset: -12px;
+    }
+
+    .about-card:nth-child(12n + 9) {
+      background: #bae1ff;
+      color: var(--black);
+      --rot: -6deg;
+      --x-offset: 22px;
+      --y-offset: 5px;
+    }
+
+    .about-card:nth-child(12n + 10) {
+      background: #ffdfba;
+      color: var(--black);
+      --rot: 4deg;
+      --x-offset: -8px;
+      --y-offset: 22px;
+    }
+
+    .about-card:nth-child(12n + 11) {
+      background: #ffffba;
+      color: var(--black);
+      --rot: -1deg;
+      --x-offset: 10px;
+      --y-offset: -18px;
+    }
+
+    .about-card:nth-child(12n + 12) {
+      background: #e2baff;
+      color: var(--black);
+      --rot: 2deg;
+      --x-offset: -30px;
+      --y-offset: 8px;
+    }
 
     /* ── Screenshots ── */
     .landing-screenshots {
@@ -545,6 +792,7 @@
       flex-direction: column;
       align-items: center;
     }
+
     .screenshots-grid {
       display: flex;
       flex-wrap: wrap;
@@ -554,6 +802,7 @@
       max-width: 1200px;
       margin-top: 40px;
     }
+
     .screenshot-card {
       border: var(--border);
       border-radius: 8px;
@@ -566,10 +815,12 @@
       overflow: hidden;
       cursor: pointer;
     }
+
     .screenshot-card:hover {
       transform: translate(-4px, -4px);
       box-shadow: 8px 8px 0 var(--black);
     }
+
     .screenshot-img {
       width: 100%;
       height: 100%;
@@ -583,9 +834,12 @@
 
     /* ── Lightbox Modal ── */
     .lightbox-modal {
-      display: none; 
+      display: none;
       position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: rgba(10, 10, 10, 0.85);
       z-index: 9999;
       align-items: center;
@@ -595,10 +849,12 @@
       transition: opacity 0.3s ease;
       backdrop-filter: blur(4px);
     }
+
     .lightbox-modal.show {
       display: flex;
       opacity: 1;
     }
+
     .lightbox-content {
       position: relative;
       max-width: 85vw;
@@ -607,19 +863,23 @@
       align-items: center;
       justify-content: center;
     }
+
     .lightbox-img {
       max-width: 100%;
       max-height: 85vh;
       object-fit: contain;
       border: var(--border);
       border-radius: 8px;
-      box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+      box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
       background: #fff;
     }
+
     .lightbox-close {
       position: absolute;
-      top: -16px; right: -16px;
-      width: 40px; height: 40px;
+      top: -16px;
+      right: -16px;
+      width: 40px;
+      height: 40px;
       background: var(--red);
       color: #fff;
       border: 3px solid var(--black);
@@ -633,6 +893,7 @@
       box-shadow: 2px 2px 0 var(--black);
       z-index: 10000;
     }
+
     .lightbox-close:hover {
       transform: scale(1.1);
     }
@@ -647,6 +908,7 @@
       align-items: center;
       text-align: center;
     }
+
     .upcoming-grid {
       display: flex;
       flex-wrap: wrap;
@@ -655,6 +917,7 @@
       margin-top: 40px;
       max-width: 900px;
     }
+
     .upcoming-card {
       background: #fff;
       border: var(--border);
@@ -671,11 +934,16 @@
       align-items: center;
       gap: 10px;
     }
+
     .upcoming-card:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0 var(--black);
     }
-    .upcoming-icon { font-size: 20px; }
+
+    .upcoming-icon {
+      font-size: 20px;
+    }
+
     .upcoming-card.done {
       background: #d6d6d6;
       color: #444;
@@ -685,11 +953,13 @@
       overflow: hidden;
       font-weight: 900;
     }
+
     .upcoming-card.done .upcoming-text {
       text-decoration: line-through;
       text-decoration-thickness: 2px;
       text-decoration-color: var(--red);
     }
+
     .upcoming-card.done::after {
       content: 'DONE';
       position: absolute;
@@ -715,6 +985,7 @@
       flex-direction: column;
       align-items: center;
     }
+
     .team-grid {
       display: flex;
       flex-wrap: wrap;
@@ -723,6 +994,7 @@
       margin-top: 40px;
       max-width: 1000px;
     }
+
     .team-card {
       background: #fff;
       border: var(--border);
@@ -737,10 +1009,12 @@
       gap: 16px;
       transition: transform 0.2s;
     }
+
     .team-card:hover {
       transform: translateY(-4px);
       box-shadow: var(--shadow-lg);
     }
+
     .team-role {
       font-size: 12px;
       font-weight: 900;
@@ -753,6 +1027,7 @@
       box-shadow: 2px 2px 0 var(--black);
       letter-spacing: 0.5px;
     }
+
     .team-name {
       font-family: 'Space Grotesk', sans-serif;
       font-size: 22px;
@@ -760,6 +1035,7 @@
       text-transform: uppercase;
       color: var(--black);
     }
+
     .team-links {
       display: flex;
       flex-direction: column;
@@ -767,6 +1043,7 @@
       width: 100%;
       margin-top: 8px;
     }
+
     .btn-team {
       display: inline-flex;
       align-items: center;
@@ -785,13 +1062,25 @@
       box-shadow: 2px 2px 0 var(--black);
       transition: all 0.15s;
     }
+
     .btn-team:hover {
       transform: translate(-2px, -2px);
       box-shadow: 4px 4px 0 var(--black);
     }
-    .btn-email { background: var(--teal); }
-    .btn-ig { background: var(--purple); color: #fff; }
-    .btn-github { background: var(--black); color: #fff; }
+
+    .btn-email {
+      background: var(--teal);
+    }
+
+    .btn-ig {
+      background: var(--purple);
+      color: #fff;
+    }
+
+    .btn-github {
+      background: var(--black);
+      color: #fff;
+    }
 
     /* ── Footer ── */
     .landing-footer {
@@ -815,6 +1104,7 @@
       align-items: center;
       text-align: center;
     }
+
     .reviews-actions {
       display: flex;
       gap: 16px;
@@ -822,6 +1112,7 @@
       flex-wrap: wrap;
       justify-content: center;
     }
+
     .btn-review {
       padding: 14px 28px;
       font-family: 'Inter', sans-serif;
@@ -833,20 +1124,24 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .btn-review-primary {
       background: var(--teal);
       color: var(--black);
       box-shadow: 4px 4px 0 var(--black);
     }
+
     .btn-review-primary:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0 var(--black);
     }
+
     .btn-review-secondary {
       background: var(--bg);
       color: var(--black);
       box-shadow: 4px 4px 0 var(--black);
     }
+
     .btn-review-secondary:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0 var(--black);
@@ -856,7 +1151,10 @@
     .review-modal-overlay {
       display: none;
       position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: rgba(10, 10, 10, 0.85);
       z-index: 9999;
       align-items: center;
@@ -864,7 +1162,11 @@
       padding: 20px;
       backdrop-filter: blur(4px);
     }
-    .review-modal-overlay.show { display: flex; }
+
+    .review-modal-overlay.show {
+      display: flex;
+    }
+
     .review-modal {
       background: #fff;
       border: 4px solid var(--black);
@@ -877,6 +1179,7 @@
       max-height: 90vh;
       overflow-y: auto;
     }
+
     .review-modal h3 {
       font-family: 'Space Grotesk', sans-serif;
       font-size: 24px;
@@ -887,10 +1190,12 @@
       display: inline-block;
       padding-bottom: 4px;
     }
+
     .form-group {
       margin-bottom: 20px;
       text-align: left;
     }
+
     .form-group label {
       display: block;
       font-weight: 800;
@@ -898,7 +1203,9 @@
       text-transform: uppercase;
       font-size: 13px;
     }
-    .form-group input, .form-group textarea {
+
+    .form-group input,
+    .form-group textarea {
       width: 100%;
       padding: 12px;
       border: 2px solid var(--black);
@@ -907,18 +1214,22 @@
       font-size: 15px;
       box-shadow: 2px 2px 0 var(--black);
     }
+
     .form-group textarea {
       resize: vertical;
       min-height: 100px;
     }
+
     .btn-close-modal {
       position: absolute;
-      top: 16px; right: 16px;
+      top: 16px;
+      right: 16px;
       background: var(--red);
       color: #fff;
       border: 2px solid var(--black);
       border-radius: 50%;
-      width: 32px; height: 32px;
+      width: 32px;
+      height: 32px;
       font-weight: bold;
       font-size: 18px;
       cursor: pointer;
@@ -927,6 +1238,7 @@
       justify-content: center;
       box-shadow: 2px 2px 0 var(--black);
     }
+
     .review-card {
       border: 2px solid var(--black);
       border-radius: 8px;
@@ -936,24 +1248,28 @@
       box-shadow: 3px 3px 0 var(--black);
       text-align: left;
     }
+
     .review-card-email {
       font-weight: 800;
       font-size: 14px;
       color: var(--teal);
       margin-bottom: 8px;
     }
+
     .review-card-date {
       font-size: 11px;
       color: #666;
       margin-bottom: 12px;
       font-weight: 600;
     }
+
     .review-card-text {
       font-size: 15px;
       line-height: 1.5;
     }
   </style>
 </head>
+
 <body>
 
   <!-- Top Navbar -->
@@ -991,7 +1307,8 @@
     </h1>
 
     <p class="landing-subtitle">
-      A clean, private space for you and your friends to log daily tasks, maintain streaks, and manage long-term goals — each on their own account.
+      A clean, private space for you and your friends to log daily tasks, maintain streaks, and manage long-term goals —
+      each on their own account.
     </p>
 
     <div class="landing-actions">
@@ -1006,7 +1323,8 @@
     <div class="landing-features">
       <div class="feature-pill"><span class="feature-pill-icon">🔥</span> Streak Tracking</div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="calendar"></i></span> Daily Cards</div>
-      <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="target"></i></span> Long-Term Goals</div>
+      <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="target"></i></span> Long-Term Goals
+      </div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="lock"></i></span> Private Accounts</div>
     </div>
 
@@ -1035,53 +1353,125 @@
       <div class="about-card"><h3>Community and Connection</h3><p>Join groups, share your progress, and motivate each other to achieve your goals together.</p></div>
       <div class="about-card"><h3>Progress Visualization</h3><p>Track your journey with detailed analytics, charts, and reports to visualize your progress and stay motivated.</p></div>
       <div class="about-card"><h3>Customizable Goals</h3><p>Set your own goals, track your progress, and celebrate your achievements along the way.</p></div> -->
-      <div class="about-card"><h3>Track Your Daily Habits</h3><p>Build consistency by logging your daily routines and completing tasks with a simple, satisfying flow.</p></div>
+      <div class="about-card">
+        <h3>Track Your Daily Habits</h3>
+        <p>Build consistency by logging your daily routines and completing tasks with a simple, satisfying flow.</p>
+      </div>
 
-      <div class="about-card"><h3>Build Unbreakable Streaks</h3><p>Stay motivated with streak tracking that turns daily actions into powerful long-term habits.</p></div>
+      <div class="about-card">
+        <h3>Build Unbreakable Streaks</h3>
+        <p>Stay motivated with streak tracking that turns daily actions into powerful long-term habits.</p>
+      </div>
 
-      <div class="about-card"><h3>Crush Long-Term Goals</h3><p>Break big ambitions into manageable steps, set deadlines, and track your progress with clarity.</p></div>
+      <div class="about-card">
+        <h3>Crush Long-Term Goals</h3>
+        <p>Break big ambitions into manageable steps, set deadlines, and track your progress with clarity.</p>
+      </div>
 
-      <div class="about-card"><h3>Reusable Templates</h3><p>Create complete task setups once and instantly reuse them anywhere to save time and stay organized.</p></div>
+      <div class="about-card">
+        <h3>Reusable Templates</h3>
+        <p>Create complete task setups once and instantly reuse them anywhere to save time and stay organized.</p>
+      </div>
 
-      <div class="about-card"><h3>Track LeetCode Progress</h3><p>Connect your LeetCode account to automatically track your coding consistency and stay on top of your practice.</p></div>
+      <div class="about-card">
+        <h3>Track LeetCode Progress</h3>
+        <p>Connect your LeetCode account to automatically track your coding consistency and stay on top of your
+          practice.</p>
+      </div>
 
-      <div class="about-card"><h3>Progress Visualization</h3><p>Understand your journey with insightful graphs and analytics that highlight your consistency and growth.</p></div>
+      <div class="about-card">
+        <h3>Progress Visualization</h3>
+        <p>Understand your journey with insightful graphs and analytics that highlight your consistency and growth.</p>
+      </div>
 
-      <div class="about-card"><h3>Automated Email Reminders</h3><p>Never miss a day with smart reminders that help you stay consistent and protect your streak.</p></div>
+      <div class="about-card">
+        <h3>Automated Email Reminders</h3>
+        <p>Never miss a day with smart reminders that help you stay consistent and protect your streak.</p>
+      </div>
 
-      <div class="about-card"><h3>Compete with Friends</h3><p>Create private groups, compare streaks, and stay accountable through healthy competition.</p></div>
+      <div class="about-card">
+        <h3>Compete with Friends</h3>
+        <p>Create private groups, compare streaks, and stay accountable through healthy competition.</p>
+      </div>
 
-      <div class="about-card"><h3>Community and Connection</h3><p>Engage with others, share progress, and stay inspired by a community focused on growth.</p></div>
+      <div class="about-card">
+        <h3>Community and Connection</h3>
+        <p>Engage with others, share progress, and stay inspired by a community focused on growth.</p>
+      </div>
 
-      <div class="about-card"><h3>Celebrate Your Wins</h3><p>Track your achievements and reflect on your progress to stay motivated every step of the way.</p></div>
+      <div class="about-card">
+        <h3>Celebrate Your Wins</h3>
+        <p>Track your achievements and reflect on your progress to stay motivated every step of the way.</p>
+      </div>
 
-      <div class="about-card"><h3>Customizable Goals</h3><p>Define your own goals, adapt your workflow, and build a system that works for you.</p></div>
+      <div class="about-card">
+        <h3>Customizable Goals</h3>
+        <p>Define your own goals, adapt your workflow, and build a system that works for you.</p>
+      </div>
 
-      <div class="about-card"><h3>Private Accounts</h3><p>Control your visibility with flexible privacy settings—share only what you want, when you want.</p></div>
+      <div class="about-card">
+        <h3>Private Accounts</h3>
+        <p>Control your visibility with flexible privacy settings—share only what you want, when you want.</p>
+      </div>
 
-      <div class="about-card"><h3>Customizable Themes</h3><p>Switch between light and dark modes for a personalized and comfortable experience.</p></div>
+      <div class="about-card">
+        <h3>Customizable Themes</h3>
+        <p>Switch between light and dark modes for a personalized and comfortable experience.</p>
+      </div>
 
-      <div class="about-card"><h3>User-Friendly Interface</h3><p>Enjoy a clean, intuitive design that keeps you focused without distractions.</p></div>
+      <div class="about-card">
+        <h3>User-Friendly Interface</h3>
+        <p>Enjoy a clean, intuitive design that keeps you focused without distractions.</p>
+      </div>
 
-      <div class="about-card"><h3>Lightweight and Fast</h3><p>Experience smooth performance with a fast, responsive interface built for everyday use.</p></div>
+      <div class="about-card">
+        <h3>Lightweight and Fast</h3>
+        <p>Experience smooth performance with a fast, responsive interface built for everyday use.</p>
+      </div>
 
-      <div class="about-card"><h3>Cross-Platform Access</h3><p>Access your workspace anytime, anywhere, from any device with a seamless experience.</p></div>
+      <div class="about-card">
+        <h3>Cross-Platform Access</h3>
+        <p>Access your workspace anytime, anywhere, from any device with a seamless experience.</p>
+      </div>
 
-      <div class="about-card"><h3>Secure and Reliable</h3><p>Your data is protected with secure authentication and reliable infrastructure you can trust.</p></div>
+      <div class="about-card">
+        <h3>Secure and Reliable</h3>
+        <p>Your data is protected with secure authentication and reliable infrastructure you can trust.</p>
+      </div>
 
-      <div class="about-card"><h3>Privacy-First Approach</h3><p>Your data belongs to you. We ensure strict confidentiality and never share your information without consent.</p></div>
+      <div class="about-card">
+        <h3>Privacy-First Approach</h3>
+        <p>Your data belongs to you. We ensure strict confidentiality and never share your information without consent.
+        </p>
+      </div>
     </div>
   </section>
 
   <!-- Screenshots Section -->
   <section class="landing-screenshots">
-    <h2 class="landing-section-title" style="background:#fff; padding:0 14px; border:var(--border); box-shadow:var(--shadow);">See it in action</h2>
+    <h2 class="landing-section-title"
+      style="background:#fff; padding:0 14px; border:var(--border); box-shadow:var(--shadow);">See it in action</h2>
     <div class="screenshots-grid">
-      <div class="screenshot-card"><img src="/about1.png" alt="App Screenshot 1" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about1.png</text></svg>'"></div>
-      <div class="screenshot-card"><img src="/about2.png" alt="App Screenshot 2" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about2.png</text></svg>'"></div>
-      <div class="screenshot-card"><img src="/about3.png" alt="App Screenshot 3" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about3.png</text></svg>'"></div>
-      <div class="screenshot-card"><img src="/about4.png" alt="App Screenshot 4" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about4.png</text></svg>'"></div>
-      <div class="screenshot-card"><img src="/about5.png" alt="App Screenshot 5" class="screenshot-img" onclick="openLightbox(this.src)" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about5.png</text></svg>'"></div>
+      <div class="screenshot-card"><img src="/about1.png" alt="App Screenshot 1" class="screenshot-img"
+          onclick="openLightbox(this.src)"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about1.png</text></svg>'">
+      </div>
+      <div class="screenshot-card"><img src="/about2.png" alt="App Screenshot 2" class="screenshot-img"
+          onclick="openLightbox(this.src)"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about2.png</text></svg>'">
+      </div>
+      <div class="screenshot-card"><img src="/about3.png" alt="App Screenshot 3" class="screenshot-img"
+          onclick="openLightbox(this.src)"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about3.png</text></svg>'">
+      </div>
+      <div class="screenshot-card"><img src="/about4.png" alt="App Screenshot 4" class="screenshot-img"
+          onclick="openLightbox(this.src)"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about4.png</text></svg>'">
+      </div>
+      <div class="screenshot-card"><img src="/about5.png" alt="App Screenshot 5" class="screenshot-img"
+          onclick="openLightbox(this.src)"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about5.png</text></svg>'">
+      </div>
     </div>
   </section>
 
@@ -1090,15 +1480,23 @@
     <h2 class="landing-section-title" style="color:#fff;">Upcoming Features</h2>
     <div class="upcoming-grid">
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="users"></i></span> Add Friends</div>
-      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="crown"></i></span> <span class="upcoming-text">Global Leaderboards</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="crown"></i></span> <span
+          class="upcoming-text">Global Leaderboards</span></div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="swords"></i></span> Group Challenges</div>
-      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="globe"></i></span> <span class="upcoming-text">Public Groups</span></div>
-      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="swords"></i></span> Group Competitions</div>
-      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="medal"></i></span> <span class="upcoming-text">Streak Badges</span></div>
-      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="palette"></i></span> Shareable Stats & Stickers</div>
-      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="message-square"></i></span> <span class="upcoming-text">Live Group Chat</span></div>
-      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="message-circle"></i></span> Comments on Daily Cards</div>
-      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="lock"></i></span> <span class="upcoming-text">Advanced Privacy Controls</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="globe"></i></span> <span
+          class="upcoming-text">Public Groups</span></div>
+      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="swords"></i></span> Group Competitions
+      </div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="medal"></i></span> <span
+          class="upcoming-text">Streak Badges</span></div>
+      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="palette"></i></span> Shareable Stats &
+        Stickers</div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="message-square"></i></span> <span
+          class="upcoming-text">Live Group Chat</span></div>
+      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="message-circle"></i></span> Comments on
+        Daily Cards</div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="lock"></i></span> <span
+          class="upcoming-text">Advanced Privacy Controls</span></div>
     </div>
   </section>
 
@@ -1106,27 +1504,33 @@
   <section class="landing-team">
     <h2 class="landing-section-title">The Team</h2>
     <div class="team-grid">
-      
+
       <!-- Contributor 1 -->
       <div class="team-card">
         <span class="team-role" style="background:var(--lime); color:var(--black);">Ideas & Tweaks</span>
         <h3 class="team-name">DEBJEET DEY</h3>
         <div class="team-links">
-          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gamingwithdeoxy@gmail.com" target="_blank" class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
-          <a href="https://www.instagram.com/deyxop/" target="_blank" class="btn-team btn-ig"><i data-lucide="instagram"></i> Instagram</a>
-          <a href="https://github.com/Debjeet-Dey" target="_blank" class="btn-team btn-github"><i data-lucide="code"></i> GitHub</a>
+          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gamingwithdeoxy@gmail.com" target="_blank"
+            class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
+          <a href="https://www.instagram.com/deyxop/" target="_blank" class="btn-team btn-ig"><i
+              data-lucide="instagram"></i> Instagram</a>
+          <a href="https://github.com/Debjeet-Dey" target="_blank" class="btn-team btn-github"><i
+              data-lucide="code"></i> GitHub</a>
         </div>
       </div>
 
-      
+
       <!-- Lead Dev -->
       <div class="team-card">
         <span class="team-role" style="background:var(--pink);">Lead Developer</span>
         <h3 class="team-name">Bikram Gorai</h3>
         <div class="team-links">
-          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=bikram77620@gmail.com" target="_blank" class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
-          <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig"><i data-lucide="instagram"></i> Instagram</a>
-          <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github"><i data-lucide="code"></i> GitHub</a>
+          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=bikram77620@gmail.com" target="_blank"
+            class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
+          <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig"><i
+              data-lucide="instagram"></i> Instagram</a>
+          <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github"><i
+              data-lucide="code"></i> GitHub</a>
         </div>
       </div>
 
@@ -1136,9 +1540,12 @@
         <span class="team-role" style="background:var(--lime); color:var(--black);">Ideas & Tweaks</span>
         <h3 class="team-name">ABHISHEK ADHIKARI</h3>
         <div class="team-links">
-          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tanjirokamado777555@gmail.com" target="_blank" class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
-          <a href="https://www.instagram.com/let.him.coode/" target="_blank" class="btn-team btn-ig"><i data-lucide="instagram"></i> Instagram</a>
-          <a href="https://github.com/abhishekadhikari-247" target="_blank" class="btn-team btn-github"><i data-lucide="code"></i> GitHub</a>
+          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tanjirokamado777555@gmail.com" target="_blank"
+            class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
+          <a href="https://www.instagram.com/let.him.coode/" target="_blank" class="btn-team btn-ig"><i
+              data-lucide="instagram"></i> Instagram</a>
+          <a href="https://github.com/abhishekadhikari-247" target="_blank" class="btn-team btn-github"><i
+              data-lucide="code"></i> GitHub</a>
         </div>
       </div>
 
@@ -1283,7 +1690,7 @@
 
       // Pastel colors for Neo-Brutalist cards
       const cardColors = ['#fdf2f2', '#f0fdf4', '#eff6ff', '#fffbeb', '#faf5ff'];
-      
+
       // Badge colors mapping
       const badgeColors = {
         'Verified Account': '#4ade80',
@@ -1304,7 +1711,7 @@
       reviews.forEach((r, index) => {
         const d = new Date(r.createdAt).toLocaleString();
         const color = cardColors[index % cardColors.length];
-        
+
         const badgesHtml = (r.userBadges || []).map(b => `
           <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 2px 8px; border: 2px solid var(--black); border-radius: 4px; background: ${badgeColors[b] || '#eee'}; display: inline-block; box-shadow: 2px 2px 0 var(--black);">${b}</span>
         `).join('');
@@ -1360,4 +1767,5 @@
     lucide.createIcons();
   </script>
 </body>
+
 </html>
