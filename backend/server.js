@@ -18,6 +18,7 @@ const userRoutes        = require('./routes/userRoutes');
 const leetcodeRoutes    = require('./routes/leetcodeRoutes');
 const adminRoutes       = require('./routes/adminRoutes');
 const systemRoutes      = require('./routes/systemRoutes');
+const syncRoutes        = require('./routes/syncRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -132,8 +133,9 @@ app.use('/api/templates',    authenticateToken, dataModificationLimiter, templat
 app.use('/api/reviews',      reviewRoutes); // Public review submission
 app.use('/api/users',        readOnlyLimiter, userRoutes); // Public user profiles
 app.use('/api/leetcode',    authenticateToken, dataModificationLimiter, leetcodeRoutes); // LeetCode integration
-app.use('/api/admin',       adminRoutes); // Admin routes
-app.use('/api/system',      systemRoutes); // System routes
+app.use('/api/admin', adminRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/sync', syncRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

@@ -38,7 +38,15 @@ if (userId && !localStorage.getItem('userUsername')) {
 
 function logout() {
   localStorage.clear();
-  window.location.replace('landing.html');
+  if (window.localDb) {
+    window.localDb.delete().then(() => {
+      window.location.replace('landing.html');
+    }).catch(() => {
+      window.location.replace('landing.html');
+    });
+  } else {
+    window.location.replace('landing.html');
+  }
 }
 
 // ── State ──────────────────────────────────────────────────
@@ -7504,6 +7512,66 @@ function renderPresenceUI(viewers) {
 
 /** Proactively cache profile and leaderboard for offline access */
 let _lastSyncTime = parseInt(localStorage.getItem('lastProactiveSyncTime') || '0');
+/**
+ * Full reconciliation between local IndexedDB and Server IDs.
+ * Prunes any "zombie" records that no longer exist on the server.
+ */
+async function reconcileAllData() {
+  if (!navigator.onLine) return false;
+  const userId = localStorage.getItem('userId');
+  if (!userId) return false;
+
+  console.log('🔄 Starting full sync reconciliation...');
+  try {
+    const serverAudit = await apiFetch(`${API}/api/sync/audit`);
+    if (!serverAudit) return false;
+
+    const db = window.localDb;
+    let anyDeleted = false;
+
+    // Define tables to reconcile
+    const tables = [
+      { name: 'days',         serverIds: serverAudit.days },
+      { name: 'goals',        serverIds: serverAudit.goals },
+      { name: 'achievements', serverIds: serverAudit.achievements },
+      { name: 'groups',       serverIds: serverAudit.groups },
+      { name: 'templates',    serverIds: serverAudit.templates },
+      { name: 'badges',       serverIds: serverAudit.badges }
+    ];
+
+    for (const table of tables) {
+      const localRecords = await db[table.name].toArray();
+      const serverIdSet  = new Set(table.serverIds);
+
+      // Filter out temporary (unsynced) records and records that still exist on server
+      const toDelete = localRecords
+        .filter(rec => {
+          const id = rec._id;
+          // Don't delete if it's a temp ID (not synced yet)
+          if (String(id).startsWith('temp_')) return false;
+          // Don't delete if it's in the server's master list
+          if (serverIdSet.has(id)) return false;
+          return true;
+        })
+        .map(rec => rec._id);
+
+      if (toDelete.length > 0) {
+        console.log(`🗑️ Reconciliation: Deleting ${toDelete.length} zombie records from ${table.name}`);
+        await db[table.name].bulkDelete(toDelete);
+        anyDeleted = true;
+      }
+    }
+
+    if (anyDeleted) {
+      console.log('✅ Reconciliation complete. Purged zombie data.');
+    }
+    return anyDeleted;
+  } catch (err) {
+    console.warn('Sync reconciliation failed:', err);
+    return false;
+  }
+}
+
 async function proactiveSync(force = false) {
   if (!navigator.onLine) return;
   
@@ -7521,6 +7589,9 @@ async function proactiveSync(force = false) {
   try {
     const localDb = window.localDb;
     if (!localDb) return;
+
+    // 0. Reconcile deleted data first
+    const itemsDeleted = await reconcileAllData();
 
     // 1. Sync Profile & Config
     await fetchConfig();
@@ -7605,6 +7676,16 @@ async function proactiveSync(force = false) {
     if (window.localDb) {
       await window.localDb.templates.clear();
       await window.localDb.templates.bulkPut(templates);
+    }
+
+    // If reconciliation or sync changed data, force a UI refresh
+    if (itemsDeleted) {
+      if (typeof renderDays === 'function') renderDays();
+      if (typeof loadGoals === 'function') loadGoals();
+      if (typeof loadAchievements === 'function') loadAchievements();
+      if (typeof loadGroups === 'function') loadGroups();
+      if (typeof loadTemplates === 'function') loadTemplates();
+      updateStreak();
     }
 
     console.log('Proactive sync complete');
