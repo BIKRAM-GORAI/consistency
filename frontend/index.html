@@ -1242,11 +1242,11 @@
 
     // ── INDEXED DB INITIALIZATION (OFFLINE-FIRST) ──
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(4).stores({
+    dbLocal.version(5).stores({
       days: "_id, date, status, tasks, userId",
       goals: "_id, title, targetDate, status, userId",
       groups: "_id, name, code, isPublic",
-      achievements: "_id, title, date, userId",
+      achievements: "_id, title, date, userId, dayId",
       syncQueue: "++id, action, entity, data, timestamp",
       leaderboard: "sort",
       userProfile: "userId",

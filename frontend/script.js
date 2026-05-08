@@ -517,16 +517,22 @@ async function renderDays() {
   // Optimization: Fetch all achievements for these days in ONE batch request
   const dayIds = allDays.map(d => d._id).filter(id => !String(id).startsWith('temp_'));
   let batchAchievements = [];
-  if (dayIds.length > 0 && navigator.onLine) {
-    try {
-      batchAchievements = await apiFetch(`${API}/api/achievements/days-batch`, {
-        method: 'POST',
-        body: JSON.stringify({ dayIds })
-      });
-    } catch (err) {
-      console.warn('Batch achievements load failed.');
-      // Optimization: Never fallback to individual loads on 429 or general failure
-      // to avoid flooding the server further.
+  if (dayIds.length > 0) {
+    if (navigator.onLine) {
+      try {
+        batchAchievements = await apiFetch(`${API}/api/achievements/days-batch`, {
+          method: 'POST',
+          body: JSON.stringify({ dayIds })
+        });
+      } catch (err) {
+        console.warn('Batch achievements load failed. Falling back to local cache.');
+        if (window.localDb) {
+          batchAchievements = await window.localDb.achievements.where('dayId').anyOf(dayIds).toArray();
+        }
+      }
+    } else if (window.localDb) {
+      // Offline Mode: Use local cache
+      batchAchievements = await window.localDb.achievements.where('dayId').anyOf(dayIds).toArray();
     }
   }
 
@@ -1540,6 +1546,7 @@ async function submitEditGoal() {
 }
 
 // ── Goals ──────────────────────────────────────────────────
+let _lastGoalsLoad = 0;
 async function loadGoals() {
   const localDb = window.localDb;
   if (!localDb) return;
@@ -1563,11 +1570,27 @@ async function loadGoals() {
     console.warn('Dexie read error:', err);
   }
 
-  // 2. REVALIDATE: Load from Server (Only if online and not blocking)
+  // 2. REVALIDATE: Load from Server (Throttled & Only if online)
+  const now = Date.now();
+  if (now - _lastGoalsLoad < 30000 && allGoals.length > 0) {
+    return; // Don't re-fetch if loaded in last 30s
+  }
+
   if (!navigator.onLine) {
-    if (allGoals.length > 0) showToast('Offline Mode: Using cached goals.', 'info');
+    if (allGoals.length > 0) {
+      showToast('Offline Mode: Using cached goals.', 'info');
+    } else {
+      container.innerHTML = `
+        <div style="text-align:center; padding:40px; color:var(--text-muted);">
+          <i data-lucide="wifi-off" style="width:48px;height:48px;margin-bottom:16px;opacity:0.5;"></i>
+          <p style="font-weight:700; margin-bottom:10px;">Offline Mode</p>
+          <p style="font-size:12px;">No cached goals found. Connect to sync.</p>
+        </div>`;
+      if (window.lucide) lucide.createIcons({ root: container });
+    }
     return;
   }
+  _lastGoalsLoad = now;
 
   try {
     const data = await apiFetch(`${API}/api/goals`);
@@ -1873,7 +1896,11 @@ let allGroups = [];
 let allJoinedGroups = [];
 let availablePublicGroups = [];
 
+let _lastGroupsLoad = 0;
 async function loadGroups() {
+  const now = Date.now();
+  if (now - _lastGroupsLoad < 30000 && allJoinedGroups.length > 0) return;
+  _lastGroupsLoad = now;
   const localDb = window.localDb;
   if (!localDb) return;
   const container = document.getElementById('groups-container');
@@ -2898,6 +2925,7 @@ function renderDayAchievements(dayId, achievements, cardEl) {
 }
 
 // ── Achievements Page ──────────────────────────────────────
+let _lastAchsLoad = 0;
 async function loadAchievements() {
   const localDb = window.localDb;
   if (!localDb) return;
@@ -2921,11 +2949,25 @@ async function loadAchievements() {
     console.warn('Dexie read error:', err);
   }
 
-  // 2. REVALIDATE: Load from Server (Only if online and not blocking)
+  // 2. REVALIDATE: Throttled & Online
+  const now = Date.now();
+  if (now - _lastAchsLoad < 30000 && allAchievements.length > 0) return;
+
   if (!navigator.onLine) {
-    if (allAchievements.length > 0) showToast('Offline Mode: Using cached wins.', 'info');
+    if (allAchievements.length > 0) {
+      showToast('Offline Mode: Using cached wins.', 'info');
+    } else {
+      container.innerHTML = `
+        <div style="text-align:center; padding:40px; color:var(--text-muted);">
+          <i data-lucide="wifi-off" style="width:48px;height:48px;margin-bottom:16px;opacity:0.5;"></i>
+          <p style="font-weight:700; margin-bottom:10px;">Offline Mode</p>
+          <p style="font-size:12px;">No cached wins found. Connect to sync.</p>
+        </div>`;
+      if (window.lucide) lucide.createIcons({ root: container });
+    }
     return;
   }
+  _lastAchsLoad = now;
 
   try {
     const [privacyRes, achs] = await Promise.all([
@@ -3997,64 +4039,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (chipName)   chipName.textContent   = userName;
   updateNavAvatar();
 
-  // Initialize settings (theme, LeetCode, etc.) and save to localDb
-  apiFetch(`${API}/api/auth/settings`)
-    .then(async user => {
-      // Sync profile to local database for offline use
-      if (window.localDb) {
-        const userId = localStorage.getItem('userId');
-        user.userId = userId;
-        await window.localDb.userProfile.put(user);
-      }
-
-      // Sync profile picture
-      if (user.profilePicture) {
-        userProfilePicture = user.profilePicture;
-        localStorage.setItem('userProfilePicture', userProfilePicture);
-        updateNavAvatar();
-      }
-      if (user.username) {
-        localStorage.setItem('userUsername', user.username);
-      }
-
-      // Sync theme from backend if different
-      if (user.theme && localStorage.getItem('theme') !== user.theme) {
-        localStorage.setItem('theme', user.theme);
-        if (user.theme === 'dark') {
-          document.documentElement.setAttribute('data-theme', 'dark');
-          if (themeToggle) themeToggle.checked = true;
-        } else {
-          document.documentElement.removeAttribute('data-theme');
-          if (themeToggle) themeToggle.checked = false;
-        }
-      }
-
-      const isVerified = user.leetcodeLastVerifiedAt ? true : false;
-      updateLeetCodeButtonsStatus(isVerified);
-    })
-    .catch(async (err) => {
-      console.warn('Profile initialization fallback:', err);
-      // Offline fallback: load profile from localDb on startup
-      if (window.localDb) {
-        const userId = localStorage.getItem('userId');
-        const cached = await window.localDb.userProfile.get(userId);
-        if (cached) {
-          if (cached.profilePicture) {
-            userProfilePicture = cached.profilePicture;
-            updateNavAvatar();
-          }
-        }
-      }
-      updateLeetCodeButtonsStatus(false);
-    });
-
-  // Proactive sync all data if online (with a 2s delay to smooth initial load)
-  if (navigator.onLine) {
-    setTimeout(() => {
-      proactiveSync();
-    }, 2000);
-  }
-  
   // Load badges into memory immediately for offline access
   loadClaimedBadges();
 
@@ -4101,7 +4085,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  proactiveSync();
+  proactiveSync(); // Syncs profile, goals, achievements, etc.
   loadDays();
   loadTemplates();
 });
@@ -7518,16 +7502,17 @@ function renderPresenceUI(viewers) {
 }
 
 /** Proactively cache profile and leaderboard for offline access */
-let _lastSyncTime = 0;
-async function proactiveSync() {
+let _lastSyncTime = parseInt(localStorage.getItem('lastProactiveSyncTime') || '0');
+async function proactiveSync(force = false) {
   if (!navigator.onLine) return;
   
   // Throttle: Only sync once every 5 minutes unless forced
   const now = Date.now();
-  if (now - _lastSyncTime < 5 * 60 * 1000) {
+  if (!force && (now - _lastSyncTime < 5 * 60 * 1000)) {
     return;
   }
   _lastSyncTime = now;
+  localStorage.setItem('lastProactiveSyncTime', now.toString());
 
   const userId = localStorage.getItem('userId');
   if (!userId) return;
@@ -7536,10 +7521,37 @@ async function proactiveSync() {
     const localDb = window.localDb;
     if (!localDb) return;
 
-    // 1. Sync Profile
+    // 1. Sync Profile & Config
+    await fetchConfig();
     const profile = await apiFetch(`${API}/api/auth/settings`);
-    profile.userId = userId;
-    await localDb.userProfile.put(profile);
+    if (profile) {
+      profile.userId = userId;
+      await localDb.userProfile.put(profile);
+
+      // Apply profile updates to UI
+      if (profile.theme && localStorage.getItem('theme') !== profile.theme) {
+        localStorage.setItem('theme', profile.theme);
+        if (profile.theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          const themeToggle = document.getElementById('dark-theme-toggle');
+          if (themeToggle) themeToggle.checked = true;
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          const themeToggle = document.getElementById('dark-theme-toggle');
+          if (themeToggle) themeToggle.checked = false;
+        }
+      }
+      if (profile.profilePicture) {
+        userProfilePicture = profile.profilePicture;
+        localStorage.setItem('userProfilePicture', userProfilePicture);
+      }
+      if (profile.username) {
+        localStorage.setItem('userUsername', profile.username);
+        const chipName = document.getElementById('user-chip-name');
+        if (chipName) chipName.textContent = profile.username;
+      }
+      updateNavAvatar();
+    }
 
     // 2. Sync Leaderboard (Top 10 of each sort)
     const current = await apiFetch(`${API}/api/users/leaderboard?sort=current&page=1&limit=10`);
@@ -7568,6 +7580,21 @@ async function proactiveSync() {
         updateStreak();
       }
     }
+
+    // 4. Sync Goals
+    const goals = await apiFetch(`${API}/api/goals`);
+    if (goals) {
+      await localDb.goals.clear();
+      await localDb.goals.bulkAdd(goals);
+    }
+
+    // 5. Sync Achievements
+    const achs = await apiFetch(`${API}/api/achievements`);
+    if (achs && achs.achievements) {
+      await localDb.achievements.clear();
+      await localDb.achievements.bulkAdd(achs.achievements);
+    }
+
     // Sync templates for offline task creation
     const templates = await apiFetch(`${API}/api/templates`);
     if (window.localDb) {
@@ -7604,7 +7631,6 @@ window.addEventListener('online', async () => {
   if (window.syncManager) {
     await syncManager.processQueue();
   }
-  // Refresh data from server
-  loadDays(1);
-  proactiveSync(); 
+  // Refresh data from server (Forced)
+  proactiveSync(true); 
 });
