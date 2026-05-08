@@ -100,40 +100,7 @@ async function fetchConfig() {
   }
 }
 
-/** Forcefully updates the app if a new version is released on the backend */
-async function checkAppVersion() {
-  try {
-    const res = await apiFetch(`${API}/api/system/version`);
-    if (!res || !res.version) return;
 
-    const currentVersion = localStorage.getItem('appVersion') || '0.0.0';
-    if (res.version !== currentVersion && res.forceUpdate) {
-      console.log(`[VersionShield] New version available: ${res.version}. Updating...`);
-      
-      // 1. Mark new version to prevent infinite loop
-      localStorage.setItem('appVersion', res.version);
-      
-      // 2. Unregister all service workers
-      if (window.navigator && navigator.serviceWorker) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        for (let reg of regs) { await reg.unregister(); }
-      }
-      
-      // 3. Clear all caches
-      if (window.caches) {
-        const keys = await caches.keys();
-        for (let key of keys) { await caches.delete(key); }
-      }
-      
-      // 4. Force reload
-      window.location.reload(true);
-    } else {
-      localStorage.setItem('appVersion', res.version);
-    }
-  } catch (err) {
-    console.warn('[VersionShield] Check failed:', err);
-  }
-}
 
 // Cached validation result — reused in addLeetCodeProblem to avoid a second API call
 let currentLeetCodeValidation = null;
@@ -4015,7 +3982,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   await fetchConfig();
-  await checkAppVersion();
   initFirebaseChat();
 
   // Today's date subtitle
@@ -5675,7 +5641,7 @@ if ('serviceWorker' in navigator) {
       }
 
       // 2. Register the fresh v15 worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('sw.js?v=15');
+      const reg = await navigator.serviceWorker.register('sw.js?v=18');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
