@@ -40,7 +40,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(self \"https://jitsi.belnet.be\"), microphone=(self \"https://jitsi.belnet.be\"), geolocation=(), payment=()"
+          "value": "camera=(self \"https://jitsi.belnet.be\"), microphone=(self \"https://jitsi.belnet.be\"), display-capture=(self \"https://jitsi.belnet.be\"), geolocation=(), payment=()"
         },
         {
           "key": "Content-Security-Policy",

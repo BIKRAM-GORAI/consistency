@@ -70,7 +70,7 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Disable browser features the app doesn't use, but allow microphone/camera for voice/video
-  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be"), microphone=(self "https://jitsi.belnet.be"), geolocation=(), payment=()');
+  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be"), microphone=(self "https://jitsi.belnet.be"), display-capture=(self "https://jitsi.belnet.be"), geolocation=(), payment=()');
 
   // Content Security Policy — robust for production
   const isDev = process.env.NODE_ENV === 'development';

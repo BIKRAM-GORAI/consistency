@@ -6692,8 +6692,11 @@ async function startGroupVideoCall() {
     
     const { roomId } = res;
     
-    // Show overlay
+    // Show overlay and set title
     const overlay = document.getElementById('modal-video-call');
+    const groupName = document.getElementById('chat-group-name')?.textContent || 'Group Meeting';
+    document.getElementById('video-call-title').textContent = groupName;
+    
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
     
@@ -6733,7 +6736,9 @@ async function startGroupVideoCall() {
         })()
       },
       configOverwrite: {
-        subject: document.getElementById('chat-group-name')?.textContent || 'Group Meeting',
+        subject: '', // Hide the internal Jitsi subject bar to prevent overlap
+        hideConferenceSubject: true,
+        hideConferenceTimer: true,
         prejoinPageEnabled: false,
         prejoinConfig: { enabled: false },
         disableDeepLinking: true,
@@ -6741,10 +6746,10 @@ async function startGroupVideoCall() {
         startWithAudioMuted: false,
         startWithVideoMuted: true,
         doNotStoreRoom: true,
-        toolbarButtons: ['microphone', 'camera', 'hangup', 'tileview', 'chat', 'fullscreen']
+        toolbarButtons: ['microphone', 'camera', 'desktop', 'hangup', 'tileview', 'chat', 'fullscreen']
       },
       interfaceConfigOverwrite: {
-        TOOLBAR_BUTTONS: ['microphone', 'camera', 'hangup', 'tileview', 'chat', 'fullscreen'],
+        TOOLBAR_BUTTONS: ['microphone', 'camera', 'desktop', 'hangup', 'tileview', 'chat', 'fullscreen'],
         SHOW_JITSI_WATERMARK: false,
         SHOW_WATERMARK_FOR_GUESTS: false,
         DEFAULT_REMOTE_DISPLAY_NAME: 'Member',
@@ -6776,6 +6781,13 @@ async function startGroupVideoCall() {
       const avatar = options.userInfo.avatarUrl;
       if (avatar) {
         jitsiApi.executeCommand('avatarUrl', avatar);
+      }
+    });
+
+    jitsiApi.addEventListener('screenSharingStatusChanged', (event) => {
+      const indicator = document.getElementById('sharing-indicator');
+      if (indicator) {
+        indicator.style.display = event.on ? 'flex' : 'none';
       }
     });
 

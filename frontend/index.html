@@ -1309,13 +1309,22 @@
 
   <!-- ===== MODAL: Jitsi Video Call (Full Screen Overlay) ===== -->
   <div id="modal-video-call" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #000; z-index: 10002; flex-direction: column; overflow: hidden;">
-    <div style="background: #111; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; flex-shrink: 0;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <i data-lucide="video" style="width: 20px; height: 20px; color: var(--purple);"></i>
-        <h2 id="video-call-title" style="font-size: 16px; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 1px;">Group Video Session</h2>
+    <div style="background: #111; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #333; flex-shrink: 0; min-height: 60px;">
+      <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+        <i data-lucide="video" style="width: 18px; height: 18px; color: var(--purple); flex-shrink: 0;"></i>
+        <h2 id="video-call-title" style="font-size: 14px; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Group Video Session</h2>
       </div>
-      <button onclick="closeVideoCall()" style="background: var(--red); color: white; border: 2px solid #000; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 #000; cursor: pointer; padding: 0;">
-        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+      
+      <div id="sharing-indicator" style="display: none; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.15); border: 1px solid var(--green); padding: 4px 8px; border-radius: 20px; flex-shrink: 0;">
+        <span class="blink" style="width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: block;"></span>
+        <span style="font-size: 9px; font-weight: 900; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
+          <span class="desktop-only">Sharing Screen</span>
+          <span class="mobile-only">Sharing</span>
+        </span>
+      </div>
+
+      <button onclick="closeVideoCall()" style="background: var(--red); color: white; border: 2px solid #000; border-radius: 8px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 #000; cursor: pointer; padding: 0; flex-shrink: 0;">
+        <i data-lucide="x" style="width: 18px; height: 18px;"></i>
       </button>
     </div>
     <div id="jitsi-container" style="flex: 1; width: 100%; background: #000; position: relative;">
@@ -1330,6 +1339,14 @@
     </div>
     <style>
       @keyframes jitsi-spin { to { transform: rotate(360deg); } }
+      .blink { animation: jitsi-blink 1.5s ease-in-out infinite; }
+      @keyframes jitsi-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      
+      .mobile-only { display: none; }
+      @media (max-width: 600px) {
+        .desktop-only { display: none; }
+        .mobile-only { display: inline; }
+      }
     </style>
   </div>
 
