@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="description"
     content="Track habits, maintain streaks, manage daily goals,Connect with others, and build consistent routines with Consistency Daily." />
   <meta name="keywords"
@@ -58,6 +58,12 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
     }
 
     :root {
@@ -1053,7 +1059,7 @@
 
     .screenshots-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
       gap: 32px;
       width: 90%;
       max-width: 1400px;
