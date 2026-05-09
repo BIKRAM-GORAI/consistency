@@ -1318,7 +1318,19 @@
         <i data-lucide="x" style="width: 20px; height: 20px;"></i>
       </button>
     </div>
-    <div id="jitsi-container" style="flex: 1; width: 100%; background: #000;"></div>
+    <div id="jitsi-container" style="flex: 1; width: 100%; background: #000; position: relative;">
+      <!-- Loading Overlay -->
+      <div id="jitsi-loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; gap: 24px; transition: opacity 0.5s ease;">
+        <div class="loader" style="width: 60px; height: 60px; border: 5px solid #222; border-top-color: var(--purple); border-radius: 50%; animation: jitsi-spin 1s linear infinite;"></div>
+        <div style="text-align: center;">
+          <h3 style="color: white; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 18px;">Establishing Connection...</h3>
+          <p style="color: #666; margin: 10px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Hang tight! This usually takes about 10 seconds.</p>
+        </div>
+      </div>
+    </div>
+    <style>
+      @keyframes jitsi-spin { to { transform: rotate(360deg); } }
+    </style>
   </div>
 
   <script src="script.js?v=18"></script>

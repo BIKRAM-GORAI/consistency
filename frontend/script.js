@@ -6698,8 +6698,21 @@ async function startGroupVideoCall() {
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
     
     // Clear container
+    // Clear container and show loader
     const container = document.getElementById('jitsi-container');
     container.innerHTML = '';
+    
+    // Re-insert loader (since we cleared innerHTML)
+    const loaderHtml = `
+      <div id="jitsi-loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; gap: 24px; transition: opacity 0.5s ease;">
+        <div class="loader" style="width: 60px; height: 60px; border: 5px solid #222; border-top-color: var(--purple); border-radius: 50%; animation: jitsi-spin 1s linear infinite;"></div>
+        <div style="text-align: center;">
+          <h3 style="color: white; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 18px;">Establishing Connection...</h3>
+          <p style="color: #666; margin: 10px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Hang tight! This usually takes about 10 seconds.</p>
+        </div>
+      </div>
+    `;
+    container.innerHTML = loaderHtml;
     
     const domain = 'jitsi.belnet.be';
     const options = {
@@ -6753,6 +6766,13 @@ async function startGroupVideoCall() {
     });
 
     jitsiApi.addEventListener('videoConferenceJoined', () => {
+      // Hide loading overlay with a smooth fade
+      const loader = document.getElementById('jitsi-loading-overlay');
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 500);
+      }
+
       const avatar = options.userInfo.avatarUrl;
       if (avatar) {
         jitsiApi.executeCommand('avatarUrl', avatar);
