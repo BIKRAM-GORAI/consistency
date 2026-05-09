@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consistency-cache-v22';
+const CACHE_NAME = 'consistency-cache-v23';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -68,6 +68,9 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET and API calls (let them go to network)
   if (event.request.method !== 'GET' || url.pathname.includes('/api/')) return;
+  
+  // Skip Jitsi Meet - let the browser handle its own CSP and network
+  if (url.hostname.includes('jitsi.belnet.be')) return;
 
   // Check if it's a core asset or a common static file extension
   const isCoreAsset = STATIC_ASSETS.includes(url.pathname) || 

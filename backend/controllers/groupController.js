@@ -639,6 +639,46 @@ const uploadGroupIcon = async (req, res) => {
   }
 };
 
+const getGroupMeeting = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { groupId } = req.params;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    // Security: Must be a member
+    if (!group.members.map(String).includes(String(userId))) {
+      return res.status(403).json({ message: 'Access denied. You must be a member of this group.' });
+    }
+
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    
+    // Check if active meeting exists and is < 3 hours old
+    // FORCE fresh ID if it's a legacy "TODOAI-" prefixed room for better privacy
+    if (group.activeMeeting && group.activeMeeting.roomId && 
+        !group.activeMeeting.roomId.startsWith('TODOAI') && 
+        group.activeMeeting.createdAt > threeHoursAgo) {
+      return res.json({ roomId: group.activeMeeting.roomId });
+    }
+
+    // Generate new room ID - purely random hex to avoid "moderator required" issues on public Jitsi
+    const crypto = require('crypto');
+    const newRoomId = crypto.randomBytes(16).toString('hex');
+    
+    group.activeMeeting = {
+      roomId: newRoomId,
+      createdAt: new Date()
+    };
+    
+    await group.save();
+    res.json({ roomId: newRoomId });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 module.exports = { 
   createGroup, 
   joinGroup, 
@@ -653,5 +693,6 @@ module.exports = {
   editGroup, 
   deleteGroup, 
   removeMember,
-  uploadGroupIcon
+  uploadGroupIcon,
+  getGroupMeeting
 };

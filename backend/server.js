@@ -69,8 +69,8 @@ app.use((req, res, next) => {
   // Send referrer only on same-origin; only origin on cross-origin
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Disable browser features the app doesn't use, but allow microphone for voice messages
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()');
+  // Disable browser features the app doesn't use, but allow microphone/camera for voice/video
+  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be"), microphone=(self "https://jitsi.belnet.be"), geolocation=(), payment=()');
 
   // Content Security Policy — robust for production
   const isDev = process.env.NODE_ENV === 'development';
@@ -98,7 +98,9 @@ app.use((req, res, next) => {
     "https://vercel.live",
     "wss://*.vercel.live",
     "https://cdn.jsdelivr.net",
-    "https://www.google.com"
+    "https://www.google.com",
+    "https://jitsi.belnet.be",
+    "wss://jitsi.belnet.be"
   ];
   if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001", "ws://localhost:5000", "ws://localhost:5001");
 
@@ -106,14 +108,15 @@ app.use((req, res, next) => {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live",
-      "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
-      "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
-      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be",
+      "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be",
+      "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://jitsi.belnet.be",
+      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be",
       "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       `connect-src ${connectSrc.join(' ')}`,
-      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live",
+      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be",
+      "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

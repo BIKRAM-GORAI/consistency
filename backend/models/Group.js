@@ -53,6 +53,10 @@ const GroupSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    activeMeeting: {
+      roomId: { type: String, default: null },
+      createdAt: { type: Date, default: null }
+    }
   },
   { timestamps: true }
 );

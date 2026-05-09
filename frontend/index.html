@@ -48,6 +48,7 @@
   <script src="libs/ScrollTrigger.min.js"></script>
   <script src="libs/dexie.js"></script>
   <script src="libs/lucide.min.js"></script>
+  <script src="https://jitsi.belnet.be/external_api.js"></script>
   <script>
     // Auth guard — redirect to landing if not logged in
     if (!localStorage.getItem('userId')) {
@@ -1306,6 +1307,20 @@
     window.localDb = dbLocal;
   </script>
 
+  <!-- ===== MODAL: Jitsi Video Call (Full Screen Overlay) ===== -->
+  <div id="modal-video-call" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #000; z-index: 10002; flex-direction: column; overflow: hidden;">
+    <div style="background: #111; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i data-lucide="video" style="width: 20px; height: 20px; color: var(--purple);"></i>
+        <h2 id="video-call-title" style="font-size: 16px; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 1px;">Group Video Session</h2>
+      </div>
+      <button onclick="closeVideoCall()" style="background: var(--red); color: white; border: 2px solid #000; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 #000; cursor: pointer; padding: 0;">
+        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+      </button>
+    </div>
+    <div id="jitsi-container" style="flex: 1; width: 100%; background: #000;"></div>
+  </div>
+
   <script src="script.js?v=18"></script>
   <script>
     lucide.createIcons();
@@ -1333,6 +1348,9 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <button id="chat-bulk-delete-btn" onclick="openBulkDeleteModal()" title="Bulk Delete (Owner Only)" style="display: none; background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
             <i data-lucide="trash-2" style="width: 20px; height: 20px; color: #fff;"></i>
+          </button>
+          <button id="chat-video-call-btn" onclick="startGroupVideoCall()" title="Start Video Call" style="background: var(--purple); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
+            <i data-lucide="video" style="width: 20px; height: 20px; color: #fff;"></i>
           </button>
           <button class="modal-close" onclick="closeChatModal()" style="background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
             <i data-lucide="x" style="width: 20px; height: 20px; color: #fff;"></i>

@@ -45,4 +45,7 @@ router.delete('/:groupId', authenticateToken, ctrl.deleteGroup);
 // Remove a member or leave a group
 router.post('/:groupId/remove-member', authenticateToken, removeMemberValidation, ctrl.removeMember);
 
+// Get or generate meeting link
+router.get('/:groupId/meeting', authenticateToken, ctrl.getGroupMeeting);
+
 module.exports = router;

@@ -6674,6 +6674,111 @@ function closeChatModal() {
   clearMediaPreview(); // Reset media selection
 }
 
+/** ── JITSI VIDEO CALL INTEGRATION ── **/
+let jitsiApi = null;
+
+async function startGroupVideoCall() {
+  const groupId = activeChatGroupId;
+  if (!groupId) return;
+
+  const btn = document.getElementById('chat-video-call-btn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-inline"></span>';
+
+  try {
+    const res = await apiFetch(`${API}/api/groups/${groupId}/meeting`);
+    if (!res.roomId) throw new Error('No Room ID received');
+    
+    const { roomId } = res;
+    
+    // Show overlay
+    const overlay = document.getElementById('modal-video-call');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Clear container
+    const container = document.getElementById('jitsi-container');
+    container.innerHTML = '';
+    
+    const domain = 'jitsi.belnet.be';
+    const options = {
+      roomName: roomId,
+      width: '100%',
+      height: '100%',
+      parentNode: container,
+      userInfo: {
+        displayName: localStorage.getItem('userName') || 'Consistency User',
+        avatarUrl: (() => {
+          const pic = localStorage.getItem('userProfilePicture');
+          if (!pic || pic === 'undefined' || pic === 'null') return '';
+          const url = (pic.startsWith('http') || pic.startsWith('data:')) 
+            ? pic 
+            : window.location.origin + (pic.startsWith('/') ? '' : '/') + pic;
+          console.log('[Jitsi] Setting avatar URL:', url);
+          return url;
+        })()
+      },
+      configOverwrite: {
+        subject: document.getElementById('chat-group-name')?.textContent || 'Group Meeting',
+        prejoinPageEnabled: false,
+        prejoinConfig: { enabled: false },
+        disableDeepLinking: true,
+        disableInviteFunctions: true,
+        startWithAudioMuted: false,
+        startWithVideoMuted: true,
+        doNotStoreRoom: true,
+        toolbarButtons: ['microphone', 'camera', 'hangup', 'tileview', 'chat', 'fullscreen']
+      },
+      interfaceConfigOverwrite: {
+        TOOLBAR_BUTTONS: ['microphone', 'camera', 'hangup', 'tileview', 'chat', 'fullscreen'],
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        DEFAULT_REMOTE_DISPLAY_NAME: 'Member',
+        MOBILE_APP_PROMO: false,
+        DISPLAY_WELCOME_PAGE_CONTENT: false,
+        GENERATE_ROOMNAMES_ON_WELCOME_PAGE: false,
+        SHOW_CHROME_EXTENSION_BANNER: false
+      }
+    };
+
+    if (typeof JitsiMeetExternalAPI === 'undefined') {
+      throw new Error('Jitsi library failed to load. Please refresh the page or check your connection.');
+    }
+
+    jitsiApi = new JitsiMeetExternalAPI(domain, options);
+    
+    jitsiApi.addEventListener('videoConferenceLeft', () => {
+      closeVideoCall();
+    });
+
+    jitsiApi.addEventListener('videoConferenceJoined', () => {
+      const avatar = options.userInfo.avatarUrl;
+      if (avatar) {
+        jitsiApi.executeCommand('avatarUrl', avatar);
+      }
+    });
+
+  } catch (err) {
+    console.error('Video call error:', err);
+    showToast('Failed to start video call.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (window.lucide) lucide.createIcons({ root: btn });
+  }
+}
+
+function closeVideoCall() {
+  if (jitsiApi) {
+    jitsiApi.dispose();
+    jitsiApi = null;
+  }
+  document.getElementById('modal-video-call').style.display = 'none';
+  document.body.style.overflow = ''; // Restore scrolling
+  document.getElementById('jitsi-container').innerHTML = '';
+}
+
 function updateExistingMessage(msg, el) {
   const bubble = el.querySelector('.chat-bubble');
   if (!bubble) return;
