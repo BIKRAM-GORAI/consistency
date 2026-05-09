@@ -4317,6 +4317,82 @@ function openLightbox(url) {
   overlay.classList.add('open');
 }
 
+/** --- AUDIO MESSAGE HELPERS --- **/
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+const audioCache = {}; // Cache for downloaded audio Blobs
+
+async function downloadAudio(docId, url) {
+  const btn = document.getElementById(`audio-btn-${docId}`);
+  if (!btn) return;
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-bounce" style="display:inline-block;">...</span>';
+    
+    let audioBlob;
+    if (audioCache[url]) {
+      audioBlob = audioCache[url];
+    } else {
+      const response = await fetch(url);
+      audioBlob = await response.blob();
+      audioCache[url] = audioBlob;
+    }
+    
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    
+    // Change Download to Play
+    btn.disabled = false;
+    btn.className = 'btn-audio-play ripple';
+    btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+    if (window.lucide) lucide.createIcons({ root: btn });
+    
+    btn.onclick = () => toggleAudioPlayback(docId, audio);
+    
+    audio.onloadedmetadata = () => {
+      const durationEl = document.getElementById(`audio-duration-${docId}`);
+      if (durationEl) durationEl.textContent = formatDuration(audio.duration);
+    };
+
+    audio.ontimeupdate = () => {
+      const pct = (audio.currentTime / audio.duration) * 100;
+      const progressEl = document.getElementById(`audio-progress-${docId}`);
+      if (progressEl) progressEl.style.width = `${pct}%`;
+    };
+
+    audio.onended = () => {
+      btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+      if (window.lucide) lucide.createIcons({ root: btn });
+      const progressEl = document.getElementById(`audio-progress-${docId}`);
+      if (progressEl) progressEl.style.width = '0%';
+    };
+
+  } catch (err) {
+    console.error('Audio download error:', err);
+    showToast('Failed to download audio.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="download" style="width:20px; height:20px;"></i>';
+    if (window.lucide) lucide.createIcons({ root: btn });
+  }
+}
+
+function toggleAudioPlayback(docId, audio) {
+  const btn = document.getElementById(`audio-btn-${docId}`);
+  if (audio.paused) {
+    audio.play();
+    btn.innerHTML = '<i data-lucide="pause" style="width:20px; height:20px;"></i>';
+  } else {
+    audio.pause();
+    btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+  }
+  if (window.lucide) lucide.createIcons({ root: btn });
+}
+
 function closeLightbox(event, force = false) {
   if (force || event.target === event.currentTarget) {
     const overlay = document.getElementById('lightbox-modal');
@@ -6084,6 +6160,13 @@ let selectedMediaBlobs = []; // Array of { blob, type }
 let mediaLimitRemaining = 20; // Default
 let lastMessageSentAt = 0; // For anti-spam cooldown
 
+// --- VOICE MESSAGE STATE ---
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingInterval = null;
+let recordingStartTime = 0;
+let isRecording = false;
+
 // --- READ RECEIPTS STATE ---
 let memberReadStatuses = {}; // { userId: timestamp }
 let chatReadThresholdPct = 10; // Default threshold for blue ticks
@@ -6378,11 +6461,25 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
     </div>
     ${replySnippetHtml}
     ${msg.mediaUrl ? `
-      <div class="chat-media-content" onclick="openLightbox('${msg.mediaUrl}')">
-        ${msg.mediaType === 'video' 
-          ? `<video data-src="${msg.mediaUrl}" autoplay muted loop playsinline class="lazy-media"></video>` 
-          : `<img data-src="${msg.mediaUrl}" class="lazy-media" />`}
-      </div>
+      ${msg.mediaType === 'audio' ? `
+        <div class="chat-audio-player" id="audio-player-${docId}">
+          <button class="btn-audio-download ripple" id="audio-btn-${docId}" onclick="downloadAudio('${docId}', '${msg.mediaUrl}')">
+            <i data-lucide="download" style="width: 20px; height: 20px;"></i>
+          </button>
+          <div class="audio-info">
+            <div class="audio-duration" id="audio-duration-${docId}">${msg.audioDuration ? formatDuration(msg.audioDuration) : 'Voice Message'}</div>
+            <div class="audio-progress-container">
+              <div class="audio-progress-bar" id="audio-progress-${docId}"></div>
+            </div>
+          </div>
+        </div>
+      ` : `
+        <div class="chat-media-content" onclick="openLightbox('${msg.mediaUrl}')">
+          ${msg.mediaType === 'video' 
+            ? `<video data-src="${msg.mediaUrl}" autoplay muted loop playsinline class="lazy-media"></video>` 
+            : `<img data-src="${msg.mediaUrl}" class="lazy-media" />`}
+        </div>
+      `}
     ` : ''}
     <div class="chat-text" id="chat-text-${docId}" style="margin-top: 4px;">${escHtml(msg.text)}</div>
     ${reactionsHtml}
@@ -6608,6 +6705,7 @@ async function handleChatSubmit(e) {
           text: '', 
           mediaUrl, 
           mediaType: item.type,
+          audioDuration: item.duration || null,
           replyTo: null // Only first message has reply usually
         });
         mediaLimitRemaining--;
@@ -7301,6 +7399,137 @@ async function deleteFirestoreGroupData(groupId) {
 
 /** ── MEDIA UPLOAD & COMPRESSION LOGIC ── **/
 
+function togglePlusMenu() {
+  const menu = document.getElementById('chat-plus-menu');
+  const icon = document.getElementById('chat-plus-icon');
+  if (menu.classList.contains('active')) {
+    menu.classList.remove('active');
+    icon.style.transform = 'rotate(0deg)';
+  } else {
+    menu.classList.add('active');
+    icon.style.transform = 'rotate(45deg)';
+  }
+}
+
+// Close menu if clicking outside
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('chat-plus-menu');
+  const btn = document.getElementById('chat-plus-btn');
+  if (menu && menu.classList.contains('active') && !menu.contains(e.target) && !btn.contains(e.target)) {
+    togglePlusMenu();
+  }
+});
+
+async function handleAudioSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate audio type
+  if (!file.type.startsWith('audio/')) {
+    return showToast('Please select a valid audio file.', 'error');
+  }
+
+  // Validate size (5MB for audio too)
+  if (file.size > 5 * 1024 * 1024) {
+    return showToast('Audio file exceeds 5MB limit.', 'error');
+  }
+
+  // Check rate limit
+  if (mediaLimitRemaining <= 0) {
+    return showToast('File upload limit exceeded! Wait until next hour.', 'error');
+  }
+
+  // Show as selected media
+  const audio = new Audio();
+  audio.src = URL.createObjectURL(file);
+  audio.onloadedmetadata = () => {
+    selectedMediaBlobs.push({ blob: file, type: 'audio', duration: audio.duration });
+    renderMediaPreviews();
+    e.target.value = '';
+  };
+}
+
+async function startAudioRecording() {
+  if (isRecording) return;
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // Check supported mime types
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+      ? 'audio/webm;codecs=opus' 
+      : 'audio/webm';
+      
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      if (!isRecording && audioChunks.length === 0) return;
+
+      if (audioChunks.length > 0) {
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        const duration = (Date.now() - recordingStartTime) / 1000;
+        selectedMediaBlobs.push({ blob: audioBlob, type: 'audio', duration });
+        renderMediaPreviews();
+      }
+      
+      stream.getTracks().forEach(track => track.stop());
+    };
+
+    isRecording = true;
+    mediaRecorder.start();
+    recordingStartTime = Date.now();
+    
+    document.getElementById('chat-recorder-ui').style.display = 'flex';
+    document.getElementById('chat-form').style.display = 'none';
+    
+    recordingInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+      const secs = (elapsed % 60).toString().padStart(2, '0');
+      document.getElementById('recorder-timer').textContent = `${mins}:${secs}`;
+      
+      if (elapsed >= 60) {
+        stopAudioRecording();
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error('Recording error:', err);
+    showToast('Could not access microphone.', 'error');
+  }
+}
+
+function stopAudioRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  clearInterval(recordingInterval);
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  document.getElementById('chat-recorder-ui').style.display = 'none';
+  document.getElementById('chat-form').style.display = 'flex';
+  document.getElementById('recorder-timer').textContent = '00:00';
+}
+
+function cancelAudioRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  clearInterval(recordingInterval);
+  audioChunks = [];
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  document.getElementById('chat-recorder-ui').style.display = 'none';
+  document.getElementById('chat-form').style.display = 'flex';
+  document.getElementById('recorder-timer').textContent = '00:00';
+  showToast('Recording cancelled.', 'info');
+}
+
 async function handleMediaSelect(e) {
   const files = Array.from(e.target.files);
   if (!files.length) return;
@@ -7394,14 +7623,20 @@ function renderMediaPreviews() {
   container.style.padding = '12px 0';
 
   container.innerHTML = selectedMediaBlobs.map((item, index) => {
-    const url = URL.createObjectURL(item.blob);
+    const url = item.type === 'audio' ? '' : URL.createObjectURL(item.blob);
+    const content = item.type === 'audio' 
+      ? `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--bg-muted);"><i data-lucide="mic" style="width:24px; height:24px;"></i></div>`
+      : `<img src="${url}" style="width:100%; height:100%; object-fit:cover;" />`;
+      
     return `
       <div class="chat-media-preview-item" style="position:relative; width:65px; height:65px; border:3px solid var(--black); border-radius:8px; overflow:hidden; box-shadow: 2px 2px 0 var(--black);">
-        <img src="${url}" style="width:100%; height:100%; object-fit:cover;" />
+        ${content}
         <div class="chat-media-remove" onclick="removeMediaItem(${index})" style="position:absolute; top:2px; right:2px; background:var(--red); color:#fff; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; font-weight:900; border:2px solid var(--black);">✕</div>
       </div>
     `;
   }).join('');
+
+  if (window.lucide) lucide.createIcons({ root: container });
 }
 
 function removeMediaItem(index) {
@@ -7416,7 +7651,11 @@ function clearMediaPreview() {
 
 async function uploadMediaToCloudinary(blob, type) {
   const formData = new FormData();
-  formData.append('file', blob, type === 'video' ? 'animation.webm' : 'media.webp');
+  let filename = 'media.webp';
+  if (type === 'video') filename = 'animation.webm';
+  if (type === 'audio') filename = 'voice.webm';
+  
+  formData.append('file', blob, filename);
 
   const res = await apiFetch(`${API}/api/auth/chat-media`, {
     method: 'POST',

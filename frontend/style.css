@@ -4582,3 +4582,197 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     padding: 30px 28px;
   }
 }
+
+/* === Voice Messaging & Plus Menu === */
+.chat-plus-menu {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  background: var(--bg-card);
+  border: 4px solid var(--black);
+  box-shadow: 8px 8px 0 var(--black);
+  border-radius: 12px;
+  display: none;
+  flex-direction: column;
+  padding: 8px;
+  z-index: 1000;
+  min-width: 180px;
+}
+
+.chat-plus-menu.active {
+  display: flex;
+  animation: slideUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.plus-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.plus-menu-item:hover {
+  background: var(--yellow);
+  color: var(--black);
+  transform: translateX(5px);
+}
+
+.chat-recorder-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 4px solid var(--black);
+  border-bottom: none;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.recorder-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.wave-bar {
+  width: 3px;
+  height: 100%;
+  background: var(--red);
+  border-radius: 10px;
+  animation: wave 1s ease-in-out infinite;
+}
+
+.wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.wave-bar:nth-child(4) { animation-delay: 0.3s; }
+.wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes wave {
+  0%, 100% { height: 20%; }
+  50% { height: 100%; }
+}
+
+.recorder-timer {
+  font-family: monospace;
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--red);
+}
+
+.btn-recorder-cancel {
+  background: var(--bg-muted);
+  border: 2px solid var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.btn-recorder-stop {
+  background: var(--red);
+  border: 2px solid var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+/* Audio Player UI in Chat */
+.chat-audio-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.08);
+  border: 2px solid var(--black);
+  border-radius: 12px;
+  min-width: 220px;
+  margin-top: 8px;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] .chat-audio-player {
+  background: rgba(0,0,0,0.15);
+}
+
+.btn-audio-download, .btn-audio-play {
+  background: var(--purple);
+  color: white;
+  border: 2px solid var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+}
+
+.btn-audio-play { background: var(--green); color: var(--black); }
+
+.btn-audio-download:active, .btn-audio-play:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--black);
+}
+
+.audio-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audio-duration {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--black);
+  opacity: 0.8;
+}
+
+.audio-progress-container {
+  height: 6px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.audio-progress-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--purple);
+  width: 0%;
+  transition: width 0.1s linear;
+}

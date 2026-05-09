@@ -37,8 +37,7 @@ const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'consistency_app_chat',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    resource_type: 'image'
+    resource_type: 'auto'
   },
 });
 

@@ -1255,7 +1255,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-    import { initializeFirestore, persistentLocalCache, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
     import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -1272,9 +1272,11 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     
-    // Modern way to enable persistence
+    // Modern way to enable persistence with multi-tab sync support
     const db = initializeFirestore(app, {
-      localCache: persistentLocalCache()
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
     });
     
     const rtdb = getDatabase(app);
@@ -1353,10 +1355,43 @@
         <div id="chat-media-preview" class="chat-media-preview-container">
           <!-- Preview item will be injected here -->
         </div>
+        
+        <!-- Recording UI -->
+        <div id="chat-recorder-ui" class="chat-recorder-container" style="display: none;">
+          <div class="recorder-wave">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+          </div>
+          <span id="recorder-timer" class="recorder-timer">00:00</span>
+          <div style="flex-grow: 1;"></div>
+          <button type="button" class="btn-recorder-cancel ripple" onclick="cancelAudioRecording()">
+            <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
+          </button>
+          <button type="button" class="btn-recorder-stop ripple" onclick="stopAudioRecording()">
+            <i data-lucide="square" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
         <form id="chat-form" onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px; width: 100%; align-items: center; box-sizing: border-box;">
           <input type="file" id="chat-media-input" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="handleMediaSelect(event)" multiple />
-          <button type="button" class="sticker-btn ripple" onclick="document.getElementById('chat-media-input').click()" title="Upload Image/Sticker">
-            <i data-lucide="sticky-note" style="width: 22px; height: 22px; color: var(--black);"></i>
+          <input type="file" id="chat-audio-input" accept="audio/*" style="display: none;" onchange="handleAudioSelect(event)" />
+          
+          <div class="chat-plus-menu" id="chat-plus-menu">
+            <button type="button" class="plus-menu-item ripple" onclick="document.getElementById('chat-media-input').click(); togglePlusMenu();">
+              <i data-lucide="image" style="width: 18px; height: 18px;"></i> Upload Image
+            </button>
+            <button type="button" class="plus-menu-item ripple" onclick="document.getElementById('chat-audio-input').click(); togglePlusMenu();">
+              <i data-lucide="file-audio" style="width: 18px; height: 18px;"></i> Upload Audio
+            </button>
+            <button type="button" class="plus-menu-item ripple" onclick="startAudioRecording(); togglePlusMenu();">
+              <i data-lucide="mic" style="width: 18px; height: 18px;"></i> Record Voice
+            </button>
+          </div>
+
+          <button type="button" id="chat-plus-btn" class="sticker-btn ripple" onclick="togglePlusMenu()" title="Add Media/Voice">
+            <i data-lucide="plus" id="chat-plus-icon" style="width: 24px; height: 24px; color: var(--black); transition: transform 0.3s ease;"></i>
           </button>
           <textarea id="chat-input" class="form-control" placeholder="Type a message..." autocomplete="off" oninput="handleTyping()" maxlength="2000" style="flex: 1; width: 0; min-width: 0; height: 48px; min-height: 48px; max-height: 150px; font-size: 15px; border-width: 3px; box-shadow: 4px 4px 0 var(--black); margin: 0; padding: 12px 16px; resize: none; overflow-y: auto; line-height: 1.4; font-family: inherit;"></textarea>
           <button type="submit" class="btn-primary ripple" style="flex: 0 0 48px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: var(--purple); border: 3px solid var(--black); box-shadow: 4px 4px 0 var(--black); padding: 0;">

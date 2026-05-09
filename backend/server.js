@@ -67,8 +67,8 @@ app.use((req, res, next) => {
   // Send referrer only on same-origin; only origin on cross-origin
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Disable browser features the app doesn't use
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  // Disable browser features the app doesn't use, but allow microphone for voice messages
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()');
 
   // Content Security Policy — robust for production
   const isDev = process.env.NODE_ENV === 'development';
