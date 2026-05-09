@@ -60,10 +60,15 @@ router.get('/media-upload-limit', authenticateToken, getMediaUploadLimit);
 router.post('/profile-picture', authenticateToken, dbMediaRateLimiter, uploadProfile.single('image'), uploadProfilePicture);
 
 // POST upload chat media (requires authentication)
-router.post('/chat-media', authenticateToken, dbMediaRateLimiter, uploadChat.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-  // Minimize data sent to frontend: only return the secure URL
-  res.json({ secure_url: req.file.path });
+router.post('/chat-media', authenticateToken, dbMediaRateLimiter, (req, res, next) => {
+  uploadChat.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Upload error in /chat-media:', err);
+      return res.status(500).json({ message: 'Upload failed', error: err.message });
+    }
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    res.json({ secure_url: req.file.path });
+  });
 });
 
 // DELETE chat media from Cloudinary

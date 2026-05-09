@@ -317,9 +317,10 @@ async function apiFetch(url, options = {}) {
 
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  // Add a 7s timeout for stability
+  // Default 30s timeout, but can be overridden
+  const timeoutMs = options.timeout || 30000;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(url, { ...options, headers, signal: controller.signal });
@@ -6157,7 +6158,9 @@ let activeReplyTo = null;
 let isPaginating = false;
 let prevScrollHeight = 0;
 let selectedMediaBlobs = []; // Array of { blob, type }
-let mediaLimitRemaining = 20; // Default
+let imageLimitRemaining = 20; 
+let audioLimitRemaining = 20; // recordings
+let audioFileLimitRemaining = 5; // manual uploads
 let lastMessageSentAt = 0; // For anti-spam cooldown
 
 // --- VOICE MESSAGE STATE ---
@@ -6174,7 +6177,9 @@ let chatReadThresholdPct = 10; // Default threshold for blue ticks
 async function fetchMediaLimit() {
   try {
     const res = await apiFetch(`${API}/api/auth/media-upload-limit`);
-    mediaLimitRemaining = res.remaining;
+    imageLimitRemaining = res.imageRemaining;
+    audioLimitRemaining = res.audioRemaining;
+    audioFileLimitRemaining = (res.audioFileRemaining !== undefined) ? res.audioFileRemaining : 5;
     updateMediaLimitDisplay();
   } catch (err) {
     console.error('Failed to fetch media limit:', err);
@@ -6184,11 +6189,12 @@ async function fetchMediaLimit() {
 function updateMediaLimitDisplay() {
   const el = document.getElementById('media-limit-text');
   if (!el) return;
-  if (mediaLimitRemaining <= 0) {
-    el.innerHTML = '<span style="color:var(--red)">File upload limit exceeded! Wait until next hour.</span>';
-  } else {
-    el.textContent = `${mediaLimitRemaining} images remaining this hour`;
-  }
+  
+  const imgStr = imageLimitRemaining <= 0 ? '<span style="color:var(--red)">Images: 0</span>' : `Images: ${imageLimitRemaining}`;
+  const recStr = audioLimitRemaining <= 0 ? '<span style="color:var(--red)">Voice: 0</span>' : `Voice: ${audioLimitRemaining}`;
+  const fileStr = audioFileLimitRemaining <= 0 ? '<span style="color:var(--red)">Audio Files: 0</span>' : `Audio Files: ${audioFileLimitRemaining}`;
+  
+  el.innerHTML = `${imgStr} • ${recStr} • ${fileStr}`;
 }
 let lastReadUpdate = 0;
 let myHighestReadTimestamp = 0;
@@ -6692,23 +6698,32 @@ async function handleChatSubmit(e) {
       // Just text
       await firestore.addDoc(msgsRef, { ...baseMsgData, text });
     } else {
-      // Send text as first message if exists
-      if (text) {
-        await firestore.addDoc(msgsRef, { ...baseMsgData, text });
-      }
-
-      // Send each media as its own message
+      // Send media (with text attached to the first one)
+      let isFirstMedia = true;
       for (const item of selectedMediaBlobs) {
-        const mediaUrl = await uploadMediaToCloudinary(item.blob, item.type);
-        await firestore.addDoc(msgsRef, { 
+        const mediaUrl = await uploadMediaToCloudinary(item.blob, item.type, item.source);
+        
+        const msgData = { 
           ...baseMsgData, 
-          text: '', 
+          text: isFirstMedia ? text : '', // Attach text only to the first media message
           mediaUrl, 
           mediaType: item.type,
           audioDuration: item.duration || null,
-          replyTo: null // Only first message has reply usually
-        });
-        mediaLimitRemaining--;
+          replyTo: isFirstMedia ? replyToCopy : null
+        };
+
+        await firestore.addDoc(msgsRef, msgData);
+        
+        if (item.type === 'audio') {
+          if (item.source === 'upload') {
+            audioFileLimitRemaining--;
+          } else {
+            audioLimitRemaining--;
+          }
+        } else {
+          imageLimitRemaining--;
+        }
+        isFirstMedia = false;
         updateMediaLimitDisplay();
       }
       clearMediaPreview();
@@ -7390,6 +7405,20 @@ async function deleteFirestoreGroupData(groupId) {
     // 2. Delete all messages
     const msgsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'messages');
     const msgsSnap = await firestore.getDocs(msgsRef);
+    
+    const mediaUrls = [];
+    msgsSnap.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.mediaUrl) mediaUrls.push(data.mediaUrl);
+    });
+
+    if (mediaUrls.length > 0) {
+      await apiFetch(`${API}/api/auth/chat-media`, {
+        method: 'DELETE',
+        body: JSON.stringify({ urls: mediaUrls })
+      }).catch(e => console.warn('Group media purge failed:', e));
+    }
+
     const msgsPromises = msgsSnap.docs.map(doc => firestore.deleteDoc(doc.ref));
     await Promise.all(msgsPromises);
   } catch (err) {
@@ -7421,32 +7450,83 @@ document.addEventListener('click', (e) => {
 });
 
 async function handleAudioSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  // Validate audio type
-  if (!file.type.startsWith('audio/')) {
-    return showToast('Please select a valid audio file.', 'error');
-  }
-
-  // Validate size (5MB for audio too)
-  if (file.size > 5 * 1024 * 1024) {
-    return showToast('Audio file exceeds 5MB limit.', 'error');
-  }
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  e.target.value = '';
 
   // Check rate limit
-  if (mediaLimitRemaining <= 0) {
-    return showToast('File upload limit exceeded! Wait until next hour.', 'error');
+  if (audioFileLimitRemaining <= 0) {
+    return showToast('Audio file upload limit exceeded! Wait until next hour.', 'error');
   }
 
-  // Show as selected media
-  const audio = new Audio();
-  audio.src = URL.createObjectURL(file);
-  audio.onloadedmetadata = () => {
-    selectedMediaBlobs.push({ blob: file, type: 'audio', duration: audio.duration });
-    renderMediaPreviews();
-    e.target.value = '';
-  };
+  const file = files[0];
+  const maxSize = 2 * 1024 * 1024; // STRICT 2MB LIMIT
+  if (file.size > maxSize) {
+    return showToast('Audio file too large (Max 2MB).', 'warn');
+  }
+
+  const duration = await getAudioDuration(file).catch(() => null);
+  selectedMediaBlobs.push({ blob: file, type: 'audio', duration, source: 'upload' });
+  renderMediaPreviews();
+}
+
+/** ── AUDIO COMPRESSION HELPER ── **/
+async function compressAudioFile(file) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const arrayBuffer = await file.arrayBuffer();
+      const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
+      
+      const source = audioCtx.createBufferSource();
+      source.buffer = decodedData;
+      
+      const destination = audioCtx.createMediaStreamDestination();
+      source.connect(destination);
+      
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : 'audio/webm';
+        
+      const recorder = new MediaRecorder(destination.stream, { 
+        mimeType,
+        audioBitsPerSecond: 32000 // 32 kbps target
+      });
+      
+      const chunks = [];
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType });
+        resolve(blob);
+      };
+      
+      recorder.start();
+      source.start(0);
+      
+      source.onended = () => {
+        recorder.stop();
+        audioCtx.close();
+      };
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+async function getAudioDuration(file) {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    const url = URL.createObjectURL(file);
+    audio.src = url;
+    audio.onloadedmetadata = () => {
+      resolve(audio.duration);
+      URL.revokeObjectURL(url);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+  });
 }
 
 async function startAudioRecording() {
@@ -7460,7 +7540,10 @@ async function startAudioRecording() {
       ? 'audio/webm;codecs=opus' 
       : 'audio/webm';
       
-    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    mediaRecorder = new MediaRecorder(stream, { 
+      mimeType,
+      audioBitsPerSecond: 32000 // High quality for voice but very small file size
+    });
     audioChunks = [];
 
     mediaRecorder.ondataavailable = (e) => {
@@ -7473,7 +7556,7 @@ async function startAudioRecording() {
       if (audioChunks.length > 0) {
         const audioBlob = new Blob(audioChunks, { type: mimeType });
         const duration = (Date.now() - recordingStartTime) / 1000;
-        selectedMediaBlobs.push({ blob: audioBlob, type: 'audio', duration });
+        selectedMediaBlobs.push({ blob: audioBlob, type: 'audio', duration, source: 'recording' });
         renderMediaPreviews();
       }
       
@@ -7538,8 +7621,8 @@ async function handleMediaSelect(e) {
   e.target.value = '';
 
   // 1. Check if total count exceeds remaining limit
-  if (files.length > mediaLimitRemaining) {
-    return showToast(`Limit exceeded! You only have ${mediaLimitRemaining} uploads left this hour.`, 'error');
+  if (files.length > imageLimitRemaining) {
+    return showToast(`Limit exceeded! You only have ${imageLimitRemaining} photo uploads left this hour.`, 'error');
   }
 
   // 2. Check batch limit (Max 20 at once)
@@ -7649,7 +7732,7 @@ function clearMediaPreview() {
   renderMediaPreviews();
 }
 
-async function uploadMediaToCloudinary(blob, type) {
+async function uploadMediaToCloudinary(blob, type, source = 'recording') {
   const formData = new FormData();
   let filename = 'media.webp';
   if (type === 'video') filename = 'animation.webm';
@@ -7659,7 +7742,12 @@ async function uploadMediaToCloudinary(blob, type) {
 
   const res = await apiFetch(`${API}/api/auth/chat-media`, {
     method: 'POST',
+    headers: {
+      'X-Media-Type': type,
+      'X-Media-Source': source || 'recording'
+    },
     body: formData,
+    timeout: 120000 // 2 minutes for media uploads
   });
 
   return res.secure_url;

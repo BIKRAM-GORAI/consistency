@@ -160,14 +160,10 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
     // Persistent Media Upload Rate Limiting
-    mediaUploadCount: {
-      type: Number,
-      default: 0,
-    },
-    mediaUploadReset: {
-      type: Date,
-      default: Date.now,
-    },
+    imageUploadCount:      { type: Number, default: 0 },
+    audioUploadCount:      { type: Number, default: 0 }, // For recordings
+    audioFileUploadCount:  { type: Number, default: 0 }, // For manual uploads
+    mediaResetTime:        { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

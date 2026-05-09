@@ -259,18 +259,29 @@ async function getMediaUploadLimit(req, res) {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-    let count = user.mediaUploadCount || 0;
-    let reset = user.mediaUploadReset || now;
+    let imageCount = user.imageUploadCount || 0;
+    let audioCount = user.audioUploadCount || 0;
+    let audioFileCount = user.audioFileUploadCount || 0;
+    let reset = user.mediaResetTime || now;
 
     if (reset < oneHourAgo) {
-      count = 0;
+      imageCount = 0;
+      audioCount = 0;
+      audioFileCount = 0;
       reset = now;
     }
 
-    const MAX_LIMIT = 20;
+    const MAX_IMAGE_LIMIT = parseInt(process.env.CHAT_IMAGE_LIMIT) || 20;
+    const MAX_AUDIO_LIMIT = parseInt(process.env.CHAT_AUDIO_LIMIT) || 20;
+    const MAX_AUDIO_FILE_LIMIT = parseInt(process.env.CHAT_AUDIO_FILE_LIMIT) || 5;
+
     res.json({
-      limit: MAX_LIMIT,
-      remaining: Math.max(0, MAX_LIMIT - count),
+      imageLimit: MAX_IMAGE_LIMIT,
+      audioLimit: MAX_AUDIO_LIMIT,
+      audioFileLimit: MAX_AUDIO_FILE_LIMIT,
+      imageRemaining: Math.max(0, MAX_IMAGE_LIMIT - imageCount),
+      audioRemaining: Math.max(0, MAX_AUDIO_LIMIT - audioCount),
+      audioFileRemaining: Math.max(0, MAX_AUDIO_FILE_LIMIT - audioFileCount),
       resetTime: new Date(reset.getTime() + 60 * 60 * 1000)
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
