@@ -88,10 +88,14 @@ const createDayValidation = [
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
+  body('categories.*.name').optional().trim().escape(),
+  body('categories.*.tasks').optional().isArray(),
+  body('categories.*.tasks.*.title').optional().trim().escape(),
   body('summary')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters'),
+    .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
+    .escape(),
   validate
 ];
 
@@ -101,10 +105,14 @@ const updateDayValidation = [
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
+  body('categories.*.name').optional().trim().escape(),
+  body('categories.*.tasks').optional().isArray(),
+  body('categories.*.tasks.*.title').optional().trim().escape(),
   body('summary')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters'),
+    .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
+    .escape(),
   validate
 ];
 
@@ -113,13 +121,15 @@ const createGoalValidation = [
   body('title')
     .trim()
     .notEmpty().withMessage('Title is required')
-    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
+    .escape(),
   body('deadline')
     .notEmpty().withMessage('Deadline is required')
     .isISO8601().withMessage('Deadline must be a valid date'),
   body('tasks')
     .optional()
     .isArray().withMessage('Tasks must be an array'),
+  body('tasks.*.title').optional().trim().escape(),
   validate
 ];
 
@@ -129,13 +139,15 @@ const updateGoalValidation = [
   body('title')
     .optional()
     .trim()
-    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
+    .escape(),
   body('deadline')
     .optional()
     .isISO8601().withMessage('Deadline must be a valid date'),
   body('tasks')
     .optional()
     .isArray().withMessage('Tasks must be an array'),
+  body('tasks.*.title').optional().trim().escape(),
   validate
 ];
 
@@ -150,11 +162,13 @@ const createAchievementValidation = [
   body('title')
     .trim()
     .notEmpty().withMessage('Title is required')
-    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
+    .escape(),
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
+    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters')
+    .escape(),
   body('links')
     .optional()
     .isArray().withMessage('Links must be an array'),
@@ -167,11 +181,13 @@ const updateAchievementValidation = [
   body('title')
     .optional()
     .trim()
-    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+    .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
+    .escape(),
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters'),
+    .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters')
+    .escape(),
   body('links')
     .optional()
     .isArray().withMessage('Links must be an array'),
@@ -183,10 +199,13 @@ const createTemplateValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Template name is required')
-    .isLength({ min: 3, max: 50 }).withMessage('Template name must be between 3 and 50 characters'),
+    .isLength({ min: 3, max: 50 }).withMessage('Template name must be between 3 and 50 characters')
+    .escape(),
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
+  body('categories.*.name').optional().trim().escape(),
+  body('categories.*.tasks.*.title').optional().trim().escape(),
   validate
 ];
 
@@ -196,10 +215,13 @@ const updateTemplateValidation = [
   body('name')
     .optional()
     .trim()
-    .isLength({ min: 3, max: 50 }).withMessage('Template name must be between 3 and 50 characters'),
+    .isLength({ min: 3, max: 50 }).withMessage('Template name must be between 3 and 50 characters')
+    .escape(),
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
+  body('categories.*.name').optional().trim().escape(),
+  body('categories.*.tasks.*.title').optional().trim().escape(),
   validate
 ];
 
@@ -208,7 +230,8 @@ const createGroupValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Group name is required')
-    .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters'),
+    .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters')
+    .escape(),
   validate
 ];
 
@@ -226,7 +249,8 @@ const joinPublicGroupValidation = [
   body('message')
     .optional({ checkFalsy: true })
     .trim()
-    .isLength({ max: 200 }).withMessage('Message must not exceed 200 characters'),
+    .isLength({ max: 200 }).withMessage('Message must not exceed 200 characters')
+    .escape(),
   validate
 ];
 
@@ -236,7 +260,8 @@ const editGroupValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Group name is required')
-    .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters'),
+    .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters')
+    .escape(),
   validate
 ];
 
@@ -260,7 +285,8 @@ const submitReviewValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Name is required')
-    .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
+    .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters')
+    .escape(),
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')
@@ -269,7 +295,8 @@ const submitReviewValidation = [
   body('description')
     .trim()
     .notEmpty().withMessage('Review description is required')
-    .isLength({ min: 3, max: 1000 }).withMessage('Review must be between 3 and 1000 characters'),
+    .isLength({ min: 3, max: 1000 }).withMessage('Review must be between 3 and 1000 characters')
+    .escape(),
   body('userBadges')
     .optional()
     .isArray().withMessage('userBadges must be an array'),

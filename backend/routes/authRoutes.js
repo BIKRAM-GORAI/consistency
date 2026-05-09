@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken } = require('../controllers/authController');
+const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit } = require('../controllers/authController');
 const { uploadProfile, uploadChat } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
+const { mediaUploadLimiter } = require('../middleware/rateLimit');
+const { dbMediaRateLimiter } = require('../middleware/dbRateLimit');
 const { registerValidation, loginValidation, updateProfileValidation, achievementPrivacyValidation } = require('../middleware/validation');
 const { checkAccountLockout } = require('../middleware/accountLockout');
 
@@ -51,11 +53,14 @@ router.patch('/settings', authenticateToken, updateProfileValidation, setProfile
 // DELETE account (requires authentication)
 router.delete('/account', authenticateToken, deleteAccount);
 
+// GET current media upload limit status
+router.get('/media-upload-limit', authenticateToken, getMediaUploadLimit);
+
 // POST upload profile picture (requires authentication)
-router.post('/profile-picture', authenticateToken, uploadProfile.single('image'), uploadProfilePicture);
+router.post('/profile-picture', authenticateToken, dbMediaRateLimiter, uploadProfile.single('image'), uploadProfilePicture);
 
 // POST upload chat media (requires authentication)
-router.post('/chat-media', authenticateToken, uploadChat.single('file'), (req, res) => {
+router.post('/chat-media', authenticateToken, dbMediaRateLimiter, uploadChat.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
   // Minimize data sent to frontend: only return the secure URL
   res.json({ secure_url: req.file.path });

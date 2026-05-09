@@ -37,15 +37,15 @@ const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'consistency_app_chat',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'webm', 'mp4'],
-    resource_type: 'auto'
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    resource_type: 'image'
   },
 });
 
-const uploadProfile = multer({ storage: profileStorage });
-const uploadGroup = multer({ storage: groupStorage });
-const uploadBadge = multer({ storage: badgeStorage });
-const uploadChat = multer({ storage: chatStorage });
+const uploadProfile = multer({ storage: profileStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadGroup = multer({ storage: groupStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadBadge = multer({ storage: badgeStorage, limits: { fileSize: 10 * 1024 * 1024 } });
+const uploadChat = multer({ storage: chatStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 /**
  * Extracts public_id from a Cloudinary URL and deletes the image.

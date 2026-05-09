@@ -1354,8 +1354,8 @@
           <!-- Preview item will be injected here -->
         </div>
         <form id="chat-form" onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px; width: 100%; align-items: center; box-sizing: border-box;">
-          <input type="file" id="chat-media-input" accept="image/gif,image/png,image/jpeg,image/webp" style="display: none;" onchange="handleMediaSelect(event)" />
-          <button type="button" class="sticker-btn ripple" onclick="document.getElementById('chat-media-input').click()" title="Upload Image/GIF/Sticker">
+          <input type="file" id="chat-media-input" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="handleMediaSelect(event)" multiple />
+          <button type="button" class="sticker-btn ripple" onclick="document.getElementById('chat-media-input').click()" title="Upload Image/Sticker">
             <i data-lucide="sticky-note" style="width: 22px; height: 22px; color: var(--black);"></i>
           </button>
           <input type="text" id="chat-input" class="form-control" placeholder="Type a message..." autocomplete="off" oninput="handleTyping()" style="flex: 1; width: 0; min-width: 0; height: 48px; font-size: 15px; border-width: 3px; box-shadow: 4px 4px 0 var(--black); margin: 0;" />
@@ -1363,6 +1363,10 @@
             <i data-lucide="send" style="width: 20px; height: 20px; color: #fff;"></i>
           </button>
         </form>
+        <div id="media-limit-hint" style="font-size: 10px; color: var(--text-muted); margin-top: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
+          <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+          <span id="media-limit-text">20 images remaining this hour</span>
+        </div>
       </div>
     </div>
   <!-- ===== MODAL: Bulk Delete (Owner) ===== -->

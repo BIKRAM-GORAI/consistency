@@ -158,7 +158,16 @@ const UserSchema = new mongoose.Schema(
     lockUntil: {
       type: Date,
       default: null,
-    }
+    },
+    // Persistent Media Upload Rate Limiting
+    mediaUploadCount: {
+      type: Number,
+      default: 0,
+    },
+    mediaUploadReset: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

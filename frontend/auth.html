@@ -842,7 +842,7 @@
       if (!file) return;
 
       if (file.size > 5 * 1024 * 1024) {
-        alert('File is too large. Max 5MB.');
+        showError('register', 'File is too large. Max 5MB.');
         event.target.value = '';
         return;
       }
@@ -1197,7 +1197,7 @@
           document.getElementById('register-error-msg').textContent = errorMessage;
           document.getElementById('register-error').classList.add('visible');
         } else {
-          alert('OAuth Error: ' + errorMessage);
+          showError('login', 'OAuth Error: ' + errorMessage);
         }
       }
     }

@@ -4,7 +4,7 @@ const cors    = require('cors');
 const path    = require('path');
 const connectDB = require('./config/db');
 const { authenticateToken } = require('./middleware/auth');
-const { generalLimiter, authLimiter, dataModificationLimiter, readOnlyLimiter } = require('./middleware/rateLimit');
+const { generalLimiter, authLimiter, dataModificationLimiter, readOnlyLimiter, architectureLimiter } = require('./middleware/rateLimit');
 
 const authRoutes        = require('./routes/authRoutes');
 const dayRoutes         = require('./routes/dayRoutes');
@@ -37,7 +37,22 @@ app.use(async (req, res, next) => {
 });
 
 // ── Middleware ─────────────────────────────────────────────
-app.use(cors());
+const allowedOrigins = [
+  'https://consistency-daily.vercel.app',
+  'https://consistency-tracker.vercel.app',
+  'http://localhost:5000',
+  'http://localhost:5001'
+];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -158,6 +173,11 @@ app.use('/js/libs/lucide', express.static(path.join(__dirname, '../node_modules/
 // ── Root: redirect to landing page ────────────────────────
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/landing.html'));
+});
+
+// ── Architecture Report Page ──
+app.get('/architecture', architectureLimiter, (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/architecture.html'));
 });
 
 // ── SPA fallback: return landing.html for unknown routes ───

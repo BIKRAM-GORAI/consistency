@@ -249,7 +249,7 @@ function renderDays(days, append = false) {
             ${cat.tasks.map(t => `
               <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted);">
                 <span style="color:${t.completed ? '#22c55e' : '#ccc'}; font-weight:bold;">${t.completed ? '✓' : '○'}</span>
-                <span>${t.title}</span>
+                <span>${escHtml(t.title)}</span>
               </div>
             `).join('')}
           `).join('')}

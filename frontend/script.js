@@ -6080,12 +6080,32 @@ let chatMessagesLimit = 30;
 let activeReplyTo = null;
 let isPaginating = false;
 let prevScrollHeight = 0;
-let selectedMediaBlob = null; // Stores the compressed blob to be uploaded
-let selectedMediaType = null; // 'image' or 'video'
+let selectedMediaBlobs = []; // Array of { blob, type }
+let mediaLimitRemaining = 20; // Default
 
 // --- READ RECEIPTS STATE ---
 let memberReadStatuses = {}; // { userId: timestamp }
 let chatReadThresholdPct = 10; // Default threshold for blue ticks
+
+async function fetchMediaLimit() {
+  try {
+    const res = await apiFetch(`${API}/api/auth/media-upload-limit`);
+    mediaLimitRemaining = res.remaining;
+    updateMediaLimitDisplay();
+  } catch (err) {
+    console.error('Failed to fetch media limit:', err);
+  }
+}
+
+function updateMediaLimitDisplay() {
+  const el = document.getElementById('media-limit-text');
+  if (!el) return;
+  if (mediaLimitRemaining <= 0) {
+    el.innerHTML = '<span style="color:var(--red)">Limit reached! Wait until next hour.</span>';
+  } else {
+    el.textContent = `${mediaLimitRemaining} images remaining this hour`;
+  }
+}
 let lastReadUpdate = 0;
 let myHighestReadTimestamp = 0;
 let readStatusUnsubscribe = null;
@@ -6100,6 +6120,7 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   
   const modal = document.getElementById('modal-group-chat');
   openModal('modal-group-chat');
+  fetchMediaLimit();
 
   // Check if current user is the owner of this group
   const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) 
@@ -6511,19 +6532,18 @@ async function handleChatSubmit(e) {
   e.preventDefault();
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
-  if (!text && !selectedMediaBlob) return;
+  if (!text && selectedMediaBlobs.length === 0) return;
   if (!activeChatGroupId) return;
 
   const btn = e.target.querySelector('button[type="submit"]');
   const originalHtml = btn.innerHTML;
   
   // Only block the button if uploading media (needs wait)
-  // For text messages, we allow "rapid fire" even offline
-  if (selectedMediaBlob) {
+  if (selectedMediaBlobs.length > 0) {
     btn.disabled = true;
     btn.innerHTML = '<i data-lucide="upload-cloud" class="loading-bounce"></i>';
+    if (window.lucide) lucide.createIcons({ root: btn });
   }
-  if (window.lucide) lucide.createIcons({ root: btn });
 
   const { firebaseDb, firestore } = window;
   const userId = localStorage.getItem('userId');
@@ -6531,29 +6551,17 @@ async function handleChatSubmit(e) {
   const userPhoto = localStorage.getItem('userProfilePicture');
   
   try {
-    let mediaUrl = null;
-    let mediaType = null;
-
-    if (selectedMediaBlob) {
-      mediaUrl = await uploadMediaToCloudinary(selectedMediaBlob);
-      mediaType = selectedMediaType;
-    }
     const msgsRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'messages');
-    const msgData = {
-      text: text || '',
+    const baseMsgData = {
       senderId: userId || '',
       senderName: userName || 'User',
       senderUsername: localStorage.getItem('userUsername') || '',
       senderPhoto: userPhoto || null,
-      timestamp: firestore.serverTimestamp(),
-      mediaUrl: mediaUrl || null,
-      mediaType: mediaType || null
+      timestamp: firestore.serverTimestamp()
     };
 
     if (activeReplyTo) {
-      // Ensure NO undefined fields are sent to Firestore (causes crash)
-      // We use null or empty string as explicit fallbacks
-      msgData.replyTo = {
+      baseMsgData.replyTo = {
         docId: activeReplyTo.docId || '',
         text: activeReplyTo.text || '',
         senderName: activeReplyTo.senderName || '',
@@ -6561,27 +6569,45 @@ async function handleChatSubmit(e) {
       };
     }
 
-    // FINAL SANITY CHECK: Ensure NO property in msgData is undefined
-    Object.keys(msgData).forEach(key => {
-      if (msgData[key] === undefined) msgData[key] = null;
-    });
-    if (msgData.replyTo) {
-      Object.keys(msgData.replyTo).forEach(key => {
-        if (msgData.replyTo[key] === undefined) msgData.replyTo[key] = null;
-      });
-    }
-
-    // Clear input instantly for better UX
+    // Clear UI instantly
     input.value = ''; 
     updateTypingStatus(false);
+    const replyToCopy = activeReplyTo; // For the first message only
     activeReplyTo = null;
-    clearMediaPreview();
     clearReply();
 
-    await firestore.addDoc(msgsRef, msgData);
+    if (selectedMediaBlobs.length === 0) {
+      // Just text
+      await firestore.addDoc(msgsRef, { ...baseMsgData, text });
+    } else {
+      // Send text as first message if exists
+      if (text) {
+        await firestore.addDoc(msgsRef, { ...baseMsgData, text });
+      }
+
+      // Send each media as its own message
+      for (const item of selectedMediaBlobs) {
+        const mediaUrl = await uploadMediaToCloudinary(item.blob, item.type);
+        await firestore.addDoc(msgsRef, { 
+          ...baseMsgData, 
+          text: '', 
+          mediaUrl, 
+          mediaType: item.type,
+          replyTo: null // Only first message has reply usually
+        });
+        mediaLimitRemaining--;
+        updateMediaLimitDisplay();
+      }
+      clearMediaPreview();
+    }
+
   } catch (err) {
     console.error('Send error:', err);
-    alert('Failed to send message.');
+    showToast(err.message || 'Failed to send message.', 'error');
+    // If it's a rate limit error, refresh the limit count
+    if (err.message && err.message.includes('limit')) {
+      fetchMediaLimit();
+    }
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHtml;
@@ -7147,8 +7173,6 @@ function renderTypingIndicator(typers) {
   `;
 }
 
-
-
 async function initFirebaseChat() {
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('token');
@@ -7233,32 +7257,44 @@ async function deleteFirestoreGroupData(groupId) {
 /** ── MEDIA UPLOAD & COMPRESSION LOGIC ── **/
 
 async function handleMediaSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
 
-  // Reset input so the same file can be selected again if removed
+  // Reset input so the same files can be selected again if removed
   e.target.value = '';
 
-  const isGif = file.type === 'image/gif';
-  const maxSize = isGif ? 4 * 1024 * 1024 : 5 * 1024 * 1024; // 4MB for GIF, 5MB for others
-
-  if (file.size > maxSize) {
-    return showToast(`File too large! Max ${isGif ? '4MB' : '5MB'} allowed.`, 'warn');
+  // 1. Check if total count exceeds remaining limit
+  if (files.length > mediaLimitRemaining) {
+    return showToast(`Limit exceeded! You only have ${mediaLimitRemaining} uploads left this hour.`, 'error');
   }
 
-  showToast('Processing media...', 'info');
+  // 2. Check batch limit (Max 20 at once)
+  if (files.length > 20) {
+    return showToast('Max 20 images allowed at once.', 'warn');
+  }
+
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const maxSize = 5 * 1024 * 1024; // 5MB
+
+  // 3. Validate all files first
+  for (const file of files) {
+    if (!allowedTypes.includes(file.type)) {
+      return showToast(`Invalid format in batch: ${file.name}`, 'warn');
+    }
+    if (file.size > maxSize) {
+      return showToast(`File too large (>5MB): ${file.name}`, 'warn');
+    }
+  }
+
+  showToast(`Processing ${files.length} images...`, 'info');
   
   try {
-    if (isGif) {
-      // For GIF, we'll try to convert to WebM for massive size reduction
-      await processGif(file);
-    } else {
-      // For static images/stickers, convert to WebP
+    for (const file of files) {
       await processImage(file);
     }
   } catch (err) {
     console.error('Media processing error:', err);
-    showToast('Failed to process media.', 'error');
+    showToast('Failed to process some media.', 'error');
   }
 }
 
@@ -7267,7 +7303,6 @@ async function processImage(file) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
-  // Constrain dimensions (Sticker/Image max 1200px)
   let width = bitmap.width;
   let height = bitmap.height;
   const maxDim = 1200;
@@ -7286,62 +7321,61 @@ async function processImage(file) {
   ctx.drawImage(bitmap, 0, 0, width, height);
 
   canvas.toBlob((blob) => {
-    selectedMediaBlob = blob;
-    selectedMediaType = 'image';
-    showMediaPreview(URL.createObjectURL(blob), 'image');
-    showToast('Image compressed successfully!', 'success');
-  }, 'image/webp', 0.75); // 75% quality WebP
+    selectedMediaBlobs.push({ blob, type: 'image' });
+    renderMediaPreviews();
+    showToast('Image processed!', 'success');
+  }, 'image/webp', 0.75);
 }
 
 async function processGif(file) {
-  // Pure JS GIF to MP4/WebM is hard. 
-  // For now, we'll keep it as GIF but resize/re-encode to reduce size if it's huge,
-  // Or just accept the GIF if it's under 4MB as the user asked.
-  // Ideally, Cloudinary will handle the conversion on the fly.
-  
-  // Just to show we care about size, we'll use a preview.
-  selectedMediaBlob = file;
-  selectedMediaType = 'image'; // GIFs are rendered as images
-  showMediaPreview(URL.createObjectURL(file), 'image');
+  selectedMediaBlobs.push({ blob: file, type: 'image' });
+  renderMediaPreviews();
   showToast('GIF selected!', 'success');
 }
 
-function showMediaPreview(url, type) {
+function renderMediaPreviews() {
   const container = document.getElementById('chat-media-preview');
-  container.style.display = 'block';
+  if (!container) return;
   
-  let html = '';
-  if (type === 'image') {
-    html = `<img src="${url}" />`;
-  } else {
-    html = `<video src="${url}" autoplay muted loop playsinline></video>`;
+  if (selectedMediaBlobs.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
   }
 
-  container.innerHTML = `
-    <div class="chat-media-preview-item">
-      ${html}
-      <div class="chat-media-remove" onclick="clearMediaPreview()">✕</div>
-    </div>
-  `;
+  container.style.display = 'flex';
+  container.style.flexWrap = 'wrap';
+  container.style.gap = '10px';
+  container.style.padding = '12px 0';
+
+  container.innerHTML = selectedMediaBlobs.map((item, index) => {
+    const url = URL.createObjectURL(item.blob);
+    return `
+      <div class="chat-media-preview-item" style="position:relative; width:65px; height:65px; border:3px solid var(--black); border-radius:8px; overflow:hidden; box-shadow: 2px 2px 0 var(--black);">
+        <img src="${url}" style="width:100%; height:100%; object-fit:cover;" />
+        <div class="chat-media-remove" onclick="removeMediaItem(${index})" style="position:absolute; top:2px; right:2px; background:var(--red); color:#fff; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; font-weight:900; border:2px solid var(--black);">✕</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeMediaItem(index) {
+  selectedMediaBlobs.splice(index, 1);
+  renderMediaPreviews();
 }
 
 function clearMediaPreview() {
-  selectedMediaBlob = null;
-  selectedMediaType = null;
-  const container = document.getElementById('chat-media-preview');
-  container.style.display = 'none';
-  container.innerHTML = '';
+  selectedMediaBlobs = [];
+  renderMediaPreviews();
 }
 
-async function uploadMediaToCloudinary(blob) {
+async function uploadMediaToCloudinary(blob, type) {
   const formData = new FormData();
-  // Using 'file' as expected by multer uploadChat.single('file')
-  formData.append('file', blob, selectedMediaType === 'video' ? 'animation.webm' : 'media.webp');
+  formData.append('file', blob, type === 'video' ? 'animation.webm' : 'media.webp');
 
   const res = await apiFetch(`${API}/api/auth/chat-media`, {
     method: 'POST',
     body: formData,
-    // apiFetch handles Authorization header automatically
   });
 
   return res.secure_url;
