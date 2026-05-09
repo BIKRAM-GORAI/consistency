@@ -136,7 +136,12 @@ async function getProfileSettings(req, res) {
       isPublicProfile: user.isPublicProfile !== false,
       theme: user.theme || 'light',
       leetcodeUsername: user.leetcodeUsername || null,
-      leetcodeVerificationStatus: user.leetcodeVerificationStatus || 'none'
+      leetcodePendingUsername: user.leetcodePendingUsername || null,
+      leetcodeVerificationCode: user.leetcodeVerificationCode || null,
+      leetcodeVerificationStatus: user.leetcodeVerificationStatus || 'none',
+      leetcodeLastVerifiedAt: user.leetcodeLastVerifiedAt || null,
+      leetcodeProfilePicture: user.leetcodeProfilePicture || '',
+      leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }

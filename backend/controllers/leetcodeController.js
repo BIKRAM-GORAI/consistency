@@ -545,3 +545,39 @@ module.exports = {
   validateLeetCodeProblem,
   getDailyLeetCodeProblem
 };
+
+
+/**
+ * Disconnect LeetCode profile
+ * POST /api/leetcode/disconnect
+ */
+const disconnectLeetCode = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.leetcodeUsername = null;
+    user.leetcodePendingUsername = null;
+    user.leetcodeVerificationCode = null;
+    user.leetcodeVerificationExpiry = null;
+    user.leetcodeUsernameChangeCount = 0;
+    user.leetcodeLastVerifiedAt = null;
+    user.leetcodeProfilePicture = '';
+    user.leetcodeVerificationStatus = 'none';
+    user.leetcodeRetryScheduledAt = null;
+
+    await user.save();
+    res.json({ success: true, message: 'LeetCode account disconnected' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = {
+  generateVerificationCode,
+  verifyLeetCodeProfile,
+  validateLeetCodeProblem,
+  getDailyLeetCodeProblem,
+  disconnectLeetCode
+};
