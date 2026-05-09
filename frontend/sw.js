@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consistency-cache-v20';
+const CACHE_NAME = 'consistency-cache-v21';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -11,6 +11,16 @@ const STATIC_ASSETS = [
   'libs/gsap.min.js',
   'libs/ScrollTrigger.min.js',
   'libs/lucide.min.js',
+  'about1.png',
+  'about2.png',
+  'about3.jpg',
+  'about4.png',
+  'about5.png',
+  'about6.jpg',
+  'about7.jpg',
+  'about8.jpg',
+  'about9.png',
+  'about10.png',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js',
@@ -62,6 +72,8 @@ self.addEventListener('fetch', (event) => {
                      url.pathname === '/' || 
                      url.pathname.endsWith('.js') || 
                      url.pathname.endsWith('.css') || 
+                     url.pathname.endsWith('.png') || 
+                     url.pathname.endsWith('.jpg') || 
                      url.pathname.endsWith('.html');
 
   if (isCoreAsset) {

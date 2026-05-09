@@ -133,6 +133,7 @@ app.use('/api/templates',    authenticateToken, dataModificationLimiter, templat
 app.use('/api/reviews',      reviewRoutes); // Public review submission
 app.use('/api/users',        readOnlyLimiter, userRoutes); // Public user profiles
 app.use('/api/leetcode',    authenticateToken, dataModificationLimiter, leetcodeRoutes); // LeetCode integration
+app.use('/api/admin/login', authLimiter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/sync', syncRoutes);

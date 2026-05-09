@@ -86,7 +86,9 @@ function renderReviews(reviews) {
       'Vibe Checker': '#22d3ee',
       'Professional Procrastinator': '#94a3b8',
       'Big Brain Energy': '#818cf8',
-      'Hidden Genius': '#34d399'
+      'Hidden Genius': '#34d399',
+      'Feature Now Live!': '#22d3ee',
+      'Fixed': '#4ade80'
     };
 
     const badgesHtml = (r.userBadges || []).map(b => `
