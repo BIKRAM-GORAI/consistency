@@ -41,7 +41,9 @@ const allowedOrigins = [
   'https://consistency-daily.vercel.app',
   'https://consistency-tracker.vercel.app',
   'http://localhost:5000',
-  'http://localhost:5001'
+  'http://localhost:5001',
+  'http://127.0.0.1:5000',
+  'http://127.0.0.1:5001'
 ];
 app.use(cors({
   origin: function (origin, callback) {

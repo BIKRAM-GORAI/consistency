@@ -35,9 +35,25 @@ const badgeStorage = new CloudinaryStorage({
 
 const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'consistency_app_chat',
-    resource_type: 'auto'
+  params: async (req, file) => {
+    const isAudio = file.mimetype.startsWith('audio/') || 
+                    /\.(3gp|m4a|wav|mp3|webm|ogg)$/i.test(file.originalname);
+    
+    if (isAudio) {
+      return {
+        folder: 'consistency_app_chat',
+        resource_type: 'video', 
+        format: 'mp3', 
+        transformation: [
+          { bit_rate: '32k', quality: 'auto:low' } 
+        ]
+      };
+    }
+
+    return {
+      folder: 'consistency_app_chat',
+      resource_type: 'auto'
+    };
   },
 });
 

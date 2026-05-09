@@ -6509,13 +6509,35 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
     wrapper.appendChild(buttonsHtmlToElement(buttonsHtml));
   }
   
-  container.appendChild(wrapper);
+  insertMessageSorted(container, wrapper);
   
   // Initialize Lazy Loading and Read Tracker for the new elements
   initLazyLoading();
   initReadTracker();
+  initSwipeToReply(wrapper, bubble, isSelf, msg);
+}
 
-  // ── Swipe to Reply Logic ──
+/** ── CHRONOLOGICAL MESSAGE INSERTION ── **/
+function insertMessageSorted(container, wrapper) {
+  const ts = parseInt(wrapper.dataset.ts);
+  const children = Array.from(container.children).filter(el => el.classList.contains('chat-bubble-wrapper'));
+  
+  let inserted = false;
+  for (const child of children) {
+    const childTs = parseInt(child.dataset.ts);
+    if (ts < childTs) {
+      container.insertBefore(wrapper, child);
+      inserted = true;
+      break;
+    }
+  }
+  
+  if (!inserted) {
+    container.appendChild(wrapper);
+  }
+}
+
+function initSwipeToReply(wrapper, bubble, isSelf, msg) {
   let touchStartX = 0;
   let touchMoveX = 0;
   let isSwiping = false;
@@ -6554,7 +6576,7 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
       
       // Threshold to trigger reply
       if (Math.abs(diff) > 50) {
-        setReplyTo(docId, msg.text || '', msg.senderName, msg.mediaUrl || '');
+        setReplyTo(msg.id, msg.text || '', msg.senderName, msg.mediaUrl || '');
         if (window.navigator.vibrate) window.navigator.vibrate(15);
       }
     }
