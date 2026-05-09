@@ -4331,67 +4331,107 @@ async function downloadAudio(docId, url) {
   const btn = document.getElementById(`audio-btn-${docId}`);
   if (!btn) return;
 
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-inline"></span>';
+
   try {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="loading-bounce" style="display:inline-block;">...</span>';
-    
-    let audioBlob;
-    if (audioCache[url]) {
-      audioBlob = audioCache[url];
-    } else {
-      const response = await fetch(url);
-      audioBlob = await response.blob();
-      audioCache[url] = audioBlob;
+    // Check IndexedDB cache first
+    const cached = await localDb.mediaCache.get(url);
+    if (cached) {
+      btn.disabled = false;
+      playAudioFromBlob(docId, cached.blob);
+      return;
     }
-    
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    
-    // Change Download to Play
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Download failed');
+    const blob = await response.blob();
+
+    // Store in persistent cache
+    await localDb.mediaCache.put({ url, blob });
+
     btn.disabled = false;
-    btn.className = 'btn-audio-play ripple';
-    btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
-    if (window.lucide) lucide.createIcons({ root: btn });
-    
-    btn.onclick = () => toggleAudioPlayback(docId, audio);
-    
-    audio.onloadedmetadata = () => {
-      const durationEl = document.getElementById(`audio-duration-${docId}`);
-      if (durationEl) durationEl.textContent = formatDuration(audio.duration);
-    };
-
-    audio.ontimeupdate = () => {
-      const pct = (audio.currentTime / audio.duration) * 100;
-      const progressEl = document.getElementById(`audio-progress-${docId}`);
-      if (progressEl) progressEl.style.width = `${pct}%`;
-    };
-
-    audio.onended = () => {
-      btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
-      if (window.lucide) lucide.createIcons({ root: btn });
-      const progressEl = document.getElementById(`audio-progress-${docId}`);
-      if (progressEl) progressEl.style.width = '0%';
-    };
-
+    playAudioFromBlob(docId, blob);
   } catch (err) {
     console.error('Audio download error:', err);
-    showToast('Failed to download audio.', 'error');
+    showToast('Failed to load audio.', 'error');
     btn.disabled = false;
     btn.innerHTML = '<i data-lucide="download" style="width:20px; height:20px;"></i>';
     if (window.lucide) lucide.createIcons({ root: btn });
   }
 }
 
-function toggleAudioPlayback(docId, audio) {
+async function checkAudioCache(docId, url) {
   const btn = document.getElementById(`audio-btn-${docId}`);
-  if (audio.paused) {
-    audio.play();
-    btn.innerHTML = '<i data-lucide="pause" style="width:20px; height:20px;"></i>';
-  } else {
-    audio.pause();
-    btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+  if (!btn) return;
+
+  try {
+    const cached = await localDb.mediaCache.get(url);
+    if (cached) {
+      btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+      if (window.lucide) lucide.createIcons({ root: btn });
+      btn.onclick = () => playAudioFromBlob(docId, cached.blob);
+    }
+  } catch (err) {
+    console.error('Cache check error:', err);
   }
+}
+
+let activeAudio = null;
+let activeAudioId = null;
+
+function playAudioFromBlob(docId, blob) {
+  const btn = document.getElementById(`audio-btn-${docId}`);
+  if (!btn) return;
+
+  // If clicking the same playing audio, toggle pause/play
+  if (activeAudioId === docId && activeAudio) {
+    if (!activeAudio.paused) {
+      activeAudio.pause();
+      btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+      if (window.lucide) lucide.createIcons({ root: btn });
+    } else {
+      activeAudio.play();
+      btn.innerHTML = '<i data-lucide="pause" style="width:20px; height:20px;"></i>';
+      if (window.lucide) lucide.createIcons({ root: btn });
+    }
+    return;
+  }
+
+  // Stop any previously playing audio
+  if (activeAudio) {
+    activeAudio.pause();
+    const oldBtn = document.getElementById(`audio-btn-${activeAudioId}`);
+    if (oldBtn) {
+      oldBtn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+      if (window.lucide) lucide.createIcons({ root: oldBtn });
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  activeAudio = audio;
+  activeAudioId = docId;
+
+  audio.play();
+  btn.innerHTML = '<i data-lucide="pause" style="width:20px; height:20px;"></i>';
   if (window.lucide) lucide.createIcons({ root: btn });
+
+  audio.ontimeupdate = () => {
+    const pct = (audio.currentTime / audio.duration) * 100;
+    const progressEl = document.getElementById(`audio-progress-${docId}`);
+    if (progressEl) progressEl.style.width = `${pct}%`;
+  };
+
+  audio.onended = () => {
+    btn.innerHTML = '<i data-lucide="play" style="width:20px; height:20px;"></i>';
+    if (window.lucide) lucide.createIcons({ root: btn });
+    const progressEl = document.getElementById(`audio-progress-${docId}`);
+    if (progressEl) progressEl.style.width = '0%';
+    URL.revokeObjectURL(url);
+    activeAudio = null;
+    activeAudioId = null;
+  };
 }
 
 function closeLightbox(event, force = false) {
@@ -6515,6 +6555,11 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
   initLazyLoading();
   initReadTracker();
   initSwipeToReply(wrapper, bubble, isSelf, msg);
+
+  // Proactively check and cache audio
+  if (msg.mediaType === 'audio' && msg.mediaUrl) {
+    checkAudioCache(docId, msg.mediaUrl);
+  }
 }
 
 /** ── CHRONOLOGICAL MESSAGE INSERTION ── **/
