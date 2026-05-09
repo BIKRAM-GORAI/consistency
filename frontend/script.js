@@ -6082,6 +6082,7 @@ let isPaginating = false;
 let prevScrollHeight = 0;
 let selectedMediaBlobs = []; // Array of { blob, type }
 let mediaLimitRemaining = 20; // Default
+let lastMessageSentAt = 0; // For anti-spam cooldown
 
 // --- READ RECEIPTS STATE ---
 let memberReadStatuses = {}; // { userId: timestamp }
@@ -6101,7 +6102,7 @@ function updateMediaLimitDisplay() {
   const el = document.getElementById('media-limit-text');
   if (!el) return;
   if (mediaLimitRemaining <= 0) {
-    el.innerHTML = '<span style="color:var(--red)">Limit reached! Wait until next hour.</span>';
+    el.innerHTML = '<span style="color:var(--red)">File upload limit exceeded! Wait until next hour.</span>';
   } else {
     el.textContent = `${mediaLimitRemaining} images remaining this hour`;
   }
@@ -6535,7 +6536,19 @@ async function handleChatSubmit(e) {
   if (!text && selectedMediaBlobs.length === 0) return;
   if (!activeChatGroupId) return;
 
-  const btn = e.target.querySelector('button[type="submit"]');
+  // Anti-spam cooldown (1.5 seconds)
+  const now = Date.now();
+  if (now - lastMessageSentAt < 1500) {
+    return showToast('Sending too fast! Please wait a moment.', 'warn');
+  }
+
+  // Length check (2000 chars)
+  if (text.length > 2000) {
+    return showToast('Message too long! Max 2000 characters.', 'warn');
+  }
+
+  const form = document.getElementById('chat-form');
+  const btn = form.querySelector('button[type="submit"]');
   const originalHtml = btn.innerHTML;
   
   // Only block the button if uploading media (needs wait)
@@ -6571,7 +6584,9 @@ async function handleChatSubmit(e) {
 
     // Clear UI instantly
     input.value = ''; 
+    input.style.height = '48px'; // Reset height
     updateTypingStatus(false);
+    lastMessageSentAt = Date.now(); // Update cooldown
     const replyToCopy = activeReplyTo; // For the first message only
     activeReplyTo = null;
     clearReply();
@@ -7086,7 +7101,37 @@ let lastTypingUpdate = 0;
 let typingUnsubscribe = null;
 let typingTimeout = null;
 
+// Handle paste events to warn about truncation
+document.addEventListener('DOMContentLoaded', () => {
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('paste', (e) => {
+      const paste = (e.clipboardData || window.clipboardData).getData('text');
+      const currentLength = chatInput.value.length;
+      if (currentLength + paste.length > 2000) {
+        showToast('Text truncated! Max 2000 characters allowed.', 'warn');
+      }
+    });
+
+    // Handle Shift+Enter to send (as requested)
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.shiftKey) {
+        e.preventDefault();
+        // Manually trigger the form submit handler
+        handleChatSubmit(e); 
+      }
+    });
+  }
+});
+
 function handleTyping() {
+  const el = document.getElementById('chat-input');
+  if (el) {
+    // Auto-resize logic
+    el.style.height = '48px'; // Reset
+    el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+  }
+
   const now = Date.now();
   
   // Debounce Firestore updates: only update every 2 seconds while typing
