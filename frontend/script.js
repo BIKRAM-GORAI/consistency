@@ -410,8 +410,9 @@ async function loadDays(page = 1) {
       hasMoreDays = false;
     }
 
+    const isLoadMore = page > 1;
     currentPage = page;
-    renderDays();
+    renderDays(isLoadMore);
     updateStreak();
     if (loadingEl) loadingEl.innerHTML = '';
   } catch (err) {
@@ -441,6 +442,11 @@ async function loadDays(page = 1) {
 }
 
 function loadMoreDays() {
+  const btn = document.querySelector('.btn-load-more');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner-ring" style="width:16px;height:16px;border-width:2px;margin:0 auto;"></div>';
+  }
   loadDays(currentPage + 1);
 }
 
@@ -491,19 +497,28 @@ function updateStreak() {
 }
 
 
-async function renderDays() {
+async function renderDays(appendOnly = false) {
   const container = document.getElementById('cards-container');
-  container.innerHTML = '';
+  
+  // Remove existing Load More row if it exists
+  const existingLoadMore = container.querySelector('.load-more-row');
+  if (existingLoadMore) existingLoadMore.remove();
 
-  // ── "New Day Card" button always pinned at the top ──────
-  const addBtnRow = document.createElement('div');
-  addBtnRow.className = 'add-day-inline-row';
-  addBtnRow.innerHTML = `
-    <button class="add-day-inline-btn ripple" onclick="openAddDayModal()" id="add-day-inline-btn">
-      <span class="plus-icon">＋</span>
-      <span>New Day Card</span>
-    </button>`;
-  container.appendChild(addBtnRow);
+  if (!appendOnly) {
+    container.innerHTML = '';
+  }
+
+  // ── "New Day Card" button always pinned at the top (only if not appending) ──────
+  if (!appendOnly) {
+    const addBtnRow = document.createElement('div');
+    addBtnRow.className = 'add-day-inline-row';
+    addBtnRow.innerHTML = `
+      <button class="add-day-inline-btn ripple" onclick="openAddDayModal()" id="add-day-inline-btn">
+        <span class="plus-icon">＋</span>
+        <span>New Day Card</span>
+      </button>`;
+    container.appendChild(addBtnRow);
+  }
 
   if (!allDays.length) {
     const emptyEl = document.createElement('div');
@@ -519,8 +534,16 @@ async function renderDays() {
     return;
   }
 
+  // Filter for only the new days if appending
+  let daysToRender = [...allDays];
+  if (appendOnly) {
+    const existingCards = container.querySelectorAll('.day-card');
+    const existingIds = new Set(Array.from(existingCards).map(c => c.id.replace('day-card-', '')));
+    daysToRender = daysToRender.filter(d => !existingIds.has(String(d._id)));
+  }
+
   // Sort newest-first then build all cards (no layout thrash)
-  const sorted = [...allDays].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = daysToRender.sort((a, b) => b.date.localeCompare(a.date));
 
   // Optimization: Fetch all achievements for these days in ONE batch request
   const dayIds = allDays.map(d => d._id).filter(id => !String(id).startsWith('temp_'));
@@ -547,42 +570,57 @@ async function renderDays() {
   const fragment = document.createDocumentFragment();
   for (const day of sorted) {
     const dayAchs = (batchAchievements || []).filter(a => a.dayId === day._id);
-    fragment.appendChild(buildDayCard(day, dayAchs));
+    const card = buildDayCard(day, dayAchs);
+    // Mark as new for animation if we are appending
+    if (appendOnly) {
+      card.classList.add('is-new-card');
+    }
+    fragment.appendChild(card);
   }
   container.appendChild(fragment);
 
   if (hasMoreDays) {
     const loadMoreRow = document.createElement('div');
+    loadMoreRow.className = 'load-more-row';
     loadMoreRow.style.textAlign = 'center';
     loadMoreRow.style.marginTop = '20px';
     loadMoreRow.style.marginBottom = '40px';
     loadMoreRow.innerHTML = `
-      <button class="btn-ghost ripple btn-load-more" onclick="loadMoreDays()">
-        Load More Days ⬇️
+      <button class="btn-ghost ripple btn-load-more" onclick="loadMoreDays()" style="display:flex; align-items:center; gap:8px; margin:0 auto; padding:12px 24px;">
+        <span>Load More Days</span>
+        <i data-lucide="chevron-down"></i>
       </button>
     `;
     container.appendChild(loadMoreRow);
+    if (window.lucide) lucide.createIcons({ root: loadMoreRow });
   }
 
   // ── Mobile-aware GSAP entrance ──────────────────────────
-  // On mobile: single quick fade-in (no stagger = no lag)
-  // On desktop: original elegant stagger
+  // If appendOnly, we only animate the newly added cards
+  const animTarget = appendOnly ? '.is-new-card' : '.day-card';
+  
   if (window.gsap) {
     if (isMobile()) {
-      gsap.from('.day-card', {
+      gsap.from(animTarget, {
         opacity: 0,
         duration: 0.3,
         ease: 'power2.out',
         clearProps: 'all',
+        onComplete: () => {
+          if (appendOnly) document.querySelectorAll('.is-new-card').forEach(el => el.classList.remove('is-new-card'));
+        }
       });
     } else {
-      gsap.from('.day-card', {
+      gsap.from(animTarget, {
         opacity: 0,
         y: 30,
         duration: 0.5,
         stagger: 0.08,
         ease: 'power3.out',
         clearProps: 'all',
+        onComplete: () => {
+          if (appendOnly) document.querySelectorAll('.is-new-card').forEach(el => el.classList.remove('is-new-card'));
+        }
       });
     }
   }

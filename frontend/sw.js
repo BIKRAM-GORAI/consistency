@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consistency-cache-v21';
+const CACHE_NAME = 'consistency-cache-v22';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -7,10 +7,12 @@ const STATIC_ASSETS = [
   'style.css',
   'manifest.json',
   'checklist.png',
+  'icon-192.png',
+  'icon-512.png',
+  'js/libs/lucide/lucide.min.js',
   'libs/dexie.js',
   'libs/gsap.min.js',
   'libs/ScrollTrigger.min.js',
-  'libs/lucide.min.js',
   'about1.png',
   'about2.png',
   'about3.jpg',
@@ -24,7 +26,6 @@ const STATIC_ASSETS = [
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js',
-  'https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap'
 ];
 
@@ -68,12 +69,17 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET and API calls (let them go to network)
   if (event.request.method !== 'GET' || url.pathname.includes('/api/')) return;
 
+  // Check if it's a core asset or a common static file extension
   const isCoreAsset = STATIC_ASSETS.includes(url.pathname) || 
                      url.pathname === '/' || 
                      url.pathname.endsWith('.js') || 
                      url.pathname.endsWith('.css') || 
                      url.pathname.endsWith('.png') || 
                      url.pathname.endsWith('.jpg') || 
+                     url.pathname.endsWith('.jpeg') || 
+                     url.pathname.endsWith('.svg') || 
+                     url.pathname.endsWith('.woff2') || 
+                     url.pathname.endsWith('.ttf') || 
                      url.pathname.endsWith('.html');
 
   if (isCoreAsset) {
@@ -89,10 +95,10 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(event.request)) // Fallback to cache if offline
+        .catch(() => caches.match(event.request)) 
     );
   } else {
-    // Cache-First for other assets (images, fonts, etc.)
+    // Cache-First for other assets
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;

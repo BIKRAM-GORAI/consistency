@@ -89,6 +89,8 @@
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+      border: none !important; /* Ensure no borders leak through */
+      outline: none !important;
     }
 
     /* ── Top Navbar ── */
@@ -1243,6 +1245,79 @@
       transform: scale(1.1);
     }
 
+    .lightbox-caption-container {
+      padding: 20px;
+      background: #fff;
+      border-top: 3px solid var(--black);
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .lightbox-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .lightbox-description {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+    }
+
+    /* ── Lightbox Nav ── */
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--yellow);
+      color: var(--black);
+      border: 3px solid var(--black);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 4px 4px 0 var(--black);
+      transition: all 0.2s;
+      z-index: 10001;
+    }
+
+    .lightbox-nav:hover {
+      transform: translateY(-52%) scale(1.1);
+      box-shadow: 6px 6px 0 var(--black);
+      background: var(--lime);
+    }
+
+    .lightbox-nav:active {
+      transform: translateY(-50%) scale(1);
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    .lightbox-prev { left: 30px; }
+    .lightbox-next { right: 30px; }
+
+    @media (max-width: 768px) {
+      .lightbox-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        top: 50%; /* Keep it at the center vertically */
+        transform: translateY(-50%);
+        bottom: auto; /* Reset bottom */
+      }
+      .lightbox-nav:hover { transform: translateY(-50%) scale(1.1); }
+      .lightbox-prev { left: 10px; }
+      .lightbox-next { right: 10px; }
+    }
+
     /* ── Upcoming Features ── */
     .landing-upcoming {
       padding: 80px 24px;
@@ -1522,7 +1597,65 @@
       position: relative;
       box-shadow: 8px 8px 0 var(--black);
       max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #reviews-container {
       overflow-y: auto;
+      padding: 10px 15px 20px 5px; /* Added padding to accommodate shadows and hover shifts */
+    }
+
+    .reviews-pagination-footer {
+      margin-top: 20px;
+      text-align: center;
+      padding-top: 10px;
+      border-top: 2px solid #eee;
+    }
+
+    /* ── Floating Install Button ── */
+    .install-floating-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--yellow);
+      color: var(--black);
+      padding: 12px 24px;
+      border: 3px solid var(--black);
+      border-radius: 50px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-decoration: none;
+      display: none; /* Hidden by default */
+      align-items: center;
+      gap: 10px;
+      box-shadow: 6px 6px 0 var(--black);
+      z-index: 999;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .install-floating-btn:hover {
+      transform: translate(-4px, -4px) scale(1.05);
+      box-shadow: 10px 10px 0 var(--black);
+      background: var(--lime);
+    }
+
+    .install-floating-btn:active {
+      transform: translate(0, 0);
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    @media (max-width: 768px) {
+      .install-floating-btn {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 20px;
+        font-size: 12px;
+      }
     }
 
     .review-modal h3 {
@@ -1612,6 +1745,94 @@
       font-size: 15px;
       line-height: 1.5;
     }
+
+    /* ── FAQ Section ── */
+    .landing-faq {
+      padding: 80px 24px;
+      background: var(--bg);
+      border-top: var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .faq-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 40px;
+    }
+
+    .faq-card {
+      background: #fff;
+      border: 3px solid var(--black);
+      border-radius: 12px;
+      padding: 0; /* Let header and content handle padding */
+      text-align: left;
+      box-shadow: 6px 6px 0 var(--black);
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .faq-header {
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .faq-question {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--black);
+      margin: 0;
+      padding-right: 20px;
+    }
+
+    .faq-icon {
+      font-size: 24px;
+      font-weight: 900;
+      transition: transform 0.3s ease;
+    }
+
+    .faq-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .faq-card.active .faq-content {
+      max-height: 500px;
+      padding: 0 24px 24px;
+      border-top: 2px dashed rgba(0,0,0,0.1);
+      padding-top: 20px;
+    }
+
+    .faq-card.active .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      font-weight: 600;
+      line-height: 1.6;
+      color: #333;
+      font-size: 15px;
+    }
+
+    /* FAQ Card Variations */
+    .faq-card:nth-child(5n+1) { background: #fdf2f2; }
+    .faq-card:nth-child(5n+2) { background: #f0fdf4; }
+    .faq-card:nth-child(5n+3) { background: #eff6ff; }
+    .faq-card:nth-child(5n+4) { background: #fffbeb; }
+    .faq-card:nth-child(5n+5) { background: #faf5ff; }
   </style>
 </head>
 
@@ -1686,7 +1907,9 @@
     <div class="streak-flex-container reveal">
       <div class="streak-flame">🔥</div>
       <div style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 900; text-transform: uppercase;">Build Your Streak</div>
-      <div class="stat-label" style="font-size: 14px; color: #666;">Consistency is the only shortcut to success</div>
+      <div class="stat-number" data-target="365" data-duration="50000" style="font-size: 64px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--black); margin: 10px 0;">0</div>
+      <div class="stat-label" style="font-size: 14px; color: #666; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">and Counting...</div>
+      <div class="stat-label" style="font-size: 14px; color: #666; margin-top: 10px;">Consistency is the only shortcut to success</div>
     </div>
 
     <!-- Interactive Demo Habit Card -->
@@ -1740,7 +1963,7 @@
         <span class="feature-tag" style="background: var(--yellow);">Developers</span>
         <i data-lucide="terminal"></i>
         <h3>LeetCode Integration</h3>
-        <p>Automate your coding grind. Connect your <b>LeetCode account</b> to automatically verify and log your daily problem-solving progress. Perfect for students and competitive coders.</p>
+        <p>Validate your coding grind. Paste your <b>LeetCode problem URL</b> into the dedicated section to instantly verify and log your daily progress. Perfect for students and competitive coders.</p>
       </div>
 
       <!-- Smart Templates -->
@@ -1794,7 +2017,7 @@
       style="background:#fff; padding:0 14px; border:var(--border); box-shadow:var(--shadow);">See it in action</h2>
     <div class="screenshots-grid">
       <!-- Screenshot 1 -->
-      <div class="screenshot-card" onclick="openLightbox('/about1.png', 'Dashboard', 'Your daily progress at a glance')">
+      <div class="screenshot-card" onclick="openLightbox(0)">
         <img src="/about1.png" loading="lazy" alt="Dashboard" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Dashboard</h4>
@@ -1803,7 +2026,7 @@
       </div>
 
       <!-- Screenshot 2 -->
-      <div class="screenshot-card" onclick="openLightbox('/about2.png', 'Goals', 'Track your goals with ease')">
+      <div class="screenshot-card" onclick="openLightbox(1)">
         <img src="/about2.png" loading="lazy" alt="Profile" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Goals</h4>
@@ -1812,7 +2035,7 @@
       </div>
 
       <!-- Screenshot 3 -->
-      <div class="screenshot-card" onclick="openLightbox('/about3.jpg', 'Groups', 'Find like-minded people and achieve your goals together')">
+      <div class="screenshot-card" onclick="openLightbox(2)">
         <img src="/about3.jpg" loading="lazy" alt="Tasks" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Groups</h4>
@@ -1821,7 +2044,7 @@
       </div>
 
       <!-- Screenshot 4 -->
-      <div class="screenshot-card" onclick="openLightbox('/about4.png', 'Acheivements', 'Track your acheivements')">
+      <div class="screenshot-card" onclick="openLightbox(3)">
         <img src="/about4.png" loading="lazy" alt="Chat" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Acheivements</h4>
@@ -1830,7 +2053,7 @@
       </div>
 
       <!-- Screenshot 5 -->
-      <div class="screenshot-card" onclick="openLightbox('/about5.png', 'Profile Page', 'Configure your profile')">
+      <div class="screenshot-card" onclick="openLightbox(4)">
         <img src="/about5.png" loading="lazy" alt="Groups" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Profile Page</h4>
@@ -1839,7 +2062,7 @@
       </div>
 
       <!-- Screenshot 6 -->
-      <div class="screenshot-card" onclick="openLightbox('/about6.jpg', 'Share profile View', 'Share your profile with friends')">
+      <div class="screenshot-card" onclick="openLightbox(5)">
         <img src="/about6.jpg" loading="lazy" alt="Badges" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Share profile View</h4>
@@ -1848,7 +2071,7 @@
       </div>
 
       <!-- Screenshot 8 -->
-      <div class="screenshot-card" onclick="openLightbox('/about8.jpg', 'Public Profile', 'View Otherr\'s Profile')">
+      <div class="screenshot-card" onclick="openLightbox(6)">
         <img src="/about8.jpg" loading="lazy" alt="Leaderboard" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Public Profile</h4>
@@ -1857,7 +2080,7 @@
       </div>
 
       <!-- Screenshot 7 -->
-      <div class="screenshot-card" onclick="openLightbox('/about7.jpg', 'Top Global Rankings', 'View top global rankings')">
+      <div class="screenshot-card" onclick="openLightbox(7)">
         <img src="/about7.jpg" loading="lazy" alt="Offline" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Top Global Rankings</h4>
@@ -1866,7 +2089,7 @@
       </div>
       
       <!-- Screenshot 9 -->
-      <div class="screenshot-card" onclick="openLightbox('/about9.png', 'Live Group Chat', 'Chat with your group members')">
+      <div class="screenshot-card" onclick="openLightbox(8)">
         <img src="/about9.png" loading="lazy" alt="Privacy" class="screenshot-img" 
              onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about9.png</text></svg>'">
         <div class="screenshot-overlay">
@@ -1915,7 +2138,7 @@
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gamingwithdeoxy@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
           <a href="https://www.instagram.com/deyxop/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="instagram"></i> Instagram</a>
+              data-lucide="Instagram"></i> Instagram</a>
           <a href="https://github.com/Debjeet-Dey" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -1930,7 +2153,7 @@
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=bikram77620@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
           <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="instagram"></i> Instagram</a>
+              data-lucide="Instagram"></i> Instagram</a>
           <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -1945,7 +2168,7 @@
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tanjirokamado777555@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
           <a href="https://www.instagram.com/let.him.coode/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="instagram"></i> Instagram</a>
+              data-lucide="Instagram"></i> Instagram</a>
           <a href="https://github.com/abhishekadhikari-247" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -1966,6 +2189,67 @@
     </div>
   </section>
 
+  <!-- FAQ Section -->
+  <section class="landing-faq reveal">
+    <h2 class="landing-section-title">Common Questions ❓</h2>
+    <div class="faq-grid">
+      <!-- FAQ 1 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">Is Consistency Daily really free?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">Yes! The core platform is free for everyone to use. Our goal is to help students and professionals build better habits without any paywalls or hidden fees.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 2 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">How private is my data?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">Extremely. Your account, tasks, and streaks are strictly your own. Each user has an isolated private account, and your progress is only visible to you unless you choose to join a group.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 3 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">Can I use it on my phone?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">Absolutely. It's a Progressive Web App (PWA). Just click the 'Install App' button or 'Add to Home Screen' in your mobile browser for a native-app experience with offline support.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 4 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">Does the LeetCode integration actually work?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">Yes! You can paste the URL of the problem you solved in the dedicated LeetCode section. Click 'Validate', and our system will verify if you completed it that day before adding it to your daily tasks.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 5 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">What happens if I miss a day?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">Your streak will reset, but don't worry! Every new day is a fresh start. You can use our 'Save Template' feature to quickly set up your daily goals and get back on track instantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="landing-footer">
     &copy; <span id="year"></span> Consistency Daily. All rights reserved by the owner.
@@ -1974,6 +2258,8 @@
   <!-- Lightbox Modal -->
   <div id="lightbox-modal" class="lightbox-modal" onclick="closeLightbox()">
     <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <button class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); changeLightboxImage(-1)"><i data-lucide="chevron-left"></i></button>
+    <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); changeLightboxImage(1)"><i data-lucide="chevron-right"></i></button>
     <div class="lightbox-content" onclick="event.stopPropagation()">
       <img id="lightbox-img" class="lightbox-img" src="" alt="Expanded Screenshot">
     </div>
@@ -2009,6 +2295,9 @@
       <h3>All Reviews</h3>
       <div id="reviews-container">
         <!-- Reviews injected here -->
+      </div>
+      <div class="reviews-pagination-footer" id="reviews-pagination-footer">
+        <button id="btn-load-more-reviews" class="btn-review btn-review-secondary" style="width: 100%;" onclick="loadMoreReviews()">Load More Reviews</button>
       </div>
     </div>
   </div>
@@ -2047,6 +2336,10 @@
       }
     }
 
+    let allReviewsData = [];
+    let reviewsCurrentPage = 1;
+    const REVIEWS_PER_PAGE = 5;
+
     async function openViewReviewsModal() {
       try {
         const modeRes = await fetch('/api/reviews/access-mode');
@@ -2055,7 +2348,7 @@
         let password = '';
         if (modeData.mode === 'private') {
           password = prompt('This section is private. Please enter the admin password:');
-          if (password === null) return; // User cancelled
+          if (password === null) return;
         }
 
         const headers = {};
@@ -2071,24 +2364,38 @@
           return;
         }
 
-        renderReviews(data);
+        allReviewsData = data;
+        reviewsCurrentPage = 1;
+        
+        renderReviews();
         document.getElementById('view-reviews-modal').classList.add('show');
       } catch (err) {
         alert('Failed to fetch reviews');
       }
     }
 
+    function loadMoreReviews() {
+      reviewsCurrentPage++;
+      renderReviews(true);
+    }
+
     function closeViewReviewsModal() {
       document.getElementById('view-reviews-modal').classList.remove('show');
     }
 
-    function renderReviews(reviews) {
+    function renderReviews(append = false) {
       const container = document.getElementById('reviews-container');
-      container.innerHTML = '';
-      if (!Array.isArray(reviews) || reviews.length === 0) {
+      if (!append) container.innerHTML = '';
+      
+      if (!Array.isArray(allReviewsData) || allReviewsData.length === 0) {
         container.innerHTML = '<p style="font-weight:600;">No reviews yet.</p>';
+        document.getElementById('reviews-pagination-footer').style.display = 'none';
         return;
       }
+
+      const startIndex = (reviewsCurrentPage - 1) * REVIEWS_PER_PAGE;
+      const endIndex = startIndex + REVIEWS_PER_PAGE;
+      const paginatedReviews = allReviewsData.slice(startIndex, endIndex);
 
       // Pastel colors for Neo-Brutalist cards
       const cardColors = ['#fdf2f2', '#f0fdf4', '#eff6ff', '#fffbeb', '#faf5ff'];
@@ -2112,9 +2419,9 @@
         'Fixed': '#4ade80'
       };
 
-      reviews.forEach((r, index) => {
+      paginatedReviews.forEach((r, index) => {
         const d = new Date(r.createdAt).toLocaleString();
-        const color = cardColors[index % cardColors.length];
+        const color = cardColors[(startIndex + index) % cardColors.length];
 
         const badgesHtml = (r.userBadges || []).map(b => `
           <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 2px 8px; border: 2px solid var(--black); border-radius: 4px; background: ${badgeColors[b] || '#eee'}; display: inline-block; box-shadow: 2px 2px 0 var(--black);">${b}</span>
@@ -2127,8 +2434,9 @@
         card.style.boxShadow = '6px 6px 0 var(--black)';
         card.style.transition = 'transform 0.2s';
         card.style.padding = '24px';
-        card.style.marginBottom = '24px';
-        card.style.width = '100%';
+        card.style.marginBottom = '32px';
+        card.style.width = 'calc(100% - 16px)';
+        card.style.marginLeft = '8px';
         card.style.boxSizing = 'border-box';
         card.onmouseover = () => card.style.transform = 'translate(-4px, -4px)';
         card.onmouseout = () => card.style.transform = 'translate(0, 0)';
@@ -2143,6 +2451,14 @@
         `;
         container.appendChild(card);
       });
+
+      // Show/Hide Load More
+      const footer = document.getElementById('reviews-pagination-footer');
+      if (endIndex >= allReviewsData.length) {
+        footer.style.display = 'none';
+      } else {
+        footer.style.display = 'block';
+      }
     }
 
     // ── Lightbox Logic ──
@@ -2151,14 +2467,21 @@
 
     // ── Service Worker Update Detection ──
     if ('serviceWorker' in navigator) {
+      // Check if we already updated in this session to prevent loops
+      const urlParams = new URLSearchParams(window.location.search);
+      const wasUpdated = urlParams.has('sw_updated');
+
       navigator.serviceWorker.register('/sw.js').then(reg => {
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New service worker found and installed - notify user or auto-reload
-              console.log('New update available. Reloading for latest content...');
-              window.location.reload();
+              if (!wasUpdated) {
+                console.log('New update available. Reloading for latest content...');
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('sw_updated', '1');
+                window.location.href = newUrl.toString();
+              }
             }
           });
         });
@@ -2167,15 +2490,41 @@
       // Listen for the controlling service worker changing
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
+        if (!refreshing && !wasUpdated) {
           window.location.reload();
           refreshing = true;
         }
       });
     }
 
-    function openLightbox(src, title, description) {
-      lightboxImg.src = src;
+    const screenshotsData = [
+      { src: '/about1.png', title: 'Dashboard', desc: 'Your daily progress at a glance' },
+      { src: '/about2.png', title: 'Goals', desc: 'Track your goals with ease' },
+      { src: '/about3.jpg', title: 'Groups', desc: 'Find like-minded people and achieve your goals together' },
+      { src: '/about4.png', title: 'Acheivements', desc: 'Track your acheivements' },
+      { src: '/about5.png', title: 'Profile Page', desc: 'Configure your profile' },
+      { src: '/about6.jpg', title: 'Share profile View', desc: 'Share your profile with friends' },
+      { src: '/about8.jpg', title: 'Public Profile', desc: "View Otherr's Profile" },
+      { src: '/about7.jpg', title: 'Top Global Rankings', desc: 'View top global rankings' },
+      { src: '/about9.png', title: 'Live Group Chat', desc: 'Chat with your group members' }
+    ];
+
+    let currentScreenshotIndex = 0;
+
+    function openLightbox(index) {
+      currentScreenshotIndex = index;
+      updateLightboxContent();
+      lightboxModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      // Ensure icons are rendered inside the modal
+      lucide.createIcons({
+        root: lightboxModal
+      });
+    }
+
+    function updateLightboxContent() {
+      const data = screenshotsData[currentScreenshotIndex];
+      lightboxImg.src = data.src;
       
       // Create or update caption container
       let container = lightboxModal.querySelector('.lightbox-caption-container');
@@ -2186,13 +2535,25 @@
       }
       
       container.innerHTML = `
-        <div class="lightbox-title">${title || 'App Screenshot'}</div>
-        <div class="lightbox-description">${description || ''}</div>
+        <div class="lightbox-title">${data.title || 'App Screenshot'}</div>
+        <div class="lightbox-description">${data.desc || ''}</div>
       `;
-      
-      lightboxModal.classList.add('show');
-      document.body.style.overflow = 'hidden';
     }
+
+    function changeLightboxImage(direction) {
+      currentScreenshotIndex += direction;
+      if (currentScreenshotIndex >= screenshotsData.length) currentScreenshotIndex = 0;
+      if (currentScreenshotIndex < 0) currentScreenshotIndex = screenshotsData.length - 1;
+      updateLightboxContent();
+    }
+
+    // Keyboard Navigation for Lightbox
+    window.addEventListener('keydown', (e) => {
+      if (!lightboxModal.classList.contains('show')) return;
+      if (e.key === 'ArrowRight') changeLightboxImage(1);
+      if (e.key === 'ArrowLeft') changeLightboxImage(-1);
+      if (e.key === 'Escape') closeLightbox();
+    });
 
     function closeLightbox() {
       const modal = document.getElementById('lightbox-modal');
@@ -2230,17 +2591,20 @@
     function startCounters(container) {
       container.querySelectorAll('.stat-number').forEach(counter => {
         const target = +counter.getAttribute('data-target');
-        const duration = 2000;
+        const duration = +counter.getAttribute('data-duration') || 2000; // Customizable duration
         const increment = target / (duration / 16);
         
         let current = 0;
         const update = () => {
           current += increment;
           if (current < target) {
-            counter.textContent = Math.ceil(current).toLocaleString() + (target === 100 ? '%' : '+');
+            // Check if it's the streak counter to add the "Days" suffix
+            const isStreak = target === 365;
+            counter.textContent = Math.ceil(current).toLocaleString() + (target === 100 ? '%' : (isStreak ? ' Days' : '+'));
             requestAnimationFrame(update);
           } else {
-            counter.textContent = target.toLocaleString() + (target === 100 ? '%' : '+');
+            const isStreak = target === 365;
+            counter.textContent = target.toLocaleString() + (target === 100 ? '%' : (isStreak ? ' Days' : '+'));
           }
         };
         update();
@@ -2330,16 +2694,58 @@
       }
     });
 
-    // ── Floating Offline Pill ──
-    const offlinePill = document.createElement('a');
-    offlinePill.href = '#';
-    offlinePill.className = 'offline-floating-pill';
-    offlinePill.innerHTML = '<i data-lucide="wifi"></i> Works Offline';
-    offlinePill.onclick = (e) => {
+    // ── PWA Installation Logic ──
+    let deferredPrompt;
+    const installBtn = document.createElement('button');
+    installBtn.className = 'install-floating-btn';
+    installBtn.innerHTML = '<i data-lucide="download"></i> Install App';
+    installBtn.style.display = 'none'; // Hidden initially
+    document.body.appendChild(installBtn);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      document.querySelector('.landing-about.reveal').scrollIntoView({ behavior: 'smooth' });
-    };
-    document.body.appendChild(offlinePill);
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      
+      // Update UI to show the install button
+      installBtn.style.display = 'flex';
+      lucide.createIcons({ root: installBtn });
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('App is already installed or your browser doesn\'t support this feature.');
+        return;
+      }
+      
+      // Show the install prompt
+      deferredPrompt.prompt();
+      
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        installBtn.style.display = 'none';
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      
+      // We've used the prompt, and can't use it again, throw it away
+      deferredPrompt = null;
+    });
+
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('PWA was installed');
+      installBtn.style.display = 'none';
+    });
+
+    // Check if already in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+      installBtn.style.display = 'none';
+    }
 
     document.getElementById('year').textContent = new Date().getFullYear();
     // If already logged in, go straight to the app
@@ -2348,6 +2754,12 @@
     }
   </script>
   <script>
+    function toggleFaq(header) {
+      const card = header.parentElement;
+      const isActive = card.classList.contains('active');
+      document.querySelectorAll('.faq-card').forEach(c => c.classList.remove('active'));
+      if (!isActive) card.classList.add('active');
+    }
     lucide.createIcons();
   </script>
 </body>
