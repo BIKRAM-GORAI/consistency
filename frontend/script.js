@@ -5782,7 +5782,7 @@ if ('serviceWorker' in navigator) {
       }
 
       // 2. Register the fresh v15 worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('sw.js?v=18');
+      const reg = await navigator.serviceWorker.register('sw.js?v=27');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -6193,6 +6193,8 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
 
 let activeChatGroupId = null;
 let chatUnsubscribe = null;
+let videoCallUnsubscribe = null;
+let jitsiApi = null;
 let chatMessagesLimit = 30;
 let activeReplyTo = null;
 let isPaginating = false;
@@ -6393,6 +6395,66 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
 
   // Start listening for typing indicators
   listenForTyping();
+
+  // Start listening for active video call participants
+  subscribeToActiveVideoCall(groupId);
+}
+
+function subscribeToActiveVideoCall(groupId) {
+  if (typeof videoCallUnsubscribe === 'function') {
+    videoCallUnsubscribe();
+    videoCallUnsubscribe = null;
+  }
+
+  const { firebaseRtdb, rtdb } = window;
+  const callRef = rtdb.ref(firebaseRtdb, `video_calls/${groupId}/participants`);
+  
+  videoCallUnsubscribe = rtdb.onValue(callRef, (snapshot) => {
+    const participants = snapshot.val() || {};
+    updateVideoCallUI(participants);
+  });
+}
+
+function updateVideoCallUI(participants) {
+  const pList = Object.values(participants);
+  
+  const indicator = document.getElementById('video-call-indicator');
+  const avatarContainer = document.getElementById('active-call-participants');
+  const banner = document.getElementById('active-video-call-banner');
+  const bannerAvatars = document.getElementById('banner-participants');
+  const bannerText = document.getElementById('banner-status-text');
+
+  if (!indicator || !avatarContainer || !banner) return;
+
+  if (pList.length > 0) {
+    indicator.style.display = 'block';
+    banner.style.display = 'flex';
+    if (bannerText) bannerText.textContent = `${pList.length} member${pList.length === 1 ? '' : 's'} currently in call`;
+    
+    // Render overlapping avatars for both locations
+    let html = '';
+    pList.slice(0, 3).forEach(p => {
+      const name = p.name || 'Member';
+      if (p.photo && p.photo !== 'null' && p.photo !== 'undefined') {
+        html += `<div class="participant-avatar" title="${escHtml(name)}"><img src="${p.photo}" /></div>`;
+      } else {
+        const initial = name.charAt(0).toUpperCase();
+        html += `<div class="participant-avatar" title="${escHtml(name)}">${initial}</div>`;
+      }
+    });
+    
+    if (pList.length > 3) {
+      html += `<div class="participant-avatar" style="font-size: 8px;">+${pList.length - 3}</div>`;
+    }
+    
+    avatarContainer.innerHTML = html;
+    if (bannerAvatars) bannerAvatars.innerHTML = html;
+  } else {
+    indicator.style.display = 'none';
+    banner.style.display = 'none';
+    avatarContainer.innerHTML = '';
+    if (bannerAvatars) bannerAvatars.innerHTML = '';
+  }
 }
 
 function loadMoreChatMessages() {
@@ -6669,17 +6731,26 @@ function closeChatModal() {
 
   // Clear own typing status
   updateTypingStatus(false);
+  
+  if (videoCallUnsubscribe) {
+    videoCallUnsubscribe();
+    videoCallUnsubscribe = null;
+  }
+
   activeChatGroupId = null;
   closeModal('modal-group-chat');
   clearMediaPreview(); // Reset media selection
 }
 
 /** ── JITSI VIDEO CALL INTEGRATION ── **/
-let jitsiApi = null;
-
 async function startGroupVideoCall() {
   const groupId = activeChatGroupId;
   if (!groupId) return;
+
+  const { firebaseRtdb, rtdb } = window;
+  const userId = localStorage.getItem('userId');
+  const userName = localStorage.getItem('userName');
+  const userPhoto = localStorage.getItem('userProfilePicture');
 
   const btn = document.getElementById('chat-video-call-btn');
   const originalHtml = btn.innerHTML;
@@ -6712,8 +6783,12 @@ async function startGroupVideoCall() {
         <div style="text-align: center;">
           <h3 style="color: white; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 18px;">Establishing Connection...</h3>
           <p style="color: #666; margin: 10px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Hang tight! This usually takes about 10 seconds.</p>
+          <p style="color: #555; margin: 15px 0 0 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0; animation: fallbackFadeIn 1s ease 12s forwards;">If it takes longer, refresh the page and try again.</p>
         </div>
       </div>
+      <style>
+        @keyframes fallbackFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+      </style>
     `;
     container.innerHTML = loaderHtml;
     
@@ -6766,6 +6841,19 @@ async function startGroupVideoCall() {
 
     jitsiApi = new JitsiMeetExternalAPI(domain, options);
     
+    // Mark user as in-call in RTDB
+    const participantRef = rtdb.ref(firebaseRtdb, `video_calls/${groupId}/participants/${userId}`);
+    const participantData = {
+      name: userName || 'User',
+      photo: (userPhoto && userPhoto !== 'undefined' && userPhoto !== 'null') ? userPhoto : null,
+      joinedAt: rtdb.serverTimestamp()
+    };
+    
+    console.log(`[VideoCall] Marking self as in-call:`, participantData);
+    
+    rtdb.set(participantRef, participantData);
+    rtdb.onDisconnect(participantRef).remove();
+    
     jitsiApi.addEventListener('videoConferenceLeft', () => {
       closeVideoCall();
     });
@@ -6806,9 +6894,25 @@ function closeVideoCall() {
     jitsiApi.dispose();
     jitsiApi = null;
   }
+
+  // Remove from RTDB
+  if (activeChatGroupId) {
+    const { firebaseRtdb, rtdb } = window;
+    const userId = localStorage.getItem('userId');
+    const participantRef = rtdb.ref(firebaseRtdb, `video_calls/${activeChatGroupId}/participants/${userId}`);
+    rtdb.remove(participantRef);
+  }
+
   document.getElementById('modal-video-call').style.display = 'none';
   document.body.style.overflow = ''; // Restore scrolling
   document.getElementById('jitsi-container').innerHTML = '';
+  
+  // New: Force a read-receipt check now that the video call is hidden
+  setTimeout(() => {
+    if (typeof triggerManualReadCheck === 'function') {
+      triggerManualReadCheck();
+    }
+  }, 300);
 }
 
 function updateExistingMessage(msg, el) {
@@ -7270,6 +7374,9 @@ function initLazyLoading() {
 function initReadTracker() {
   if (!readObserver) {
     readObserver = new IntersectionObserver((entries) => {
+      // If user is in a video call, don't mark anything as read
+      if (document.getElementById('modal-video-call').style.display === 'flex') return;
+
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const msgId = entry.target.id.replace('chat-msg-', '');
@@ -7288,6 +7395,35 @@ function initReadTracker() {
   // Observe all messages that are NOT from the current user
   const userId = localStorage.getItem('userId');
   document.querySelectorAll('.chat-bubble-wrapper.other').forEach(m => readObserver.observe(m));
+}
+
+function triggerManualReadCheck() {
+  if (!activeChatGroupId) return;
+  const container = document.getElementById('chat-messages-container');
+  if (!container || container.style.display === 'none') return;
+  
+  // If user is still in a video call (just in case), skip
+  const videoModal = document.getElementById('modal-video-call');
+  if (videoModal && videoModal.style.display === 'flex') return;
+
+  const messages = document.querySelectorAll('.chat-bubble-wrapper.other');
+  const containerRect = container.getBoundingClientRect();
+  let highestVisible = myHighestReadTimestamp;
+
+  messages.forEach(m => {
+    const rect = m.getBoundingClientRect();
+    // Check if the message is roughly within the viewport of the scroll container
+    if (rect.top < containerRect.bottom && rect.bottom > containerRect.top) {
+      const ts = m.dataset.ts ? parseInt(m.dataset.ts) : 0;
+      if (ts > highestVisible) highestVisible = ts;
+    }
+  });
+
+  if (highestVisible > myHighestReadTimestamp) {
+    myHighestReadTimestamp = highestVisible;
+    console.log(`[ReadSync] Manual check triggered.`);
+    throttledUpdateReadStatus();
+  }
 }
 
 let readStatusTimeout = null;

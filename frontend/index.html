@@ -1334,6 +1334,7 @@
         <div style="text-align: center;">
           <h3 style="color: white; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 18px;">Establishing Connection...</h3>
           <p style="color: #666; margin: 10px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Hang tight! This usually takes about 10 seconds.</p>
+          <p style="color: #555; margin: 15px 0 0 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0; animation: fallbackFadeIn 1s ease 12s forwards;">If it takes longer, refresh the page and try again.</p>
         </div>
       </div>
     </div>
@@ -1341,6 +1342,7 @@
       @keyframes jitsi-spin { to { transform: rotate(360deg); } }
       .blink { animation: jitsi-blink 1.5s ease-in-out infinite; }
       @keyframes jitsi-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      @keyframes fallbackFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
       
       .mobile-only { display: none; }
       @media (max-width: 600px) {
@@ -1350,7 +1352,7 @@
     </style>
   </div>
 
-  <script src="script.js?v=18"></script>
+  <script src="script.js?v=27"></script>
   <script>
     lucide.createIcons();
   </script>
@@ -1378,13 +1380,27 @@
           <button id="chat-bulk-delete-btn" onclick="openBulkDeleteModal()" title="Bulk Delete (Owner Only)" style="display: none; background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
             <i data-lucide="trash-2" style="width: 20px; height: 20px; color: #fff;"></i>
           </button>
-          <button id="chat-video-call-btn" onclick="startGroupVideoCall()" title="Start Video Call" style="background: var(--purple); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
+          <div id="active-call-participants" class="active-call-participants"></div>
+          <button id="chat-video-call-btn" onclick="startGroupVideoCall()" title="Start Video Call" style="background: var(--purple); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0; position: relative;">
             <i data-lucide="video" style="width: 20px; height: 20px; color: #fff;"></i>
+            <span id="video-call-indicator" class="video-call-active-dot blink" style="display: none;"></span>
           </button>
           <button class="modal-close" onclick="closeChatModal()" style="background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0;">
             <i data-lucide="x" style="width: 20px; height: 20px; color: #fff;"></i>
           </button>
         </div>
+      </div>
+      
+      <!-- Sleek Active Video Call Banner -->
+      <div id="active-video-call-banner" class="video-call-banner">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="banner-participants" class="active-call-participants"></div>
+          <div style="display: flex; flex-direction: column;">
+            <span class="status-label">Live Session</span>
+            <span id="banner-status-text" class="status-count">3 people currently in call</span>
+          </div>
+        </div>
+        <button onclick="startGroupVideoCall()" class="btn-primary ripple" style="padding: 8px 18px; font-size: 12px; background: var(--purple); border-width: 2px; box-shadow: 3px 3px 0 var(--black); font-weight: 900;">JOIN NOW</button>
       </div>
       
       <div class="modal-body" id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 24px; background: var(--bg-muted); display: flex; flex-direction: column; gap: 16px;">
@@ -1452,6 +1468,7 @@
         </div>
       </div>
     </div>
+  </div>
   <!-- ===== MODAL: Bulk Delete (Owner) ===== -->
   <div class="modal-overlay" id="modal-bulk-delete" onclick="closeModalOnOverlay(event, 'modal-bulk-delete')">
     <div class="modal" style="width: 92%; max-width: 450px; height: auto; max-height: 95vh; border-color: var(--black);">

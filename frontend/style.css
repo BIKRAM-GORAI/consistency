@@ -140,12 +140,103 @@ body {
   box-shadow: 0 4px 0 var(--black);
 }
 
+/* Video Call Active Indicator */
+.video-call-active-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--red) !important;
+  border: 2px solid var(--black);
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 0 0 8px var(--red);
+}
+
+.active-call-participants {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+/* Video Call Banner */
+.video-call-banner {
+  display: none;
+  background: var(--bg-card);
+  border-bottom: 3px solid var(--black);
+  padding: 10px 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 5;
+  animation: slideDown 0.3s ease;
+}
+
+.video-call-banner .status-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.video-call-banner .status-count {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.participant-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--black);
+  margin-left: -10px;
+  background: var(--bg-card);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: transform 0.2s ease;
+}
+
+.participant-avatar:first-child {
+  margin-left: 0;
+}
+
+.participant-avatar:hover {
+  transform: translateY(-2px) scale(1.1);
+  z-index: 10;
+}
+
+.participant-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .nav-brand {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
   min-width: 0;
+}
+
+/* Animations */
+.blink {
+  animation: neo-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes neo-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.9); }
 }
 
 .brand-icon {
