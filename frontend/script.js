@@ -6855,7 +6855,7 @@ async function startGroupVideoCall() {
       closeVideoCall();
     });
 
-    jitsiApi.addEventListener('videoConferenceJoined', () => {
+    jitsiApi.addEventListener('videoConferenceJoined', async () => {
       // Hide loading overlay with a smooth fade
       const loader = document.getElementById('jitsi-loading-overlay');
       if (loader) {
@@ -6866,6 +6866,18 @@ async function startGroupVideoCall() {
       const avatar = options.userInfo.avatarUrl;
       if (avatar) {
         jitsiApi.executeCommand('avatarUrl', avatar);
+      }
+
+      // Check for multiple cameras (mobile front/back) to show the switch button
+      try {
+        const devices = await jitsiApi.getAvailableDevices();
+        const videoInputs = devices.videoInput || [];
+        if (videoInputs.length > 1) {
+          const btn = document.getElementById('switch-camera-btn');
+          if (btn) btn.style.display = 'flex';
+        }
+      } catch (e) {
+        console.warn('[VideoCall] Could not check devices:', e);
       }
     });
 
@@ -6904,12 +6916,87 @@ function closeVideoCall() {
   document.body.style.overflow = ''; // Restore scrolling
   document.getElementById('jitsi-container').innerHTML = '';
   
+  // Hide switch camera button on close
+  const switchBtn = document.getElementById('switch-camera-btn');
+  if (switchBtn) switchBtn.style.display = 'none';
+
   // New: Force a read-receipt check now that the video call is hidden
   setTimeout(() => {
     if (typeof triggerManualReadCheck === 'function') {
       triggerManualReadCheck();
     }
   }, 300);
+}
+
+/** ── Switch Camera Logic ── **/
+let isSwitchingCamera = false;
+async function switchVideoCamera() {
+  if (!jitsiApi || isSwitchingCamera) return;
+  
+  isSwitchingCamera = true;
+  const btn = document.getElementById('switch-camera-btn');
+  if (btn) {
+    btn.style.opacity = '0.4';
+    btn.style.pointerEvents = 'none';
+  }
+
+  try {
+    const devices = await jitsiApi.getAvailableDevices();
+    // Keep all video devices, including 'default' to ensure we can cycle back
+    const videoInputs = (devices.videoInput || []).filter(d => d.deviceId);
+    
+    if (videoInputs.length < 2) {
+      showToast('No other cameras detected', 'info');
+      isSwitchingCamera = false;
+      if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+      return;
+    }
+
+    // IMPORTANT: On some devices, Jitsi hangs if you switch while video is OFF.
+    // We'll check the current video state if possible, but the safest way is to just execute the command.
+    
+    // Get current device info
+    const currentDevices = await jitsiApi.getCurrentDevices();
+    const currentId = currentDevices.videoInput?.deviceId;
+    const currentLabel = currentDevices.videoInput?.label;
+
+    // Find the current device index using both ID and Label for robustness
+    let currIdx = videoInputs.findIndex(d => d.deviceId === currentId);
+    if (currIdx === -1 && currentLabel) {
+      currIdx = videoInputs.findIndex(d => d.label === currentLabel);
+    }
+
+    // Determine the next camera in the loop
+    const nextIndex = (currIdx + 1) % videoInputs.length;
+    const nextDevice = videoInputs[nextIndex];
+
+    console.log(`[VideoCall] Cycling to camera ${nextIndex + 1}/${videoInputs.length}: ${nextDevice.label}`);
+    
+    // Notify the user at the TOP of the screen to avoid covering the Jitsi toolbar
+    showToast(`Switching to: ${nextDevice.label || 'Next Camera'}`, 'info');
+
+    // Switch the device
+    await jitsiApi.setVideoInputDevice(nextDevice.label, nextDevice.deviceId);
+    
+    // Success!
+    setTimeout(() => {
+      showToast('Camera switched successfully', 'success');
+    }, 500);
+
+  } catch (err) {
+    console.error('[VideoCall] Camera switch failed:', err);
+    showToast('Failed to switch camera. Try toggling video off/on.', 'error');
+  } finally {
+    // 3-second cooldown to ensure the hardware driver has fully initialized the new stream
+    // and Jitsi has re-enabled its internal toolbar buttons.
+    setTimeout(() => {
+      isSwitchingCamera = false;
+      if (btn) {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    }, 3000);
+  }
 }
 
 function updateExistingMessage(msg, el) {
