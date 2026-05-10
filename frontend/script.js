@@ -6419,19 +6419,18 @@ function updateVideoCallUI(participants) {
   const pList = Object.values(participants);
   
   const indicator = document.getElementById('video-call-indicator');
-  const avatarContainer = document.getElementById('active-call-participants');
   const banner = document.getElementById('active-video-call-banner');
   const bannerAvatars = document.getElementById('banner-participants');
   const bannerText = document.getElementById('banner-status-text');
 
-  if (!indicator || !avatarContainer || !banner) return;
+  if (!indicator || !banner) return;
 
   if (pList.length > 0) {
     indicator.style.display = 'block';
     banner.style.display = 'flex';
     if (bannerText) bannerText.textContent = `${pList.length} member${pList.length === 1 ? '' : 's'} currently in call`;
     
-    // Render overlapping avatars for both locations
+    // Render overlapping avatars for the banner only
     let html = '';
     pList.slice(0, 3).forEach(p => {
       const name = p.name || 'Member';
@@ -6447,12 +6446,10 @@ function updateVideoCallUI(participants) {
       html += `<div class="participant-avatar" style="font-size: 8px;">+${pList.length - 3}</div>`;
     }
     
-    avatarContainer.innerHTML = html;
     if (bannerAvatars) bannerAvatars.innerHTML = html;
   } else {
     indicator.style.display = 'none';
     banner.style.display = 'none';
-    avatarContainer.innerHTML = '';
     if (bannerAvatars) bannerAvatars.innerHTML = '';
   }
 }
