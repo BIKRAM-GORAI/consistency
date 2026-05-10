@@ -1315,12 +1315,21 @@
         <h2 id="video-call-title" style="font-size: 14px; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Group Video Session</h2>
       </div>
       
-      <div id="sharing-indicator" style="display: none; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.15); border: 1px solid var(--green); padding: 4px 8px; border-radius: 20px; flex-shrink: 0;">
-        <span class="blink" style="width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: block;"></span>
-        <span style="font-size: 9px; font-weight: 900; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
-          <span class="desktop-only">Sharing Screen</span>
-          <span class="mobile-only">Sharing</span>
-        </span>
+      <div style="display: flex; gap: 4px; flex-shrink: 0; align-items: center; overflow: hidden;">
+        <div id="sharing-indicator" style="display: none; align-items: center; gap: 4px; background: rgba(34, 197, 94, 0.15); border: 1px solid var(--green); padding: 4px 6px; border-radius: 20px; flex-shrink: 0;">
+          <span class="blink" style="width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: block;"></span>
+          <span style="font-size: 9px; font-weight: 900; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; white-space: nowrap;">
+            <span class="desktop-only">Sharing Screen</span>
+            <span class="mobile-only">Screen</span>
+          </span>
+        </div>
+        <div id="video-indicator" style="display: none; align-items: center; gap: 4px; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red); padding: 4px 6px; border-radius: 20px; flex-shrink: 0;">
+          <span class="blink" style="width: 6px; height: 6px; background: var(--red); border-radius: 50%; display: block;"></span>
+          <span style="font-size: 9px; font-weight: 900; color: var(--red); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; white-space: nowrap;">
+            <span class="desktop-only">Video Capturing</span>
+            <span class="mobile-only">Video</span>
+          </span>
+        </div>
       </div>
 
       <button id="switch-camera-btn" onclick="switchVideoCamera()" title="Switch Camera" style="display: none; background: var(--bg-card); color: var(--text); border: 2px solid #000; border-radius: 8px; width: 34px; height: 34px; align-items: center; justify-content: center; box-shadow: 2px 2px 0 #000; cursor: pointer; padding: 0; flex-shrink: 0;">

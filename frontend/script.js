@@ -6898,6 +6898,13 @@ async function startGroupVideoCall() {
       }
     });
 
+    jitsiApi.addEventListener('videoMuteStatusChanged', (event) => {
+      const indicator = document.getElementById('video-indicator');
+      if (indicator) {
+        indicator.style.display = event.muted ? 'none' : 'flex';
+      }
+    });
+
   } catch (err) {
     console.error('Video call error:', err);
     showToast('Failed to start video call.', 'error');
