@@ -6820,6 +6820,8 @@ async function startGroupVideoCall() {
         doNotStoreRoom: true,
         disableTileEnlargement: true,
         disableFilmstripAutohiding: true,
+        doNotFlipLocalVideo: true,
+        disableLocalVideoFlip: true,
         constraints: {
           video: {
             aspectRatio: { ideal: 1.777 } // 16:9 ideal to prevent sides from being cut off
