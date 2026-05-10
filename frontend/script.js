@@ -6818,9 +6818,17 @@ async function startGroupVideoCall() {
         startWithAudioMuted: false,
         startWithVideoMuted: true,
         doNotStoreRoom: true,
+        disableTileEnlargement: true,
+        disableFilmstripAutohiding: true,
+        constraints: {
+          video: {
+            aspectRatio: { ideal: 1.777 } // 16:9 ideal to prevent sides from being cut off
+          }
+        },
         toolbarButtons: ['microphone', 'camera', 'desktop', 'hangup', 'tileview', 'chat', 'fullscreen']
       },
       interfaceConfigOverwrite: {
+        VIDEO_LAYOUT_FIT: 'nocrop',
         TOOLBAR_BUTTONS: ['microphone', 'camera', 'desktop', 'hangup', 'tileview', 'chat', 'fullscreen'],
         SHOW_JITSI_WATERMARK: false,
         SHOW_WATERMARK_FOR_GUESTS: false,

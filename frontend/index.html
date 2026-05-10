@@ -1352,6 +1352,10 @@
       @media (max-width: 600px) {
         .desktop-only { display: none; }
         .mobile-only { display: inline; }
+        #jitsi-container {
+          max-height: 133vw; /* 4:3 aspect ratio max to prevent Jitsi from aggressively cropping left/right sides */
+          margin: auto 0;
+        }
       }
     </style>
   </div>
