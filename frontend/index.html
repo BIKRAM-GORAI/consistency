@@ -147,6 +147,10 @@
         <span class="plus-icon"><i data-lucide="plus"></i></span>
       </button>
       <p class="add-day-hint">New Day Card</p>
+      <p class="streak-info-text" style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 8px; text-align: center; max-width: 250px; line-height: 1.4;">
+        <i data-lucide="info" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
+        Complete at least one task daily to maintain your streak!
+      </p>
     </div>
   </main>
 
@@ -260,6 +264,12 @@
         <h2><i data-lucide="calendar"></i> New Day Card</h2>
         <button class="modal-close" onclick="closeModal('modal-add-day')"><i data-lucide="x"></i></button>
       </div>
+      <div style="background: rgba(255, 214, 10, 0.1); border-bottom: 2px solid var(--black); padding: 10px 20px; text-align: center;">
+        <p style="font-size: 11px; font-weight: 800; color: var(--text); margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+          <i data-lucide="info" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
+          Reminder: Complete at least one task to keep your streak alive!
+        </p>
+      </div>
       <div class="modal-body">
         <div class="form-group" style="margin-bottom: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 12px;">
           <label for="import-template-select">Import Template</label>
@@ -334,7 +344,7 @@
       <div class="modal-body">
         <div class="form-group">
           <label for="new-cat-name">Category Name</label>
-          <input type="text" id="new-cat-name" class="form-control" placeholder="e.g. Work, Fitness, Learning..." />
+          <input type="text" id="new-cat-name" class="form-control category-input-faded" placeholder="e.g. Work, Fitness, Learning..." />
         </div>
         <div class="form-group">
           <label>Tasks</label>
@@ -574,7 +584,7 @@
       <div class="modal-body">
         <div class="form-group">
           <label for="edit-cat-name">Category Name</label>
-          <input type="text" id="edit-cat-name" class="form-control" placeholder="e.g. Work, Fitness, Learning..." />
+          <input type="text" id="edit-cat-name" class="form-control category-input-faded" placeholder="e.g. Work, Fitness, Learning..." />
         </div>
         <div class="form-group">
           <label>Tasks</label>

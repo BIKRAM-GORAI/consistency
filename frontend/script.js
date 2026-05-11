@@ -517,7 +517,12 @@ async function renderDays(appendOnly = false) {
       <button class="add-day-inline-btn ripple" onclick="openAddDayModal()" id="add-day-inline-btn">
         <span class="plus-icon">＋</span>
         <span>New Day Card</span>
-      </button>`;
+      </button>
+      <p class="streak-info-text" style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-top: 10px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">
+        <i data-lucide="flame" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px; color: var(--coral);"></i>
+        Maintain your streak! Complete at least 1 task daily.
+      </p>
+`;
     container.appendChild(addBtnRow);
   }
 
@@ -2013,7 +2018,7 @@ function renderGroups() {
   const joinedPublic = allJoinedGroups.filter(g => g.isPublic);
 
   // ── Section 1: My Private Teams ─────────────────────────
-  renderGroupSection(container, '<i data-lucide="crown"></i> My Private Teams', myPrivateTeams, true, 'lock', 'You haven\'t created any private teams yet.');
+  renderGroupSection(container, '<i data-lucide="crown"></i> My Private Teams', myPrivateTeams, true, 'lock', 'Join or create a group to access live chats, share images, and start video calls with your team!');
 
   // ── Section 2: Joined Private Teams ─────────────────────
   const joinedPrivateSection = document.createElement('div');
@@ -2030,7 +2035,7 @@ function renderGroups() {
     jpHTML += `
       <div class="group-empty-card">
         <span class="group-empty-icon"><i data-lucide="users"></i></span>
-        <p>You haven't joined any private teams yet.</p>
+        <p>Join a group or create one to unlock live chats, video sessions, send images/audio/files, and more!</p>
       </div>
     `;
   } else {
@@ -2044,7 +2049,7 @@ function renderGroups() {
   container.appendChild(joinedPrivateSection);
 
   // ── Section 3: Joined Public Groups ──────────────────────
-  renderGroupSection(container, '<i data-lucide="globe"></i> Joined Public Groups', joinedPublic, false, 'globe', 'You haven\'t joined any public groups yet.');
+  renderGroupSection(container, '<i data-lucide="globe"></i> Joined Public Groups', joinedPublic, false, 'globe', 'Explore public groups to collaborate, chat live, share images/audio/files, and maintain streaks together!');
 
   if (availablePublicGroups.length > 0) {
     const divider = document.createElement('hr');
@@ -3830,10 +3835,10 @@ function applyTemplate() {
     item.innerHTML = `
       <div class="cat-top-row">
         <input type="text" class="form-control" placeholder="Category name" id="cat-name-${idx}" value="${escHtml(cat.name)}" />
-        <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove">✕</button>
+        <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
       </div>
       <div class="tasks-builder" id="tasks-build-${idx}"></div>
-      <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})">＋ Add Task</button>
+      <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
     `;
     builder.appendChild(item);
     
@@ -3843,11 +3848,12 @@ function applyTemplate() {
       row.className = 'task-input-row';
       row.innerHTML = `
         <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(task.title)}" />
-        <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+        <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
       `;
       tasksBuilder.appendChild(row);
     }
   }
+  if (window.lucide) lucide.createIcons({ root: document.getElementById('categories-builder') });
   showToast('Template imported! You can edit before creating.', 'success');
 }
 
@@ -3954,12 +3960,13 @@ function addEditTemplateCategoryField(name = '', tasks = []) {
   item.innerHTML = `
     <div class="cat-top-row">
       <input type="text" class="form-control" placeholder="Category name" value="${escHtml(name)}" />
-      <button class="btn-remove" onclick="this.parentElement.parentElement.remove()" title="Remove">✕</button>
+      <button class="btn-remove" onclick="this.parentElement.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
     </div>
     <div class="tasks-builder" id="edit-template-tasks-build-${idx}"></div>
-    <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addEditTemplateTaskField(${idx})">＋ Add Task</button>
+    <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addEditTemplateTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
   `;
   builder.appendChild(item);
+  if (window.lucide) lucide.createIcons({ root: item });
   
   for (const task of tasks) {
     addEditTemplateTaskField(idx, task.title);
@@ -3972,9 +3979,10 @@ function addEditTemplateTaskField(catIdx, title = '') {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(title)}" />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
+  if (window.lucide) lucide.createIcons({ root: row });
 }
 
 async function submitEditTemplate() {
