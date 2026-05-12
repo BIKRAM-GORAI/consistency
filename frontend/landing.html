@@ -595,55 +595,50 @@
       color: #fff;
     }
 
-    /* ── Feature Pills ── */
+    /* ── Feature Pills (Descriptive, not buttons) ── */
     .landing-features {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-top: 64px;
+      margin-top: 52px;
       animation: fadeUp 0.55s 0.45s ease both;
       position: relative;
       z-index: 1;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .feature-pill {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       background: #fff;
-      border: var(--border);
-      border-radius: 6px;
-      padding: 10px 18px;
-      font-size: 13px;
+      border: 2px solid var(--black);
+      border-radius: 50px; /* Pill shape */
+      padding: 6px 14px;
+      font-size: 11px;
       color: var(--black);
       font-weight: 800;
-      box-shadow: var(--shadow-sm, 3px 3px 0 var(--black));
+      box-shadow: none; /* Removed shadow to not look like a button */
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.5px;
+      cursor: default; /* Not clickable */
+      user-select: none;
+      transition: none;
     }
 
-    .feature-pill:nth-child(1) {
-      background: var(--yellow);
-    }
+    .feature-pill:nth-child(1) { background: var(--yellow); }
+    .feature-pill:nth-child(2) { background: var(--lime); }
+    .feature-pill:nth-child(3) { background: var(--pink); color: #fff; }
+    .feature-pill:nth-child(4) { background: var(--teal); }
+    .feature-pill:nth-child(5) { background: var(--purple); color: #fff; }
 
-    .feature-pill:nth-child(2) {
-      background: var(--lime);
-    }
-
-    .feature-pill:nth-child(3) {
-      background: var(--pink);
-      color: #fff;
-    }
-
-    .feature-pill:nth-child(4) {
-      background: var(--teal);
-    }
-
-    .feature-pill:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: 4px 4px 0 var(--black);
+    .feature-pill-icon {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
     }
 
     .feature-pill-icon {
@@ -757,13 +752,14 @@
       }
 
       .landing-features {
-        gap: 8px;
-        margin-top: 40px;
+        gap: 6px;
+        margin-top: 32px;
+        padding: 0 10px;
       }
 
       .feature-pill {
-        font-size: 12px;
-        padding: 8px 14px;
+        font-size: 10px;
+        padding: 5px 12px;
       }
 
       .landing-footer-note {
@@ -1896,7 +1892,7 @@
 
     <div class="landing-features">
       <div class="feature-pill"><span class="feature-pill-icon">🔥</span> Streak Tracking</div>
-      <div class="feature-pill" style="background: var(--teal);"><span class="feature-pill-icon">⚡</span> Offline Ready</div>
+      <div class="feature-pill"><span class="feature-pill-icon">⚡</span> Offline Ready</div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="calendar"></i></span> Daily Cards</div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="target"></i></span> Long-Term Goals</div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="lock"></i></span> Private Accounts</div>
