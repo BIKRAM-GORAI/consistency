@@ -460,6 +460,13 @@ function updateStreak() {
     // Use local count if offline or if local count is higher (unsynced wins)
     const streak = (!navigator.onLine || count > backendStreak) ? count : backendStreak;
     
+    // Persist to localStorage for consistency across the app (e.g., Leaderboard spotlight)
+    localStorage.setItem('userCurrentStreak', streak);
+    const storedHighest = parseInt(localStorage.getItem('userHighestStreak')) || 0;
+    if (streak > storedHighest) {
+      localStorage.setItem('userHighestStreak', streak);
+    }
+    
     const el = document.getElementById('streak-display');
     const fireEl = document.querySelector('.streak-fire');
 
@@ -8511,6 +8518,12 @@ async function proactiveSync(force = false) {
       }
       if (profile.username) {
         localStorage.setItem('userUsername', profile.username);
+      }
+      if (profile.currentStreak !== undefined) {
+        localStorage.setItem('userCurrentStreak', profile.currentStreak);
+      }
+      if (profile.highestStreak !== undefined) {
+        localStorage.setItem('userHighestStreak', profile.highestStreak);
       }
       updateNavAvatar();
     }

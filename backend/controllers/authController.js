@@ -74,7 +74,7 @@ const login = async (req, res) => {
     user.lastActiveAt = new Date();
     await user.save();
     const token = generateToken(user._id, user.email);
-    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture, username: user.username, token });
+    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture, username: user.username, currentStreak: user.currentStreak || 0, highestStreak: user.highestStreak || 0, token });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -103,7 +103,7 @@ const oauthLogin = async (req, res) => {
       await user.save();
     }
     const token = generateToken(user._id, user.email);
-    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture, username: user.username, token });
+    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture, username: user.username, currentStreak: user.currentStreak || 0, highestStreak: user.highestStreak || 0, token });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -141,7 +141,9 @@ async function getProfileSettings(req, res) {
       leetcodeVerificationStatus: user.leetcodeVerificationStatus || 'none',
       leetcodeLastVerifiedAt: user.leetcodeLastVerifiedAt || null,
       leetcodeProfilePicture: user.leetcodeProfilePicture || '',
-      leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0
+      leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
+      currentStreak: user.currentStreak || 0,
+      highestStreak: user.highestStreak || 0
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }

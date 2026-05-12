@@ -3451,8 +3451,6 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 @media (min-width: 769px) {
   #lb-my-rank-area {
     bottom: 32px;
-    left: calc(240px + (100% - 240px) / 2);
-    width: calc(100% - 300px);
   }
 }
 

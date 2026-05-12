@@ -784,6 +784,8 @@
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
         localStorage.setItem('userUsername', data.username || '');
+        localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
+        localStorage.setItem('userHighestStreak', data.highestStreak || 0);
 
         window.location.replace('index.html');
       } catch (err) {
@@ -1155,6 +1157,8 @@
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
         localStorage.setItem('userUsername', data.username || '');
+        localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
+        localStorage.setItem('userHighestStreak', data.highestStreak || 0);
 
         // Redirect to dashboard
         window.location.replace('index.html');
