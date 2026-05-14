@@ -785,6 +785,7 @@
         }
 
         // Save user info and token to localStorage
+        localStorage.removeItem('adminToken'); // Security: Clear admin session
         localStorage.setItem('userId', data._id);
         localStorage.setItem('userName', data.name);
         localStorage.setItem('userEmail', data.email);
@@ -1109,6 +1110,14 @@
       const tab = params.get('tab');
       switchTab(tab === 'register' ? 'register' : 'login');
     })();
+
+    // Security: If admin logs in another tab, logout user here
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'adminToken' && e.newValue) {
+        localStorage.clear();
+        window.location.reload();
+      }
+    });
   </script>
 
   <script type="module">
@@ -1158,6 +1167,7 @@
         }
 
         // Store standard app credentials just like a normal login
+        localStorage.removeItem('adminToken'); // Security: Clear admin session
         localStorage.setItem('userId', data._id);
         localStorage.setItem('userName', data.name);
         localStorage.setItem('userEmail', data.email);

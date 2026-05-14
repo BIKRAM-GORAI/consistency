@@ -4,8 +4,40 @@ let allReviews = []; // Global store to avoid JSON-in-attribute issues
 
 // Redirect if not logged in
 if (!token && !window.location.pathname.includes('admin-login.html')) {
-  window.location.href = 'admin-login.html';
+  window.location.replace('admin-login.html');
 }
+
+// Security: If user token is set in another tab, logout admin immediately
+window.addEventListener('storage', (e) => {
+  if (e.key === 'token' && e.newValue) {
+    localStorage.removeItem('adminToken');
+    window.location.replace('admin-login.html');
+  }
+  if (e.key === 'adminToken' && !e.newValue) {
+    window.location.replace('admin-login.html');
+  }
+});
+
+// Handle browser back button (caching issues)
+window.onpageshow = function(event) {
+  if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+    if (!localStorage.getItem('adminToken')) {
+      window.location.replace('admin-login.html');
+    }
+  }
+  // Prevent back navigation by pushing a new state
+  if (localStorage.getItem('adminToken') && window.location.pathname.includes('admin-dashboard.html')) {
+    history.pushState(null, null, location.href);
+  }
+};
+
+// Trap the back button
+window.onpopstate = function () {
+  if (localStorage.getItem('adminToken') && window.location.pathname.includes('admin-dashboard.html')) {
+    history.pushState(null, null, location.href);
+    // Optionally show a small toast or message
+  }
+};
 
 function openImagePreview(url) {
   if (!url) return;
@@ -1094,7 +1126,7 @@ async function openSecureProfile(userId) {
 
 async function logout() {
   localStorage.removeItem('adminToken');
-  window.location.href = 'admin-login.html';
+  window.location.replace('admin-login.html');
 }
 
 async function handleAdminUserPicUpload(event, userId) {

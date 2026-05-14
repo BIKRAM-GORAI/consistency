@@ -49,6 +49,26 @@ function logout() {
   }
 }
 
+// Security: If admin token is set in another tab, logout user immediately
+window.addEventListener('storage', (e) => {
+  if (e.key === 'adminToken' && e.newValue) {
+    localStorage.clear();
+    window.location.replace('auth.html');
+  }
+  if (e.key === 'token' && !e.newValue) {
+    window.location.replace('auth.html');
+  }
+});
+
+// Handle browser back button (caching issues)
+window.onpageshow = function(event) {
+  if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+    if (!localStorage.getItem('token') && !window.location.pathname.includes('landing.html') && !window.location.pathname.includes('auth.html')) {
+      window.location.replace('auth.html');
+    }
+  }
+};
+
 // ── State ──────────────────────────────────────────────────
 let allDays  = [];
 let currentPage = 1;

@@ -160,20 +160,33 @@
     <h1>Admin Login</h1>
     <div id="error-msg" class="error-msg"></div>
     <form id="login-form">
-      <div class="form-group">
-        <label for="email">Email Address</label>
-        <input type="email" id="email" required placeholder="admin@example.com">
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <div style="position: relative;">
-          <input type="password" id="password" required placeholder="••••••••" style="padding-right: 45px;">
-          <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 20px; padding: 0; display: flex; align-items: center; justify-content: center;">
-            <i data-lucide="eye"></i>
-          </button>
+      <div id="credentials-step">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required placeholder="admin@example.com">
         </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div style="position: relative;">
+            <input type="password" id="password" required placeholder="••••••••" style="padding-right: 45px;">
+            <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 20px; padding: 0; display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="button" id="btn-request-otp" class="btn-login">Send OTP <i data-lucide="mail"></i></button>
       </div>
-      <button type="submit" class="btn-login">Secure Login <i data-lucide="shield-check"></i></button>
+
+      <div id="otp-step" style="display: none;">
+        <div class="form-group">
+          <label for="otp">Verification Code</label>
+          <input type="text" id="otp" placeholder="6-Character Code" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 900;">
+          <p style="font-size: 11px; margin-top: 8px; font-weight: 700; color: #666; text-transform: uppercase;">Check your registered email</p>
+        </div>
+        <button type="submit" class="btn-login">Verify &amp; Login <i data-lucide="shield-check"></i></button>
+        <button type="button" onclick="resetLogin()" style="background: none; border: none; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 12px; width: 100%; margin-bottom: 20px;">← Back to Credentials</button>
+      </div>
+
       <a href="landing.html" class="back-home"><i data-lucide="arrow-left"></i> Back to home</a>
     </form>
   </div>
@@ -181,11 +194,18 @@
   <script src="/js/libs/lucide/lucide.min.js"></script>
   <script>
     const togglePassword = document.getElementById('togglePassword');
-    const password = document.getElementById('password');
+    const passwordInput = document.getElementById('password');
+    const emailInput = document.getElementById('email');
+    const otpInput = document.getElementById('otp');
+    const errorEl = document.getElementById('error-msg');
+    
+    const credentialsStep = document.getElementById('credentials-step');
+    const otpStep = document.getElementById('otp-step');
+    const btnRequestOtp = document.getElementById('btn-request-otp');
 
     togglePassword.addEventListener('click', function () {
-      const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-      password.setAttribute('type', type);
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
       this.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
       lucide.createIcons({ root: this });
     });
@@ -193,14 +213,31 @@
     // Initial icons
     lucide.createIcons();
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorEl = document.getElementById('error-msg');
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+
+    function resetLogin() {
+      credentialsStep.style.display = 'block';
+      otpStep.style.display = 'none';
+      errorEl.style.display = 'none';
+    }
+
+    btnRequestOtp.addEventListener('click', async () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      
+      if (!email || !password) {
+        return showError('Please enter both email and password.');
+      }
+
+      btnRequestOtp.disabled = true;
+      btnRequestOtp.textContent = 'Sending...';
+      errorEl.style.display = 'none';
 
       try {
-        const res = await fetch('/api/admin/login', {
+        const res = await fetch('/api/admin/request-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -208,22 +245,70 @@
         const data = await res.json();
 
         if (res.ok) {
-          localStorage.setItem('adminToken', data.token);
-          window.location.href = 'admin-dashboard.html';
+          credentialsStep.style.display = 'none';
+          otpStep.style.display = 'block';
         } else {
-          errorEl.textContent = data.message || 'Login failed';
-          errorEl.style.display = 'block';
+          showError(data.message || 'Verification failed');
         }
       } catch (err) {
-        errorEl.textContent = 'Network error. Please try again.';
-        errorEl.style.display = 'block';
+        showError('Network error. Please try again.');
+      } finally {
+        btnRequestOtp.disabled = false;
+        btnRequestOtp.textContent = 'Send OTP';
+        lucide.createIcons({ root: btnRequestOtp });
       }
     });
 
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      const otp = otpInput.value;
+
+      if (!otp) return showError('Please enter the verification code.');
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, otp })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          // Cross-tab protection: Clear user token if logging in as admin
+          localStorage.removeItem('token');
+          localStorage.setItem('adminToken', data.token);
+          window.location.replace('admin-dashboard.html');
+        } else {
+          showError(data.message || 'Login failed');
+        }
+      } catch (err) {
+        showError('Network error. Please try again.');
+      }
+    });
+
+    // Cross-tab monitoring: If a user logs in elsewhere, we stay as we are (login page)
+    // But if we are ALREADY logged in as admin, we handle it in the dashboard.
+    
     // Already logged in?
     if (localStorage.getItem('adminToken')) {
-      window.location.href = 'admin-dashboard.html';
+      window.location.replace('admin-dashboard.html');
     }
+
+    // Handle browser back button / caching
+    window.onpageshow = function(event) {
+      if (localStorage.getItem('adminToken')) {
+        window.location.replace('admin-dashboard.html');
+      }
+    };
+
+    // Listen for storage events (e.g. if another tab logs out admin)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'adminToken' && !e.newValue) {
+        window.location.reload();
+      }
+    });
   </script>
 </body>
 </html>

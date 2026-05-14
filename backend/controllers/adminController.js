@@ -10,11 +10,17 @@ const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
 const { cloudinary } = require('../config/cloudinary');
 const mongoose = require('mongoose');
+const { sendEmail } = require('../utils/email');
+
+// In-memory store for admin OTP (expires in 5 minutes)
+let currentAdminOtp = null;
+let adminOtpExpiry = null;
 
 /**
- * Admin Login
+ * Admin Step 1: Request OTP
+ * Verifies credentials and sends OTP to ADMIN_EMAIL
  */
-async function adminLogin(req, res) {
+async function adminRequestOtp(req, res) {
   try {
     const { email, password } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL;
@@ -27,6 +33,78 @@ async function adminLogin(req, res) {
     if (email !== adminEmail || password !== adminPassword) {
       return res.status(401).json({ message: 'Invalid admin credentials.' });
     }
+
+    // Generate 6-character complex alphanumeric OTP
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let otp = '';
+    for (let i = 0; i < 6; i++) {
+      otp += charset.charAt(crypto.randomInt(0, charset.length));
+    }
+    
+    currentAdminOtp = otp;
+    adminOtpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+
+    // Send OTP via Email to the recipient specified in .env
+    const otpRecipient = process.env.ADMIN_OTP_RECIPIENT_EMAIL || adminEmail;
+    
+    try {
+      await sendEmail({
+        to: otpRecipient,
+        subject: '🔐 Admin Login OTP - Consistency Tracker',
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 2px solid #000; padding: 20px; background: #fff;">
+            <h2 style="text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px;">Security Verification</h2>
+            <p>Your admin login verification code is:</p>
+            <div style="font-size: 32px; font-weight: 900; letter-spacing: 5px; background: #facc15; padding: 15px; text-align: center; border: 2px solid #000; margin: 20px 0;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; color: #666;">This code will expire in 5 minutes. If you did not request this, please secure your account immediately.</p>
+          </div>
+        `
+      });
+      res.json({ message: `Verification code sent to the registered recipient email.` });
+    } catch (emailErr) {
+      console.error('[ADMIN OTP ERROR]', emailErr);
+      // Even if email fails, we return success so they can use the backup OTP if needed
+      res.json({ message: 'A verification code has been requested. Please check the recipient email or use your backup code.' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * Admin Step 2: Verify OTP and Login
+ */
+async function adminLogin(req, res) {
+  try {
+    const { email, password, otp } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const backupOtp = process.env.ADMIN_BACKUP_OTP;
+
+    if (!adminEmail || !adminPassword) {
+      return res.status(500).json({ message: 'Admin credentials not configured.' });
+    }
+
+    if (email !== adminEmail || password !== adminPassword) {
+      return res.status(401).json({ message: 'Invalid admin credentials.' });
+    }
+
+    if (!otp) {
+      return res.status(400).json({ message: 'Verification code is required.' });
+    }
+
+    const isBackupMatch = backupOtp && otp === backupOtp;
+    const isGeneratedMatch = currentAdminOtp && otp === currentAdminOtp && Date.now() < adminOtpExpiry;
+
+    if (!isBackupMatch && !isGeneratedMatch) {
+      return res.status(401).json({ message: 'Invalid or expired verification code.' });
+    }
+
+    // Clear OTP after success
+    currentAdminOtp = null;
+    adminOtpExpiry = null;
 
     // Generate Admin Token
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -553,6 +631,7 @@ async function createAdminDay(req, res) {
 }
 
 module.exports = {
+  adminRequestOtp,
   adminLogin,
   getAdminReviews,
   createReview,

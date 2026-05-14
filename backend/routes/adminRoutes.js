@@ -34,7 +34,8 @@ const authenticateAdmin = (req, res, next) => {
   }
 };
 
-// Public Admin Login
+// Public Admin Login Flow
+router.post('/request-otp', adminController.adminRequestOtp);
 router.post('/login', adminController.adminLogin);
 
 // Protected Admin Review Routes
