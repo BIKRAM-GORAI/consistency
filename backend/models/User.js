@@ -52,6 +52,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    showOnLeaderboard: {
+      type: Boolean,
+      default: true,
+    },
     theme: {
       type: String,
       enum: ['light', 'dark'],

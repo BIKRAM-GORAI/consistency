@@ -2904,8 +2904,14 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   left: 22px;
 }
 .toggle-switch input:disabled + .toggle-track {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: none;
+}
+.toggle-switch:has(input:disabled) {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 @media (max-width: 480px) {
   .ach-privacy-banner { flex-wrap: wrap; gap: 10px; }
@@ -3440,7 +3446,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 /* My Rank Area */
 #lb-my-rank-area {
   position: fixed;
-  bottom: 84px;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 48px);
@@ -3456,9 +3462,9 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 .lb-card.my-rank-card {
   background: var(--yellow);
-  border-bottom: none;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -6px 0 var(--black);
+  border: 4px solid var(--black) !important;
+  border-radius: 100px !important;
+  box-shadow: 5px 5px 0 var(--black) !important;
   animation: lbSlideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -3542,8 +3548,8 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   }
   
   #lb-my-rank-area {
-    bottom: 74px; /* Just above mobile bottom nav */
-    width: calc(100% - 24px);
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 32px);
   }
 }
 

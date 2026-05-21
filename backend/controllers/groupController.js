@@ -471,13 +471,8 @@ const memberDays = async (req, res) => {
     // Check if they share any PUBLIC group. If they do, the consent rule applies.
     const sharesPublicGroup = sharedGroups.some(g => g.isPublic === true);
 
-    // Check if the target user has a public profile and get streak info
+    // Get streak info from target user
     const targetUser = await User.findById(memberId).select('isPublicProfile currentStreak highestStreak');
-    
-    // Bypass privacy check if they share a public group
-    if (!sharesPublicGroup && targetUser && targetUser.isPublicProfile === false) {
-      return res.status(403).json({ message: 'This user has a private profile.' });
-    }
 
     // Get total count for pagination
     const total = await Day.countDocuments({ userId: memberId });

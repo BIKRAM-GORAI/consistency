@@ -1,5 +1,6 @@
 const Day = require('../models/Day');
 const User = require('../models/User');
+const Achievement = require('../models/Achievement');
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -335,4 +336,28 @@ const updateDay = async (req, res) => {
   }
 };
 
-module.exports = { getAllDays, getDayByDate, getDayById, createDay, updateDay };
+/**
+ * DELETE /api/days/:id
+ * Delete a day by MongoDB _id.
+ */
+const deleteDay = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const deleted = await Day.findOneAndDelete({ _id: req.params.id, userId });
+    if (!deleted) {
+      return res.status(404).json({ message: 'Day not found or unauthorized' });
+    }
+
+    // Clean up any achievements associated with this day card for this user
+    await Achievement.deleteMany({ dayId: req.params.id, userId });
+
+    // Recalculate streak and include it in the response
+    const newStreak = await updateUserStreakAndActivity(userId);
+
+    res.json({ message: 'Day deleted successfully', streak: newStreak });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay };

@@ -59,6 +59,9 @@ const updateProfileValidation = [
   body('isPublicProfile')
     .optional()
     .isBoolean().withMessage('isPublicProfile must be a boolean'),
+  body('showOnLeaderboard')
+    .optional()
+    .isBoolean().withMessage('showOnLeaderboard must be a boolean'),
   body('username')
     .optional()
     .trim()

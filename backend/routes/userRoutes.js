@@ -11,7 +11,7 @@ router.get('/config', userController.getPublicConfig);
 router.get('/search', userSearchValidation, userController.searchUsers);
 
 // Global Leaderboard
-router.get('/leaderboard', userController.getLeaderboard);
+router.get('/leaderboard', authenticateTokenOptional, userController.getLeaderboard);
 
 // Get public profile
 router.get('/:username', authenticateTokenOptional, userController.getPublicProfile);

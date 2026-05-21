@@ -21,3 +21,6 @@ Thumbs.db
 # Build output
 dist/
 build/
+
+# Dev Log
+dev_changes.md

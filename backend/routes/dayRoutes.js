@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllDays, getDayByDate, getDayById, createDay, updateDay } = require('../controllers/dayController');
+const { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay } = require('../controllers/dayController');
 const { createDayValidation, updateDayValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -18,5 +18,8 @@ router.post('/', authenticateToken, createDayValidation, createDay);
 
 // PUT update a day by MongoDB _id
 router.put('/:id', authenticateToken, updateDayValidation, updateDay);
+
+// DELETE a day by MongoDB _id
+router.delete('/:id', authenticateToken, deleteDay);
 
 module.exports = router;

@@ -16,6 +16,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  const isOwnUsername = username.toLowerCase() === (localStorage.getItem('userUsername') || '').toLowerCase();
+
+  // If offline and requested username is the own logged in user, fetch profile details offline!
+  if (!navigator.onLine && isOwnUsername) {
+    try {
+      const data = await loadOwnProfileOffline();
+      renderProfile(data);
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('profile-layout').style.display = 'flex';
+
+      const btnViewProgress = document.getElementById('btn-view-progress');
+      if (btnViewProgress) {
+        btnViewProgress.setAttribute('onclick', 'viewProgressOffline()');
+      }
+      return;
+    } catch (err) {
+      console.error('Failed to load offline own profile:', err);
+    }
+  }
+
   try {
     const code = urlParams.get('code');
     const data = await fetchPublicProfile(username, code);
@@ -23,9 +43,175 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('profile-layout').style.display = 'flex';
   } catch (err) {
+    // If online fetch fails (e.g. server down or connection drops) but it's own profile, try offline loading!
+    if (isOwnUsername) {
+      try {
+        console.warn('Online profile load failed, falling back to offline Dexie load...');
+        const data = await loadOwnProfileOffline();
+        renderProfile(data);
+        document.getElementById('loading-overlay').style.display = 'none';
+        document.getElementById('profile-layout').style.display = 'flex';
+
+        const btnViewProgress = document.getElementById('btn-view-progress');
+        if (btnViewProgress) {
+          btnViewProgress.setAttribute('onclick', 'viewProgressOffline()');
+        }
+        return;
+      } catch (offlineErr) {
+        console.error('Offline profile fallback failed:', offlineErr);
+      }
+    }
     showError(err.message || 'Failed to load profile. This user might have a private account or doesn\'t exist.');
   }
 });
+
+async function loadOwnProfileOffline() {
+  if (typeof Dexie === 'undefined') {
+    throw new Error('Dexie is not loaded');
+  }
+  const dbLocal = new Dexie("ConsistencyDb");
+  dbLocal.version(6).stores({
+    days: "_id, date, status, tasks, userId",
+    goals: "_id, title, targetDate, status, userId",
+    groups: "_id, name, code, isPublic",
+    achievements: "_id, title, date, userId, dayId",
+    syncQueue: "++id, action, entity, data, timestamp",
+    leaderboard: "sort",
+    userProfile: "userId",
+    badges: "_id",
+    templates: "_id, name",
+    mediaCache: "url"
+  });
+
+  const userId = localStorage.getItem('userId');
+  if (!userId) throw new Error('User not logged in');
+
+  const profile = await dbLocal.userProfile.get(userId);
+  if (!profile) {
+    throw new Error('No offline profile found in local database');
+  }
+
+  // Fetch local achievements
+  const localAch = await dbLocal.achievements.where('userId').equals(userId).toArray();
+  localAch.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Fetch local days to compute contribution graph and tasks count
+  const localDays = await dbLocal.days.where('userId').equals(userId).toArray();
+  const totalDays = localDays.length;
+
+  const contributionData = localDays.map(day => {
+    let completedCount = 0;
+    if (day.categories) {
+      day.categories.forEach(c => {
+        if (c.tasks) {
+          completedCount += c.tasks.filter(t => t.completed).length;
+        }
+      });
+    }
+    return {
+      date: day.date,
+      completedCount: completedCount
+    };
+  });
+
+  const currentStreak = parseInt(localStorage.getItem('userCurrentStreak') || profile.currentStreak || '0', 10);
+  const highestStreak = parseInt(localStorage.getItem('userHighestStreak') || profile.highestStreak || '0', 10);
+
+  const localBadges = await dbLocal.badges.toArray();
+
+  return {
+    name: profile.name || localStorage.getItem('userName') || 'User',
+    username: profile.username || localStorage.getItem('userUsername') || '',
+    profilePicture: profile.profilePicture || localStorage.getItem('userProfilePicture') || '',
+    currentStreak,
+    highestStreak,
+    groupCount: 0,
+    totalDays,
+    achievements: localAch,
+    claimedBadges: localBadges,
+    contributionData,
+    showPrivateDetails: true
+  };
+}
+
+async function viewProgressOffline() {
+  const ctaBox = document.getElementById('progress-cta-box');
+  const daysList = document.getElementById('prof-days-list');
+  const btn = document.getElementById('btn-view-progress');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner-ring" style="width:20px;height:20px;border-width:3px;"></div> Loading...';
+  }
+
+  try {
+    const dbLocal = new Dexie("ConsistencyDb");
+    dbLocal.version(6).stores({
+      days: "_id, date, status, tasks, userId"
+    });
+    
+    const userId = localStorage.getItem('userId');
+    const localDays = await dbLocal.days.where('userId').equals(userId).toArray();
+    localDays.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    currentDaysPage = 1;
+    const paginatedDays = localDays.slice(0, 7);
+
+    if (paginatedDays.length > 0) {
+      ctaBox.style.display = 'none';
+      daysList.style.display = 'flex';
+      renderDays(paginatedDays);
+      
+      const loadMoreBtn = document.getElementById('load-more-days');
+      if (localDays.length > 7) {
+        if (loadMoreBtn) {
+          loadMoreBtn.style.display = 'block';
+          loadMoreBtn.setAttribute('onclick', 'loadMoreDaysOffline()');
+        }
+      } else {
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load offline progress days:', err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.style.display = 'none';
+    }
+    if (window.lucide) lucide.createIcons({ root: daysList });
+  }
+}
+
+async function loadMoreDaysOffline() {
+  currentDaysPage++;
+  const btn = document.getElementById('load-more-days');
+  btn.disabled = true; btn.textContent = 'Loading...';
+  try {
+    const dbLocal = new Dexie("ConsistencyDb");
+    dbLocal.version(6).stores({
+      days: "_id, date, status, tasks, userId"
+    });
+    const userId = localStorage.getItem('userId');
+    const localDays = await dbLocal.days.where('userId').equals(userId).toArray();
+    localDays.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const start = (currentDaysPage - 1) * 7;
+    const paginatedDays = localDays.slice(start, start + 7);
+
+    if (paginatedDays.length > 0) {
+      renderDays(paginatedDays, true);
+    }
+    if (start + paginatedDays.length >= localDays.length) {
+      btn.style.display = 'none';
+    }
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    console.error(err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Load More Days';
+  }
+}
 
 async function fetchPublicProfile(username, code = null) {
   const url = code 
@@ -87,7 +273,20 @@ function renderProfile(data) {
   }
 
   // Days Section (Optimized for on-demand loading)
-  if (totalDays === 0) {
+  if (data.showPrivateDetails === false) {
+    const ctaBox = document.getElementById('progress-cta-box');
+    if (ctaBox) {
+      ctaBox.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 24px; margin-bottom: 12px; text-transform: uppercase;">Private Profile</h3>
+        <p style="color: var(--text-muted); font-weight: 600; margin-bottom: 0; max-width: 400px; margin-left: auto; margin-right: auto;">This user's detailed progress cards and recent achievements are private.</p>
+      `;
+    }
+    const viewProgressBtn = document.getElementById('btn-view-progress');
+    if (viewProgressBtn) {
+      viewProgressBtn.style.display = 'none';
+    }
+  } else if (totalDays === 0) {
     const ctaBox = document.getElementById('progress-cta-box');
     if (ctaBox) {
       ctaBox.innerHTML = `

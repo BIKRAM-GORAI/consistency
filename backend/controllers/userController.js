@@ -33,7 +33,7 @@ async function searchUsers(req, res) {
 
     const users = await User.find({
       username: regex,
-      isPublicProfile: { $ne: false }
+      isBlacklisted: { $ne: true }
     })
     .select('username profilePicture currentStreak highestStreak')
     .limit(10);
@@ -58,9 +58,9 @@ async function getPublicProfile(req, res) {
     }
 
     const { code } = req.query;
-    let canView = false;
+    let showPrivateDetails = user.isPublicProfile !== false;
 
-    if (code) {
+    if (!showPrivateDetails && code) {
       // If a code is provided, it MUST be valid for this user
       const validShare = await ProfileShare.findOne({ 
         userId: user._id, 
@@ -68,29 +68,8 @@ async function getPublicProfile(req, res) {
         expiresAt: { $gt: new Date() }
       });
       if (validShare) {
-        canView = true;
-      } else {
-        // If code is provided but invalid, deny access even if profile is public
-        return res.status(403).json({ message: 'Invalid or expired share link' });
+        showPrivateDetails = true;
       }
-    } else {
-      // If no code is provided, check if the profile is public
-      canView = user.isPublicProfile !== false;
-    }
-
-    // If still not allowed (private and no/invalid code), check shared public groups
-    if (!canView && req.user && req.user.userId) {
-      const requestingUserId = req.user.userId;
-      const sharedGroup = await Group.findOne({
-        members: { $all: [requestingUserId, user._id] }
-      });
-      if (sharedGroup) {
-        canView = true;
-      }
-    }
-
-    if (!canView) {
-      return res.status(403).json({ message: 'This profile is private' });
     }
 
     // Fetch only dates and task counts for the contribution graph (performance optimization)
@@ -108,9 +87,9 @@ async function getPublicProfile(req, res) {
       contributionData.push({ date: day.date, completedCount });
     }
 
-    // Fetch Achievements if public (limit to 10 for initial view)
+    // Fetch Achievements if public or private access (limit to 10 for initial view)
     let achievements = [];
-    if (user.achievementsPublic !== false) {
+    if (user.achievementsPublic !== false || showPrivateDetails) {
       achievements = await Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10);
     }
 
@@ -127,7 +106,9 @@ async function getPublicProfile(req, res) {
       contributionData: contributionData, // Full graph
       achievements: achievements,
       totalDays: daysRaw.length,
-      claimedBadges: user.claimedBadges || []
+      claimedBadges: user.claimedBadges || [],
+      isPublicProfile: user.isPublicProfile !== false,
+      showPrivateDetails: showPrivateDetails
     });
 
   } catch (err) {
@@ -143,17 +124,10 @@ async function getPublicProfileDays(req, res) {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Privacy Check
-    let canView = false;
-    if (code) {
+    let canView = user.isPublicProfile !== false;
+    if (!canView && code) {
       const validShare = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
       if (validShare) canView = true;
-    } else {
-      canView = user.isPublicProfile !== false;
-    }
-
-    if (!canView && req.user && req.user.userId) {
-      const sharedPublicGroup = await Group.findOne({ members: { $all: [req.user.userId, user._id] } });
-      if (sharedPublicGroup) canView = true;
     }
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
@@ -190,17 +164,10 @@ async function getPublicProfileAchievements(req, res) {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Privacy Check
-    let canView = false;
-    if (code) {
+    let canView = user.isPublicProfile !== false;
+    if (!canView && code) {
       const validShare = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
       if (validShare) canView = true;
-    } else {
-      canView = user.isPublicProfile !== false;
-    }
-
-    if (!canView && req.user && req.user.userId) {
-      const sharedPublicGroup = await Group.findOne({ members: { $all: [req.user.userId, user._id] } });
-      if (sharedPublicGroup) canView = true;
     }
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
@@ -267,7 +234,7 @@ async function getLeaderboard(req, res) {
     const skip = (page - 1) * limit;
 
     const query = {
-      isPublicProfile: { $ne: false },
+      showOnLeaderboard: { $ne: false },
       username: { $exists: true, $ne: null },
       isBlacklisted: { $ne: true }
     };
@@ -288,13 +255,39 @@ async function getLeaderboard(req, res) {
       users = users.slice(0, Math.max(0, maxRankings - skip));
     }
 
+    // Calculate active user's rank if authenticated and they are on the leaderboard
+    let myRank = null;
+    if (req.user && req.user.userId) {
+      const activeUser = await User.findById(req.user.userId);
+      if (activeUser && activeUser.username && !activeUser.isBlacklisted) {
+        const scoreVal = activeUser[sortField] || 0;
+        const lastActive = activeUser.lastActiveAt || new Date(0);
+        
+        // Count users ahead of the active user
+        const aheadCount = await User.countDocuments({
+          showOnLeaderboard: { $ne: false },
+          username: { $exists: true, $ne: null },
+          isBlacklisted: { $ne: true },
+          $or: [
+            { [sortField]: { $gt: scoreVal } },
+            {
+              [sortField]: scoreVal,
+              lastActiveAt: { $gt: lastActive }
+            }
+          ]
+        });
+        myRank = aheadCount + 1;
+      }
+    }
+
     res.json({
       users,
       total: cappedTotal,
       page,
       limit,
       hasMore: cappedTotal > (skip + users.length),
-      maxRankingsShown: maxRankings
+      maxRankingsShown: maxRankings,
+      myRank
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

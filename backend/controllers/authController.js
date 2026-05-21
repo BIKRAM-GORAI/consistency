@@ -134,6 +134,7 @@ async function getProfileSettings(req, res) {
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false,
       isPublicProfile: user.isPublicProfile !== false,
+      showOnLeaderboard: user.showOnLeaderboard !== false,
       theme: user.theme || 'light',
       leetcodeUsername: user.leetcodeUsername || null,
       leetcodePendingUsername: user.leetcodePendingUsername || null,
@@ -151,10 +152,11 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { emailNotifications, isPublicProfile, theme, profilePicture, newPassword, oldPassword } = req.body;
+    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword } = req.body;
 
     if (typeof emailNotifications === 'boolean') user.emailNotifications = emailNotifications;
     if (typeof isPublicProfile === 'boolean') user.isPublicProfile = isPublicProfile;
+    if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) user.theme = theme;
 
     if (profilePicture && profilePicture.startsWith('data:image')) {

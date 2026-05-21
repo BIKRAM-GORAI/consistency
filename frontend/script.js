@@ -306,6 +306,7 @@ function escJs(str) {
 
 // ── Page switch ────────────────────────────────────────────
 function showPage(page) {
+  localStorage.setItem('activePage', page);
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
@@ -408,9 +409,32 @@ async function loadDays(page = 1) {
     
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       if (page === 1) {
-        allDays = data.days;
-        // Update Local Cache (Merge instead of clear to preserve offline history)
-        await localDb.days.bulkPut(data.days);
+        // Preserve local-only changes (those not yet synced) — don't overwrite them
+        const pendingDayItems = await localDb.syncQueue
+          .filter(x => x.entity === 'days')
+          .toArray();
+        const pendingIds = new Set(pendingDayItems.map(q => q.targetId).filter(Boolean));
+        const pendingLocalIds = new Set(pendingDayItems.map(q => q.localId).filter(Boolean));
+
+        // Merge: use server data for synced days, keep local data for pending days
+        const serverDays = data.days;
+        const safeToUpdate = serverDays.filter(d => !pendingIds.has(d._id));
+        await localDb.days.bulkPut(safeToUpdate);
+
+        // Build final allDays: server data + locally modified days
+        const localPendingDays = await Promise.all(
+          [...pendingIds, ...pendingLocalIds].map(id => localDb.days.get(id))
+        );
+        const localPendingMap = new Map();
+        localPendingDays.filter(Boolean).forEach(d => localPendingMap.set(d._id, d));
+
+        allDays = serverDays.map(sd => localPendingMap.get(sd._id) || sd);
+        // Also include any locally-created days (temp IDs) not on server
+        for (const [id, day] of localPendingMap) {
+          if (!allDays.find(d => d._id === id)) {
+            allDays.push(day);
+          }
+        }
       } else {
         allDays.push(...data.days);
         await localDb.days.bulkPut(data.days);
@@ -690,7 +714,6 @@ function buildDayCard(day, preLoadedAchievements = null) {
           <div class="task-item ${lockClass}">
             <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled />
             <span class="task-title">${escHtml(task.title)}</span>
-            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
           </div>`;
       }
     }
@@ -699,7 +722,9 @@ function buildDayCard(day, preLoadedAchievements = null) {
     const editCatBtn = isToday
       ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category"><i data-lucide="edit-3"></i></button>`
       : '';
-    const delCatBtn = `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category"><i data-lucide="trash-2"></i></button>`;
+    const delCatBtn = isToday
+      ? `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category"><i data-lucide="trash-2"></i></button>`
+      : '';
     categoriesHTML += `
       <div class="category-block">
         <div class="category-header">
@@ -862,6 +887,24 @@ const syncManager = {
         }
       }
 
+      // ── DEDUP: For PUTs on real IDs, replace any existing queued PUT ──
+      // This prevents stacking stale intermediate states (e.g. toggling a task
+      // then deleting a category — only the FINAL categories array matters).
+      if (method === 'PUT' && id && !String(id).startsWith('temp_')) {
+        const existing = await db.syncQueue
+          .filter(x => x.entity === entity && x.targetId === id && x.method === 'PUT')
+          .first();
+
+        if (existing) {
+          existing.data = { ...existing.data, ...data };
+          existing.timestamp = Date.now();
+          await db.syncQueue.put(existing);
+          console.log(`Deduped PUT for ${entity}/${id}`);
+          this.processQueue();
+          return;
+        }
+      }
+
       await db.syncQueue.add({
         method,
         entity,
@@ -969,10 +1012,87 @@ const syncManager = {
 // Also listen for online event to trigger sync
 window.addEventListener('online', () => syncManager.processQueue());
 
+// ── Delete Day Card Completely ──────────────────────────────
+async function deleteDayCard(dayId) {
+  const day = allDays.find(d => d._id === dayId);
+  
+  // 1. Memory update
+  allDays = allDays.filter(d => d._id !== dayId);
+
+  // 2. DOM Animation and removal
+  const cardEl = document.getElementById(`day-card-${dayId}`);
+  if (cardEl) {
+    if (window.gsap) {
+      gsap.to(cardEl, {
+        opacity: 0,
+        height: 0,
+        scale: 0.9,
+        marginBottom: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        marginTop: 0,
+        duration: 0.35,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          cardEl.remove();
+          if (allDays.length === 0) renderDays();
+        }
+      });
+    } else {
+      cardEl.remove();
+      if (allDays.length === 0) renderDays();
+    }
+  }
+
+  try {
+    // 3. Local IndexedDB deletion
+    await window.localDb.days.delete(dayId);
+
+    // 4. Sync / Offline Queue Logic
+    if (String(dayId).startsWith('temp_')) {
+      // If it is a local-only offline day card, clear all queued operations for it.
+      const pendingItems = await window.localDb.syncQueue
+        .filter(x => x.entity === 'days' && (x.localId === dayId || x.targetId === dayId))
+        .toArray();
+      
+      for (const item of pendingItems) {
+        await window.localDb.syncQueue.delete(item.id);
+      }
+      console.log('Cleaned up sync queue for offline temp day:', dayId);
+    } else {
+      // If it is an existing server-synced day card, clear any pending PUTs/POSTs for this day card
+      const pendingItems = await window.localDb.syncQueue
+        .filter(x => x.entity === 'days' && x.targetId === dayId)
+        .toArray();
+      
+      for (const item of pendingItems) {
+        await window.localDb.syncQueue.delete(item.id);
+      }
+
+      // Add a DELETE action to the sync queue
+      syncManager.addToQueue('DELETE', 'days', dayId);
+    }
+
+    // 5. Update Streak and notifications
+    updateStreak();
+    showToast('Day card deleted completely', 'success');
+  } catch (err) {
+    console.error('Error deleting day card:', err);
+    showToast('Failed to delete card completely', 'error');
+  }
+}
+
 // ── Delete category ────────────────────────────────────────
 async function deleteCategory(dayId, catId) {
   const day = allDays.find(d => d._id === dayId);
   if (!day) return;
+
+  // Strict check to prevent past days editing
+  if (day.date !== todayStr()) {
+    showToast('Cannot modify past days', 'error');
+    return;
+  }
+
   const catIndex = day.categories.findIndex(c => c._id === catId);
   if (catIndex < 0) return;
 
@@ -980,7 +1100,14 @@ async function deleteCategory(dayId, catId) {
   if (!confirm(`Delete the "${catName}" category and all its tasks?`)) return;
 
   // 1. Update UI and Local DB instantly
-  const removed = day.categories.splice(catIndex, 1)[0];
+  day.categories.splice(catIndex, 1);
+
+  if (day.categories.length === 0) {
+    // If no categories left, delete the card completely!
+    await deleteDayCard(dayId);
+    return;
+  }
+
   updateProgressBar(dayId, day.categories);
   await window.localDb.days.put(day);
 
@@ -997,6 +1124,13 @@ async function deleteCategory(dayId, catId) {
 async function deleteTask(dayId, catId, taskId) {
   const day = allDays.find(d => d._id === dayId);
   if (!day) return;
+
+  // Strict check to prevent past days editing
+  if (day.date !== todayStr()) {
+    showToast('Cannot modify past days', 'error');
+    return;
+  }
+
   const cat = day.categories.find(c => c._id === catId);
   if (!cat) return;
   const taskIndex = cat.tasks.findIndex(t => t._id === taskId);
@@ -1006,7 +1140,7 @@ async function deleteTask(dayId, catId, taskId) {
   if (!confirm(`Delete task "${taskTitle}"?`)) return;
 
   // 1. Update UI and Local DB instantly
-  const removed = cat.tasks.splice(taskIndex, 1)[0];
+  cat.tasks.splice(taskIndex, 1);
   updateProgressBar(dayId, day.categories);
   await window.localDb.days.put(day);
 
@@ -1330,17 +1464,31 @@ async function submitAddDay() {
 
   const catItems = document.querySelectorAll('.category-builder-item');
   const categories = [];
+  let catIndex = 0;
   for (const item of catItems) {
     const nameInput = item.querySelector('input[type="text"]');
     const name = nameInput ? nameInput.value.trim() : '';
     if (!name) continue;
     const taskInputs = item.querySelectorAll('.task-input-row input');
     const tasks = [];
+    let taskIndex = 0;
     for (const inp of taskInputs) {
       const title = inp.value.trim();
-      if (title) tasks.push({ title, completed: false });
+      if (title) {
+        tasks.push({
+          _id: `temp_task_${Date.now()}_${catIndex}_${taskIndex++}_${Math.random().toString(36).substring(2, 6)}`,
+          title,
+          completed: false
+        });
+      }
     }
-    if (tasks.length) categories.push({ name, tasks });
+    if (tasks.length) {
+      categories.push({
+        _id: `temp_cat_${Date.now()}_${catIndex++}_${Math.random().toString(36).substring(2, 6)}`,
+        name,
+        tasks
+      });
+    }
   }
 
   btn.textContent = 'Creating...';
@@ -1674,10 +1822,40 @@ async function loadGoals() {
   try {
     const data = await apiFetch(`${API}/api/goals`);
     if (data) {
-      allGoals = data;
-      // Sync Local Cache
-      await localDb.goals.clear();
-      await localDb.goals.bulkAdd(allGoals);
+      // Preserve local-only changes (those not yet synced) — don't overwrite them
+      const pendingGoalItems = await localDb.syncQueue
+        .filter(x => x.entity === 'goals')
+        .toArray();
+      const pendingIds = new Set(pendingGoalItems.map(q => q.targetId).filter(Boolean));
+      const pendingLocalIds = new Set(pendingGoalItems.map(q => q.localId).filter(Boolean));
+
+      const serverGoals = data;
+      const safeToUpdate = serverGoals.filter(g => !pendingIds.has(g._id));
+      const localGoals = await localDb.goals.toArray();
+      const toDelete = localGoals
+        .filter(g => !pendingIds.has(g._id) && !pendingLocalIds.has(g._id))
+        .map(g => g._id);
+      
+      await localDb.goals.bulkDelete(toDelete);
+      await localDb.goals.bulkPut(safeToUpdate);
+
+      // Reconstruct final allGoals in memory: server data + locally modified goals
+      const localPendingGoals = await Promise.all(
+        [...pendingIds, ...pendingLocalIds].map(id => localDb.goals.get(id))
+      );
+      const localPendingMap = new Map();
+      localPendingGoals.filter(Boolean).forEach(g => localPendingMap.set(g._id, g));
+
+      allGoals = serverGoals.map(sg => localPendingMap.get(sg._id) || sg);
+      for (const [id, goal] of localPendingMap) {
+        if (!allGoals.find(g => g._id === id)) {
+          allGoals.push(goal);
+        }
+      }
+      
+      // Sort goals by deadline
+      allGoals.sort((a, b) => new Date(a.deadline || a.targetDate || 0) - new Date(b.deadline || b.targetDate || 0));
+
       renderGoals();
     }
   } catch (err) {
@@ -1937,9 +2115,16 @@ async function submitAddGoal() {
 
   const taskInputs = document.querySelectorAll('#goal-tasks-builder .task-input-row input');
   const tasks = [];
+  let taskIndex = 0;
   for (const inp of taskInputs) {
     const t = inp.value.trim();
-    if (t) tasks.push({ title: t, completed: false });
+    if (t) {
+      tasks.push({
+        _id: `temp_gtask_${Date.now()}_${taskIndex++}_${Math.random().toString(36).substring(2, 6)}`,
+        title: t,
+        completed: false
+      });
+    }
   }
 
   const btn = document.getElementById('submit-goal-btn');
@@ -2015,7 +2200,18 @@ async function loadGroups() {
     ]);
     
     if (joined && public) {
-      allJoinedGroups = joined;
+      // Filter out any groups that have pending DELETE queue items
+      const pendingGroupItems = await localDb.syncQueue
+        .filter(x => x.entity === 'groups' && x.method === 'DELETE')
+        .toArray();
+      const pendingDeleteIds = new Set(
+        pendingGroupItems.map(q => q.targetId).filter(Boolean)
+      );
+
+      const serverJoined = joined;
+      const safeJoined = serverJoined.filter(g => !pendingDeleteIds.has(g._id));
+
+      allJoinedGroups = safeJoined;
       availablePublicGroups = public;
 
       // Sync Local Cache
@@ -2722,19 +2918,32 @@ async function openMemberTasks(memberId, memberName, username = null) {
   titleEl.innerHTML = `<i data-lucide="user"></i> ${escapeHTML(memberName)}'s Insights`;
   if (window.lucide) lucide.createIcons({ root: titleEl });
   
-  bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading journey...</p></div>`;
   insightsArea.style.display = 'none';
   insightsArea.innerHTML = '';
   
-  openModal('modal-member-tasks');
-  
   _currentMemberId   = memberId;
   _currentMemberName = memberName;
+  _currentMemberUsername = username;
   memberDaysPage = 1;
   memberDaysData = [];
   memberDaysHasMore = false;
   memberCurrentStreak = 0;
   memberHighestStreak = 0;
+
+  if (!navigator.onLine) {
+    bodyEl.innerHTML = `
+      <div class="empty-state" style="padding:40px 0">
+        <span class="empty-icon"><i data-lucide="wifi-off"></i></span>
+        <h3>Offline Mode</h3>
+        <p>You are in offline mode. Cannot view ${escapeHTML(memberName)}'s tasks.</p>
+      </div>`;
+    if (window.lucide) lucide.createIcons({ root: bodyEl });
+    openModal('modal-member-tasks');
+    return;
+  }
+
+  bodyEl.innerHTML = `<div class="loading-spinner"><div class="spinner-ring"></div><p>Loading journey...</p></div>`;
+  openModal('modal-member-tasks');
 
   // If username is provided, fetch extra insights (graph, etc.)
   if (username) {
@@ -2769,6 +2978,17 @@ async function openMemberTasks(memberId, memberName, username = null) {
 
 async function loadMemberDays() {
   const bodyEl  = document.getElementById('member-tasks-list-area');
+
+  if (!navigator.onLine) {
+    bodyEl.innerHTML = `
+      <div class="empty-state" style="padding:40px 0">
+        <span class="empty-icon"><i data-lucide="wifi-off"></i></span>
+        <h3>Offline Mode</h3>
+        <p>You are in offline mode. Cannot view ${escapeHTML(_currentMemberName)}'s tasks.</p>
+      </div>`;
+    if (window.lucide) lucide.createIcons({ root: bodyEl });
+    return;
+  }
 
   try {
     const response = await apiFetch(`${API}/api/groups/member-days?memberId=${encodeURIComponent(_currentMemberId)}&page=${memberDaysPage}&limit=10`);
@@ -3055,11 +3275,37 @@ async function loadAchievements() {
     ]);
     
     achievementsPublic = privacyRes.achievementsPublic !== false;
-    allAchievements    = achs.achievements || [];
+    const serverAchs = achs.achievements || [];
     
-    // Sync Cache
-    await localDb.achievements.clear();
-    await localDb.achievements.bulkAdd(allAchievements);
+    // Preserve local-only changes (those not yet synced) — don't overwrite them
+    const pendingAchItems = await localDb.syncQueue
+      .filter(x => x.entity === 'achievements')
+      .toArray();
+    const pendingIds = new Set(pendingAchItems.map(q => q.targetId).filter(Boolean));
+    const pendingLocalIds = new Set(pendingAchItems.map(q => q.localId).filter(Boolean));
+
+    const safeToUpdate = serverAchs.filter(a => !pendingIds.has(a._id));
+    const localAchs = await localDb.achievements.toArray();
+    const toDelete = localAchs
+      .filter(a => !pendingIds.has(a._id) && !pendingLocalIds.has(a._id))
+      .map(a => a._id);
+    
+    await localDb.achievements.bulkDelete(toDelete);
+    await localDb.achievements.bulkPut(safeToUpdate);
+
+    // Reconstruct final allAchievements in memory: server data + locally modified achievements
+    const localPendingAchs = await Promise.all(
+      [...pendingIds, ...pendingLocalIds].map(id => localDb.achievements.get(id))
+    );
+    const localPendingMap = new Map();
+    localPendingAchs.filter(Boolean).forEach(a => localPendingMap.set(a._id, a));
+
+    allAchievements = serverAchs.map(sa => localPendingMap.get(sa._id) || sa);
+    for (const [id, ach] of localPendingMap) {
+      if (!allAchievements.find(a => a._id === id)) {
+        allAchievements.push(ach);
+      }
+    }
     
     renderAchievements();
   } catch (err) {
@@ -3497,6 +3743,37 @@ async function openProfileModal() {
   const pwdIcon = document.getElementById('toggle-pwd-icon');
   if (pwdIcon) pwdIcon.textContent = '▼';
 
+  // Synchronous baseline population from localStorage to ensure instant loading of username, email, photo, showcase status, and LeetCode details on refresh/offline
+  const storedName = localStorage.getItem('userName') || '';
+  const storedEmail = localStorage.getItem('userEmail') || '';
+  const storedUsername = localStorage.getItem('userUsername') || '';
+  const storedPic = localStorage.getItem('userProfilePicture') || '';
+  const storedShowcase = localStorage.getItem('showOnLeaderboard');
+
+  const storedLcUsername = localStorage.getItem('leetcodeUsername') || '';
+  const storedLcPending = localStorage.getItem('leetcodePendingUsername') || '';
+  const storedLcCode = localStorage.getItem('leetcodeVerificationCode') || '';
+  const storedLcStatus = localStorage.getItem('leetcodeVerificationStatus') || 'none';
+  const storedLcPic = localStorage.getItem('leetcodeProfilePicture') || '';
+
+  const baselineUser = {
+    name: storedName,
+    email: storedEmail,
+    username: storedUsername,
+    profilePicture: storedPic,
+    showOnLeaderboard: storedShowcase !== 'false',
+    emailNotifications: true,
+    isPublicProfile: true,
+    leetcodeUsername: storedLcUsername,
+    leetcodePendingUsername: storedLcPending,
+    leetcodeVerificationCode: storedLcCode,
+    leetcodeVerificationStatus: storedLcStatus,
+    leetcodeProfilePicture: storedLcPic,
+    leetcodeUsernameChangeCount: 0,
+    leetcodeLastVerifiedAt: storedLcStatus === 'verified' ? new Date().toISOString() : null
+  };
+  renderProfileData(baselineUser);
+
   // 1. STALE: Load from cache instantly
   const userId = localStorage.getItem('userId');
   try {
@@ -3508,6 +3785,7 @@ async function openProfileModal() {
   try {
     const res = await apiFetch(`${API}/api/auth/settings`);
     res.userId = userId;
+    await cacheProfileImagesOffline(res);
     await window.localDb.userProfile.put(res);
     renderProfileData(res);
   } catch (err) {
@@ -3551,6 +3829,29 @@ function renderProfileData(user) {
   const publicToggle = document.getElementById('public-profile-toggle');
   if (publicToggle) publicToggle.checked = user.isPublicProfile !== false;
   
+  const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+  if (showcaseToggle) {
+    showcaseToggle.checked = user.showOnLeaderboard !== false;
+    if (!navigator.onLine) {
+      showcaseToggle.disabled = true;
+      showcaseToggle.title = 'Cannot change settings while offline';
+    } else {
+      showcaseToggle.disabled = false;
+      showcaseToggle.title = 'Showcase on leaderboard';
+    }
+  }
+  const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
+  if (lbShowcaseToggle) {
+    lbShowcaseToggle.checked = user.showOnLeaderboard !== false;
+    if (!navigator.onLine) {
+      lbShowcaseToggle.disabled = true;
+      lbShowcaseToggle.title = 'Cannot change settings while offline';
+    } else {
+      lbShowcaseToggle.disabled = false;
+      lbShowcaseToggle.title = 'Showcase on leaderboard';
+    }
+  }
+  
   const unameInput = document.getElementById('profile-username');
   if (unameInput) {
     unameInput.value = user.username || '';
@@ -3587,6 +3888,15 @@ async function submitProfileSettings() {
   const username = usernameInput.value.trim();
   const emailNotifications = document.getElementById('email-notif-toggle').checked;
   const isPublicProfile = document.getElementById('public-profile-toggle').checked;
+  const showOnLeaderboard = document.getElementById('leaderboard-showcase-settings-toggle').checked;
+
+  const currentSavedShowcase = localStorage.getItem('showOnLeaderboard') !== 'false';
+  if (!navigator.onLine && showOnLeaderboard !== currentSavedShowcase) {
+    showToast('Leaderboard showcase settings cannot be changed while offline.', 'error');
+    const settingsToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+    if (settingsToggle) settingsToggle.checked = currentSavedShowcase;
+    return;
+  }
 
   if (username && !usernameInput.readOnly) {
     const usernameRegex = /^[!-~]{4,20}$/;
@@ -3602,7 +3912,7 @@ async function submitProfileSettings() {
 
   try {
     const profilePicture = document.getElementById('profile-pic-dataurl').value;
-    const payload = { emailNotifications, isPublicProfile };
+    const payload = { emailNotifications, isPublicProfile, showOnLeaderboard };
     if (!usernameInput.readOnly && username) {
       payload.username = username;
     }
@@ -3618,16 +3928,28 @@ async function submitProfileSettings() {
       // 2. Queue for Sync
       syncManager.addToQueue('PATCH', 'auth/settings', null, payload);
     }
+    localStorage.setItem('showOnLeaderboard', showOnLeaderboard.toString());
 
     // 3. SHOW SUCCESS INSTANTLY
     showToast('Settings saved!', 'success');
+    
+    // Sync the other toggle
+    const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
+    if (lbShowcaseToggle) lbShowcaseToggle.checked = showOnLeaderboard;
+    
     closeModal('modal-profile');
 
     // 4. Background Sync (Don't await it for the UI)
     apiFetch(`${API}/api/auth/settings`, {
       method: 'PATCH',
       body: JSON.stringify(payload)
-    }).then(res => {
+    }).then(async res => {
+      // Pre-cache new profile image as base64 to prevent broken images offline
+      await cacheProfileImagesOffline(res);
+      if (window.localDb) {
+        const cached = await window.localDb.userProfile.get(userId) || {};
+        await window.localDb.userProfile.put({ ...cached, ...res, userId });
+      }
       // Update local storage and UI if pic/username changed (Server confirmation)
       if (res.profilePicture) {
         userProfilePicture = res.profilePicture;
@@ -3636,6 +3958,11 @@ async function submitProfileSettings() {
       }
       if (res.username) {
         localStorage.setItem('userUsername', res.username);
+      }
+      // Reload leaderboard to reflect visibility settings changes instantly in-place!
+      const activePage = document.querySelector('.page.active');
+      if (activePage && activePage.id === 'page-leaderboard') {
+        loadLeaderboard(true);
       }
     }).catch(err => {
       console.warn('Background profile sync failed (expected if offline):', err);
@@ -4084,6 +4411,57 @@ async function toggleDarkTheme(isDark) {
   }
 }
 
+async function toggleLeaderboardShowcase(checked) {
+  if (!navigator.onLine) {
+    showToast('Leaderboard showcase settings cannot be changed while offline.', 'error');
+    const saved = localStorage.getItem('showOnLeaderboard') !== 'false';
+    const settingsToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+    if (settingsToggle) settingsToggle.checked = saved;
+    const mainToggle = document.getElementById('leaderboard-showcase-toggle');
+    if (mainToggle) mainToggle.checked = saved;
+    return;
+  }
+
+  const settingsToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+  if (settingsToggle) settingsToggle.checked = checked;
+  const mainToggle = document.getElementById('leaderboard-showcase-toggle');
+  if (mainToggle) mainToggle.checked = checked;
+
+  const payload = { showOnLeaderboard: checked };
+  const userId = localStorage.getItem('userId');
+
+  try {
+    if (window.localDb) {
+      const cached = await window.localDb.userProfile.get(userId) || {};
+      await window.localDb.userProfile.put({ ...cached, ...payload, userId });
+    }
+    localStorage.setItem('showOnLeaderboard', checked.toString());
+
+    if (window.syncManager) {
+      window.syncManager.addToQueue('PATCH', 'auth/settings', null, payload);
+    }
+    showToast(checked ? 'Showcasing on leaderboard!' : 'Removed from leaderboard showcase.', 'success');
+    
+    // Await the server update so the backend has updated before we refresh!
+    if (navigator.onLine) {
+      try {
+        await apiFetch(`${API}/api/auth/settings`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.warn('Background showcase sync failed (offline):', err);
+      }
+    }
+
+    // Refresh leaderboard instantly in-place!
+    loadLeaderboard(true);
+  } catch (err) {
+    console.error('Error saving leaderboard showcase settings:', err);
+    showToast('Error saving settings.', 'error');
+  }
+}
+
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   if (input.type === 'password') {
@@ -4121,6 +4499,81 @@ document.addEventListener('DOMContentLoaded', async () => {
   const storedName = localStorage.getItem('userName');
   if (chipName)   chipName.textContent = storedName || userName;
   updateNavAvatar();
+
+  // Load showcase toggles from cached user profile instantly!
+  const userId = localStorage.getItem('userId');
+  if (userId) {
+    const savedShowOnLeaderboard = localStorage.getItem('showOnLeaderboard');
+    const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+    const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
+    
+    // Set initial disabled state based on connection
+    if (showcaseToggle) {
+      if (!navigator.onLine) {
+        showcaseToggle.disabled = true;
+        showcaseToggle.title = 'Cannot change settings while offline';
+      } else {
+        showcaseToggle.disabled = false;
+        showcaseToggle.title = 'Showcase on leaderboard';
+      }
+    }
+    if (lbShowcaseToggle) {
+      if (!navigator.onLine) {
+        lbShowcaseToggle.disabled = true;
+        lbShowcaseToggle.title = 'Cannot change settings while offline';
+      } else {
+        lbShowcaseToggle.disabled = false;
+        lbShowcaseToggle.title = 'Showcase on leaderboard';
+      }
+    }
+
+    if (savedShowOnLeaderboard !== null) {
+      const isShowcase = savedShowOnLeaderboard === 'true';
+      if (showcaseToggle) showcaseToggle.checked = isShowcase;
+      if (lbShowcaseToggle) lbShowcaseToggle.checked = isShowcase;
+    } else {
+      // Default to true instantly matching server-side default
+      if (showcaseToggle) showcaseToggle.checked = true;
+      if (lbShowcaseToggle) lbShowcaseToggle.checked = true;
+      if (window.localDb) {
+        window.localDb.userProfile.get(userId).then(cached => {
+          if (cached) {
+            const isShowcase = cached.showOnLeaderboard !== false;
+            if (showcaseToggle) showcaseToggle.checked = isShowcase;
+            if (lbShowcaseToggle) lbShowcaseToggle.checked = isShowcase;
+            localStorage.setItem('showOnLeaderboard', isShowcase.toString());
+          }
+        }).catch(err => console.warn('Failed to load cached showcase settings:', err));
+      }
+    }
+  }
+
+  // Real-time online/offline window listeners to enable/disable toggles instantly
+  window.addEventListener('online', () => {
+    const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+    if (showcaseToggle) {
+      showcaseToggle.disabled = false;
+      showcaseToggle.title = 'Showcase on leaderboard';
+    }
+    const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
+    if (lbShowcaseToggle) {
+      lbShowcaseToggle.disabled = false;
+      lbShowcaseToggle.title = 'Showcase on leaderboard';
+    }
+  });
+
+  window.addEventListener('offline', () => {
+    const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+    if (showcaseToggle) {
+      showcaseToggle.disabled = true;
+      showcaseToggle.title = 'Cannot change settings while offline';
+    }
+    const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
+    if (lbShowcaseToggle) {
+      lbShowcaseToggle.disabled = true;
+      lbShowcaseToggle.title = 'Cannot change settings while offline';
+    }
+  });
 
   // Load badges into memory immediately for offline access
   loadClaimedBadges();
@@ -4166,6 +4619,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       joinCodeInput.value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
       joinCodeInput.setSelectionRange(pos, pos);
     });
+  }
+
+  const lastPage = localStorage.getItem('activePage') || 'home';
+  if (lastPage !== 'home') {
+    showPage(lastPage);
   }
 
   proactiveSync(); // Syncs profile, goals, achievements, etc.
@@ -4341,6 +4799,52 @@ function updateNavAvatar() {
     if (chipAvatar) {
       chipAvatar.style.display = 'flex';
       chipAvatar.textContent = userName.charAt(0).toUpperCase();
+    }
+  }
+}
+
+async function urlToBase64(url) {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('FileReader failed'));
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.warn('Failed to convert image to base64 for offline cache:', url, err);
+    return url;
+  }
+}
+
+async function cacheProfileImagesOffline(profile) {
+  if (!profile) return;
+  if (profile.profilePicture && !profile.profilePicture.startsWith('data:')) {
+    try {
+      const base64 = await urlToBase64(profile.profilePicture);
+      if (base64 && base64.startsWith('data:')) {
+        profile.profilePicture = base64;
+        localStorage.setItem('userProfilePicture', base64);
+        userProfilePicture = base64;
+      }
+    } catch (e) {
+      console.warn('Failed to cache profilePicture:', e);
+    }
+  }
+  if (profile.leetcodeProfilePicture && !profile.leetcodeProfilePicture.startsWith('data:')) {
+    try {
+      const base64 = await urlToBase64(profile.leetcodeProfilePicture);
+      if (base64 && base64.startsWith('data:')) {
+        profile.leetcodeProfilePicture = base64;
+        localStorage.setItem('leetcodeProfilePicture', base64);
+      }
+    } catch (e) {
+      console.warn('Failed to cache leetcodeProfilePicture:', e);
     }
   }
 }
@@ -4741,6 +5245,19 @@ async function openQuickView(username) {
     // 4. Feed (Mixed Days & Achievements)
     const activityList = document.getElementById('qp-activity-list');
     if (activityList) {
+      if (u.showPrivateDetails === false) {
+        activityList.innerHTML = `
+          <div style="padding: 24px; background: var(--bg-muted); border: 3px solid var(--black); border-radius: 12px; box-shadow: 4px 4px 0 var(--black); text-align: center; margin-top: 10px;">
+            <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
+            <h4 style="margin: 0 0 8px 0; font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; text-transform: uppercase;">Private Profile Feed</h4>
+            <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--text-muted); line-height: 1.5;">This user's detailed progress cards and recent achievements are private.</p>
+          </div>
+        `;
+        openModal('modal-public-profile');
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+      
       activityList.innerHTML = '<div class="loading-spinner" style="padding:20px;"><div class="spinner-ring"></div></div>';
       
       try {
@@ -5104,6 +5621,20 @@ async function verifyLeetCodeProfile() {
 
     updateLeetCodeButtonsStatus(true);
     showToast('LeetCode profile verified successfully!', 'success');
+
+    // Sync settings locally and fetch profile picture for offline cache
+    try {
+      const userId = localStorage.getItem('userId');
+      const res = await apiFetch(`${API}/api/auth/settings`);
+      res.userId = userId;
+      await cacheProfileImagesOffline(res);
+      if (window.localDb) {
+        await window.localDb.userProfile.put(res);
+      }
+      renderProfileData(res);
+    } catch (e) {
+      console.warn('Failed to sync LeetCode status to profile cache:', e);
+    }
   } catch (error) {
     console.error('Error verifying LeetCode profile:', error);
     showToast(error.message || 'Failed to verify profile', 'error');
@@ -5496,6 +6027,12 @@ async function loadLeetCodeProfileStatus() {
 /** Helper to render LeetCode UI components from user data */
 function renderLeetCodeUI(user) {
   if (!user) return;
+
+  if (user.leetcodeUsername !== undefined) localStorage.setItem('leetcodeUsername', user.leetcodeUsername || '');
+  if (user.leetcodePendingUsername !== undefined) localStorage.setItem('leetcodePendingUsername', user.leetcodePendingUsername || '');
+  if (user.leetcodeVerificationCode !== undefined) localStorage.setItem('leetcodeVerificationCode', user.leetcodeVerificationCode || '');
+  if (user.leetcodeVerificationStatus !== undefined) localStorage.setItem('leetcodeVerificationStatus', user.leetcodeVerificationStatus || 'none');
+  if (user.leetcodeProfilePicture !== undefined) localStorage.setItem('leetcodeProfilePicture', user.leetcodeProfilePicture || '');
   
   const leetcodeUsernameDisplay = document.getElementById('leetcode-username-display');
   const leetcodeStatus         = document.getElementById('leetcode-status');
@@ -5569,6 +6106,11 @@ function renderLeetCodeUI(user) {
     if (user.leetcodeProfilePicture && leetcodeProfilePic) {
       leetcodeProfilePic.src = user.leetcodeProfilePicture;
       leetcodeProfilePic.style.display = 'block';
+      leetcodeProfilePic.onerror = () => {
+        leetcodeProfilePic.style.display = 'none';
+      };
+    } else if (leetcodeProfilePic) {
+      leetcodeProfilePic.style.display = 'none';
     }
     updateLeetCodeButtonsStatus(true);
 
@@ -6144,8 +6686,12 @@ async function loadLeaderboard(reset = false) {
     if (reset) {
       const myUsername = localStorage.getItem('userUsername');
       const isMeInTop10 = users.some(u => u.username === myUsername);
+      const myRankArea = document.getElementById('lb-my-rank-area');
+      if (myRankArea) myRankArea.innerHTML = '';
       
-      if (!isMeInTop10 && myUsername) {
+      const myRankVal = res.myRank;
+      
+      if (!isMeInTop10 && myUsername && myRankVal !== null && myRankVal !== undefined) {
         const me = {
           name: localStorage.getItem('userName') || 'You',
           username: myUsername,
@@ -6154,9 +6700,8 @@ async function loadLeaderboard(reset = false) {
           highestStreak: parseInt(localStorage.getItem('userHighestStreak')) || 0
         };
         
-        const myRankArea = document.getElementById('lb-my-rank-area');
         if (myRankArea) {
-          const myRankCard = renderLeaderboardItem(me, '?', true);
+          const myRankCard = renderLeaderboardItem(me, myRankVal, true);
           myRankCard.classList.add('my-rank-card');
           myRankArea.appendChild(myRankCard);
         }
@@ -8511,7 +9056,16 @@ async function proactiveSync(force = false) {
     const profile = await apiFetch(`${API}/api/auth/settings`);
     if (profile) {
       profile.userId = userId;
+      await cacheProfileImagesOffline(profile);
       await localDb.userProfile.put(profile);
+
+      // Update showcase toggles from server response
+      const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
+      if (showcaseToggle) showcaseToggle.checked = profile.showOnLeaderboard !== false;
+      const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
+      if (lbShowcaseToggle) lbShowcaseToggle.checked = profile.showOnLeaderboard !== false;
+
+      localStorage.setItem('showOnLeaderboard', (profile.showOnLeaderboard !== false).toString());
 
       // Apply profile updates to UI
       if (profile.theme && localStorage.getItem('theme') !== profile.theme) {
@@ -8579,15 +9133,70 @@ async function proactiveSync(force = false) {
     // 4. Sync Goals
     const goals = await apiFetch(`${API}/api/goals`);
     if (goals) {
-      await localDb.goals.clear();
-      await localDb.goals.bulkAdd(goals);
+      const pendingGoalItems = await localDb.syncQueue
+        .filter(x => x.entity === 'goals')
+        .toArray();
+      const pendingIds = new Set(pendingGoalItems.map(q => q.targetId).filter(Boolean));
+      const pendingLocalIds = new Set(pendingGoalItems.map(q => q.localId).filter(Boolean));
+
+      const safeToUpdate = goals.filter(g => !pendingIds.has(g._id));
+      const localGoals = await localDb.goals.toArray();
+      const toDelete = localGoals
+        .filter(g => !pendingIds.has(g._id) && !pendingLocalIds.has(g._id))
+        .map(g => g._id);
+      
+      await localDb.goals.bulkDelete(toDelete);
+      await localDb.goals.bulkPut(safeToUpdate);
+
+      // Reconstruct final allGoals in memory
+      const localPendingGoals = await Promise.all(
+        [...pendingIds, ...pendingLocalIds].map(id => localDb.goals.get(id))
+      );
+      const localPendingMap = new Map();
+      localPendingGoals.filter(Boolean).forEach(g => localPendingMap.set(g._id, g));
+
+      allGoals = goals.map(sg => localPendingMap.get(sg._id) || sg);
+      for (const [id, goal] of localPendingMap) {
+        if (!allGoals.find(g => g._id === id)) {
+          allGoals.push(goal);
+        }
+      }
+      
+      allGoals.sort((a, b) => new Date(a.deadline || a.targetDate || 0) - new Date(b.deadline || b.targetDate || 0));
     }
 
     // 5. Sync Achievements
     const achs = await apiFetch(`${API}/api/achievements`);
     if (achs && achs.achievements) {
-      await localDb.achievements.clear();
-      await localDb.achievements.bulkAdd(achs.achievements);
+      const serverAchs = achs.achievements;
+      const pendingAchItems = await localDb.syncQueue
+        .filter(x => x.entity === 'achievements')
+        .toArray();
+      const pendingIds = new Set(pendingAchItems.map(q => q.targetId).filter(Boolean));
+      const pendingLocalIds = new Set(pendingAchItems.map(q => q.localId).filter(Boolean));
+
+      const safeToUpdate = serverAchs.filter(a => !pendingIds.has(a._id));
+      const localAchs = await localDb.achievements.toArray();
+      const toDelete = localAchs
+        .filter(a => !pendingIds.has(a._id) && !pendingLocalIds.has(a._id))
+        .map(a => a._id);
+      
+      await localDb.achievements.bulkDelete(toDelete);
+      await localDb.achievements.bulkPut(safeToUpdate);
+
+      // Reconstruct final allAchievements in memory
+      const localPendingAchs = await Promise.all(
+        [...pendingIds, ...pendingLocalIds].map(id => localDb.achievements.get(id))
+      );
+      const localPendingMap = new Map();
+      localPendingAchs.filter(Boolean).forEach(a => localPendingMap.set(a._id, a));
+
+      allAchievements = serverAchs.map(sa => localPendingMap.get(sa._id) || sa);
+      for (const [id, ach] of localPendingMap) {
+        if (!allAchievements.find(a => a._id === id)) {
+          allAchievements.push(ach);
+        }
+      }
     }
 
     // Sync templates for offline task creation
@@ -8634,8 +9243,12 @@ function renderLeaderboardData(users, reset) {
 window.addEventListener('online', async () => {
   showToast('Back online! Syncing your progress...', 'info');
   if (window.syncManager) {
+    // IMPORTANT: Wait for ALL queued offline changes to be pushed to the
+    // server before fetching fresh data back.  Without this await,
+    // proactiveSync would pull stale server data and overwrite local edits.
     await syncManager.processQueue();
   }
-  // Refresh data from server (Forced)
+  // Refresh data from server (Forced) — now safe because local changes
+  // have been pushed first.
   proactiveSync(true); 
 });
