@@ -1,11 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay } = require('../controllers/dayController');
+const { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay, getScratchpad, saveScratchpad } = require('../controllers/dayController');
 const { createDayValidation, updateDayValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
 // GET all days
 router.get('/', authenticateToken, getAllDays);
+
+// GET scratchpad (Must come before generic dynamic routes if conflict, but it is /:id/scratchpad, which does not conflict with /id/:id or /:date since it has two segments)
+router.get('/:id/scratchpad', authenticateToken, getScratchpad);
+
+// PUT scratchpad
+router.put('/:id/scratchpad', authenticateToken, saveScratchpad);
 
 // GET a specific day by MongoDB _id
 router.get('/id/:id', authenticateToken, getDayById);

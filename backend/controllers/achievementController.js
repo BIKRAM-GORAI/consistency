@@ -234,18 +234,12 @@ const getAchievementsByDaysBatch = async (req, res) => {
       return res.status(400).json({ message: 'dayIds array is required' });
     }
 
-    // Get achievements for these days
-    const docs = await Achievement.find({ dayId: { $in: dayIds } }).sort({ createdAt: 1 });
+    const requesterId = req.user.userId;
+
+    // Get achievements for these days belonging to the requester
+    const docs = await Achievement.find({ dayId: { $in: dayIds }, userId: requesterId }).sort({ createdAt: 1 });
     if (!docs.length) return res.json([]);
 
-    // Privacy check: For simplicity in batch, we only allow fetching the requester's own achievements
-    // OR public achievements if they belong to a shared group. 
-    // To stay safe and performant for the dashboard, we filter for current user's docs if no other flags.
-    const requesterId = req.user.userId;
-    
-    // Filter results to only show achievements the user is allowed to see
-    // (Owner can always see, others depend on privacy/group status)
-    // For the dashboard "batch" use case, it's almost always for the owner.
     const results = docs.map(d => sanitizeAchievement(d));
     res.json(results);
   } catch (err) {

@@ -1,6 +1,8 @@
 const Day = require('../models/Day');
 const User = require('../models/User');
 const Achievement = require('../models/Achievement');
+const Scratchpad = require('../models/Scratchpad');
+
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -351,6 +353,9 @@ const deleteDay = async (req, res) => {
     // Clean up any achievements associated with this day card for this user
     await Achievement.deleteMany({ dayId: req.params.id, userId });
 
+    // Clean up any scratchpads associated with this day card for this user
+    await Scratchpad.deleteMany({ dayId: req.params.id, userId });
+
     // Recalculate streak and include it in the response
     const newStreak = await updateUserStreakAndActivity(userId);
 
@@ -360,4 +365,78 @@ const deleteDay = async (req, res) => {
   }
 };
 
-module.exports = { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay };
+/**
+ * GET /api/days/:id/scratchpad
+ * Retrieve scratchpad strokes for a specific day.
+ */
+const getScratchpad = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const dayId = req.params.id;
+
+    // Check if the day exists and belongs to the user
+    const day = await Day.findOne({ _id: dayId, userId });
+    if (!day) return res.status(404).json({ message: 'Day not found or unauthorized' });
+
+    let scratchpad = await Scratchpad.findOne({ dayId, userId });
+    if (!scratchpad) {
+      // Return empty strokes if not created yet
+      return res.json({ dayId, strokes: [] });
+    }
+    res.json(scratchpad);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * PUT /api/days/:id/scratchpad
+ * Create or update scratchpad strokes for a specific day.
+ */
+const saveScratchpad = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const dayId = req.params.id;
+    const { strokes } = req.body;
+
+    // Check if the day exists and belongs to the user
+    const day = await Day.findOne({ _id: dayId, userId });
+    if (!day) return res.status(404).json({ message: 'Day not found or unauthorized' });
+
+    // Past day verification with robust 36-hour buffer to handle server-vs-client timezone differences and offline-sync delays safely
+    const today = new Date();
+    const dayDateObj = new Date(day.date);
+    const diffTime = today - dayDateObj;
+    const diffHours = diffTime / (1000 * 60 * 60);
+
+    if (diffHours > 36) {
+      return res.status(400).json({ message: 'Cannot modify scratchpad for a past day' });
+    }
+
+    let scratchpad = await Scratchpad.findOne({ dayId, userId });
+    if (scratchpad) {
+      scratchpad.strokes = strokes || [];
+      await scratchpad.save();
+    } else {
+      scratchpad = new Scratchpad({
+        dayId,
+        userId,
+        strokes: strokes || [],
+      });
+      await scratchpad.save();
+    }
+
+    // Set hasScratchpad on the Day document
+    if (!day.hasScratchpad) {
+      day.hasScratchpad = true;
+      await day.save();
+    }
+
+    res.json(scratchpad);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay, getScratchpad, saveScratchpad };
+

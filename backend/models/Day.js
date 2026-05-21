@@ -47,6 +47,10 @@ const DaySchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    hasScratchpad: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
