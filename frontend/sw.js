@@ -1,4 +1,21 @@
-const CACHE_NAME = 'consistency-cache-v27';
+// ── FIREBASE CLOUD MESSAGING (must be at the TOP of the service worker) ──
+// Firebase compat scripts must be importScripts'd before any event listeners,
+// as required by the Service Worker spec and enforced by mobile browsers.
+importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
+  authDomain: "consistency-daily.firebaseapp.com",
+  projectId: "consistency-daily",
+  databaseURL: "https://consistency-daily-default-rtdb.asia-southeast1.firebasedatabase.app",
+  storageBucket: "consistency-daily.firebasestorage.app",
+  messagingSenderId: "760797805516",
+  appId: "1:760797805516:web:ab7a76cd4f3b2d2232bb69",
+  measurementId: "G-GQCYL05KBH"
+});
+
+const CACHE_NAME = 'consistency-cache-v28';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -127,22 +144,6 @@ self.addEventListener('fetch', (event) => {
       })
     );
   }
-});
-
-// ── FIREBASE CLOUD MESSAGING (PUSH NOTIFICATIONS) ──
-// Import Firebase compatibility libraries for background messaging
-importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-compat.js');
-
-firebase.initializeApp({
-  apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
-  authDomain: "consistency-daily.firebaseapp.com",
-  projectId: "consistency-daily",
-  databaseURL: "https://consistency-daily-default-rtdb.asia-southeast1.firebasedatabase.app",
-  storageBucket: "consistency-daily.firebasestorage.app",
-  messagingSenderId: "760797805516",
-  appId: "1:760797805516:web:ab7a76cd4f3b2d2232bb69",
-  measurementId: "G-GQCYL05KBH"
 });
 
 // Setup manual push event listener which works with VAPID keys / FCM seamlessly
