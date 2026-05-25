@@ -19,6 +19,7 @@ const leetcodeRoutes    = require('./routes/leetcodeRoutes');
 const adminRoutes       = require('./routes/adminRoutes');
 const systemRoutes      = require('./routes/systemRoutes');
 const syncRoutes        = require('./routes/syncRoutes');
+const fcmRoutes         = require('./routes/fcmRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -157,6 +158,7 @@ app.use('/api/admin/login', authLimiter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/fcm',          authenticateToken, dataModificationLimiter, fcmRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

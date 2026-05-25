@@ -181,7 +181,8 @@ async function getProfileSettings(req, res) {
       leetcodeProfilePicture: user.leetcodeProfilePicture || '',
       leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
       currentStreak: user.currentStreak || 0,
-      highestStreak: user.highestStreak || 0
+      highestStreak: user.highestStreak || 0,
+      mutedGroups: user.mutedGroups || []
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }

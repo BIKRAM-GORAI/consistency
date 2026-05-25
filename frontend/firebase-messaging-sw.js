@@ -19,9 +19,14 @@ importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
+  apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
+  authDomain: "consistency-daily.firebaseapp.com",
   projectId: "consistency-daily",
-  messagingSenderId: "760797805516", // Synchronized with index.html
-  // We actually need the config from auth.html
+  databaseURL: "https://consistency-daily-default-rtdb.asia-southeast1.firebasedatabase.app",
+  storageBucket: "consistency-daily.firebasestorage.app",
+  messagingSenderId: "760797805516",
+  appId: "1:760797805516:web:ab7a76cd4f3b2d2232bb69",
+  measurementId: "G-GQCYL05KBH"
 });
 
 // We can just rely on the standard push event listener instead of the full SDK here if we want,
@@ -42,7 +47,7 @@ self.addEventListener('push', function(event) {
     body: data.notification?.body || 'Check your daily streak!',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    data: data.fcmOptions?.link || '/'
+    data: data.fcmOptions?.link || data.data?.link || data.notification?.click_action || '/'
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

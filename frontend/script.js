@@ -46,6 +46,13 @@ if (userId && !localStorage.getItem('userUsername')) {
 }
 
 function logout() {
+  const token = localStorage.getItem('fcmToken');
+  if (token) {
+    apiFetch(`${API}/api/fcm/token`, {
+      method: 'DELETE',
+      body: JSON.stringify({ token })
+    }).catch(err => console.warn('FCM unregister failed on logout:', err));
+  }
   localStorage.clear();
   if (window.localDb) {
     window.localDb.delete().then(() => {
@@ -2544,6 +2551,18 @@ async function loadGroups() {
       await localDb.groups.bulkAdd(allJoinedGroups);
 
       renderGroups();
+
+      // FCM Chat Deep-linking Action
+      const urlParams = new URLSearchParams(window.location.search);
+      const openChatGroupId = urlParams.get('openChat');
+      if (openChatGroupId) {
+        const targetGroup = allJoinedGroups.find(g => String(g._id) === String(openChatGroupId));
+        if (targetGroup) {
+          openGroupChat(targetGroup._id, targetGroup.name, targetGroup.icon || '');
+          const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        }
+      }
     }
   } catch (err) {
     console.warn('Background groups refresh failed:', err);
@@ -2657,6 +2676,11 @@ function renderGroups() {
     });
   }
   if (window.lucide) lucide.createIcons({ root: container });
+  
+  // Dynamically render/update the FCM status banner whenever groups tab is drawn
+  if (typeof renderFcmBannerState === 'function') {
+    renderFcmBannerState();
+  }
 }
 
 function renderGroupSection(container, title, groups, isOwnerSection, emoji, emptyMsg) {
@@ -2692,6 +2716,15 @@ function renderSingleGroupCard(group, emoji) {
   const userId = localStorage.getItem('userId');
   const isMyOwned = String(group.owner._id || group.owner) === String(userId);
   const isPublic = group.isPublic;
+  
+  const mutedGroupsStr = localStorage.getItem('userMutedGroups') || '[]';
+  let mutedGroups = [];
+  try {
+    mutedGroups = JSON.parse(mutedGroupsStr);
+  } catch (e) {
+    mutedGroups = [];
+  }
+  const isMuted = mutedGroups.includes(String(group._id));
   
   const iconHtml = group.icon 
     ? `<img src="${group.icon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='8px'; this.style.background='var(--yellow)';" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
@@ -2742,10 +2775,13 @@ function renderSingleGroupCard(group, emoji) {
       </div>
       ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
       
-      <!-- Live Chat Button -->
-      <div style="margin: 12px 0;">
-        <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--pink); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 4px 4px 0 var(--black);" onclick="openGroupChat('${group._id}', '${escJs(group.name)}', '${group.icon || ''}')">
+      <!-- Core Chat & Mute Actions -->
+      <div style="margin: 12px 0; display: flex; gap: 10px;">
+        <button class="btn-primary ripple" style="flex: 1; justify-content: center; background: var(--pink); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 4px 4px 0 var(--black); margin: 0;" onclick="openGroupChat('${group._id}', '${escJs(group.name)}', '${group.icon || ''}')">
           <i data-lucide="message-square" style="width: 18px; height: 18px;"></i> Live Chat
+        </button>
+        <button class="btn-primary ripple" id="mute-btn-${group._id}" style="width: 48px; min-width: 48px; justify-content: center; background: ${isMuted ? 'var(--red)' : 'var(--bg-card)'}; border-radius: 8px; font-weight: 800; box-shadow: 4px 4px 0 var(--black); margin: 0; padding: 0; display: flex; align-items: center;" onclick="toggleGroupMuteStatus('${group._id}')" title="${isMuted ? 'Unmute notifications' : 'Mute notifications'}">
+          <i data-lucide="${isMuted ? 'bell-off' : 'bell'}" style="width: 18px; height: 18px; color: ${isMuted ? '#fff' : 'var(--black)'};"></i>
         </button>
       </div>
 
@@ -8066,6 +8102,7 @@ async function handleChatSubmit(e) {
     if (selectedMediaBlobs.length === 0) {
       // Just text
       await firestore.addDoc(msgsRef, { ...baseMsgData, text });
+      triggerChatPushNotification(text, false, null);
     } else {
       // Send media (with text attached to the first one)
       let isFirstMedia = true;
@@ -8082,6 +8119,9 @@ async function handleChatSubmit(e) {
         };
 
         await firestore.addDoc(msgsRef, msgData);
+        if (isFirstMedia) {
+          triggerChatPushNotification(text, true, item.type);
+        }
         
         if (item.type === 'audio') {
           if (item.source === 'upload') {
@@ -8751,6 +8791,199 @@ async function initFirebaseChat() {
   } catch (err) {
     console.error('Firebase Auth Sync Error:', err);
   }
+}
+
+async function initPushNotifications(forcePrompt = false) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('Notifications not supported in this browser.');
+    return;
+  }
+
+  // If Firebase Messaging is determined to be unsupported in the current session (e.g. Incognito)
+  if (window.firebaseMessaging === null) {
+    const banner = document.getElementById('fcm-permission-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  // Defer execution if Firebase SDK is still loading asynchronously (module script deferral)
+  if (window.getFcmToken === undefined || window.firebaseMessaging === undefined) {
+    setTimeout(() => initPushNotifications(forcePrompt), 200);
+    return;
+  }
+
+  const banner = document.getElementById('fcm-permission-banner');
+  if (!banner) return;
+
+  const currentPermission = Notification.permission;
+  
+  if (currentPermission === 'granted') {
+    try {
+      const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
+      if (!manuallyDisabled) {
+        // Use the unified service worker to prevent registration conflicts and retain PWA status
+        await navigator.serviceWorker.register('/sw.js?v=27');
+        
+        // Wait until the service worker is fully active and ready to handle pushes
+        const reg = await navigator.serviceWorker.ready;
+        
+        const token = await window.getFcmToken(window.firebaseMessaging, {
+          vapidKey: 'BEaGRMs91bpXQ1LUZ26AU75jlYB0Gg0IzapbqHaO-HDgnST_pfyBzlqeA3Swr_GDtt2n786bFV9S2nHyCX5WYF4',
+          serviceWorkerRegistration: reg
+        });
+        
+        if (token) {
+          localStorage.setItem('fcmToken', token);
+          // Always register the token to self-heal any missing database entries
+          await apiFetch(`${API}/api/fcm/token`, {
+            method: 'POST',
+            body: JSON.stringify({ token })
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('FCM token registration failed:', err);
+      showToast(`FCM Registration Failed: ${err.message || err}`, 'error');
+    }
+  }
+
+  renderFcmBannerState();
+}
+
+function renderFcmBannerState() {
+  const banner = document.getElementById('fcm-permission-banner');
+  if (!banner) return;
+
+  const titleEl = document.getElementById('fcm-banner-title');
+  const descEl = document.getElementById('fcm-banner-desc');
+  const btnEl = document.getElementById('fcm-banner-btn');
+  const iconWrap = document.getElementById('fcm-banner-icon-wrap');
+
+  if (!('Notification' in window)) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'flex';
+  const permission = Notification.permission;
+  const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
+
+  if (permission === 'default') {
+    iconWrap.style.background = 'var(--yellow)';
+    iconWrap.innerHTML = '<i data-lucide="bell" style="width: 20px; height: 20px; color: var(--black);"></i>';
+    titleEl.textContent = 'Notifications: Off';
+    descEl.textContent = 'Notification access is required to receive real-time notifications.';
+    btnEl.style.display = 'block';
+    btnEl.textContent = 'Turn On';
+    btnEl.onclick = async () => {
+      const perm = await Notification.requestPermission();
+      localStorage.removeItem('fcmNotificationsDisabled');
+      initPushNotifications(true);
+    };
+  } else if (permission === 'granted') {
+    if (manuallyDisabled) {
+      iconWrap.style.background = 'var(--yellow)';
+      iconWrap.innerHTML = '<i data-lucide="bell-off" style="width: 20px; height: 20px; color: var(--black);"></i>';
+      titleEl.textContent = 'Notifications: Suspended';
+      descEl.textContent = 'Notifications are currently disabled manually for this device.';
+      btnEl.style.display = 'block';
+      btnEl.textContent = 'Turn On';
+      btnEl.onclick = async () => {
+        localStorage.removeItem('fcmNotificationsDisabled');
+        initPushNotifications(true);
+      };
+    } else {
+      iconWrap.style.background = 'var(--green)';
+      iconWrap.innerHTML = '<i data-lucide="bell" style="width: 20px; height: 20px; color: var(--black);"></i>';
+      titleEl.textContent = 'Notifications: On';
+      descEl.textContent = 'Push notifications are currently active and running on your system.';
+      btnEl.style.display = 'block';
+      btnEl.textContent = 'Turn Off';
+      btnEl.onclick = async () => {
+        const token = localStorage.getItem('fcmToken');
+        if (token) {
+          apiFetch(`${API}/api/fcm/token`, {
+            method: 'DELETE',
+            body: JSON.stringify({ token })
+          }).catch(err => console.warn('Failed to delete token on manual mute:', err));
+        }
+        localStorage.setItem('fcmNotificationsDisabled', 'true');
+        renderFcmBannerState();
+        showToast('Notifications disabled for this device.', 'info');
+      };
+    }
+  } else if (permission === 'denied') {
+    iconWrap.style.background = 'var(--red)';
+    iconWrap.innerHTML = '<i data-lucide="bell-off" style="width: 20px; height: 20px; color: #fff;"></i>';
+    titleEl.textContent = 'Notifications: Blocked';
+    descEl.textContent = 'Access was denied. Please click the padlock icon in your browser address bar to allow.';
+    btnEl.style.display = 'block';
+    btnEl.textContent = 'How to Enable';
+    btnEl.onclick = () => {
+      showToast('Click the padlock/settings icon next to the URL in your browser bar, toggle Notifications to ALLOW, and reload.', 'info');
+    };
+  }
+
+  if (window.lucide) lucide.createIcons({ root: banner });
+}
+
+async function toggleGroupMuteStatus(groupId) {
+  const mutedGroupsStr = localStorage.getItem('userMutedGroups') || '[]';
+  let mutedGroups = [];
+  try {
+    mutedGroups = JSON.parse(mutedGroupsStr);
+  } catch (e) {
+    mutedGroups = [];
+  }
+
+  const isMuted = mutedGroups.includes(String(groupId));
+  const newMuteState = !isMuted;
+
+  if (newMuteState) {
+    mutedGroups.push(String(groupId));
+  } else {
+    mutedGroups = mutedGroups.filter(id => id !== String(groupId));
+  }
+
+  localStorage.setItem('userMutedGroups', JSON.stringify(mutedGroups));
+
+  // Update button UI snappily
+  const btn = document.getElementById(`mute-btn-${groupId}`);
+  if (btn) {
+    btn.style.background = newMuteState ? 'var(--red)' : 'var(--bg-card)';
+    btn.title = newMuteState ? 'Unmute notifications' : 'Mute notifications';
+    btn.innerHTML = `<i data-lucide="${newMuteState ? 'bell-off' : 'bell'}" style="width: 18px; height: 18px; color: ${newMuteState ? '#fff' : 'var(--black)'};"></i>`;
+    if (window.lucide) lucide.createIcons({ root: btn });
+  }
+
+  try {
+    await apiFetch(`${API}/api/fcm/mute`, {
+      method: 'POST',
+      body: JSON.stringify({ groupId, mute: newMuteState })
+    });
+    showToast(newMuteState ? 'Notifications muted for this group' : 'Notifications enabled for this group', 'success');
+  } catch (err) {
+    console.error('Failed to toggle group mute status:', err);
+    showToast('Failed to save mute settings on server', 'error');
+  }
+}
+
+function triggerChatPushNotification(text, hasMedia, mediaType) {
+  if (!activeChatGroupId) return;
+  const userName = localStorage.getItem('userName') || 'User';
+
+  apiFetch(`${API}/api/fcm/notify-chat`, {
+    method: 'POST',
+    body: JSON.stringify({
+      groupId: activeChatGroupId,
+      senderName: userName,
+      text: text,
+      hasMedia: hasMedia,
+      mediaType: mediaType
+    })
+  }).catch(err => {
+    console.warn('Failed to dispatch background FCM notification:', err);
+  });
 }
 
 async function openQuickViewByMemberId(memberId, memberName) {
@@ -9436,8 +9669,16 @@ async function proactiveSync(force = false) {
     const profile = await apiFetch(`${API}/api/auth/settings`);
     if (profile) {
       profile.userId = userId;
+      if (profile.mutedGroups) {
+        localStorage.setItem('userMutedGroups', JSON.stringify(profile.mutedGroups.map(g => String(g._id || g))));
+      } else {
+        localStorage.setItem('userMutedGroups', '[]');
+      }
       await cacheProfileImagesOffline(profile);
       await localDb.userProfile.put(profile);
+      
+      // Initialize FCM real-time chat push notifications
+      initPushNotifications();
 
       // Update showcase toggles from server response
       const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');

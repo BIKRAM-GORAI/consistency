@@ -168,6 +168,15 @@ const UserSchema = new mongoose.Schema(
     audioUploadCount:      { type: Number, default: 0 }, // For recordings
     audioFileUploadCount:  { type: Number, default: 0 }, // For manual uploads
     mediaResetTime:        { type: Date, default: Date.now },
+    // Firebase Cloud Messaging (Push Notifications)
+    fcmTokens: [{
+      type: String,
+      trim: true,
+    }],
+    mutedGroups: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+    }],
   },
   { timestamps: true }
 );

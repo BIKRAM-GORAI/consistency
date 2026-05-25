@@ -214,6 +214,20 @@
       </div>
     </div>
 
+    <!-- Notification Access Banner -->
+    <div id="fcm-permission-banner" class="fcm-banner" style="display: none; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; margin-bottom: 24px; background: var(--bg-card); border: 3px solid var(--black); border-radius: 12px; box-shadow: 4px 4px 0 var(--black); transition: transform 0.2s ease;">
+      <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex-grow: 1;">
+        <div id="fcm-banner-icon-wrap" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); background: var(--yellow); flex-shrink: 0;">
+          <i data-lucide="bell" id="fcm-banner-icon" style="width: 20px; height: 20px; color: var(--black);"></i>
+        </div>
+        <div style="min-width: 0;">
+          <h3 id="fcm-banner-title" style="margin: 0; font-size: 15px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; color: var(--text);">Real-Time Notifications</h3>
+          <p id="fcm-banner-desc" style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted); font-weight: 600; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Loading notification settings...</p>
+        </div>
+      </div>
+      <button id="fcm-banner-btn" class="btn-primary ripple" style="padding: 8px 16px; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 0; white-space: nowrap; box-shadow: 2px 2px 0 var(--black);">Enable Access</button>
+    </div>
+
     <!-- Groups content will be rendered by JS -->
     <div id="groups-container">
       <div class="loading-spinner" id="loading-groups">
@@ -1417,6 +1431,7 @@
     import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
     import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
     import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+    import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
@@ -1448,6 +1463,25 @@
     window.signInWithFirebase = signInWithCustomToken;
     window.firestore = { collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp: firestoreTimestamp };
     window.rtdb = { ref, set, onValue, onDisconnect, serverTimestamp: rtdbTimestamp, remove };
+
+    // Synchronously check push support to prevent any deferred promise race conditions on startup
+    const pushSupported = ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+    
+    if (pushSupported) {
+      try {
+        window.firebaseMessaging = getMessaging(app);
+        window.getFcmToken = getToken;
+        console.log("✅ FCM Messaging initialized successfully");
+      } catch (err) {
+        console.warn("⚠️ FCM Messaging initialization caught error (e.g. Incognito or blocked service worker):", err);
+        window.firebaseMessaging = null;
+        window.getFcmToken = null;
+      }
+    } else {
+      console.warn("⚠️ FCM Push Notifications are not supported in this browser.");
+      window.firebaseMessaging = null;
+      window.getFcmToken = null;
+    }
 
     // ── INDEXED DB INITIALIZATION (OFFLINE-FIRST) ──
     const dbLocal = new Dexie("ConsistencyDb");
