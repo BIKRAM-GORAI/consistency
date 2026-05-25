@@ -6773,7 +6773,7 @@ if ('serviceWorker' in navigator) {
       }
 
       // 2. Register the fresh v15 worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=28');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=29');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -8822,7 +8822,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=28');
+        await navigator.serviceWorker.register('/sw.js?v=29');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;

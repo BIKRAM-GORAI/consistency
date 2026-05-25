@@ -15,7 +15,7 @@ firebase.initializeApp({
   measurementId: "G-GQCYL05KBH"
 });
 
-const CACHE_NAME = 'consistency-cache-v28';
+const CACHE_NAME = 'consistency-cache-v29';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -39,18 +39,24 @@ const STATIC_ASSETS = [
   'about7.jpg',
   'about8.jpg',
   'about9.png',
-  'about10.png',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap'
 ];
 
-// 1. INSTALL: Pre-cache essential assets
+// 1. INSTALL: Pre-cache essential assets (resilient - a single 404 won't abort install)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      // Use individual adds so one missing file can't kill the entire install
+      return Promise.allSettled(
+        STATIC_ASSETS.map(url =>
+          cache.add(url).catch(err => {
+            console.warn('[SW] Failed to cache asset:', url, err.message);
+          })
+        )
+      );
     })
   );
   self.skipWaiting();
