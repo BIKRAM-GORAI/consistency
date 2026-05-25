@@ -98,7 +98,17 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(event.request)) 
+        .catch(() => {
+          return caches.match(event.request).then((cached) => {
+            if (cached) return cached;
+            if (event.request.mode === 'navigate') {
+              return caches.match('landing.html').then((fallback) => {
+                if (fallback) return fallback;
+                return caches.match('/');
+              });
+            }
+          });
+        })
     );
   } else {
     // Cache-First for other assets

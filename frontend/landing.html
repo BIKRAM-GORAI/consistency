@@ -2474,7 +2474,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const wasUpdated = urlParams.has('sw_updated');
 
-      navigator.serviceWorker.register('/sw.js').then(reg => {
+      navigator.serviceWorker.register('/sw.js?v=27').then(reg => {
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
@@ -2494,8 +2494,10 @@
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing && !wasUpdated) {
-          window.location.reload();
           refreshing = true;
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('sw_updated', '1');
+          window.location.href = newUrl.toString();
         }
       });
     }

@@ -4,12 +4,36 @@
     {
       "src": "backend/server.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
       "dest": "backend/server.js"
+    },
+    {
+      "src": "/js/libs/lucide/(.*)",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/architecture",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/$",
+      "dest": "frontend/landing.html"
+    },
+    {
+      "src": "/(.*)\\.(js|css|png|jpg|jpeg|svg|gif|ico|json|xml|txt)",
+      "dest": "frontend/$1.$2"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
     }
   ],
   "crons": [
@@ -44,7 +68,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://jitsi.belnet.be; img-src 'self' data: blob: https: https://jitsi.belnet.be; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com https://unpkg.com https://jitsi.belnet.be wss://jitsi.belnet.be; frame-src 'self' https://*.firebaseapp.com https://jitsi.belnet.be; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://jitsi.belnet.be; img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://firestore.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://res.cloudinary.com https://assets.leetcode.com https://www.gstatic.com https://apis.google.com https://unpkg.com https://jitsi.belnet.be wss://jitsi.belnet.be; frame-src 'self' https://*.firebaseapp.com https://jitsi.belnet.be; object-src 'none'"
         },
         {
           "key": "Cross-Origin-Opener-Policy",
