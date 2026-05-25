@@ -400,7 +400,14 @@ async function loadDays(page = 1) {
 
   // 2. REVALIDATE: Load from Server (Only if online)
   if (!navigator.onLine) {
-    if (allDays.length > 0) showToast('Offline: Using cached days.', 'info');
+    if (allDays.length > 0) {
+      showToast('Offline: Using cached days.', 'info');
+    } else {
+      // Offline with no days present - render the empty state so the user can create cards offline!
+      renderDays();
+      updateStreak();
+    }
+    if (loadingEl) loadingEl.innerHTML = '';
     return;
   }
 
@@ -552,45 +559,6 @@ function updateStreak() {
 async function renderDays(appendOnly = false) {
   const container = document.getElementById('cards-container');
   
-  // Remove existing Load More row if it exists
-  const existingLoadMore = container.querySelector('.load-more-row');
-  if (existingLoadMore) existingLoadMore.remove();
-
-  if (!appendOnly) {
-    container.innerHTML = '';
-  }
-
-  // ── "New Day Card" button always pinned at the top (only if not appending) ──────
-  if (!appendOnly) {
-    const addBtnRow = document.createElement('div');
-    addBtnRow.className = 'add-day-inline-row';
-    addBtnRow.innerHTML = `
-      <button class="add-day-inline-btn ripple" onclick="openAddDayModal()" id="add-day-inline-btn">
-        <span class="plus-icon">＋</span>
-        <span>New Day Card</span>
-      </button>
-      <p class="streak-info-text" style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-top: 10px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">
-        <i data-lucide="flame" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px; color: var(--coral);"></i>
-        Maintain your streak! Complete at least 1 task daily.
-      </p>
-`;
-    container.appendChild(addBtnRow);
-  }
-
-  if (!allDays.length) {
-    const emptyEl = document.createElement('div');
-    emptyEl.className = 'empty-state';
-    emptyEl.innerHTML = `
-      <span class="empty-icon"><i data-lucide="calendar"></i></span>
-      <h3>No days yet</h3>
-      <p>Click the button above to start your first day card.</p>`;
-    container.appendChild(emptyEl);
-    if (window.gsap) {
-      gsap.from('.empty-state', { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' });
-    }
-    return;
-  }
-
   // Filter for only the new days if appending
   let daysToRender = [...allDays];
   if (appendOnly) {
@@ -634,6 +602,48 @@ async function renderDays(appendOnly = false) {
         console.warn('Batch achievements load from server failed:', err);
       }
     }
+  }
+
+  // ── ALL DOM MANIPULATION IS SYNCHRONOUS AND ATOMIC FROM HERE ON ──
+  // This guarantees there is never a blank flash or disappearing cards on refresh/sync.
+
+  // Remove existing Load More row if it exists
+  const existingLoadMore = container.querySelector('.load-more-row');
+  if (existingLoadMore) existingLoadMore.remove();
+
+  if (!appendOnly) {
+    container.innerHTML = '';
+  }
+
+  // ── "New Day Card" button always pinned at the top (only if not appending) ──────
+  if (!appendOnly) {
+    const addBtnRow = document.createElement('div');
+    addBtnRow.className = 'add-day-inline-row';
+    addBtnRow.innerHTML = `
+      <button class="add-day-inline-btn ripple" onclick="openAddDayModal()" id="add-day-inline-btn">
+        <span class="plus-icon">＋</span>
+        <span>New Day Card</span>
+      </button>
+      <p class="streak-info-text" style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-top: 10px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">
+        <i data-lucide="flame" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px; color: var(--coral);"></i>
+        Maintain your streak! Complete at least 1 task daily.
+      </p>
+`;
+    container.appendChild(addBtnRow);
+  }
+
+  if (!allDays.length) {
+    const emptyEl = document.createElement('div');
+    emptyEl.className = 'empty-state';
+    emptyEl.innerHTML = `
+      <span class="empty-icon"><i data-lucide="calendar"></i></span>
+      <h3>No days yet</h3>
+      <p>Click the button above to start your first day card.</p>`;
+    container.appendChild(emptyEl);
+    if (window.gsap) {
+      gsap.fromTo(emptyEl, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', clearProps: 'all' });
+    }
+    return;
   }
 
   const fragment = document.createDocumentFragment();
@@ -705,6 +715,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
   const card = document.createElement('div');
   card.className = isToday ? 'day-card today-card' : 'day-card';
   card.id = `day-card-${day._id}`;
+  card.setAttribute('data-date', cardDateNormalized);
 
   // Build categories HTML
   let categoriesHTML = '';
@@ -739,7 +750,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
       ? `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category"><i data-lucide="trash-2"></i></button>`
       : '';
     categoriesHTML += `
-      <div class="category-block">
+      <div class="category-block category-section" data-cat-id="${cat._id}">
         <div class="category-header">
           <span class="category-name">${escHtml(cat.name)}</span>
           <div class="category-header-right">
@@ -870,15 +881,90 @@ function animateProgressBar(fillId, targetPct) {
 }
 
 async function toggleTask(dayId, catId, taskId, checked) {
-  const day  = allDays.find(d => d._id === dayId);
-  if (!day) return;
-  const cat  = day.categories.find(c => c._id === catId);
-  if (!cat) return;
-  const task = cat.tasks.find(t => t._id === taskId);
-  if (!task) return;
+  let day = allDays.find(d => d._id === dayId);
+  let cat, task;
+
+  if (day) {
+    cat = day.categories.find(c => c._id === catId);
+    if (cat) {
+      task = cat.tasks.find(t => t._id === taskId);
+    }
+  }
+
+  // Fallback: If not found by ID (e.g., temporary IDs were transitioned to server MongoDB IDs in memory, but DOM still has temp IDs)
+  if (!day || !cat || !task) {
+    // 1. Locate the correct day by matching card's date
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      const cardDate = cardEl.getAttribute('data-date');
+      if (cardDate) {
+        day = allDays.find(d => {
+          const dDate = (d.date || '').split('T')[0];
+          return dDate === cardDate;
+        });
+      }
+    }
+
+    if (day) {
+      // 2. Locate the correct category by index in the DOM card
+      const cardEl = document.getElementById(`day-card-${dayId}`);
+      if (cardEl) {
+        const catBlocks = Array.from(cardEl.querySelectorAll('.category-block'));
+        const catIndex = catBlocks.findIndex(el => el.getAttribute('data-cat-id') === catId);
+        if (catIndex !== -1 && catIndex < day.categories.length) {
+          cat = day.categories[catIndex];
+          
+          // 3. Locate the correct task by index in the category block
+          if (cat) {
+            const catBlock = catBlocks[catIndex];
+            const checkboxes = Array.from(catBlock.querySelectorAll('.task-checkbox'));
+            const taskIndex = checkboxes.findIndex(chk => chk.id === `chk-${taskId}`);
+            if (taskIndex !== -1 && taskIndex < cat.tasks.length) {
+              task = cat.tasks[taskIndex];
+            }
+          }
+        }
+      }
+
+      // Secondary fallback: match category by name and task by title if index matching failed
+      if (!cat) {
+        const cardEl = document.getElementById(`day-card-${dayId}`);
+        if (cardEl) {
+          const catBlock = cardEl.querySelector(`[data-cat-id="${catId}"]`);
+          if (catBlock) {
+            const catNameEl = catBlock.querySelector('.category-name');
+            if (catNameEl) {
+              const catName = catNameEl.textContent.trim().toLowerCase();
+              cat = day.categories.find(c => (c.name || '').trim().toLowerCase() === catName);
+            }
+          }
+        }
+      }
+
+      if (cat && !task) {
+        const chkEl = document.getElementById(`chk-${taskId}`);
+        if (chkEl) {
+          const labelEl = chkEl.nextElementSibling;
+          if (labelEl && labelEl.classList.contains('task-title')) {
+            const taskTitle = labelEl.textContent.trim().toLowerCase();
+            task = cat.tasks.find(t => (t.title || '').trim().toLowerCase() === taskTitle);
+          }
+        }
+      }
+    }
+  }
+
+  // If even with fallbacks we cannot locate the day/cat/task, exit early
+  if (!day || !cat || !task) {
+    console.warn('Unable to toggle task: element not found in memory/fallbacks', { dayId, catId, taskId });
+    return;
+  }
 
   task.completed = checked;
-  updateProgressBar(dayId, day.categories);
+
+  // Use the ID that actually corresponds to elements currently in the DOM
+  const targetDomId = document.getElementById(`pct-fill-${dayId}`) ? dayId : day._id;
+  updateProgressBar(targetDomId, day.categories);
 
   // Micro animation on checkbox
   if (window.gsap && checked) {
@@ -890,8 +976,8 @@ async function toggleTask(dayId, catId, taskId, checked) {
     // 1. Update Local DB immediately
     await window.localDb.days.put(day);
     
-    // 2. Add to Sync Queue
-    syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+    // 2. Add to Sync Queue (using the resolved real ID)
+    syncManager.addToQueue('PUT', 'days', day._id, { categories: day.categories });
     
     updateStreak();
   } catch (err) {
@@ -1016,6 +1102,8 @@ const syncManager = {
                   await localDb.scratchpads.put(cachedScratchpad);
                 }
               }
+              // Immediately render days to update the DOM IDs so click handlers are synced
+              renderDays();
             } else if (item.entity === 'goals') {
               const idx = allGoals.findIndex(g => g._id === item.localId);
               if (idx !== -1) allGoals[idx] = response;
@@ -1855,13 +1943,7 @@ async function loadGoals() {
     if (allGoals.length > 0) {
       showToast('Offline Mode: Using cached goals.', 'info');
     } else {
-      container.innerHTML = `
-        <div style="text-align:center; padding:40px; color:var(--text-muted);">
-          <i data-lucide="wifi-off" style="width:48px;height:48px;margin-bottom:16px;opacity:0.5;"></i>
-          <p style="font-weight:700; margin-bottom:10px;">Offline Mode</p>
-          <p style="font-size:12px;">No cached goals found. Connect to sync.</p>
-        </div>`;
-      if (window.lucide) lucide.createIcons({ root: container });
+      renderGoals();
     }
     return;
   }
@@ -1931,7 +2013,10 @@ function renderGoals() {
         <p>Set a long-term goal to stay focused on what matters.</p>
       </div>`;
     if (window.lucide) lucide.createIcons({ root: container });
-    if (window.gsap) gsap.from('.empty-state', { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' });
+    if (window.gsap) {
+      const emptyEl = container.querySelector('.empty-state');
+      if (emptyEl) gsap.fromTo(emptyEl, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', clearProps: 'all' });
+    }
     return;
   }
 
@@ -2237,7 +2322,12 @@ async function loadGroups() {
 
   // 2. REVALIDATE: Load from Server (Only if online and non-blocking)
   if (!navigator.onLine) {
-    if (allJoinedGroups.length > 0) showToast('Offline: Using cached groups.', 'info');
+    if (allJoinedGroups.length > 0) {
+      showToast('Offline: Using cached groups.', 'info');
+    } else {
+      // Offline with no groups cached: render empty groups state!
+      renderGroups();
+    }
     return;
   }
 
@@ -3304,13 +3394,7 @@ async function loadAchievements() {
     if (allAchievements.length > 0) {
       showToast('Offline Mode: Using cached wins.', 'info');
     } else {
-      container.innerHTML = `
-        <div style="text-align:center; padding:40px; color:var(--text-muted);">
-          <i data-lucide="wifi-off" style="width:48px;height:48px;margin-bottom:16px;opacity:0.5;"></i>
-          <p style="font-weight:700; margin-bottom:10px;">Offline Mode</p>
-          <p style="font-size:12px;">No cached wins found. Connect to sync.</p>
-        </div>`;
-      if (window.lucide) lucide.createIcons({ root: container });
+      renderAchievements();
     }
     return;
   }
@@ -3393,7 +3477,10 @@ function renderAchievements() {
         <h3>No achievements yet</h3>
         <p>Log your first win from any Daily Card!</p>
       </div>`;
-    if (window.gsap) gsap.from('.empty-state', { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' });
+    if (window.gsap) {
+      const emptyEl = container.querySelector('.empty-state');
+      if (emptyEl) gsap.fromTo(emptyEl, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', clearProps: 'all' });
+    }
     return;
   }
 
@@ -6267,6 +6354,74 @@ function changeLeetCodeUsername() {
   setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
 
   showToast('Enter your new username and generate a new verification code', 'info');
+}
+
+// Disconnect LeetCode profile
+async function disconnectLeetCodeProfile() {
+  if (!navigator.onLine) {
+    showToast('You must be online to disconnect your LeetCode profile', 'error');
+    return;
+  }
+
+  if (!confirm('Are you sure you want to disconnect your LeetCode profile? This will unlink it from your account.')) {
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/leetcode/disconnect', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.message || 'Failed to disconnect profile');
+    }
+
+    // Clear local storage fields
+    localStorage.removeItem('leetcodeUsername');
+    localStorage.removeItem('leetcodePendingUsername');
+    localStorage.removeItem('leetcodeVerificationCode');
+    localStorage.removeItem('leetcodeVerificationStatus');
+    localStorage.removeItem('leetcodeProfilePicture');
+
+    // Update Dexie localDb
+    if (window.localDb && window.localDb.userProfile) {
+      const profiles = await window.localDb.userProfile.toArray();
+      if (profiles.length > 0) {
+        const profile = profiles[0];
+        profile.leetcodeUsername = '';
+        profile.leetcodePendingUsername = '';
+        profile.leetcodeVerificationCode = '';
+        profile.leetcodeVerificationStatus = 'none';
+        profile.leetcodeLastVerifiedAt = null;
+        profile.leetcodeProfilePicture = '';
+        await window.localDb.userProfile.put(profile);
+      }
+    }
+
+    // Reset UI using existing resetLeetCodeProfileModalState helper
+    resetLeetCodeProfileModalState();
+    
+    // Also call renderLeetCodeUI to update any status badges/buttons on cards immediately
+    renderLeetCodeUI({
+      leetcodeUsername: '',
+      leetcodePendingUsername: '',
+      leetcodeVerificationCode: '',
+      leetcodeVerificationStatus: 'none',
+      leetcodeLastVerifiedAt: null,
+      leetcodeProfilePicture: ''
+    });
+
+    showToast('LeetCode profile disconnected successfully!', 'success');
+  } catch (err) {
+    console.error('Error disconnecting LeetCode profile:', err);
+    showToast(err.message || 'Error disconnecting LeetCode profile', 'error');
+  }
 }
 
 // Helper functions for LeetCode integration

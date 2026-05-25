@@ -91,15 +91,52 @@ const oauthLogin = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
+    const googlePhotoUrl = decodedToken.picture;
 
     if (user) {
       const providerExists = user.authProviders.some(p => p.provider === provider);
       if (!providerExists) {
         user.authProviders.push({ provider, uid });
-        await user.save();
       }
+      
+      // If the existing user doesn't have a profile picture set yet, import and compress it from Google
+      if (!user.profilePicture && googlePhotoUrl) {
+        try {
+          const result = await cloudinary.uploader.upload(googlePhotoUrl, {
+            folder: 'consistency_app_profiles',
+            transformation: [
+              { width: 150, height: 150, crop: 'fill', quality: 'auto', fetch_format: 'auto' }
+            ]
+          });
+          user.profilePicture = result.secure_url;
+          user.profilePictureId = result.public_id;
+        } catch (cloudinaryErr) {
+          console.error('Error uploading Google profile photo to Cloudinary:', cloudinaryErr);
+          // Fallback to raw Google photo URL if Cloudinary upload fails
+          user.profilePicture = googlePhotoUrl;
+        }
+      }
+      await user.save();
     } else {
       user = new User({ name: name || 'User', email: normalizedEmail, authProviders: [{ provider, uid }] });
+      
+      // Import and compress Google profile photo for new user
+      if (googlePhotoUrl) {
+        try {
+          const result = await cloudinary.uploader.upload(googlePhotoUrl, {
+            folder: 'consistency_app_profiles',
+            transformation: [
+              { width: 150, height: 150, crop: 'fill', quality: 'auto', fetch_format: 'auto' }
+            ]
+          });
+          user.profilePicture = result.secure_url;
+          user.profilePictureId = result.public_id;
+        } catch (cloudinaryErr) {
+          console.error('Error uploading Google profile photo to Cloudinary:', cloudinaryErr);
+          // Fallback to raw Google photo URL if Cloudinary upload fails
+          user.profilePicture = googlePhotoUrl;
+        }
+      }
       await user.save();
     }
     const token = generateToken(user._id, user.email);

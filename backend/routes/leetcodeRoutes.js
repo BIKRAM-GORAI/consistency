@@ -4,7 +4,8 @@ const {
   generateVerificationCode,
   verifyLeetCodeProfile,
   validateLeetCodeProblem,
-  getDailyLeetCodeProblem
+  getDailyLeetCodeProblem,
+  disconnectLeetCode
 } = require('../controllers/leetcodeController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -23,5 +24,9 @@ router.post('/validate-problem', authenticateToken, validateLeetCodeProblem);
 // GET /api/leetcode/daily-problem
 // Get current daily LeetCode problem
 router.get('/daily-problem', authenticateToken, getDailyLeetCodeProblem);
+
+// POST /api/leetcode/disconnect
+// Disconnect connected LeetCode profile
+router.post('/disconnect', authenticateToken, disconnectLeetCode);
 
 module.exports = router;

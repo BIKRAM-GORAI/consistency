@@ -5258,6 +5258,10 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     overflow-x: auto !important;
     overflow-y: visible !important;
     padding: 6px 4px !important;
+    scrollbar-width: none !important; /* Firefox */
+  }
+  #modal-scratchpad .color-palette::-webkit-scrollbar {
+    display: none !important; /* Safari and Chrome */
   }
 
   #modal-scratchpad .color-btn {
@@ -5756,5 +5760,33 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   transform: translate(1px, 1px) !important;
   box-shadow: 1px 1px 0px var(--yellow) !important;
 }
+
+/* LeetCode disconnect button with danger zone highlighting */
+.btn-disconnect {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border: 2px solid var(--red) !important;
+  color: var(--red) !important;
+  background: #fee2e2 !important; /* Solid light pastel red to completely prevent muddy green-blending in light mode */
+  font-weight: 800 !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-theme="dark"] .btn-disconnect {
+  background: rgba(239, 68, 68, 0.32) !important; /* Richer faint red to pop on dark green/gray backgrounds */
+}
+
+.btn-disconnect:hover {
+  background: var(--red) !important;
+  color: white !important;
+  transform: translate(-1.5px, -1.5px) !important;
+  box-shadow: 3px 3px 0 var(--black) !important;
+}
+
+.btn-disconnect:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0 var(--black) !important;
+}
+
 
 
