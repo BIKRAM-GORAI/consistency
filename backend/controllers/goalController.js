@@ -54,6 +54,22 @@ const updateGoal = async (req, res) => {
 
     const wasCompleted = goal.tasks && goal.tasks.length > 0 && goal.tasks.every(t => t.completed);
 
+    // Calculate completedAt based on the updated tasks status
+    let isCompletedNow = false;
+    if (req.body.tasks) {
+      isCompletedNow = req.body.tasks.length > 0 && req.body.tasks.every(t => t.completed);
+    } else if (goal.tasks) {
+      isCompletedNow = goal.tasks.length > 0 && goal.tasks.every(t => t.completed);
+    }
+
+    if (isCompletedNow) {
+      if (!goal.completedAt) {
+        req.body.completedAt = req.body.completedAt || new Date();
+      }
+    } else {
+      req.body.completedAt = null;
+    }
+
     const updated = await Goal.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },

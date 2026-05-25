@@ -173,11 +173,27 @@
       </button>
     </div>
 
+    <!-- Goals sorting selector bar (only enabled in online mode) -->
+    <div class="goals-controls" style="margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div id="goals-sort-container" style="position: relative; display: inline-flex; align-items: center; gap: 8px;">
+        <label for="goals-sort-select" style="font-weight: 800; font-size: 13px; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase;">Sort Order:</label>
+        <select id="goals-sort-select" class="form-control" onchange="changeGoalsSort(this.value)" style="padding: 6px 12px; font-size: 13px; width: auto; font-weight: 700; border-width: 3px; cursor: pointer; height: auto;">
+          <option value="default">Default (Nearest Deadline first, Completed last)</option>
+          <option value="opposite">Opposite (Completed first, Furthest Deadline first)</option>
+        </select>
+      </div>
+    </div>
+
     <div class="goals-container" id="goals-container">
       <div class="loading-spinner" id="loading-goals">
         <div class="spinner-ring"></div>
         <p>Loading your goals...</p>
       </div>
+    </div>
+
+    <!-- Goals Load More Pagination Section -->
+    <div id="goals-pagination-section" style="text-align: center; margin-top: 25px; margin-bottom: 15px;">
+      <button id="btn-load-more-goals" class="btn-primary ripple" onclick="loadMoreGoals()" style="display: none; margin: 0 auto; padding: 10px 24px;">Load More Goals</button>
     </div>
   </main>
 

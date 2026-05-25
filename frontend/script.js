@@ -85,6 +85,8 @@ const daysPerPage = 10;
 let hasMoreDays = false;
 let backendStreak = 0;
 let allGoals = [];
+let goalsSortOption = 'default';
+let visibleGoalsCount = 10;
 let activeDayIdForCategory = null;
 
 // Edit-modal state
@@ -309,6 +311,49 @@ function daysLeft(deadlineStr) {
   const today = new Date(); today.setHours(0,0,0,0);
   const dl = new Date(deadlineStr); dl.setHours(0,0,0,0);
   return Math.round((dl - today) / (1000 * 60 * 60 * 24));
+}
+
+function sortGoals() {
+  allGoals.sort((a, b) => {
+    const aPct = calcProgress([{ tasks: a.tasks }]);
+    const aComplete = a.completedAt ? true : (aPct === 100);
+    const aDl = daysLeft(a.deadline);
+
+    const bPct = calcProgress([{ tasks: b.tasks }]);
+    const bComplete = b.completedAt ? true : (bPct === 100);
+    const bDl = daysLeft(b.deadline);
+
+    // Compute priority scores (1 to 4)
+    let aPriority = 4;
+    if (goalsSortOption === 'opposite') {
+      if (aComplete) aPriority = 1;
+      else if (aDl >= 0) aPriority = 2;
+      else if (aDl >= -5) aPriority = 3;
+    } else {
+      if (!aComplete && aDl < 0 && aDl >= -5) aPriority = 1;
+      else if (!aComplete && aDl >= 0) aPriority = 2;
+      else if (aComplete) aPriority = 3;
+    }
+
+    let bPriority = 4;
+    if (goalsSortOption === 'opposite') {
+      if (bComplete) bPriority = 1;
+      else if (bDl >= 0) bPriority = 2;
+      else if (bDl >= -5) bPriority = 3;
+    } else {
+      if (!bComplete && bDl < 0 && bDl >= -5) bPriority = 1;
+      else if (!bComplete && bDl >= 0) bPriority = 2;
+      else if (bComplete) bPriority = 3;
+    }
+
+    // Sort by category priority score first
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+
+    // Sort by deadline date ascending within categories
+    return new Date(a.deadline) - new Date(b.deadline);
+  });
 }
 
 function escHtml(str) {
@@ -1136,6 +1181,8 @@ const syncManager = {
             } else if (item.entity === 'goals') {
               const idx = allGoals.findIndex(g => g._id === item.localId);
               if (idx !== -1) allGoals[idx] = response;
+              sortGoals();
+              renderGoals();
             }
 
             // [FIX] Update other items in the queue that refer to this temp ID
@@ -1864,7 +1911,12 @@ function openEditGoalModal(goalId) {
   }
 
   editingGoalId = goalId;
-  document.getElementById('edit-goal-title').value = goal.title;
+  const titleInput = document.getElementById('edit-goal-title');
+  titleInput.value = goal.title;
+  titleInput.setAttribute('readonly', 'true');
+  titleInput.style.background = 'var(--bg-readonly)';
+  titleInput.style.cursor = 'not-allowed';
+
   document.getElementById('edit-goal-deadline-display').innerHTML =
     `<i data-lucide="calendar"></i> Deadline: ${formatDisplayDate(goal.deadline.split('T')[0])}`;
   if (window.lucide) lucide.createIcons({ root: document.getElementById('edit-goal-deadline-display') });
@@ -1884,9 +1936,14 @@ function addEditGoalTaskField(title = '', taskId = '', completed = false) {
   row.className = 'task-input-row';
   row.dataset.taskId    = taskId;
   row.dataset.completed = completed ? 'true' : 'false';
+
+  const isExisting = taskId !== '';
+  const inputAttrs = isExisting ? 'readonly style="background:var(--bg-readonly); cursor:not-allowed;"' : '';
+  const removeBtn = isExisting ? '' : `<button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>`;
+
   row.innerHTML = `
-    <input type="text" class="form-control" placeholder="Subtask title..." value="${escHtml(title)}" />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
+    <input type="text" class="form-control" placeholder="Subtask title..." value="${escHtml(title)}" ${inputAttrs} />
+    ${removeBtn}
   `;
   builder.appendChild(row);
   if (window.lucide) lucide.createIcons({ root: row });
@@ -1940,6 +1997,7 @@ async function submitEditGoal() {
 // ── Goals ──────────────────────────────────────────────────
 let _lastGoalsLoad = 0;
 async function loadGoals() {
+  visibleGoalsCount = 10;
   const localDb = window.localDb;
   if (!localDb) return;
   const container = document.getElementById('goals-container');
@@ -2012,8 +2070,8 @@ async function loadGoals() {
         }
       }
       
-      // Sort goals by deadline
-      allGoals.sort((a, b) => new Date(a.deadline || a.targetDate || 0) - new Date(b.deadline || b.targetDate || 0));
+      // Sort goals using unified utility
+      sortGoals();
 
       renderGoals();
     }
@@ -2046,19 +2104,30 @@ function renderGoals() {
       const emptyEl = container.querySelector('.empty-state');
       if (emptyEl) gsap.fromTo(emptyEl, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', clearProps: 'all' });
     }
+    const loadMoreBtn = document.getElementById('btn-load-more-goals');
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
     return;
   }
 
+  // Slice array for client-side pagination
+  const slicedGoals = allGoals.slice(0, visibleGoalsCount);
+
   const fragment = document.createDocumentFragment();
-  for (const goal of allGoals) fragment.appendChild(buildGoalCard(goal));
+  for (const goal of slicedGoals) fragment.appendChild(buildGoalCard(goal));
   container.appendChild(fragment);
+
+  // Toggle Load More button based on remaining paginated items
+  const loadMoreBtn = document.getElementById('btn-load-more-goals');
+  if (loadMoreBtn) {
+    loadMoreBtn.style.display = allGoals.length > visibleGoalsCount ? 'block' : 'none';
+  }
 
   if (window.gsap) {
     gsap.from('.goal-card', { opacity: 0, y: 30, duration: 0.5, stagger: 0.09, ease: 'power3.out', clearProps: 'all' });
   }
 
   // Animate progress bars after insert
-  for (const goal of allGoals) {
+  for (const goal of slicedGoals) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       animateProgressBar(`gpct-fill-${goal._id}`, calcProgress([{ tasks: goal.tasks }]));
     }));
@@ -2068,18 +2137,52 @@ function renderGoals() {
 function buildGoalCard(goal) {
   const pct        = calcProgress([{ tasks: goal.tasks }]);
   const dl         = daysLeft(goal.deadline);
-  const isComplete = pct === 100;
+  
+  // A goal is completed if goal.completedAt is present OR if all tasks are complete
+  const isComplete = goal.completedAt ? true : (pct === 100);
+
+  // Determine whether it was completed after overdue
+  let completedOverdue = false;
+  let diffDays = 0;
+  if (isComplete) {
+    if (goal.completedAt) {
+      const dlDate = new Date(goal.deadline); dlDate.setHours(0,0,0,0);
+      const compDate = new Date(goal.completedAt); compDate.setHours(0,0,0,0);
+      completedOverdue = compDate > dlDate;
+      if (completedOverdue) {
+        diffDays = Math.round((compDate - dlDate) / (1000 * 60 * 60 * 24));
+      }
+    } else {
+      // Fallback for legacy completed goals: default to completed on-time (Green)
+      completedOverdue = false;
+      diffDays = 0;
+    }
+  }
 
   // ── Badge logic ──
   let dlClass, dlText;
+  let cardClass = 'goal-card';
+
   if (isComplete) {
-    dlClass = 'days-completed';
-    // Use the deadline date as a proxy for "completed by" date
-    // (we don't have a separate completedAt field)
-    dlText  = '✅ Completed!';
+    if (completedOverdue) {
+      dlClass = 'days-completed-overdue';
+      dlText  = `Completed ${diffDays} day${diffDays === 1 ? '' : 's'} late`;
+      cardClass = 'goal-card goal-completed-overdue';
+    } else {
+      dlClass = 'days-completed';
+      dlText  = '✅ Completed!';
+      cardClass = 'goal-card goal-completed';
+    }
   } else if (dl < 0) {
     dlClass = 'days-overdue';
-    dlText  = `<i data-lucide="alert-triangle"></i> Overdue by ${Math.abs(dl)}d`;
+    const daysOverdue = -dl;
+    if (daysOverdue > 5) {
+      dlText  = 'Deadline passed. Not completed';
+    } else {
+      const graceLeft = 5 - daysOverdue;
+      dlText  = `Grace: ${graceLeft} day${graceLeft === 1 ? '' : 's'} left`;
+    }
+    cardClass = 'goal-card goal-overdue';
   } else if (dl <= 2) {
     dlClass = 'days-danger';
     dlText  = `<i data-lucide="alert-circle"></i> ${dl}d left!`;
@@ -2092,16 +2195,29 @@ function buildGoalCard(goal) {
   }
 
   const card = document.createElement('div');
-  card.className = isComplete ? 'goal-card goal-completed' : 'goal-card';
+  card.className = cardClass;
   card.id = `goal-card-${goal._id}`;
+
+  // Locking rules:
+  // 1. Fully completed goals are locked.
+  // 2. Uncompleted goals past the 5-day grace period (daysOverdue > 5, i.e. dl < -5) are completely locked.
+  const isLocked = isComplete || (dl < -5);
 
   let tasksHTML = '';
   for (const task of goal.tasks) {
-    const doneStyle = task.completed ? 'text-decoration:line-through;color:var(--lt-green);' : '';
-    // Completed goals: checkboxes are locked (read-only)
-    const checkboxAttrs = isComplete
-      ? `checked disabled`
+    let doneColor = 'var(--green)';
+    if (isComplete && completedOverdue) {
+      doneColor = 'var(--orange)';
+    } else if (dl < 0 && !isComplete) {
+      doneColor = 'var(--red)';
+    }
+
+    const doneStyle = task.completed ? `text-decoration:line-through;color:${doneColor};` : '';
+    
+    const checkboxAttrs = isLocked
+      ? `${task.completed ? 'checked' : ''} disabled`
       : `${task.completed ? 'checked' : ''} onchange="toggleGoalTask('${goal._id}','${task._id}',this.checked)"`;
+
     tasksHTML += `
       <div class="task-item">
         <input type="checkbox" class="task-checkbox"
@@ -2111,10 +2227,10 @@ function buildGoalCard(goal) {
       </div>`;
   }
 
-  // Show actions only when not completed
-  const actionsHTML = isComplete ? '' : `
+  // Show actions (Edit & Delete) only when not completed and before deadline
+  const actionsHTML = (isComplete || dl < 0) ? '' : `
     <div class="goal-actions">
-      ${dl >= 0 ? `<button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;"><i data-lucide="edit-3"></i> Edit</button>` : ''}
+      <button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;"><i data-lucide="edit-3"></i> Edit</button>
       <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')"><i data-lucide="trash-2"></i> Delete</button>
     </div>`;
 
@@ -2168,13 +2284,42 @@ async function toggleGoalTask(goalId, taskId, checked) {
   const task = goal.tasks.find(t => t._id === taskId);
   if (!task) return;
 
+  const dl = daysLeft(goal.deadline);
+
+  // 1. Lockout check (if grace is over: overdue by more than 5 days, i.e., dl < -5)
+  if (dl < -5 && !goal.completedAt) {
+    showToast('The 5-day grace period has expired. No more ticking is allowed.', 'warn');
+    const chk = document.getElementById(`gtask-${taskId}`);
+    if (chk) chk.checked = !checked;
+    return;
+  }
+
+  // Proceed with marking completion
   task.completed = checked;
+
+  // Set/unset completedAt field
+  const pctNow = calcProgress([{ tasks: goal.tasks }]);
+  const isNowComplete = pctNow === 100;
+  if (isNowComplete) {
+    if (!goal.completedAt) {
+      goal.completedAt = new Date().toISOString();
+    }
+  } else {
+    goal.completedAt = null;
+  }
+
   updateGoalProgressBar(goalId, goal.tasks);
 
   const label = document.querySelector(`label[for="gtask-${taskId}"]`);
   if (label) {
     label.style.textDecoration = checked ? 'line-through' : 'none';
-    label.style.color = checked ? 'var(--lt-green)' : '';
+    let doneColor = 'var(--green)';
+    if (isNowComplete && dl < 0) {
+      doneColor = 'var(--orange)';
+    } else if (dl < 0 && !isNowComplete) {
+      doneColor = 'var(--red)';
+    }
+    label.style.color = checked ? doneColor : '';
   }
 
   if (window.gsap && checked) {
@@ -2183,26 +2328,22 @@ async function toggleGoalTask(goalId, taskId, checked) {
   }
 
   try {
-    // 1. Update Local
+    // 1. Update Local DB
     await window.localDb.goals.put(goal);
-    // 2. Queue Sync
-    syncManager.addToQueue('PUT', 'goals', goalId, { tasks: goal.tasks });
+    // 2. Queue Sync with completedAt included
+    syncManager.addToQueue('PUT', 'goals', goalId, { tasks: goal.tasks, completedAt: goal.completedAt });
 
-    // If now 100% complete, re-render the card to apply green theme
-    const pct = calcProgress([{ tasks: goal.tasks }]);
-    if (pct === 100) {
-      const oldCard = document.getElementById(`goal-card-${goalId}`);
-      if (oldCard) {
-        const newCard = buildGoalCard(goal);
-        if (window.gsap) gsap.set(newCard, { opacity: 0, scale: 0.97 });
-        oldCard.replaceWith(newCard);
-        if (window.gsap) gsap.to(newCard, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)', clearProps: 'all' });
-        requestAnimationFrame(() => requestAnimationFrame(() => animateProgressBar(`gpct-fill-${goalId}`, 100)));
-        showToast('🎉 Goal completed! Amazing work!', 'success');
-      }
+    // Re-sort and re-render goals list dynamically to maintain sorting and animations
+    sortGoals();
+    renderGoals();
+
+    if (isNowComplete) {
+      showToast('🎉 Goal completed! Amazing work!', 'success');
+    } else {
+      showToast('Goal task updated locally!', 'success');
     }
   } catch (err) {
-    console.error('Offline goal write error:', err);
+    console.error('Offline goal task toggle error:', err);
   }
 }
 
@@ -2223,7 +2364,7 @@ function updateGoalProgressBar(goalId, tasks) {
 }
 
 async function deleteGoal(goalId) {
-  if (!confirm('Delete this goal? This cannot be undone.')) return;
+  if (!confirm('Are you sure you want to delete this goal? This will permanently delete the entire goal card and all of its tasks.')) return;
   try {
     // 1. Update UI and Local DB instantly
     allGoals = allGoals.filter(g => g._id !== goalId);
@@ -2298,7 +2439,7 @@ async function submitAddGoal() {
   try {
     // 1. Update UI and Local DB instantly
     allGoals.push(localGoal);
-    allGoals.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    sortGoals();
     await window.localDb.goals.add(localGoal);
     closeModal('modal-add-goal');
     renderGoals();
@@ -2311,6 +2452,23 @@ async function submitAddGoal() {
   } finally {
     btn.disabled = false; btn.textContent = 'Create Goal';
   }
+}
+
+function loadMoreGoals() {
+  visibleGoalsCount += 10;
+  renderGoals();
+}
+
+function changeGoalsSort(option) {
+  if (!navigator.onLine) {
+    showToast('Sorting is disabled in offline mode.', 'warn');
+    const goalsSortSelect = document.getElementById('goals-sort-select');
+    if (goalsSortSelect) goalsSortSelect.value = 'default';
+    return;
+  }
+  goalsSortOption = option;
+  sortGoals();
+  renderGoals();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -4691,9 +4849,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Set goals sort disabled state based on current connection
+  const goalsSortSelect = document.getElementById('goals-sort-select');
+  if (goalsSortSelect) {
+    goalsSortSelect.disabled = !navigator.onLine;
+  }
+
+  // Intercept click on the sort container when offline to show warning toast
+  const sortContainer = document.getElementById('goals-sort-container');
+  if (sortContainer) {
+    sortContainer.addEventListener('click', (e) => {
+      if (!navigator.onLine) {
+        showToast('Sorting is disabled in offline mode.', 'warn');
+      }
+    });
+  }
+
   // Real-time online/offline window listeners to enable/disable toggles instantly
-  window.addEventListener('online',  () => setLeaderboardTogglesEnabled(true));
-  window.addEventListener('offline', () => setLeaderboardTogglesEnabled(false));
+  window.addEventListener('online',  () => {
+    setLeaderboardTogglesEnabled(true);
+    const sel = document.getElementById('goals-sort-select');
+    if (sel) sel.disabled = false;
+  });
+  window.addEventListener('offline', () => {
+    setLeaderboardTogglesEnabled(false);
+    const sel = document.getElementById('goals-sort-select');
+    if (sel) {
+      sel.disabled = true;
+      sel.value = 'default';
+    }
+    if (goalsSortOption !== 'default') {
+      goalsSortOption = 'default';
+      sortGoals();
+      renderGoals();
+    }
+  });
 
   // Load badges into memory immediately for offline access
   loadClaimedBadges();
@@ -9352,7 +9542,7 @@ async function proactiveSync(force = false) {
         }
       }
       
-      allGoals.sort((a, b) => new Date(a.deadline || a.targetDate || 0) - new Date(b.deadline || b.targetDate || 0));
+      sortGoals();
     }
 
     // 5. Sync Achievements

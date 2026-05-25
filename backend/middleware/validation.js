@@ -133,6 +133,9 @@ const createGoalValidation = [
     .optional()
     .isArray().withMessage('Tasks must be an array'),
   body('tasks.*.title').optional().trim().escape(),
+  body('completedAt')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601().withMessage('Completed date must be a valid date'),
   validate
 ];
 
@@ -151,6 +154,9 @@ const updateGoalValidation = [
     .optional()
     .isArray().withMessage('Tasks must be an array'),
   body('tasks.*.title').optional().trim().escape(),
+  body('completedAt')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601().withMessage('Completed date must be a valid date'),
   validate
 ];
 

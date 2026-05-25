@@ -33,6 +33,9 @@ const GoalSchema = new mongoose.Schema(
       required: true,
     },
     tasks: [GoalTaskSchema],
+    completedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

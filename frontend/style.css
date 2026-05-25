@@ -67,6 +67,8 @@
 
   /* ── Extra Backgrounds ── */
   --bg-goal-completed: #f0fdf4;
+  --bg-goal-completed-overdue: #fffbeb;
+  --bg-goal-overdue: #fef2f2;
   --bg-cat-input:      #fff9c4;
   --bg-ach-section:    #fffbf0;
   --bg-ach-note:       #f0ece4;
@@ -85,6 +87,8 @@
   --text-light:#888888;
 
   --bg-goal-completed: #1b2e1f;
+  --bg-goal-completed-overdue: #2d240a;
+  --bg-goal-overdue: #3b1818;
   --bg-cat-input:      #ffd60a;
   --bg-ach-section:    #2d240a;
   --bg-ach-note:       #222222;
@@ -1062,6 +1066,74 @@ body {
   border-color: #16a34a;
 }
 
+/* ── Completed Overdue goal card theme (Orange/Amber) ── */
+.goal-card.goal-completed-overdue {
+  background: var(--bg-goal-completed-overdue);
+  border-color: var(--black);
+  box-shadow: 4px 4px 0 var(--orange);
+}
+
+.goal-card.goal-completed-overdue::before {
+  background: var(--orange);
+}
+
+.goal-card.goal-completed-overdue:hover {
+  box-shadow: 6px 6px 0 var(--orange);
+}
+
+.goal-card.goal-completed-overdue .goal-title {
+  color: #c2410c; /* orange-700 readable */
+}
+
+[data-theme="dark"] .goal-card.goal-completed-overdue .goal-title {
+  color: var(--orange);
+}
+
+.goal-card.goal-completed-overdue .task-checkbox:disabled {
+  opacity: 0.8;
+  cursor: default;
+  background: #fed7aa;
+  border-color: var(--orange);
+}
+
+/* ── Overdue goal card theme (Red) ── */
+.goal-card.goal-overdue {
+  background: var(--bg-goal-overdue);
+  border-color: var(--black);
+  box-shadow: 4px 4px 0 var(--red);
+}
+
+.goal-card.goal-overdue::before {
+  background: var(--red);
+}
+
+.goal-card.goal-overdue:hover {
+  box-shadow: 6px 6px 0 var(--red);
+}
+
+.goal-card.goal-overdue .goal-title {
+  color: #b91c1c; /* red-700 readable */
+}
+
+[data-theme="dark"] .goal-card.goal-overdue .goal-title {
+  color: var(--red);
+}
+
+.goal-card.goal-overdue .task-checkbox:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg-readonly);
+  border-color: var(--black);
+}
+
+.days-completed-overdue {
+  background: var(--orange);
+  color: #fff;
+  border-color: var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+  font-size: 11px;
+}
+
 .goal-actions {
   display: flex;
   justify-content: flex-end;
@@ -1341,6 +1413,29 @@ body {
   color: var(--text-muted);
   cursor: not-allowed;
   border-style: dashed;
+}
+
+select.form-control:disabled {
+  background: var(--bg-readonly);
+  color: var(--text-light);
+  border-style: dashed;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 480px) {
+  .goals-controls {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  #goals-sort-container {
+    flex-direction: column;
+    align-items: stretch !important;
+    width: 100%;
+  }
+  #goals-sort-select {
+    width: 100% !important;
+  }
 }
 
 .form-control::placeholder { color: var(--text-light); }
