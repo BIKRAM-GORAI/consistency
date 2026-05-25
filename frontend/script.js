@@ -8,6 +8,15 @@ const API = '';  // Same origin
 
 // ── Security Helpers ──────────────────────────────────────
 /** Escapes HTML special characters to prevent XSS */
+/** Enable/disable both leaderboard showcase toggles. Called after confirmed API success or online/offline events. */
+function setLeaderboardTogglesEnabled(enabled) {
+  const title = enabled ? 'Showcase on leaderboard' : 'Cannot change settings while offline';
+  const st  = document.getElementById('leaderboard-showcase-settings-toggle');
+  const lbt = document.getElementById('leaderboard-showcase-toggle');
+  if (st)  { st.disabled  = !enabled; st.title  = title; }
+  if (lbt) { lbt.disabled = !enabled; lbt.title = title; }
+}
+
 function escapeHTML(str) {
   if (!str) return "";
   return String(str)
@@ -229,7 +238,23 @@ function progressColor(pct) {
 
 function calculateStreak(days) {
   if (!days.length) return { count: 0, todayDone: false };
-  const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
+
+  // Group duplicate dates robustly to ensure multiple cards on same day don't disrupt calculations
+  const dayMap = {};
+  for (const d of days) {
+    const completed = countTasks(d.categories).completed > 0;
+    if (dayMap[d.date] !== undefined) {
+      dayMap[d.date] = dayMap[d.date] || completed;
+    } else {
+      dayMap[d.date] = completed;
+    }
+  }
+  const uniqueDays = Object.keys(dayMap).map(date => ({
+    date,
+    completed: dayMap[date]
+  }));
+
+  const sorted = uniqueDays.sort((a, b) => b.date.localeCompare(a.date));
   const today = todayStr();
   let streak = 0;
   let checkDate = today;
@@ -237,7 +262,7 @@ function calculateStreak(days) {
 
   // Check if today has any tasks completed
   const todayDay = sorted.find(d => d.date === today);
-  if (todayDay && countTasks(todayDay.categories).completed > 0) {
+  if (todayDay && todayDay.completed) {
     todayDone = true;
   } else {
     // Start counting from yesterday since today is pending
@@ -250,8 +275,7 @@ function calculateStreak(days) {
     if (day.date > checkDate) continue;
     if (day.date < checkDate) break;
 
-    const { completed } = countTasks(day.categories);
-    if (completed > 0) {
+    if (day.completed) {
       streak++;
       const [y, m, d] = checkDate.split('-').map(Number);
       const prev = new Date(y, m-1, d-1);
@@ -337,6 +361,9 @@ async function apiFetch(url, options = {}) {
   }
 
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  // Send the client's current local date string (YYYY-MM-DD) for timezone-safe calculations on the backend
+  headers['X-Client-Date'] = todayStr();
 
   // Default 30s timeout, but can be overridden
   const timeoutMs = options.timeout || 30000;
@@ -467,6 +494,8 @@ async function loadDays(page = 1) {
     renderDays(isLoadMore);
     updateStreak();
     if (loadingEl) loadingEl.innerHTML = '';
+    // Confirmed server reachable — enable the leaderboard toggles
+    setLeaderboardTogglesEnabled(true);
   } catch (err) {
     console.error('Error loading days:', err);
     
@@ -3923,6 +3952,8 @@ async function openProfileModal() {
     await cacheProfileImagesOffline(res);
     await window.localDb.userProfile.put(res);
     renderProfileData(res);
+    // Confirmed real internet — safe to enable the leaderboard showcase toggles
+    setLeaderboardTogglesEnabled(true);
   } catch (err) {
     console.error('Error loading profile:', err);
     if (!navigator.onLine) showToast('Showing offline profile data.', 'info');
@@ -3967,23 +3998,19 @@ function renderProfileData(user) {
   const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
   if (showcaseToggle) {
     showcaseToggle.checked = user.showOnLeaderboard !== false;
+    // Never re-enable here — enabling is handled only by confirmed API success or window 'online' event
     if (!navigator.onLine) {
       showcaseToggle.disabled = true;
       showcaseToggle.title = 'Cannot change settings while offline';
-    } else {
-      showcaseToggle.disabled = false;
-      showcaseToggle.title = 'Showcase on leaderboard';
     }
   }
   const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
   if (lbShowcaseToggle) {
     lbShowcaseToggle.checked = user.showOnLeaderboard !== false;
+    // Never re-enable here — enabling is handled only by confirmed API success or window 'online' event
     if (!navigator.onLine) {
       lbShowcaseToggle.disabled = true;
       lbShowcaseToggle.title = 'Cannot change settings while offline';
-    } else {
-      lbShowcaseToggle.disabled = false;
-      lbShowcaseToggle.title = 'Showcase on leaderboard';
     }
   }
   
@@ -4635,32 +4662,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (chipName)   chipName.textContent = storedName || userName;
   updateNavAvatar();
 
-  // Load showcase toggles from cached user profile instantly!
+  // Load showcase toggles' checked state from cached localStorage instantly.
+  // Toggles are disabled by default in HTML — they get enabled only after a confirmed API success.
   const userId = localStorage.getItem('userId');
   if (userId) {
     const savedShowOnLeaderboard = localStorage.getItem('showOnLeaderboard');
     const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
     const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
-    
-    // Set initial disabled state based on connection
-    if (showcaseToggle) {
-      if (!navigator.onLine) {
-        showcaseToggle.disabled = true;
-        showcaseToggle.title = 'Cannot change settings while offline';
-      } else {
-        showcaseToggle.disabled = false;
-        showcaseToggle.title = 'Showcase on leaderboard';
-      }
-    }
-    if (lbShowcaseToggle) {
-      if (!navigator.onLine) {
-        lbShowcaseToggle.disabled = true;
-        lbShowcaseToggle.title = 'Cannot change settings while offline';
-      } else {
-        lbShowcaseToggle.disabled = false;
-        lbShowcaseToggle.title = 'Showcase on leaderboard';
-      }
-    }
 
     if (savedShowOnLeaderboard !== null) {
       const isShowcase = savedShowOnLeaderboard === 'true';
@@ -4684,31 +4692,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Real-time online/offline window listeners to enable/disable toggles instantly
-  window.addEventListener('online', () => {
-    const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
-    if (showcaseToggle) {
-      showcaseToggle.disabled = false;
-      showcaseToggle.title = 'Showcase on leaderboard';
-    }
-    const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
-    if (lbShowcaseToggle) {
-      lbShowcaseToggle.disabled = false;
-      lbShowcaseToggle.title = 'Showcase on leaderboard';
-    }
-  });
-
-  window.addEventListener('offline', () => {
-    const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
-    if (showcaseToggle) {
-      showcaseToggle.disabled = true;
-      showcaseToggle.title = 'Cannot change settings while offline';
-    }
-    const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
-    if (lbShowcaseToggle) {
-      lbShowcaseToggle.disabled = true;
-      lbShowcaseToggle.title = 'Cannot change settings while offline';
-    }
-  });
+  window.addEventListener('online',  () => setLeaderboardTogglesEnabled(true));
+  window.addEventListener('offline', () => setLeaderboardTogglesEnabled(false));
 
   // Load badges into memory immediately for offline access
   loadClaimedBadges();
@@ -6899,8 +6884,8 @@ async function loadLeaderboard(reset = false) {
           name: localStorage.getItem('userName') || 'You',
           username: myUsername,
           profilePicture: localStorage.getItem('userProfilePicture'),
-          currentStreak: parseInt(localStorage.getItem('userCurrentStreak')) || 0,
-          highestStreak: parseInt(localStorage.getItem('userHighestStreak')) || 0
+          currentStreak: (res.myCurrentStreak !== undefined && res.myCurrentStreak !== null) ? res.myCurrentStreak : (parseInt(localStorage.getItem('userCurrentStreak')) || 0),
+          highestStreak: (res.myHighestStreak !== undefined && res.myHighestStreak !== null) ? res.myHighestStreak : (parseInt(localStorage.getItem('userHighestStreak')) || 0)
         };
         
         if (myRankArea) {
@@ -6913,6 +6898,8 @@ async function loadLeaderboard(reset = false) {
 
     // Refresh icons
     if (window.lucide) lucide.createIcons();
+    // Confirmed server reachable — enable the leaderboard showcase toggle
+    setLeaderboardTogglesEnabled(true);
 
   } catch (err) {
     console.error('Leaderboard load error:', err);

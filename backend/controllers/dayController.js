@@ -18,29 +18,58 @@ function countCompletedTasks(categories) {
 }
 
 /**
+ * In-memory helper to merge duplicate day cards robustly by date,
+ * logically ORing their completions.
+ */
+function getUniqueDaysWithCompletions(days) {
+  const dayMap = {};
+  for (const d of days) {
+    const completed = countCompletedTasks(d.categories) > 0;
+    if (dayMap[d.date] !== undefined) {
+      dayMap[d.date] = dayMap[d.date] || completed;
+    } else {
+      dayMap[d.date] = completed;
+    }
+  }
+  return Object.keys(dayMap).map(date => ({
+    date,
+    completed: dayMap[date]
+  }));
+}
+
+/**
  * Calculate the CURRENT (as-of-today) consecutive streak.
  * A streak is maintained only if every consecutive day (no gaps)
  * has at least one completed task. Missing a single day resets to 0.
  *
  * @param {Array} days - Array of Day documents (all days for this user)
+ * @param {string} [clientDate] - Timezone-safe local client today date (YYYY-MM-DD)
  * @returns {number} Current streak count
  */
-function calculateCurrentStreak(days) {
+function calculateCurrentStreak(days, clientDate) {
   if (!days || !days.length) return 0;
 
+  const uniqueDays = getUniqueDaysWithCompletions(days);
   // Sort newest-first for sequential backward walk
-  const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
+  uniqueDays.sort((a, b) => b.date.localeCompare(a.date));
 
   const d = new Date();
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // Timezone-safe today resolution: prioritize client date if sent by frontend, fall back to server or newest day
+  let today = clientDate || serverToday;
+  const mostRecentDay = uniqueDays[0];
+  if (mostRecentDay && mostRecentDay.date > today) {
+    today = mostRecentDay.date;
+  }
 
   let streak = 0;
   let checkDate = today;
 
   // If today has at least one completed task, start counting from today.
   // Otherwise start from yesterday (user still has until end-of-day).
-  const todayDay = sorted.find(day => day.date === today);
-  const todayDone = todayDay && countCompletedTasks(todayDay.categories) > 0;
+  const todayDay = uniqueDays.find(d => d.date === today);
+  const todayDone = todayDay && todayDay.completed;
 
   if (!todayDone) {
     // Shift checkDate back by one day
@@ -49,15 +78,14 @@ function calculateCurrentStreak(days) {
     checkDate = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
   }
 
-  for (const day of sorted) {
+  for (const day of uniqueDays) {
     // Skip any days newer than the current checkDate
     if (day.date > checkDate) continue;
     // Gap found — streak is broken
     if (day.date < checkDate) break;
 
     // day.date === checkDate
-    const completed = countCompletedTasks(day.categories);
-    if (completed > 0) {
+    if (day.completed) {
       streak++;
       // Move checkDate one day further back
       const [y, m, dayNum] = checkDate.split('-').map(Number);
@@ -82,17 +110,16 @@ function calculateCurrentStreak(days) {
 function calculateHighestStreak(days) {
   if (!days || !days.length) return 0;
 
+  const uniqueDays = getUniqueDaysWithCompletions(days);
   // Sort oldest-first to walk forward through history
-  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+  uniqueDays.sort((a, b) => a.date.localeCompare(b.date));
 
   let maxStreak = 0;
   let curStreak = 0;
   let prevDate = null;
 
-  for (const day of sorted) {
-    const completed = countCompletedTasks(day.categories);
-
-    if (completed === 0) {
+  for (const day of uniqueDays) {
+    if (!day.completed) {
       // Day with no completions — reset current run
       curStreak = 0;
       prevDate = null;
@@ -130,19 +157,15 @@ function calculateHighestStreak(days) {
  * Returns the new currentStreak so callers can include it in API responses.
  *
  * @param {string|ObjectId} userId
+ * @param {string} [clientDate] - Optional client date string YYYY-MM-DD
  * @returns {Promise<number>} The newly-calculated currentStreak
  */
-async function updateUserStreakAndActivity(userId) {
+async function updateUserStreakAndActivity(userId, clientDate) {
   // Fetch every day for this user (only fields needed for calculation)
   const days = await Day.find({ userId }).select('date categories');
 
-  const currentStreak = calculateCurrentStreak(days);
-  const newHighest    = calculateHighestStreak(days);
-
-  // Fetch current stored highestStreak so we never lower it
-  const user = await User.findById(userId).select('highestStreak');
-  const storedHighest = (user && user.highestStreak) || 0;
-  const highestStreak = Math.max(storedHighest, newHighest);
+  const currentStreak = calculateCurrentStreak(days, clientDate);
+  const highestStreak = calculateHighestStreak(days);
 
   await User.findByIdAndUpdate(userId, {
     currentStreak,
@@ -166,6 +189,7 @@ const getAllDays = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { page, limit } = req.query;
+    const clientDate = req.headers['x-client-date'];
 
     if (page && limit) {
       const pageNum  = parseInt(page);
@@ -180,16 +204,13 @@ const getAllDays = async (req, res) => {
       ]);
 
       // Recalculate streak fresh — this is the source of truth
-      const currentStreak = calculateCurrentStreak(allUserDays);
+      const currentStreak = calculateCurrentStreak(allUserDays, clientDate);
       const newHighest    = calculateHighestStreak(allUserDays);
 
       // Persist corrected values (fire-and-forget — don't block the response)
-      User.findById(userId).select('highestStreak').then(user => {
-        const storedHighest = (user && user.highestStreak) || 0;
-        return User.findByIdAndUpdate(userId, {
-          currentStreak,
-          highestStreak: Math.max(storedHighest, newHighest),
-        });
+      User.findByIdAndUpdate(userId, {
+        currentStreak,
+        highestStreak: newHighest,
       }).catch(() => {});
 
       const hasMore = (skip + paginatedDays.length) < total;
@@ -198,7 +219,7 @@ const getAllDays = async (req, res) => {
     } else {
       // Non-paginated fallback
       const days = await Day.find({ userId }).sort({ date: -1 });
-      const currentStreak = calculateCurrentStreak(days);
+      const currentStreak = calculateCurrentStreak(days, clientDate);
       return res.json(days);
     }
   } catch (error) {
@@ -247,6 +268,7 @@ const createDay = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { date, categories, summary } = req.body;
+    const clientDate = req.headers['x-client-date'];
 
     // Prevent duplicate dates per user
     const existing = await Day.findOne({ userId, date });
@@ -258,7 +280,7 @@ const createDay = async (req, res) => {
     const saved = await day.save();
 
     // Recalculate and persist streak, get new value back
-    const newStreak = await updateUserStreakAndActivity(userId);
+    const newStreak = await updateUserStreakAndActivity(userId, clientDate);
 
     // Include streak in the response so the frontend can update immediately
     res.status(201).json({ ...saved.toObject(), streak: newStreak });
@@ -278,6 +300,7 @@ const updateDay = async (req, res) => {
   try {
     const userId = req.user.userId;
     const updateData = req.body;
+    const clientDate = req.headers['x-client-date'];
 
     // Handle different update formats
     if (updateData.tasks && Array.isArray(updateData.tasks)) {
@@ -316,7 +339,7 @@ const updateDay = async (req, res) => {
       const updated = await day.save();
 
       // Recalculate streak and include it in the response
-      const newStreak = await updateUserStreakAndActivity(updated.userId);
+      const newStreak = await updateUserStreakAndActivity(updated.userId, clientDate);
 
       return res.json({ ...updated.toObject(), streak: newStreak });
     }
@@ -330,7 +353,7 @@ const updateDay = async (req, res) => {
     if (!updated) return res.status(404).json({ message: 'Day not found or unauthorized' });
 
     // Recalculate streak and include it in the response
-    const newStreak = await updateUserStreakAndActivity(updated.userId);
+    const newStreak = await updateUserStreakAndActivity(updated.userId, clientDate);
 
     res.json({ ...updated.toObject(), streak: newStreak });
   } catch (error) {
@@ -345,6 +368,7 @@ const updateDay = async (req, res) => {
 const deleteDay = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const clientDate = req.headers['x-client-date'];
     const deleted = await Day.findOneAndDelete({ _id: req.params.id, userId });
     if (!deleted) {
       return res.status(404).json({ message: 'Day not found or unauthorized' });
@@ -357,7 +381,7 @@ const deleteDay = async (req, res) => {
     await Scratchpad.deleteMany({ dayId: req.params.id, userId });
 
     // Recalculate streak and include it in the response
-    const newStreak = await updateUserStreakAndActivity(userId);
+    const newStreak = await updateUserStreakAndActivity(userId, clientDate);
 
     res.json({ message: 'Day deleted successfully', streak: newStreak });
   } catch (error) {
@@ -438,5 +462,16 @@ const saveScratchpad = async (req, res) => {
   }
 };
 
-module.exports = { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay, getScratchpad, saveScratchpad };
+module.exports = { 
+  getAllDays, 
+  getDayByDate, 
+  getDayById, 
+  createDay, 
+  updateDay, 
+  deleteDay, 
+  getScratchpad, 
+  saveScratchpad,
+  calculateCurrentStreak,
+  calculateHighestStreak
+};
 

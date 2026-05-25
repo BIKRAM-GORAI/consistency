@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Day = require('../models/Day');
+const { calculateCurrentStreak, calculateHighestStreak } = require('./dayController');
 const Achievement = require('../models/Achievement');
 const Group = require('../models/Group');
 const Badge = require('../models/Badge');
@@ -232,7 +233,55 @@ async function getLeaderboard(req, res) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const clientDate = req.headers['x-client-date'];
 
+    // 1. Pre-decay stale streaks of all users on the leaderboard to ensure sorting is accurate
+    const activeStreakUsers = await User.find({
+      currentStreak: { $gt: 0 },
+      showOnLeaderboard: { $ne: false },
+      username: { $exists: true, $ne: null },
+      isBlacklisted: { $ne: true }
+    }).select('_id currentStreak highestStreak');
+
+    if (activeStreakUsers.length > 0) {
+      const userIds = activeStreakUsers.map(u => u._id);
+      // Fetch all days for these users in a single query
+      const allDays = await Day.find({ userId: { $in: userIds } }).select('userId date categories').lean();
+      
+      // Group days by userId in memory
+      const daysByUserId = {};
+      for (const d of allDays) {
+        const uidStr = d.userId.toString();
+        if (!daysByUserId[uidStr]) {
+          daysByUserId[uidStr] = [];
+        }
+        daysByUserId[uidStr].push(d);
+      }
+
+      // Reconcile and decay streaks in memory
+      const bulkOps = [];
+      for (const u of activeStreakUsers) {
+        const uidStr = u._id.toString();
+        const userDays = daysByUserId[uidStr] || [];
+        const freshCurrent = calculateCurrentStreak(userDays, clientDate);
+        const freshHighest = calculateHighestStreak(userDays);
+
+        if (u.currentStreak !== freshCurrent || u.highestStreak !== freshHighest) {
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: u._id },
+              update: { $set: { currentStreak: freshCurrent, highestStreak: freshHighest } }
+            }
+          });
+        }
+      }
+
+      if (bulkOps.length > 0) {
+        await User.bulkWrite(bulkOps);
+      }
+    }
+
+    // 2. Fetch the perfectly sorted and fresh paginated list
     const query = {
       showOnLeaderboard: { $ne: false },
       username: { $exists: true, $ne: null },
@@ -250,16 +299,32 @@ async function getLeaderboard(req, res) {
     const cappedTotal = Math.min(realTotal, maxRankings);
     
     // Capping the users list if it exceeds maxRankings
-    let users = usersRaw;
-    if (skip + users.length > maxRankings) {
-      users = users.slice(0, Math.max(0, maxRankings - skip));
+    let usersList = usersRaw;
+    if (skip + usersList.length > maxRankings) {
+      usersList = usersList.slice(0, Math.max(0, maxRankings - skip));
     }
 
-    // Calculate active user's rank if authenticated and they are on the leaderboard
+    // 3. Calculate active user's rank and fresh streaks if authenticated and they are on the leaderboard
     let myRank = null;
+    let myCurrentStreak = null;
+    let myHighestStreak = null;
     if (req.user && req.user.userId) {
       const activeUser = await User.findById(req.user.userId);
       if (activeUser && activeUser.username && !activeUser.isBlacklisted) {
+        // Recalculate active user's streak first to ensure their rank calculation is accurate!
+        const myDays = await Day.find({ userId: activeUser._id }).select('date categories');
+        myCurrentStreak = calculateCurrentStreak(myDays, clientDate);
+        myHighestStreak = calculateHighestStreak(myDays);
+        
+        if (activeUser.currentStreak !== myCurrentStreak || activeUser.highestStreak !== myHighestStreak) {
+          activeUser.currentStreak = myCurrentStreak;
+          activeUser.highestStreak = myHighestStreak;
+          await User.findByIdAndUpdate(activeUser._id, {
+            currentStreak: myCurrentStreak,
+            highestStreak: myHighestStreak
+          });
+        }
+
         const scoreVal = activeUser[sortField] || 0;
         const lastActive = activeUser.lastActiveAt || new Date(0);
         
@@ -281,13 +346,15 @@ async function getLeaderboard(req, res) {
     }
 
     res.json({
-      users,
+      users: usersList,
       total: cappedTotal,
       page,
       limit,
-      hasMore: cappedTotal > (skip + users.length),
+      hasMore: cappedTotal > (skip + usersList.length),
       maxRankingsShown: maxRankings,
-      myRank
+      myRank,
+      myCurrentStreak,
+      myHighestStreak
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
