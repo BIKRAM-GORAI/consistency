@@ -50,6 +50,7 @@
       })(window, document, "clarity", "script", "wpy0b0902y");
   </script>
   <link rel="icon" href="/checklist.png">
+  <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -2474,7 +2475,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const wasUpdated = urlParams.has('sw_updated');
 
-      navigator.serviceWorker.register('/sw.js?v=29').then(reg => {
+      navigator.serviceWorker.register('/sw.js?v=30').then(reg => {
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {

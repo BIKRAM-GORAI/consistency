@@ -6765,15 +6765,8 @@ let deferredPrompt;
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // 1. Force unregister any old/stale workers to clear the "Not Supported" ghost code
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (let registration of registrations) {
-        await registration.unregister();
-        console.log('Old SW unregistered');
-      }
-
-      // 2. Register the fresh v15 worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=29');
+      // 1. Register the fresh worker with a version query to force-bypass cache
+      const reg = await navigator.serviceWorker.register('/sw.js?v=30');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -8822,7 +8815,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=29');
+        await navigator.serviceWorker.register('/sw.js?v=30');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
