@@ -8834,11 +8834,16 @@ async function initPushNotifications(forcePrompt = false) {
         
         if (token) {
           localStorage.setItem('fcmToken', token);
+          console.log('[FCM] Token registered successfully:', token.substring(0, 20) + '...');
           // Always register the token to self-heal any missing database entries
           await apiFetch(`${API}/api/fcm/token`, {
             method: 'POST',
             body: JSON.stringify({ token })
           });
+          showToast('Push notifications enabled! \u2705', 'success');
+        } else {
+          console.warn('[FCM] getToken() returned null — push subscription may have failed');
+          showToast('Notification setup incomplete. Try toggling Off then On again.', 'info');
         }
       }
     } catch (err) {
@@ -8893,23 +8898,34 @@ function renderFcmBannerState() {
         initPushNotifications(true);
       };
     } else {
+      const token = localStorage.getItem('fcmToken');
       iconWrap.style.background = 'var(--green)';
       iconWrap.innerHTML = '<i data-lucide="bell" style="width: 20px; height: 20px; color: var(--black);"></i>';
       titleEl.textContent = 'Notifications: On';
-      descEl.textContent = 'Push notifications are currently active and running on your system.';
+      if (token) {
+        descEl.textContent = `Active. Token: ${token.substring(0, 12)}...`;
+      } else {
+        descEl.textContent = 'Permission granted but device token is missing — tap Re-register.';
+        iconWrap.style.background = 'var(--yellow)';
+      }
       btnEl.style.display = 'block';
-      btnEl.textContent = 'Turn Off';
+      btnEl.textContent = token ? 'Turn Off' : 'Re-register';
       btnEl.onclick = async () => {
-        const token = localStorage.getItem('fcmToken');
         if (token) {
+          // Turn Off path
           apiFetch(`${API}/api/fcm/token`, {
             method: 'DELETE',
             body: JSON.stringify({ token })
           }).catch(err => console.warn('Failed to delete token on manual mute:', err));
+          localStorage.setItem('fcmNotificationsDisabled', 'true');
+          localStorage.removeItem('fcmToken');
+          renderFcmBannerState();
+          showToast('Notifications disabled for this device.', 'info');
+        } else {
+          // Re-register path — force a fresh token
+          localStorage.removeItem('fcmNotificationsDisabled');
+          await initPushNotifications(true);
         }
-        localStorage.setItem('fcmNotificationsDisabled', 'true');
-        renderFcmBannerState();
-        showToast('Notifications disabled for this device.', 'info');
       };
     }
   } else if (permission === 'denied') {
