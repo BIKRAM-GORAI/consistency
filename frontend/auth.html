@@ -495,6 +495,20 @@
 </head>
 <body>
 
+  <!-- ===== Fullscreen Loading Overlay for OAuth redirects ===== -->
+  <div id="oauth-loading-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background: #fafafa; align-items: center; justify-content: center; flex-direction: column;">
+    <div style="border: 8px solid #f3f3f3; border-top: 8px solid #FF6B35; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite;"></div>
+    <h2 id="oauth-loading-title" style="font-size: 26px; font-weight: 900; margin-top: 24px; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif; color: #0a0a0a;">Authenticating...</h2>
+    <p id="oauth-loading-sub" style="font-size: 14px; font-weight: 700; margin-top: 8px; font-family: 'Inter', sans-serif; color: #666;">Completing secure login, please wait.</p>
+  </div>
+  
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
   <!-- Decorative shapes -->
   <div class="auth-shape auth-shape-1" aria-hidden="true"></div>
   <div class="auth-shape auth-shape-2" aria-hidden="true"></div>
@@ -1142,6 +1156,17 @@
                         navigator.userAgent.includes("Capacitor") ||
                         (window.location.protocol === 'file:' || window.location.hostname === 'localhost' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 
+    const overlay = document.getElementById('oauth-loading-overlay');
+
+    // Instantly show the overlay on page boot if returning from a mobile redirect
+    if (sessionStorage.getItem('pending_oauth_redirect') === 'true') {
+      if (overlay) {
+        overlay.style.display = 'flex';
+        document.getElementById('oauth-loading-title').textContent = "Authenticating...";
+        document.getElementById('oauth-loading-sub').textContent = "Completing secure login, please wait.";
+      }
+    }
+
     // Handle OAuth redirect result on page load
     (async () => {
       try {
@@ -1150,8 +1175,14 @@
           console.log("Redirect OAuth Successful:", result.user.email);
           const providerName = result.credential ? result.credential.providerId.replace('.com', '') : 'google';
           await processUserOAuth(result.user, providerName);
+        } else {
+          // Finished checking, no active redirect found. Hide overlay.
+          sessionStorage.removeItem('pending_oauth_redirect');
+          if (overlay) overlay.style.display = 'none';
         }
       } catch (error) {
+        sessionStorage.removeItem('pending_oauth_redirect');
+        if (overlay) overlay.style.display = 'none';
         console.error('Redirect OAuth Error on load:', error);
         handleOAuthError(error);
       }
@@ -1172,6 +1203,12 @@
         if (isNativeApp) {
           // Bypasses popup window blocks inside native WebViews by triggering a redirect
           console.log("Native app detected. Proceeding with Redirect Login for:", providerName);
+          sessionStorage.setItem('pending_oauth_redirect', 'true');
+          if (overlay) {
+            overlay.style.display = 'flex';
+            document.getElementById('oauth-loading-title').textContent = "Redirecting...";
+            document.getElementById('oauth-loading-sub').textContent = `Opening Google Sign-In secure channel...`;
+          }
           await signInWithRedirect(auth, provider);
         } else {
           console.log("Standard browser detected. Proceeding with Popup Login for:", providerName);
@@ -1181,6 +1218,8 @@
           }
         }
       } catch (error) {
+        sessionStorage.removeItem('pending_oauth_redirect');
+        if (overlay) overlay.style.display = 'none';
         handleOAuthError(error);
       }
     }
