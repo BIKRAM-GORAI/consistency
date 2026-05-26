@@ -2,19 +2,164 @@ const admin = require('../config/firebase');
 const User = require('../models/User');
 const Group = require('../models/Group');
 
-// Map to track the last time a notification was sent per group, and count of suppressed messages during cooldown
+// Map to track WhatsApp-style smart notification states per group:
+// { lastNotificationSentAt, lastNoisyNotificationSentAt, pendingCount, pendingList, timeoutId }
 const groupNotifCooldowns = new Map();
-const COOLDOWN_MS = 30000; // 30 seconds cooldown between push notifications per group
 
 // Background cleanup interval to prevent memory leaks (clean up stale group data older than 5 minutes)
 setInterval(() => {
   const now = Date.now();
   for (const [groupId, data] of groupNotifCooldowns.entries()) {
-    if (now - data.lastSentAt > 300000) { // 5 minutes
+    if (now - data.lastNotificationSentAt > 300000) { // 5 minutes of total silence
+      if (data.timeoutId) clearTimeout(data.timeoutId);
       groupNotifCooldowns.delete(groupId);
     }
   }
 }, 60000); // check every 1 minute
+
+// Smart Stacked Summary Formatter
+function buildSummaryText(pendingList, pendingCount) {
+  const senders = [...new Set(pendingList.map(m => m.senderName))];
+  let sendersText = senders.slice(0, 3).join(', ');
+  if (senders.length > 3) {
+    sendersText += ` & others`;
+  }
+  const lastMsg = pendingList[pendingList.length - 1];
+  return `${sendersText}: ${lastMsg.text} (+${pendingCount} new)`;
+}
+
+// Global Multicast Helper supporting Silent Stacks
+async function sendMulticastPush(group, bodyText, tokens, isSilent) {
+  const payload = {
+    notification: {
+      title: `${group.name}`,
+      body: bodyText
+    },
+    data: {
+      groupId: String(group._id)
+    },
+    android: {
+      priority: isSilent ? 'normal' : 'high',
+      notification: {
+        channelId: 'default'
+      }
+    },
+    webpush: {
+      headers: {
+        Urgency: isSilent ? 'normal' : 'high'
+      },
+      fcmOptions: {
+        link: `/?openChat=${group._id}`
+      }
+    },
+    collapseKey: `chat_${group._id}`
+  };
+
+  if (!isSilent) {
+    payload.android.notification.sound = 'default';
+  } else {
+    // Specifically disable default sound and vibration on Android for silent stack
+    payload.android.notification.defaultSound = false;
+    payload.android.notification.defaultVibrateTimings = false;
+  }
+
+  try {
+    const response = await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: payload.notification,
+      data: payload.data,
+      android: payload.android,
+      webpush: payload.webpush,
+      collapseKey: payload.collapseKey
+    });
+
+    // Prune stale or expired tokens returned by FCM to clean up MongoDB
+    const failedTokens = [];
+    response.responses.forEach((resp, idx) => {
+      if (!resp.success) {
+        console.warn(`[FCM Send Error] Token: ${tokens[idx].substring(0, 15)}... Code: ${resp.error?.code}, Message: ${resp.error?.message}`);
+        const errCode = resp.error?.code;
+        if (
+          errCode === 'messaging/registration-token-not-registered' || 
+          errCode === 'messaging/invalid-registration-token' ||
+          errCode === 'messaging/invalid-argument'
+        ) {
+          failedTokens.push(tokens[idx]);
+        }
+      }
+    });
+
+    if (failedTokens.length > 0) {
+      await User.updateMany(
+        { fcmTokens: { $in: failedTokens } },
+        { $pull: { fcmTokens: { $in: failedTokens } } }
+      );
+      console.log(`Pruned ${failedTokens.length} expired or invalid FCM tokens.`);
+    }
+
+    return response;
+  } catch (error) {
+    console.error('[FCM Multicast Helper] Core send failed:', error);
+    throw error;
+  }
+}
+
+// Background delivery runner for debounced/throttled burst notifications
+async function deliverPendingNotifications(groupId) {
+  const state = groupNotifCooldowns.get(groupId);
+  if (!state || state.pendingCount === 0) return;
+
+  const now = Date.now();
+  const elapsedSinceLastNoisy = now - state.lastNoisyNotificationSentAt;
+
+  // Decide noise level: burst updates are noisy only once every 30 seconds
+  let isSilent = true;
+  if (elapsedSinceLastNoisy >= 30000) {
+    isSilent = false;
+    state.lastNoisyNotificationSentAt = now;
+  }
+
+  state.lastNotificationSentAt = now;
+
+  // Build the stacked summary
+  const summaryText = buildSummaryText(state.pendingList, state.pendingCount);
+
+  // Extract variables for sending
+  const lastSenderId = state.pendingList[state.pendingList.length - 1]?.senderId;
+
+  // Clean the pending state queue
+  const currentPendingCount = state.pendingCount;
+  state.pendingCount = 0;
+  state.pendingList = [];
+  state.timeoutId = null;
+
+  try {
+    // 1. Fetch group
+    const group = await Group.findById(groupId);
+    if (!group) return;
+
+    // 2. Query other members who haven't muted
+    const recipients = await User.find({
+      _id: { $in: group.members, $ne: lastSenderId },
+      mutedGroups: { $ne: groupId }
+    }, 'fcmTokens');
+
+    const tokens = [];
+    recipients.forEach(u => {
+      if (u.fcmTokens && u.fcmTokens.length > 0) {
+        tokens.push(...u.fcmTokens);
+      }
+    });
+
+    if (tokens.length === 0) return;
+
+    // 3. Send
+    console.log(`[FCM Smart Debouncer] Delivering stack of ${currentPendingCount} messages for group ${group.name} (Silent: ${isSilent})`);
+    await sendMulticastPush(group, summaryText, tokens, isSilent);
+  } catch (error) {
+    console.error(`[FCM Smart Debouncer] Background delivery failed for group ${groupId}:`, error);
+  }
+}
 
 /**
  * Register an FCM token for the authenticated user
@@ -113,29 +258,6 @@ exports.notifyGroupChat = async (req, res) => {
   try {
     const senderId = req.user.userId;
 
-    // Smart notification throttle check
-    const now = Date.now();
-    const cooldownData = groupNotifCooldowns.get(String(groupId));
-    if (cooldownData && (now - cooldownData.lastSentAt < COOLDOWN_MS)) {
-      cooldownData.pendingCount = (cooldownData.pendingCount || 0) + 1;
-      return res.json({ 
-        success: true, 
-        throttled: true, 
-        message: 'Notification throttled. Count incremented.' 
-      });
-    }
-
-    // Set/reset cooldown tracking for subsequent messages
-    let pendingCount = 0;
-    if (cooldownData) {
-      pendingCount = cooldownData.pendingCount || 0;
-    }
-    
-    groupNotifCooldowns.set(String(groupId), {
-      lastSentAt: now,
-      pendingCount: 0
-    });
-
     // 1. Fetch group to verify existence and membership
     const group = await Group.findById(groupId);
     if (!group) {
@@ -183,77 +305,67 @@ exports.notifyGroupChat = async (req, res) => {
       bodyText = text || '';
     }
 
-    // Add pending/throttled message count if any existed
-    if (pendingCount > 0) {
-      bodyText += ` (and ${pendingCount} other message${pendingCount > 1 ? 's' : ''})`;
+    // 5. Smart WhatsApp-style Rate-Limiter logic
+    const now = Date.now();
+    let state = groupNotifCooldowns.get(String(groupId));
+    if (!state) {
+      state = {
+        lastNotificationSentAt: 0,
+        lastNoisyNotificationSentAt: 0,
+        pendingCount: 0,
+        pendingList: [],
+        timeoutId: null
+      };
+      groupNotifCooldowns.set(String(groupId), state);
     }
 
-    // 5. Build FCM Multicast Payload with collapseKey
-    const payload = {
-      notification: {
-        title: `${group.name}`,
-        body: `${senderName}: ${bodyText}`
-      },
-      data: {
-        groupId: String(groupId)
-      },
-      android: {
-        priority: 'high',
-        notification: {
-          channelId: 'default',
-          sound: 'default'
-        }
-      },
-      webpush: {
-        headers: {
-          Urgency: 'high'
-        },
-        fcmOptions: {
-          link: `/?openChat=${groupId}`
-        }
-      },
-      collapseKey: `chat_${groupId}`
-    };
-
-    // 6. Send the multicast push alerts asynchronously
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens,
-      notification: payload.notification,
-      data: payload.data,
-      android: payload.android,
-      webpush: payload.webpush,
-      collapseKey: payload.collapseKey
-    });
-
-    // 7. Prune stale or expired tokens returned by FCM to clean up MongoDB
-    const failedTokens = [];
-    response.responses.forEach((resp, idx) => {
-      if (!resp.success) {
-        console.warn(`[FCM Send Error] Token: ${tokens[idx].substring(0, 15)}... Code: ${resp.error?.code}, Message: ${resp.error?.message}`);
-        const errCode = resp.error?.code;
-        if (
-          errCode === 'messaging/registration-token-not-registered' || 
-          errCode === 'messaging/invalid-registration-token' ||
-          errCode === 'messaging/invalid-argument'
-        ) {
-          failedTokens.push(tokens[idx]);
-        }
-      }
-    });
-
-    if (failedTokens.length > 0) {
-      await User.updateMany(
-        { fcmTokens: { $in: failedTokens } },
-        { $pull: { fcmTokens: { $in: failedTokens } } }
-      );
-      console.log(`Pruned ${failedTokens.length} expired or invalid FCM tokens.`);
+    // Clear any active debouncing timer
+    if (state.timeoutId) {
+      clearTimeout(state.timeoutId);
+      state.timeoutId = null;
     }
 
-    res.json({ 
-      success: true, 
-      sentCount: response.successCount, 
-      failedCount: response.failureCount 
-    });
+    const elapsedSinceLastNotif = now - state.lastNotificationSentAt;
+
+    // SCENARIO A: Quiet Group conversation (10+ seconds of silence)
+    // Send push instantly and with sound!
+    if (elapsedSinceLastNotif >= 10000) {
+      state.lastNotificationSentAt = now;
+      state.lastNoisyNotificationSentAt = now;
+      state.pendingCount = 0;
+      state.pendingList = [];
+
+      const fullBodyText = `${senderName}: ${bodyText}`;
+      console.log(`[FCM Smart Throttle] Quiet conversation. Sending instant noisy push for group ${group.name}`);
+      const response = await sendMulticastPush(group, fullBodyText, tokens, false);
+
+      return res.json({ 
+        success: true, 
+        sentCount: response.successCount, 
+        failedCount: response.failureCount 
+      });
+    } 
+    // SCENARIO B: Rapid burst / spam mode (less than 10s apart)
+    // Queue message and schedule silent stacked update in 10s
+    else {
+      state.pendingCount++;
+      state.pendingList.push({ senderName, senderId, text: bodyText });
+
+      state.timeoutId = setTimeout(async () => {
+        try {
+          await deliverPendingNotifications(String(groupId));
+        } catch (e) {
+          console.error('[FCM Smart Debouncer] Background delivery timer failed:', e);
+        }
+      }, 10000);
+
+      console.log(`[FCM Smart Throttle] Burst mode. Queueing message from ${senderName} for silent delivery in 10s.`);
+      return res.json({ 
+        success: true, 
+        throttled: true, 
+        message: 'WhatsApp-style burst throttle active. Message queued for silent stacked delivery.' 
+      });
+    }
   } catch (error) {
     console.error('Error sending chat push notifications:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

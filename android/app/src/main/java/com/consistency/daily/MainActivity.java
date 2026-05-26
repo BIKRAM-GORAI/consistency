@@ -2,6 +2,7 @@ package com.consistency.daily;
 
 import android.os.Bundle;
 import android.webkit.WebView;
+import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -16,25 +17,28 @@ public class MainActivity extends BridgeActivity {
 
         // Set WebView background color to solid brand yellow to prevent any initial black/white loading flicker
         this.bridge.getWebView().setBackgroundColor(android.graphics.Color.parseColor("#FFD60A"));
-    }
 
-    @Override
-    public void onBackPressed() {
-        WebView webView = this.bridge.getWebView();
-        String currentUrl = webView.getUrl() != null ? webView.getUrl() : "";
-        
-        boolean isInternalAppPage = currentUrl.contains("consistency-daily.vercel.app") 
-            || currentUrl.contains("localhost") 
-            || currentUrl.startsWith("file://");
-            
-        if (!isInternalAppPage && !currentUrl.isEmpty()) {
-            // Cancel external OAuth flow → go back to auth page cleanly
-            webView.loadUrl("https://consistency-daily.vercel.app/auth.html");
-        } else if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            // Minimize instead of closing (better UX)
-            moveTaskToBack(true);
-        }
+        // Register custom back press dispatcher to cleanly cancel OAuth redirects at Jetpack level
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                WebView webView = MainActivity.this.bridge.getWebView();
+                String currentUrl = webView.getUrl() != null ? webView.getUrl() : "";
+                
+                boolean isInternalAppPage = currentUrl.contains("consistency-daily.vercel.app") 
+                    || currentUrl.contains("localhost") 
+                    || currentUrl.startsWith("file://");
+                    
+                if (!isInternalAppPage && !currentUrl.isEmpty()) {
+                    // Cancel external OAuth flow → go back to auth page cleanly
+                    webView.loadUrl("https://consistency-daily.vercel.app/auth.html");
+                } else if (webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    // Minimize instead of closing (better UX)
+                    MainActivity.this.moveTaskToBack(true);
+                }
+            }
+        });
     }
 }

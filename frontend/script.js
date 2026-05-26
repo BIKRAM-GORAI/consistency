@@ -2633,18 +2633,6 @@ async function loadGroups() {
       await localDb.groups.bulkAdd(allJoinedGroups);
 
       renderGroups();
-
-      // FCM Chat Deep-linking Action
-      const urlParams = new URLSearchParams(window.location.search);
-      const openChatGroupId = urlParams.get('openChat');
-      if (openChatGroupId) {
-        const targetGroup = allJoinedGroups.find(g => String(g._id) === String(openChatGroupId));
-        if (targetGroup) {
-          openGroupChat(targetGroup._id, targetGroup.name, targetGroup.icon || '');
-          const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-          window.history.pushState({ path: newUrl }, '', newUrl);
-        }
-      }
     }
   } catch (err) {
     console.warn('Background groups refresh failed:', err);
@@ -10568,3 +10556,22 @@ if (document.readyState === 'loading') {
 } else {
   bindScratchpadToolbar();
 }
+
+// ── TOP-LEVEL STARTUP DEEP-LINK CHECK ──
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const openChatGroupId = urlParams.get('openChat');
+  if (openChatGroupId) {
+    console.log('[Startup Deep-Link] Detected openChat parameter:', openChatGroupId);
+    
+    // Switch to groups page instantly so groups list is loaded
+    showPage('groups');
+    
+    // Open the group chat modal using our robust deep-link helper
+    openGroupChatFromDeepLink(openChatGroupId);
+    
+    // Clean up the URL search params so reloading doesn't open it again
+    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+  }
+})();
