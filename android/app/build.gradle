@@ -3,6 +3,9 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.consistency.daily"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId "com.consistency.daily"
         minSdkVersion rootProject.ext.minSdkVersion
