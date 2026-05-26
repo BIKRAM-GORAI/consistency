@@ -4,6 +4,11 @@
   "webDir": "frontend",
   "server": {
     "url": "https://consistency-daily.vercel.app",
+    "allowNavigation": [
+      "consistency-daily.vercel.app",
+      "*.firebaseapp.com",
+      "accounts.google.com"
+    ],
     "cleartext": true
   }
 }
