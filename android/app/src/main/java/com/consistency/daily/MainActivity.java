@@ -22,8 +22,9 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         
         // Bypasses Google's WebView OAuth block by setting a standard mobile Chrome User-Agent
+        String versionName = BuildConfig.VERSION_NAME;
         this.bridge.getWebView().getSettings().setUserAgentString(
-            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 CapacitorNative/Android"
+            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 CapacitorNative/Android/" + versionName
         );
 
         // Register custom back press dispatcher to cleanly cancel OAuth redirects at Jetpack level

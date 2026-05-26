@@ -10,6 +10,15 @@ if (isAndroidNative) {
   document.body.classList.add('native-android');
 }
 
+// Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
+let runningAppVersion = "1.0";
+if (isAndroidNative) {
+  const parts = navigator.userAgent.split("CapacitorNative/Android/");
+  if (parts.length > 1) {
+    runningAppVersion = parts[1].split(" ")[0].trim();
+  }
+}
+
 const API = '';  // Same origin
 
 // ── Security Helpers ──────────────────────────────────────
@@ -6916,7 +6925,7 @@ function dismissPwaPrompt() {
   if (modal) modal.style.display = 'none';
 }
 
-async function installPWA() {
+async function triggerPwaInstallDirect() {
   const modal = document.getElementById('pwa-modal-overlay');
   if (modal) modal.style.display = 'none';
 
@@ -6940,6 +6949,104 @@ async function installPWA() {
     const profileContainer = document.getElementById('pwa-install-container');
     if (profileContainer) profileContainer.style.display = 'none';
   }
+}
+
+function installPWA() {
+  // If the visitor is on an Android device, show the clean PWA vs APK choice screen!
+  const isAndroidDevice = /android/i.test(navigator.userAgent);
+  if (isAndroidDevice) {
+    const modal = document.getElementById('pwa-modal-overlay');
+    if (modal) modal.style.display = 'flex';
+  } else {
+    // If desktop or iOS, trigger standard PWA direct installation
+    triggerPwaInstallDirect();
+  }
+}
+
+/* ==========================================================================
+   Capacitor Native APK Auto-Update System
+   ========================================================================== */
+async function checkNativeAppUpdates() {
+  if (!isAndroidNative) return;
+  
+  try {
+    const res = await fetch('/app-version.json');
+    if (!res.ok) return;
+    const data = await res.json();
+    
+    const latest = data.latestVersion;
+    const current = runningAppVersion;
+    
+    // Simple helper to parse version blocks and compare (e.g. "1.1" > "1.0")
+    const compareVersions = (v1, v2) => {
+      const parts1 = String(v1).split('.').map(Number);
+      const parts2 = String(v2).split('.').map(Number);
+      const maxLen = Math.max(parts1.length, parts2.length);
+      for (let i = 0; i < maxLen; i++) {
+        const val1 = parts1[i] || 0;
+        const val2 = parts2[i] || 0;
+        if (val1 > val2) return 1;
+        if (val1 < val2) return -1;
+      }
+      return 0;
+    };
+    
+    if (compareVersions(latest, current) > 0) {
+      console.log(`[Native APK Update] New version available: ${latest} (running: ${current})`);
+      showUpdateModal(latest, data.apkUrl, data.forceUpdate, data.releaseNotes);
+    } else {
+      console.log(`[Native APK Update] App is up to date (running: ${current})`);
+    }
+  } catch (err) {
+    console.warn('[Native APK Update] Failed to check for native updates:', err);
+  }
+}
+
+function showUpdateModal(latestVersion, apkUrl, forceUpdate, releaseNotes) {
+  const existing = document.getElementById('native-update-modal');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'native-update-modal';
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.style.zIndex = '100000';
+  overlay.style.backdropFilter = 'blur(10px)';
+  overlay.style.background = 'rgba(10, 10, 10, 0.85)';
+
+  const modalHtml = `
+    <div class="modal" style="max-width: 450px; text-align: center; padding: 36px 24px; background: var(--yellow); border: 4px solid var(--black); border-radius: 12px; box-shadow: 10px 10px 0 var(--black); margin: auto 16px; box-sizing: border-box;" onclick="event.stopPropagation()">
+      <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900; margin-bottom: 12px; text-transform: uppercase; color: var(--black); display: flex; align-items: center; justify-content: center; gap: 8px;">
+        🚀 Update Available
+      </h2>
+      <p style="font-size: 13px; font-weight: 800; color: var(--black); margin-bottom: 18px; text-transform: uppercase; background: rgba(0,0,0,0.06); padding: 6px; border-radius: 6px; display: inline-block; box-sizing: border-box;">
+        Version v${latestVersion} is out!
+      </p>
+      <div style="text-align: left; background: #fff; border: 3px solid var(--black); border-radius: 8px; padding: 16px; margin-bottom: 24px; max-height: 150px; overflow-y: auto; box-shadow: 3px 3px 0 var(--black); box-sizing: border-box;">
+        <h4 style="font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 6px; color: var(--black);">What's New:</h4>
+        <p style="font-size: 13px; font-weight: 600; color: #444; line-height: 1.5; white-space: pre-wrap; margin: 0;">${releaseNotes || 'Bug fixes and performance improvements.'}</p>
+      </div>
+      <div style="display: flex; gap: 14px; flex-direction: column;">
+        <a href="${apkUrl}" class="btn-primary ripple" style="text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 14px; font-size: 16px; text-transform: uppercase; font-weight: 900; letter-spacing: 0.5px; background: var(--pink); color: #fff; width: 100%; margin: 0; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;" onclick="if(!${forceUpdate}) { document.getElementById('native-update-modal').remove(); }">
+          Install Update
+        </a>
+        ${!forceUpdate ? `
+          <button class="btn-ghost ripple" style="border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 14px; padding: 12px; text-transform: uppercase; font-weight: 800; box-shadow: 3px 3px 0 #0a0a0a;" onclick="document.getElementById('native-update-modal').remove()">
+            Maybe Later
+          </button>
+        ` : `
+          <p style="font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.6); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 0;">
+            ⚠️ This is a critical update. Update is required to continue.
+          </p>
+        `}
+      </div>
+    </div>
+  `;
+
+  overlay.innerHTML = modalHtml;
+  document.body.appendChild(overlay);
+  
+  if (window.lucide) lucide.createIcons({ root: overlay });
 }
 
 window.addEventListener('appinstalled', (evt) => {
@@ -10612,5 +10719,10 @@ setTimeout(() => {
     // Clean up the URL search params so reloading doesn't open it again
     const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.pushState({ path: newUrl }, '', newUrl);
+  }
+  
+  // Check for native app updates after deep-link check completes
+  if (typeof checkNativeAppUpdates === 'function') {
+    checkNativeAppUpdates();
   }
 }, 800); // 800ms delay to let Dexie DB and Auth fully initialize

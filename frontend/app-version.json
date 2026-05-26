@@ -1,0 +1,6 @@
+{
+  "latestVersion": "1.0",
+  "apkUrl": "https://github.com/BIKRAM-GORAI/consistency/releases/latest/download/app-release.apk",
+  "forceUpdate": false,
+  "releaseNotes": "Initial release with adaptive icons, custom chime notifications, and full-screen layout enhancements."
+}

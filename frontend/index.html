@@ -65,15 +65,65 @@
 </head>
 <body>
 
-  <!-- ===== PWA Install Prompt Modal ===== -->
+  <!-- ===== PWA vs. APK Installer Modal ===== -->
   <div class="modal-overlay" id="pwa-modal-overlay" style="display:none; z-index: 10000; backdrop-filter: blur(8px); background: rgba(0,0,0,0.6);" onclick="dismissPwaPrompt()">
-    <div class="modal" style="max-width: 450px; text-align: center; padding: 40px 24px; background: var(--yellow); border: 4px solid var(--black); border-radius: 12px; box-shadow: 12px 12px 0 var(--black);" onclick="event.stopPropagation()">
-      <h2 style="font-size: 28px; font-weight: 900; margin-bottom: 16px; text-transform: uppercase; color: var(--black);"><i data-lucide="zap"></i> Install App</h2>
-      <p style="font-size: 16px; font-weight: 600; margin-bottom: 32px; color: var(--black);">Install Consistency Daily on your device for a faster, full-screen, distraction-free experience.</p>
-      <div style="display: flex; gap: 16px; flex-direction: column;">
-        <button class="btn-primary ripple" style="width: 100%; justify-content: center; padding: 16px; font-size: 18px; text-transform: uppercase;" onclick="installPWA()">Install Now</button>
-        <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 16px; text-transform: uppercase; box-shadow: 4px 4px 0 #0a0a0a;" onclick="dismissPwaPrompt()">Maybe Later</button>
+    <div class="modal" style="max-width: 580px; text-align: center; padding: 32px 20px; background: var(--yellow); border: 4px solid var(--black); border-radius: 12px; box-shadow: 12px 12px 0 var(--black); margin: auto 16px;" onclick="event.stopPropagation()">
+      <h2 style="font-size: 26px; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; color: var(--black); font-family: 'Space Grotesk', sans-serif;">
+        📥 Install Consistency Daily
+      </h2>
+      <p style="font-size: 14px; font-weight: 600; margin-bottom: 24px; color: var(--black);">Choose the installation method that fits your device best:</p>
+      
+      <!-- Grid Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; text-align: left;">
+        
+        <!-- PWA Card -->
+        <div style="background: #fff; border: 3px solid var(--black); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;">
+          <div>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              🛜 Web App (PWA)
+            </h3>
+            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: #444; display: flex; flex-direction: column; gap: 6px;">
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> Instant setup (under 1MB)</li>
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> Safe &amp; silent background updates</li>
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> No dangerous security warnings</li>
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--red);">❌</span> Notifications can delay in background</li>
+            </ul>
+          </div>
+          <button class="btn-primary ripple" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px; text-transform: uppercase; margin: 0; background: var(--teal); box-shadow: 3px 3px 0 var(--black);" onclick="triggerPwaInstallDirect()">
+            Install Web App
+          </button>
+        </div>
+
+        <!-- APK Card -->
+        <div style="background: #fff; border: 3px solid var(--black); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;">
+          <div>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              📲 Native Android (APK)
+            </h3>
+            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: #444; display: flex; flex-direction: column; gap: 6px;">
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> 100% stable background notifications</li>
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> Native speed &amp; fluid animations</li>
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> High priority system chime alert</li>
+              <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--red);">❌</span> Requires manual APK updates</li>
+            </ul>
+          </div>
+          <a href="https://github.com/BIKRAM-GORAI/consistency/releases/latest/download/app-release.apk" class="btn-primary ripple" style="text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 10px; font-size: 13px; text-transform: uppercase; margin: 0; background: var(--pink); color: #fff; box-shadow: 3px 3px 0 var(--black);" onclick="dismissPwaPrompt()">
+            Download APK
+          </a>
+        </div>
+
       </div>
+
+      <!-- Disclaimer info note -->
+      <div style="background: rgba(255,255,255,0.7); border: 2px dashed rgba(0,0,0,0.3); border-radius: 6px; padding: 12px; text-align: left; margin-bottom: 18px; box-sizing: border-box;">
+        <p style="font-size: 11px; font-weight: 700; color: #555; line-height: 1.4; margin: 0;">
+          ⚠️ <strong>APK SETUP NOTE:</strong> When installing the APK, your device may warn you that it is "Unknown" or "Dangerous". This is a standard Google security warning because we distribute the APK directly to you via GitHub rather than paying Play Store fees. The app is 100% clean and safe.
+        </p>
+      </div>
+
+      <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 13px; text-transform: uppercase; box-shadow: 3px 3px 0 #0a0a0a; padding: 10px;" onclick="dismissPwaPrompt()">
+        Maybe Later
+      </button>
     </div>
   </div>
 
