@@ -7975,12 +7975,20 @@ async function startGroupVideoCall() {
     `;
     container.innerHTML = loaderHtml;
     
-    const domain = 'meet.ffmuc.net';
+    const domain = 'jitsi.belnet.be';
     const options = {
       roomName: roomId,
       width: '100%',
       height: '100%',
       parentNode: container,
+      onload: () => {
+        console.log('[Jitsi] Iframe loaded successfully, fading out overlay.');
+        const loader = document.getElementById('jitsi-loading-overlay');
+        if (loader) {
+          loader.style.opacity = '0';
+          setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+      },
       userInfo: {
         displayName: localStorage.getItem('userName') || 'Consistency User',
         avatarUrl: (() => {
@@ -8102,12 +8110,22 @@ async function startGroupVideoCall() {
 }
 
 function closeVideoCall() {
-  if (jitsiApi) {
-    jitsiApi.dispose();
-    jitsiApi = null;
-  }
+  // Capture and immediately nullify the API reference so UI closes instantly.
+  // Then dispose() in the background — it can take several seconds to
+  // handshake with the Jitsi server and should NOT block the UI.
+  const apiToDispose = jitsiApi;
+  jitsiApi = null;
 
-  // Remove from RTDB
+  // ── Close the UI immediately ──
+  document.getElementById('modal-video-call').style.display = 'none';
+  document.body.style.overflow = ''; // Restore scrolling
+  document.getElementById('jitsi-container').innerHTML = '';
+
+  // Hide switch camera button on close
+  const switchBtn = document.getElementById('switch-camera-btn');
+  if (switchBtn) switchBtn.style.display = 'none';
+
+  // Remove from RTDB immediately (non-blocking)
   if (activeChatGroupId) {
     const { firebaseRtdb, rtdb } = window;
     const userId = localStorage.getItem('userId');
@@ -8115,20 +8133,20 @@ function closeVideoCall() {
     rtdb.remove(participantRef);
   }
 
-  document.getElementById('modal-video-call').style.display = 'none';
-  document.body.style.overflow = ''; // Restore scrolling
-  document.getElementById('jitsi-container').innerHTML = '';
-  
-  // Hide switch camera button on close
-  const switchBtn = document.getElementById('switch-camera-btn');
-  if (switchBtn) switchBtn.style.display = 'none';
-
-  // New: Force a read-receipt check now that the video call is hidden
+  // Force a read-receipt check now that the video call is hidden
   setTimeout(() => {
     if (typeof triggerManualReadCheck === 'function') {
       triggerManualReadCheck();
     }
   }, 300);
+
+  // ── Dispose Jitsi asynchronously in the background ──
+  // This prevents the ~10s block caused by waiting for session cleanup.
+  if (apiToDispose) {
+    setTimeout(() => {
+      try { apiToDispose.dispose(); } catch (e) { /* ignore disposal errors */ }
+    }, 0);
+  }
 }
 
 /** ── Switch Camera Logic ── **/
