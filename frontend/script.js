@@ -4917,6 +4917,15 @@ function togglePasswordVisibility(inputId, btn) {
 
 // ── Init ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Restrict App Installation option to website view only
+  const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (isAndroidNative || isInstalledPWA) {
+    const installContainer = document.getElementById('pwa-install-container');
+    if (installContainer) {
+      installContainer.style.setProperty('display', 'none', 'important');
+    }
+  }
+
   const savedTheme = localStorage.getItem('theme');
   const themeToggle = document.getElementById('dark-theme-toggle');
   if (savedTheme === 'dark') {
@@ -6887,6 +6896,7 @@ function isAppInstalled() {
  * This prevents "shortcut" installs and ensures native PWA behavior.
  */
 async function initiatePwaPromptSequence() {
+  if (isAndroidNative) return; // Skip completely in native app wrapper
   try {
     // 1. Wait for Service Worker to be fully ready
     if ('serviceWorker' in navigator) {
