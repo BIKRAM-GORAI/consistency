@@ -13,6 +13,9 @@ public class MainActivity extends BridgeActivity {
         this.bridge.getWebView().getSettings().setUserAgentString(
             "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
         );
+
+        // Set WebView background color to solid brand yellow to prevent any initial black/white loading flicker
+        this.bridge.getWebView().setBackgroundColor(android.graphics.Color.parseColor("#FFD60A"));
     }
 
     @Override
@@ -20,15 +23,12 @@ public class MainActivity extends BridgeActivity {
         WebView webView = this.bridge.getWebView();
         String currentUrl = webView.getUrl() != null ? webView.getUrl() : "";
         
-        boolean isOnOAuthPage = currentUrl.contains("accounts.google.com")
-            || currentUrl.contains("github.com/login")
-            || currentUrl.contains("github.com/session")
-            || currentUrl.contains("facebook.com/login")
-            || currentUrl.contains("facebook.com/dialog")
-            || currentUrl.contains("firebaseapp.com/__/auth");
-        
-        if (isOnOAuthPage) {
-            // Cancel OAuth flow → go back to auth page cleanly
+        boolean isInternalAppPage = currentUrl.contains("consistency-daily.vercel.app") 
+            || currentUrl.contains("localhost") 
+            || currentUrl.startsWith("file://");
+            
+        if (!isInternalAppPage && !currentUrl.isEmpty()) {
+            // Cancel external OAuth flow → go back to auth page cleanly
             webView.loadUrl("https://consistency-daily.vercel.app/auth.html");
         } else if (webView.canGoBack()) {
             webView.goBack();

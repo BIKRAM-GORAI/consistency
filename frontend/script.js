@@ -8976,7 +8976,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=33');
+        await navigator.serviceWorker.register('/sw.js?v=34');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;

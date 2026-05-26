@@ -2897,7 +2897,7 @@
     // Run the bouncing animation for 1.8 seconds
     setTimeout(() => {
       if (isAlreadyLoggedIn) {
-        window.location.replace('index.html');
+        window.location.replace('index.html' + window.location.search);
       } else {
         if (splashEl) {
           splashEl.classList.add('hide');

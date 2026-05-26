@@ -5947,14 +5947,14 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .push-banner-inner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
+  gap: 14px;
+  padding: 14px 18px;
 }
 
 .push-banner-icon {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: var(--purple);
   border-radius: 10px;
   display: flex;
@@ -5967,13 +5967,13 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 
 .push-banner-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #f5f5f5;
   text-transform: uppercase;
@@ -5984,9 +5984,9 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 .push-banner-body {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #aaa;
+  color: #b3b3b3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5994,8 +5994,8 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 .push-banner-close {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 6px;
