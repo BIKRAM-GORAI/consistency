@@ -1122,7 +1122,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
@@ -1137,89 +1137,124 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    // WebView and Native environment check
+    const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                        navigator.userAgent.includes("Capacitor") ||
+                        (window.location.protocol === 'file:' || window.location.hostname === 'localhost' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+
+    // Handle OAuth redirect result on page load
+    (async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          console.log("Redirect OAuth Successful:", result.user.email);
+          const providerName = result.credential ? result.credential.providerId.replace('.com', '') : 'google';
+          await processUserOAuth(result.user, providerName);
+        }
+      } catch (error) {
+        console.error('Redirect OAuth Error on load:', error);
+        handleOAuthError(error);
+      }
+    })();
+
     async function handleOAuthLogin(providerName) {
+      clearErrors();
       let provider;
       if (providerName === 'google') provider = new GoogleAuthProvider();
       else if (providerName === 'github') provider = new GithubAuthProvider();
       else if (providerName === 'facebook') provider = new FacebookAuthProvider();
 
       try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const idToken = await user.getIdToken();
-
-        // Send token to our backend for verification and account merge
-        const res = await fetch('/api/auth/oauth-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idToken,
-            email: user.email,
-            name: user.displayName || 'User',
-            uid: user.uid,
-            provider: providerName
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || 'Authentication failed');
-        }
-
-        // Store standard app credentials just like a normal login
-        localStorage.removeItem('adminToken'); // Security: Clear admin session
-        localStorage.setItem('userId', data._id);
-        localStorage.setItem('userName', data.name);
-        localStorage.setItem('userEmail', data.email);
-        localStorage.setItem('userProfilePicture', data.profilePicture || '');
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userUsername', data.username || '');
-        localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
-        localStorage.setItem('userHighestStreak', data.highestStreak || 0);
-
-        // Redirect to dashboard
-        window.location.replace('index.html');
-      } catch (error) {
-        console.error('OAuth Error:', error);
-        
-        let errorMessage = error.message;
-
-        // Handle the specific error when an account exists with a different provider
-        if (error.code === 'auth/account-exists-with-different-credential') {
-          try {
-            const pendingEmail = error.customData.email;
-            const methods = await fetchSignInMethodsForEmail(auth, pendingEmail);
-            
-            const providerMap = {
-              'google.com': 'Google',
-              'github.com': 'GitHub',
-              'facebook.com': 'Facebook',
-              'password': 'Email/Password'
-            };
-            
-            const existingProviders = methods.length > 0 
-              ? methods.map(m => providerMap[m] || m).join(' or ') 
-              : "your original provider (Google/Email)";
-              
-            // errorMessage = `An account already exists with this email. Please sign in using ${existingProviders} to link them.`;
-            errorMessage = `An account already exists with this email. Please sign in using original provider to link account`;
-          } catch(fetchErr) {
-            console.error('Failed to fetch sign in methods', fetchErr);
-            errorMessage = 'An account already exists with this email. Please sign in with your original provider.';
+        if (isNativeApp) {
+          // Bypasses popup window blocks inside native WebViews by triggering a redirect
+          console.log("Native app detected. Proceeding with Redirect Login for:", providerName);
+          await signInWithRedirect(auth, provider);
+        } else {
+          console.log("Standard browser detected. Proceeding with Popup Login for:", providerName);
+          const result = await signInWithPopup(auth, provider);
+          if (result && result.user) {
+            await processUserOAuth(result.user, providerName);
           }
         }
-        
-        // Show error visually
-        const activeForm = document.querySelector('.auth-form.active');
-        if (activeForm && activeForm.id === 'form-login') {
-          document.getElementById('login-error-msg').textContent = errorMessage;
-          document.getElementById('login-error').classList.add('visible');
-        } else if (activeForm && activeForm.id === 'form-register') {
-          document.getElementById('register-error-msg').textContent = errorMessage;
-          document.getElementById('register-error').classList.add('visible');
-        } else {
-          showError('login', 'OAuth Error: ' + errorMessage);
+      } catch (error) {
+        handleOAuthError(error);
+      }
+    }
+
+    async function processUserOAuth(user, providerName) {
+      const idToken = await user.getIdToken();
+
+      // Send token to our backend for verification and account merge
+      const res = await fetch('/api/auth/oauth-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idToken,
+          email: user.email,
+          name: user.displayName || 'User',
+          uid: user.uid,
+          provider: providerName
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Authentication failed');
+      }
+
+      // Store standard app credentials just like a normal login
+      localStorage.removeItem('adminToken'); // Security: Clear admin session
+      localStorage.setItem('userId', data._id);
+      localStorage.setItem('userName', data.name);
+      localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('userProfilePicture', data.profilePicture || '');
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userUsername', data.username || '');
+      localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
+      localStorage.setItem('userHighestStreak', data.highestStreak || 0);
+
+      // Redirect to dashboard
+      window.location.replace('index.html');
+    }
+
+    async function handleOAuthError(error) {
+      console.error('OAuth Error details:', error);
+      let errorMessage = error.message;
+
+      // Handle the specific error when an account exists with a different provider
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        try {
+          const pendingEmail = error.customData.email;
+          const methods = await fetchSignInMethodsForEmail(auth, pendingEmail);
+          
+          const providerMap = {
+            'google.com': 'Google',
+            'github.com': 'GitHub',
+            'facebook.com': 'Facebook',
+            'password': 'Email/Password'
+          };
+          
+          const existingProviders = methods.length > 0 
+            ? methods.map(m => providerMap[m] || m).join(' or ') 
+            : "your original provider (Google/Email)";
+            
+          errorMessage = `An account already exists with this email. Please sign in using original provider to link account`;
+        } catch(fetchErr) {
+          console.error('Failed to fetch sign in methods', fetchErr);
+          errorMessage = 'An account already exists with this email. Please sign in with your original provider.';
         }
+      }
+      
+      // Show error visually
+      const activeForm = document.querySelector('.auth-form.active');
+      if (activeForm && activeForm.id === 'form-login') {
+        document.getElementById('login-error-msg').textContent = errorMessage;
+        document.getElementById('login-error').classList.add('visible');
+      } else if (activeForm && activeForm.id === 'form-register') {
+        document.getElementById('register-error-msg').textContent = errorMessage;
+        document.getElementById('register-error').classList.add('visible');
+      } else {
+        showError('login', 'OAuth Error: ' + errorMessage);
       }
     }
 

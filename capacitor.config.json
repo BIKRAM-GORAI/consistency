@@ -1,0 +1,9 @@
+{
+  "appId": "com.consistency.daily",
+  "appName": "Consistency Daily",
+  "webDir": "frontend",
+  "server": {
+    "url": "https://consistency-daily.vercel.app",
+    "cleartext": true
+  }
+}

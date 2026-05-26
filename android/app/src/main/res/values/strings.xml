@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Consistency Daily</string>
+    <string name="title_activity_main">Consistency Daily</string>
+    <string name="package_name">com.consistency.daily</string>
+    <string name="custom_url_scheme">com.consistency.daily</string>
+</resources>
