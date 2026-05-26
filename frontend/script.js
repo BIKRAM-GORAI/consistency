@@ -320,13 +320,22 @@ function showToast(msg, type = 'info') {
 
 /** Slim push notification banner — used instead of showToast for foreground FCM messages */
 let _pushBannerTimer = null;
-function showPushBanner(title, body) {
+function showPushBanner(title, body, groupId) {
   const banner = document.getElementById('push-banner');
   if (!banner) return;
   const titleEl = document.getElementById('push-banner-title');
   const bodyEl  = document.getElementById('push-banner-body');
   if (titleEl) titleEl.textContent = title || 'New Message';
   if (bodyEl)  bodyEl.textContent  = body  || '';
+
+  if (groupId) {
+    banner.dataset.groupId = groupId;
+    banner.style.cursor = 'pointer';
+  } else {
+    delete banner.dataset.groupId;
+    banner.style.cursor = 'default';
+  }
+
   banner.classList.add('show');
   if (window.lucide) lucide.createIcons({ root: banner });
   clearTimeout(_pushBannerTimer);
@@ -337,6 +346,46 @@ function closePushBanner() {
   const banner = document.getElementById('push-banner');
   if (banner) banner.classList.remove('show');
   clearTimeout(_pushBannerTimer);
+}
+
+function handlePushBannerClick(event) {
+  if (event.target.closest('.push-banner-close')) {
+    return;
+  }
+  const banner = document.getElementById('push-banner');
+  if (banner && banner.dataset.groupId) {
+    const groupId = banner.dataset.groupId;
+    closePushBanner();
+    showPage('groups');
+    openGroupChatFromDeepLink(groupId);
+  }
+}
+
+async function openGroupChatFromDeepLink(groupId) {
+  let attempts = 0;
+  const maxAttempts = 25;
+  const interval = 200;
+
+  const checkAndOpen = () => {
+    const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups)
+      ? allJoinedGroups.find(g => String(g._id) === String(groupId))
+      : null;
+
+    if (group) {
+      openGroupChat(group._id, group.name, group.icon || '');
+      return true;
+    }
+    return false;
+  };
+
+  if (checkAndOpen()) return;
+
+  const timer = setInterval(() => {
+    attempts++;
+    if (checkAndOpen() || attempts >= maxAttempts) {
+      clearInterval(timer);
+    }
+  }, interval);
 }
 
 
@@ -8870,12 +8919,23 @@ async function initPushNotifications(forcePrompt = false) {
           const groupId = notification.data?.groupId;
           if (!activeId || activeId !== groupId) {
             // Show slim top banner instead of the intrusive full-screen toast
-            showPushBanner(notification.title, notification.body);
+            showPushBanner(notification.title, notification.body, groupId);
             // Also light up the Groups nav badge to give a persistent visual cue
             const gDot = document.getElementById('groups-notif-dot');
             const bDot = document.getElementById('bnav-groups-notif-dot');
             if (gDot) gDot.style.display = 'block';
             if (bDot) bDot.style.display = 'block';
+          }
+        });
+
+        // Action Performed Handler: handles background notifications clicks (system tray)
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('[Native FCM] Action performed on push:', action);
+          const groupId = action.notification?.data?.groupId;
+          if (groupId) {
+            // Navigate directly to the chat
+            showPage('groups');
+            openGroupChatFromDeepLink(groupId);
           }
         });
       } else {
@@ -8916,7 +8976,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=32');
+        await navigator.serviceWorker.register('/sw.js?v=33');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;

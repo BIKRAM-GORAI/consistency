@@ -1837,10 +1837,145 @@
     .faq-card:nth-child(5n+3) { background: #eff6ff; }
     .faq-card:nth-child(5n+4) { background: #fffbeb; }
     .faq-card:nth-child(5n+5) { background: #faf5ff; }
+
+    /* ============================================================
+       NEO-BRUTALIST WEB SPLASH SCREEN OVERLAY
+       ============================================================ */
+    .web-splash-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: #FFD60A; /* Brand Yellow */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 999999;
+      transition: transform 0.6s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.5s ease;
+      overflow: hidden;
+    }
+
+    .web-splash-overlay.hide {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .web-splash-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      text-align: center;
+    }
+
+    .web-splash-logo-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      background: #FFFFFF;
+      border: 4px solid #000000;
+      border-radius: 28px;
+      box-shadow: 8px 8px 0px #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: splashBounce 1.8s infinite ease-in-out;
+    }
+
+    .web-splash-logo {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+
+    .web-splash-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px;
+      font-weight: 900;
+      color: #000000;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      margin-top: 10px;
+      text-shadow: 3px 3px 0px #FFFFFF;
+      -webkit-text-stroke: 1px #000000;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: splashFadeUp 0.6s 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .web-splash-loader {
+      width: 160px;
+      height: 12px;
+      background: #FFFFFF;
+      border: 3px solid #000000;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 4px 4px 0px #000000;
+      margin-top: 8px;
+      opacity: 0;
+      animation: splashFadeIn 0.4s 0.4s ease forwards;
+    }
+
+    .web-splash-progress {
+      height: 100%;
+      width: 0%;
+      background: #FF3EA5; /* Neon Pink */
+      animation: splashProgress 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+
+    @keyframes splashBounce {
+      0%, 100% {
+        transform: translateY(0) scale(1);
+      }
+      25% {
+        transform: translateY(-16px) rotate(-4deg) scale(1.06);
+      }
+      50% {
+        transform: translateY(0) scale(0.97);
+      }
+      75% {
+        transform: translateY(-8px) rotate(4deg) scale(1.02);
+      }
+    }
+
+    @keyframes splashFadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes splashFadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes splashProgress {
+      to {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- ===== WEB SPLASH SCREEN ===== -->
+  <div id="web-splash" class="web-splash-overlay">
+    <div class="web-splash-content">
+      <div class="web-splash-logo-container">
+        <img src="icon-512.png" alt="Consistency Daily Logo" class="web-splash-logo" />
+      </div>
+      <h2 class="web-splash-title">Consistency Daily</h2>
+      <div class="web-splash-loader">
+        <div class="web-splash-progress"></div>
+      </div>
+    </div>
+  </div>
 
   <nav class="landing-nav">
     <div class="landing-nav-brand" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" style="cursor: pointer;">
@@ -2754,10 +2889,24 @@
     }
 
     document.getElementById('year').textContent = new Date().getFullYear();
-    // If already logged in, go straight to the app
-    if (localStorage.getItem('userId')) {
-      window.location.replace('index.html');
-    }
+
+    // ── Splash Screen Controller ──
+    const splashEl = document.getElementById('web-splash');
+    const isAlreadyLoggedIn = !!localStorage.getItem('userId');
+
+    // Run the bouncing animation for 1.8 seconds
+    setTimeout(() => {
+      if (isAlreadyLoggedIn) {
+        window.location.replace('index.html');
+      } else {
+        if (splashEl) {
+          splashEl.classList.add('hide');
+          setTimeout(() => {
+            splashEl.style.display = 'none';
+          }, 600); // Wait for CSS transition to complete
+        }
+      }
+    }, 1800); // 1.8 seconds
   </script>
   <script>
     function toggleFaq(header) {

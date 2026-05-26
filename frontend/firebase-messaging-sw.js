@@ -43,11 +43,15 @@ self.addEventListener('push', function(event) {
   }
 
   const title = data.notification?.title || 'Consistency Tracker';
+  const groupId = data.data?.groupId || '';
   const options = {
     body: data.notification?.body || 'Check your daily streak!',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    data: data.fcmOptions?.link || data.data?.link || data.notification?.click_action || '/'
+    data: {
+      url: data.fcmOptions?.link || data.data?.link || data.notification?.click_action || '/',
+      groupId: groupId
+    }
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -55,14 +59,24 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  const urlToOpen = event.notification.data || '/';
-  
+  const clickData = event.notification.data || {};
+  let urlToOpen = typeof clickData === 'string' ? clickData : (clickData.url || '/');
+  const groupId = clickData.groupId;
+
+  if (groupId) {
+    // Build redirect URL with openChat parameter
+    urlToOpen = `/?openChat=${encodeURIComponent(groupId)}`;
+  }
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there is already a window/tab open with the target URL
+      // Check if there is already a window/tab open
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
-        if (client.url.includes(urlToOpen) && 'focus' in client) {
+        if ('focus' in client) {
+          if (groupId) {
+            client.navigate(`/?openChat=${encodeURIComponent(groupId)}`);
+          }
           return client.focus();
         }
       }

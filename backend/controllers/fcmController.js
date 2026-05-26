@@ -2,6 +2,20 @@ const admin = require('../config/firebase');
 const User = require('../models/User');
 const Group = require('../models/Group');
 
+// Map to track the last time a notification was sent per group, and count of suppressed messages during cooldown
+const groupNotifCooldowns = new Map();
+const COOLDOWN_MS = 30000; // 30 seconds cooldown between push notifications per group
+
+// Background cleanup interval to prevent memory leaks (clean up stale group data older than 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [groupId, data] of groupNotifCooldowns.entries()) {
+    if (now - data.lastSentAt > 300000) { // 5 minutes
+      groupNotifCooldowns.delete(groupId);
+    }
+  }
+}, 60000); // check every 1 minute
+
 /**
  * Register an FCM token for the authenticated user
  * POST /api/fcm/token
@@ -99,6 +113,29 @@ exports.notifyGroupChat = async (req, res) => {
   try {
     const senderId = req.user.userId;
 
+    // Smart notification throttle check
+    const now = Date.now();
+    const cooldownData = groupNotifCooldowns.get(String(groupId));
+    if (cooldownData && (now - cooldownData.lastSentAt < COOLDOWN_MS)) {
+      cooldownData.pendingCount = (cooldownData.pendingCount || 0) + 1;
+      return res.json({ 
+        success: true, 
+        throttled: true, 
+        message: 'Notification throttled. Count incremented.' 
+      });
+    }
+
+    // Set/reset cooldown tracking for subsequent messages
+    let pendingCount = 0;
+    if (cooldownData) {
+      pendingCount = cooldownData.pendingCount || 0;
+    }
+    
+    groupNotifCooldowns.set(String(groupId), {
+      lastSentAt: now,
+      pendingCount: 0
+    });
+
     // 1. Fetch group to verify existence and membership
     const group = await Group.findById(groupId);
     if (!group) {
@@ -144,6 +181,11 @@ exports.notifyGroupChat = async (req, res) => {
       }
     } else {
       bodyText = text || '';
+    }
+
+    // Add pending/throttled message count if any existed
+    if (pendingCount > 0) {
+      bodyText += ` (and ${pendingCount} other message${pendingCount > 1 ? 's' : ''})`;
     }
 
     // 5. Build FCM Multicast Payload with collapseKey
