@@ -6036,6 +6036,11 @@ body.native-android #modal-group-chat .modal-header {
   min-height: 68px !important;
 }
 
+body.native-android #video-call-header {
+  padding-top: 28px !important; /* Pushes the video call header content below the camera notch/status bar */
+  min-height: 78px !important; /* 50px normal height + 28px padding */
+}
+
 body.native-android .push-notif-banner.show {
   top: 90px !important; /* Clears the taller 82px native-android navbar */
 }

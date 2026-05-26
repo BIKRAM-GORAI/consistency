@@ -79,10 +79,10 @@
         <!-- PWA Card -->
         <div style="background: #fff; border: 3px solid var(--black); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;">
           <div>
-            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--black);">
               🛜 Web App (PWA)
             </h3>
-            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: #444; display: flex; flex-direction: column; gap: 6px;">
+            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: #111; display: flex; flex-direction: column; gap: 6px;">
               <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> Instant setup (under 1MB)</li>
               <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> Safe &amp; silent background updates</li>
               <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> No dangerous security warnings</li>
@@ -97,10 +97,10 @@
         <!-- APK Card -->
         <div style="background: #fff; border: 3px solid var(--black); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;">
           <div>
-            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--black);">
               📲 Native Android (APK)
             </h3>
-            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: #444; display: flex; flex-direction: column; gap: 6px;">
+            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: #111; display: flex; flex-direction: column; gap: 6px;">
               <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> 100% stable background notifications</li>
               <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> Native speed &amp; fluid animations</li>
               <li style="display: flex; align-items: center; gap: 4px;"><span style="color:var(--teal);">✔</span> High priority system chime alert</li>
@@ -1574,7 +1574,7 @@
 
   <!-- ===== MODAL: Jitsi Video Call (Full Screen Overlay) ===== -->
   <div id="modal-video-call" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #000; z-index: 10002; flex-direction: column; overflow: hidden;">
-    <div style="background: #111; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #333; flex-shrink: 0; min-height: 60px;">
+    <div id="video-call-header" style="background: #111; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #333; flex-shrink: 0; min-height: 60px;">
       <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
         <i data-lucide="video" style="width: 18px; height: 18px; color: var(--purple); flex-shrink: 0;"></i>
         <h2 id="video-call-title" style="font-size: 14px; margin: 0; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Group Video Session</h2>
