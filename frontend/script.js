@@ -7013,9 +7013,13 @@ function showUpdateModal(latestVersion, apkUrl, forceUpdate, releaseNotes) {
   overlay.style.zIndex = '100000';
   overlay.style.backdropFilter = 'blur(10px)';
   overlay.style.background = 'rgba(10, 10, 10, 0.85)';
+  overlay.style.overflowY = 'auto';
+  overlay.style.alignItems = 'flex-start';
+  overlay.style.justifyContent = 'center';
+  overlay.style.padding = '20px 16px 40px 16px';
 
   const modalHtml = `
-    <div class="modal" style="max-width: 450px; text-align: center; padding: 36px 24px; background: var(--yellow); border: 4px solid var(--black); border-radius: 12px; box-shadow: 10px 10px 0 var(--black); margin: auto 16px; box-sizing: border-box;" onclick="event.stopPropagation()">
+    <div class="modal" style="width: 100%; max-width: 450px; text-align: center; padding: 36px 24px; background: var(--yellow); border: 4px solid var(--black); border-radius: 12px; box-shadow: 10px 10px 0 var(--black); margin: auto; max-height: none; box-sizing: border-box; position: relative;" onclick="event.stopPropagation()">
       <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900; margin-bottom: 12px; text-transform: uppercase; color: var(--black); display: flex; align-items: center; justify-content: center; gap: 8px;">
         🚀 Update Available
       </h2>
