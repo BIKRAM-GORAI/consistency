@@ -1959,6 +1959,15 @@
         width: 100%;
       }
     }
+
+    /* Android Native Status Bar Notch Padding Overrides */
+    body.native-android .landing-nav {
+      padding-top: calc(env(safe-area-inset-top, 0px) + 28px) !important;
+      height: calc(72px + env(safe-area-inset-top, 0px) + 28px) !important;
+    }
+    body.native-android .landing-wrap {
+      padding-top: calc(120px + env(safe-area-inset-top, 0px) + 28px) !important;
+    }
   </style>
 </head>
 
@@ -2888,7 +2897,12 @@
       installBtn.style.display = 'none';
     }
 
-    document.getElementById('year').textContent = new Date().getFullYear();
+    // Detect if running inside Capacitor Android native wrapper
+    const isAndroidNative = (window.Capacitor && window.Capacitor.getPlatform() === 'android') || 
+                            (navigator.userAgent.includes("Capacitor") && navigator.userAgent.toLowerCase().includes("android"));
+    if (isAndroidNative) {
+      document.body.classList.add('native-android');
+    }
 
     // ── Splash Screen Controller ──
     const splashEl = document.getElementById('web-splash');

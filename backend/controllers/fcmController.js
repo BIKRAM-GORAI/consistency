@@ -41,7 +41,7 @@ async function sendMulticastPush(group, bodyText, tokens, isSilent) {
     android: {
       priority: isSilent ? 'normal' : 'high',
       notification: {
-        channelId: isSilent ? 'default' : 'custom_sound_channel'
+        channelId: isSilent ? 'default' : 'consistency_chime_channel_v1'
       }
     },
     webpush: {
@@ -49,14 +49,14 @@ async function sendMulticastPush(group, bodyText, tokens, isSilent) {
         Urgency: isSilent ? 'normal' : 'high'
       },
       fcmOptions: {
-        link: `/?openChat=${group._id}`
+        link: `/?openChat=${group._id}&t=${Date.now()}`
       }
     },
     collapseKey: `chat_${group._id}`
   };
 
   if (!isSilent) {
-    payload.android.notification.sound = 'consistency_ping';
+    payload.android.notification.sound = 'notificationsound';
   } else {
     // Specifically disable default sound and vibration on Android for silent stack
     payload.android.notification.defaultSound = false;

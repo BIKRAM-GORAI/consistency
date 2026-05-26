@@ -4,6 +4,13 @@
    Groups feature · Mobile-optimised
    ============================================================ */
 
+// Detect if running inside Capacitor Android native wrapper
+const isAndroidNative = (window.Capacitor && window.Capacitor.getPlatform() === 'android') || 
+                        (navigator.userAgent.includes("Capacitor") && navigator.userAgent.toLowerCase().includes("android"));
+if (isAndroidNative) {
+  document.body.classList.add('native-android');
+}
+
 const API = '';  // Same origin
 
 // ── Security Helpers ──────────────────────────────────────
@@ -363,7 +370,7 @@ function handlePushBannerClick(event) {
 
 async function openGroupChatFromDeepLink(groupId) {
   let attempts = 0;
-  const maxAttempts = 25;
+  const maxAttempts = 75; // 15 seconds max polling (75 * 200ms)
   const interval = 200;
 
   const checkAndOpen = () => {
@@ -10561,7 +10568,22 @@ if (document.readyState === 'loading') {
 setTimeout(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const openChatGroupId = urlParams.get('openChat');
+  const deepLinkTimeId = urlParams.get('t');
+  
   if (openChatGroupId) {
+    // If there is a unique timestamp token, ensure it has not been consumed yet (prevents WebView session restore duplicates)
+    if (deepLinkTimeId) {
+      const alreadyConsumed = localStorage.getItem('deeplink_consumed_' + deepLinkTimeId);
+      if (alreadyConsumed) {
+        console.log('[Startup Deep-Link] Deep-link token ' + deepLinkTimeId + ' already consumed. Suppressing duplicate modal trigger.');
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        return;
+      }
+      // Consume the deep-link token
+      localStorage.setItem('deeplink_consumed_' + deepLinkTimeId, 'true');
+    }
+
     console.log('[Startup Deep-Link] Detected openChat parameter after startup delay:', openChatGroupId);
     
     // Switch to groups page instantly so groups list is loaded

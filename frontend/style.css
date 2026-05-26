@@ -6013,3 +6013,38 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   color: #fff;
 }
 
+
+/* ============================================================
+   HYBRID MOBILE SAFE AREA LAYOUT (CAPACITOR STATUS BAR & NOTCH OVERLAPS)
+   ============================================================ */
+@media (max-width: 1024px) {
+  /* Push navbar down safely below the Android/iOS status bar and notch */
+  .navbar {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    height: calc(72px + env(safe-area-inset-top, 0px)) !important;
+  }
+  
+  /* Lower page content down accordingly so it isn't hidden under the safe-area navbar */
+  .page {
+    margin-top: calc(72px + env(safe-area-inset-top, 0px)) !important;
+    min-height: calc(100vh - 72px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Adjust bottom nav margins or heights if needed for safe areas */
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* Android Native Status Bar Notch Padding Overrides */
+body.native-android .navbar {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 28px) !important;
+  height: calc(72px + env(safe-area-inset-top, 0px) + 28px) !important;
+}
+body.native-android .page {
+  margin-top: calc(72px + env(safe-area-inset-top, 0px) + 28px) !important;
+  min-height: calc(100vh - 72px - env(safe-area-inset-top, 0px) - 28px - env(safe-area-inset-bottom, 0px)) !important;
+}
+
+

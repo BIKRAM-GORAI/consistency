@@ -65,7 +65,7 @@ self.addEventListener('notificationclick', function(event) {
 
   if (groupId) {
     // Build redirect URL with openChat parameter
-    urlToOpen = `/?openChat=${encodeURIComponent(groupId)}`;
+    urlToOpen = `/?openChat=${encodeURIComponent(groupId)}&t=${Date.now()}`;
   }
 
   event.waitUntil(
@@ -75,7 +75,7 @@ self.addEventListener('notificationclick', function(event) {
         const client = windowClients[i];
         if ('focus' in client) {
           if (groupId) {
-            client.navigate(`/?openChat=${encodeURIComponent(groupId)}`);
+            client.navigate(`/?openChat=${encodeURIComponent(groupId)}&t=${Date.now()}`);
           }
           return client.focus();
         }
