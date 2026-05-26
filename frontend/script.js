@@ -5,8 +5,7 @@
    ============================================================ */
 
 // Detect if running inside Capacitor Android native wrapper
-const isAndroidNative = (window.Capacitor && window.Capacitor.getPlatform() === 'android') || 
-                        (navigator.userAgent.includes("Capacitor") && navigator.userAgent.toLowerCase().includes("android"));
+const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
 if (isAndroidNative) {
   document.body.classList.add('native-android');
 }
@@ -8990,6 +8989,24 @@ async function initPushNotifications(forcePrompt = false) {
             body: JSON.stringify({ token })
           });
           showToast('Push notifications enabled! \u2705', 'success');
+
+          // Register foreground message listener for PWA/Web
+          if (window.onFcmMessage && window.firebaseMessaging) {
+            window.onFcmMessage(window.firebaseMessaging, (payload) => {
+              console.log('[PWA FCM] Foreground push received:', payload);
+              const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
+              const groupId = payload.data?.groupId;
+              if (!activeId || activeId !== groupId) {
+                showPushBanner(payload.notification?.title || 'New Message', payload.notification?.body || '', groupId);
+                
+                // Show notification dots on groups tab
+                const gDot = document.getElementById('groups-notif-dot');
+                const bDot = document.getElementById('bnav-groups-notif-dot');
+                if (gDot) gDot.style.display = 'block';
+                if (bDot) bDot.style.display = 'block';
+              }
+            });
+          }
         } else {
           console.warn('[FCM] getToken() returned null — push subscription may have failed');
           showToast('Notification setup incomplete. Try toggling Off then On again.', 'info');

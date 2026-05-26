@@ -1962,11 +1962,11 @@
 
     /* Android Native Status Bar Notch Padding Overrides */
     body.native-android .landing-nav {
-      padding-top: calc(env(safe-area-inset-top, 0px) + 28px) !important;
-      height: calc(72px + env(safe-area-inset-top, 0px) + 28px) !important;
+      padding-top: 24px !important;
+      height: 96px !important; /* 72px base mobile height + 24px status bar padding */
     }
     body.native-android .landing-wrap {
-      padding-top: calc(120px + env(safe-area-inset-top, 0px) + 28px) !important;
+      padding-top: 144px !important; /* 120px base padding + 24px status bar offset */
     }
   </style>
 </head>
@@ -2898,8 +2898,7 @@
     }
 
     // Detect if running inside Capacitor Android native wrapper
-    const isAndroidNative = (window.Capacitor && window.Capacitor.getPlatform() === 'android') || 
-                            (navigator.userAgent.includes("Capacitor") && navigator.userAgent.toLowerCase().includes("android"));
+    const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
     if (isAndroidNative) {
       document.body.classList.add('native-android');
     }

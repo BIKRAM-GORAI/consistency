@@ -110,9 +110,12 @@
       <button class="nav-btn" id="btn-goals" onclick="showPage('goals')">
         <span><i data-lucide="target"></i></span><span class="btn-text"> Goals</span>
       </button>
-      <button class="nav-btn" id="btn-groups" onclick="showPage('groups')" style="position:relative;">
-        <span><i data-lucide="users"></i></span><span class="btn-text"> Groups</span>
-        <span class="notif-dot" id="groups-notif-dot" style="display:none;"></span>
+      <button class="nav-btn" id="btn-groups" onclick="showPage('groups')">
+        <span style="position:relative; display:inline-flex;">
+          <i data-lucide="users"></i>
+          <span class="notif-dot" id="groups-notif-dot" style="display:none; top:-3px; right:-3px; border-color:var(--yellow);"></span>
+        </span>
+        <span class="btn-text"> Groups</span>
       </button>
       <button class="nav-btn" id="btn-achievements" onclick="showPage('achievements')">
         <span><i data-lucide="trophy"></i></span><span class="btn-text"> Wins</span>
@@ -709,10 +712,12 @@
       <span class="bnav-icon"><i data-lucide="target"></i></span>
       <span>Goals</span>
     </button>
-    <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')" style="position:relative;">
-      <span class="bnav-icon"><i data-lucide="users"></i></span>
+    <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')">
+      <span class="bnav-icon" style="position:relative; display:inline-flex;">
+        <i data-lucide="users"></i>
+        <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none; top:-3px; right:-3px; border-color:#fff;"></span>
+      </span>
       <span>Groups</span>
-      <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none;"></span>
     </button>
     <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
       <span class="bnav-icon"><i data-lucide="trophy"></i></span>
@@ -1446,7 +1451,7 @@
     import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
     import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
     import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
-    import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
+    import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
@@ -1486,6 +1491,7 @@
       try {
         window.firebaseMessaging = getMessaging(app);
         window.getFcmToken = getToken;
+        window.onFcmMessage = onMessage;
         console.log("✅ FCM Messaging initialized successfully");
       } catch (err) {
         console.warn("⚠️ FCM Messaging initialization caught error (e.g. Incognito or blocked service worker):", err);
