@@ -1,6 +1,6 @@
 {
   "latestVersion": "1.0",
-  "apkUrl": "https://github.com/BIKRAM-GORAI/consistency/releases/latest/download/Consistency.Daily.apk",
+  "apkUrl": "https://consistency-daily.vercel.app/Consistency.Daily.apk",
   "forceUpdate": false,
   "releaseNotes": "Initial release with adaptive icons, custom chime notifications, and full-screen layout enhancements."
 }
