@@ -101,7 +101,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || url.pathname.includes('/api/')) return;
   
   // Skip Jitsi Meet - let the browser handle its own CSP and network
-  if (url.hostname.includes('jitsi.belnet.be')) return;
+  if (url.hostname.includes('jitsi.belnet.be') || url.hostname.includes('meet.ffmuc.net')) return;
 
   // Only core code assets (HTML, main JS, CSS) should run in Network-First to ensure instant updates
   const isCoreCodeAsset = url.pathname === '/' || 

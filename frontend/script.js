@@ -7975,7 +7975,7 @@ async function startGroupVideoCall() {
     `;
     container.innerHTML = loaderHtml;
     
-    const domain = 'jitsi.belnet.be';
+    const domain = 'meet.ffmuc.net';
     const options = {
       roomName: roomId,
       width: '100%',
