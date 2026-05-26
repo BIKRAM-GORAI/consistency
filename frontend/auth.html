@@ -1205,8 +1205,17 @@
         // Forces Google's OAuth flow to always present the account chooser page, enabling easy account switching
         provider.setCustomParameters({ prompt: 'select_account' });
       }
-      else if (providerName === 'github') provider = new GithubAuthProvider();
-      else if (providerName === 'facebook') provider = new FacebookAuthProvider();
+      else if (providerName === 'github') {
+        provider = new GithubAuthProvider();
+        // Forces GitHub's OAuth flow to always show the login page even if a session exists,
+        // preventing silent auto-sign-in with wrong/cached accounts.
+        provider.setCustomParameters({ allow_signup: 'false' });
+      }
+      else if (providerName === 'facebook') {
+        provider = new FacebookAuthProvider();
+        // Forces Facebook to show the account chooser dialog instead of auto-logging in
+        provider.setCustomParameters({ auth_type: 'rerequest' });
+      }
 
       try {
         if (isNativeApp) {

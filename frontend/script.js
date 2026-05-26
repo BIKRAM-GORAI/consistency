@@ -318,6 +318,28 @@ function showToast(msg, type = 'info') {
   showToast._timer = setTimeout(() => toast.classList.remove('show'), 3200);
 }
 
+/** Slim push notification banner — used instead of showToast for foreground FCM messages */
+let _pushBannerTimer = null;
+function showPushBanner(title, body) {
+  const banner = document.getElementById('push-banner');
+  if (!banner) return;
+  const titleEl = document.getElementById('push-banner-title');
+  const bodyEl  = document.getElementById('push-banner-body');
+  if (titleEl) titleEl.textContent = title || 'New Message';
+  if (bodyEl)  bodyEl.textContent  = body  || '';
+  banner.classList.add('show');
+  if (window.lucide) lucide.createIcons({ root: banner });
+  clearTimeout(_pushBannerTimer);
+  _pushBannerTimer = setTimeout(() => closePushBanner(), 5500);
+}
+
+function closePushBanner() {
+  const banner = document.getElementById('push-banner');
+  if (banner) banner.classList.remove('show');
+  clearTimeout(_pushBannerTimer);
+}
+
+
 function daysLeft(deadlineStr) {
   const today = new Date(); today.setHours(0,0,0,0);
   const dl = new Date(deadlineStr); dl.setHours(0,0,0,0);
@@ -401,7 +423,14 @@ function showPage(page) {
   if (bnavBtn) bnavBtn.classList.add('active');
 
   if (page === 'goals')        loadGoals();
-  if (page === 'groups')       loadGroups();
+  if (page === 'groups') {
+    loadGroups();
+    // Clear notification dots when user navigates to Groups
+    const gDot = document.getElementById('groups-notif-dot');
+    const bDot = document.getElementById('bnav-groups-notif-dot');
+    if (gDot) gDot.style.display = 'none';
+    if (bDot) bDot.style.display = 'none';
+  }
   if (page === 'achievements') loadAchievements();
   if (page === 'leaderboard')  loadLeaderboard(true);
 }
@@ -8834,13 +8863,19 @@ async function initPushNotifications(forcePrompt = false) {
           showToast('Failed to register native push channel.', 'error');
         });
 
-        // Foreground Push Handler: shows clean in-app toasts when messages arrive in other rooms
+        // Foreground Push Handler: shows premium slim banner when messages arrive in other rooms
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('[Native FCM] Foreground push received:', notification);
           const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
           const groupId = notification.data?.groupId;
           if (!activeId || activeId !== groupId) {
-            showToast(`${notification.title}: ${notification.body}`, 'info');
+            // Show slim top banner instead of the intrusive full-screen toast
+            showPushBanner(notification.title, notification.body);
+            // Also light up the Groups nav badge to give a persistent visual cue
+            const gDot = document.getElementById('groups-notif-dot');
+            const bDot = document.getElementById('bnav-groups-notif-dot');
+            if (gDot) gDot.style.display = 'block';
+            if (bDot) bDot.style.display = 'block';
           }
         });
       } else {
@@ -8881,7 +8916,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=31');
+        await navigator.serviceWorker.register('/sw.js?v=32');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;

@@ -5885,3 +5885,131 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 
 
+/* ============================================================
+   PUSH NOTIFICATION BANNER (foreground – replaces intrusive toast)
+   ============================================================ */
+
+/* Notification dot badge on Groups button */
+.notif-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  background: var(--red);
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+  animation: notif-pulse 1.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes notif-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.35); opacity: 0.75; }
+}
+
+/* Slim slide-down banner */
+.push-notif-banner {
+  position: fixed;
+  top: -80px;               /* hidden off-screen initially */
+  right: 16px;
+  z-index: 10001;
+  max-width: 340px;
+  width: calc(100vw - 32px);
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
+  transition: top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.push-notif-banner.show {
+  top: 72px;        /* clears the navbar */
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* On mobile: center it below the navbar */
+@media (max-width: 768px) {
+  .push-notif-banner {
+    right: 8px;
+    width: calc(100vw - 16px);
+    max-width: 100%;
+  }
+  .push-notif-banner.show {
+    top: 66px;
+  }
+}
+
+.push-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.push-banner-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: var(--purple);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.push-banner-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.push-banner-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.push-banner-body {
+  font-size: 12px;
+  font-weight: 500;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.push-banner-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  padding: 0;
+}
+
+.push-banner-close:hover {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+}
+

@@ -50,7 +50,7 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=18" />
+  <link rel="stylesheet" href="style.css?v=19" />
   <script src="libs/gsap.min.js"></script>
   <script src="libs/ScrollTrigger.min.js"></script>
   <script src="libs/dexie.js"></script>
@@ -78,6 +78,19 @@
   </div>
 
   <!-- ===== NAVIGATION ===== -->
+
+  <!-- ===== PUSH NOTIFICATION BANNER (foreground) ===== -->
+  <div id="push-banner" class="push-notif-banner" role="alert" aria-live="polite">
+    <div class="push-banner-inner">
+      <span class="push-banner-icon" id="push-banner-icon"><i data-lucide="bell" style="width:16px;height:16px;"></i></span>
+      <div class="push-banner-text">
+        <span class="push-banner-title" id="push-banner-title"></span>
+        <span class="push-banner-body" id="push-banner-body"></span>
+      </div>
+      <button class="push-banner-close" onclick="closePushBanner()" title="Dismiss"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+    </div>
+  </div>
+
   <nav class="navbar" id="navbar">
     <div class="nav-brand">
       <span class="brand-icon" style="font-size: 26px; color: var(--black); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);"><i data-lucide="zap" class="no-theme"></i></span>
@@ -97,8 +110,9 @@
       <button class="nav-btn" id="btn-goals" onclick="showPage('goals')">
         <span><i data-lucide="target"></i></span><span class="btn-text"> Goals</span>
       </button>
-      <button class="nav-btn" id="btn-groups" onclick="showPage('groups')">
+      <button class="nav-btn" id="btn-groups" onclick="showPage('groups')" style="position:relative;">
         <span><i data-lucide="users"></i></span><span class="btn-text"> Groups</span>
+        <span class="notif-dot" id="groups-notif-dot" style="display:none;"></span>
       </button>
       <button class="nav-btn" id="btn-achievements" onclick="showPage('achievements')">
         <span><i data-lucide="trophy"></i></span><span class="btn-text"> Wins</span>
@@ -695,9 +709,10 @@
       <span class="bnav-icon"><i data-lucide="target"></i></span>
       <span>Goals</span>
     </button>
-    <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')">
+    <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')" style="position:relative;">
       <span class="bnav-icon"><i data-lucide="users"></i></span>
       <span>Groups</span>
+      <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none;"></span>
     </button>
     <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
       <span class="bnav-icon"><i data-lucide="trophy"></i></span>
@@ -1563,7 +1578,7 @@
     </style>
   </div>
 
-  <script src="script.js?v=33"></script>
+  <script src="script.js?v=34"></script>
   <script>
     lucide.createIcons();
   </script>
