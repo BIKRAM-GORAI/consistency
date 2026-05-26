@@ -53,7 +53,11 @@ function logout() {
       body: JSON.stringify({ token })
     }).catch(err => console.warn('FCM unregister failed on logout:', err));
   }
+  const fcmDisabled = localStorage.getItem('fcmNotificationsDisabled');
   localStorage.clear();
+  if (fcmDisabled !== null) {
+    localStorage.setItem('fcmNotificationsDisabled', fcmDisabled);
+  }
   if (window.localDb) {
     window.localDb.delete().then(() => {
       window.location.replace('landing.html');
@@ -8787,6 +8791,13 @@ async function initFirebaseChat() {
 }
 
 async function initPushNotifications(forcePrompt = false) {
+  const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
+  if (manuallyDisabled && !forcePrompt) {
+    console.log('[FCM] Push notifications are manually disabled. Skipping automatic initialization.');
+    renderFcmBannerState();
+    return;
+  }
+
   const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
                       navigator.userAgent.includes("Capacitor");
 
@@ -8821,6 +8832,16 @@ async function initPushNotifications(forcePrompt = false) {
         PushNotifications.addListener('registrationError', (error) => {
           console.error('[Native FCM] Registration Error:', error);
           showToast('Failed to register native push channel.', 'error');
+        });
+
+        // Foreground Push Handler: shows clean in-app toasts when messages arrive in other rooms
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('[Native FCM] Foreground push received:', notification);
+          const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
+          const groupId = notification.data?.groupId;
+          if (!activeId || activeId !== groupId) {
+            showToast(`${notification.title}: ${notification.body}`, 'info');
+          }
         });
       } else {
         localStorage.setItem('fcmNotificationsDisabled', 'true');

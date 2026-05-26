@@ -1167,6 +1167,15 @@
       }
     }
 
+    // Handles hardware back-button / back-forward cache scenario to clear loading overlay on back navigation
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        console.log('[OAuth] Page loaded from back-forward cache. Resetting loading overlay.');
+        sessionStorage.removeItem('pending_oauth_redirect');
+        if (overlay) overlay.style.display = 'none';
+      }
+    });
+
     // Handle OAuth redirect result on page load
     (async () => {
       try {
@@ -1204,10 +1213,15 @@
           // Bypasses popup window blocks inside native WebViews by triggering a redirect
           console.log("Native app detected. Proceeding with Redirect Login for:", providerName);
           sessionStorage.setItem('pending_oauth_redirect', 'true');
+          
+          let displayName = 'Google';
+          if (providerName === 'github') displayName = 'GitHub';
+          else if (providerName === 'facebook') displayName = 'Facebook';
+
           if (overlay) {
             overlay.style.display = 'flex';
             document.getElementById('oauth-loading-title').textContent = "Redirecting...";
-            document.getElementById('oauth-loading-sub').textContent = `Opening Google Sign-In secure channel...`;
+            document.getElementById('oauth-loading-sub').textContent = `Opening ${displayName} Sign-In secure channel...`;
           }
           await signInWithRedirect(auth, provider);
         } else {

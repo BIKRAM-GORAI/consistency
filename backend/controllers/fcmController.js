@@ -155,7 +155,17 @@ exports.notifyGroupChat = async (req, res) => {
       data: {
         groupId: String(groupId)
       },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'default',
+          sound: 'default'
+        }
+      },
       webpush: {
+        headers: {
+          Urgency: 'high'
+        },
         fcmOptions: {
           link: `/?openChat=${groupId}`
         }
@@ -168,6 +178,7 @@ exports.notifyGroupChat = async (req, res) => {
       tokens,
       notification: payload.notification,
       data: payload.data,
+      android: payload.android,
       webpush: payload.webpush,
       collapseKey: payload.collapseKey
     });

@@ -7,7 +7,11 @@
     "allowNavigation": [
       "consistency-daily.vercel.app",
       "*.firebaseapp.com",
-      "accounts.google.com"
+      "accounts.google.com",
+      "github.com",
+      "*.github.com",
+      "facebook.com",
+      "*.facebook.com"
     ],
     "cleartext": true
   }

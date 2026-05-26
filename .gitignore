@@ -24,3 +24,4 @@ build/
 
 # Dev Log
 dev_changes.md
+.vercel
