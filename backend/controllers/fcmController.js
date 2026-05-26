@@ -41,7 +41,7 @@ async function sendMulticastPush(group, bodyText, tokens, isSilent) {
     android: {
       priority: isSilent ? 'normal' : 'high',
       notification: {
-        channelId: 'default'
+        channelId: isSilent ? 'default' : 'custom_sound_channel'
       }
     },
     webpush: {
@@ -56,7 +56,7 @@ async function sendMulticastPush(group, bodyText, tokens, isSilent) {
   };
 
   if (!isSilent) {
-    payload.android.notification.sound = 'default';
+    payload.android.notification.sound = 'consistency_ping';
   } else {
     // Specifically disable default sound and vibration on Android for silent stack
     payload.android.notification.defaultSound = false;

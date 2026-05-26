@@ -8964,7 +8964,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=34');
+        await navigator.serviceWorker.register('/sw.js?v=35');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
@@ -10558,11 +10558,11 @@ if (document.readyState === 'loading') {
 }
 
 // ── TOP-LEVEL STARTUP DEEP-LINK CHECK ──
-(function() {
+setTimeout(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const openChatGroupId = urlParams.get('openChat');
   if (openChatGroupId) {
-    console.log('[Startup Deep-Link] Detected openChat parameter:', openChatGroupId);
+    console.log('[Startup Deep-Link] Detected openChat parameter after startup delay:', openChatGroupId);
     
     // Switch to groups page instantly so groups list is loaded
     showPage('groups');
@@ -10574,4 +10574,4 @@ if (document.readyState === 'loading') {
     const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.pushState({ path: newUrl }, '', newUrl);
   }
-})();
+}, 800); // 800ms delay to let Dexie DB and Auth fully initialize
