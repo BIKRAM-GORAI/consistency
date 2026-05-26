@@ -6766,7 +6766,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=30');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=31');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -8787,6 +8787,51 @@ async function initFirebaseChat() {
 }
 
 async function initPushNotifications(forcePrompt = false) {
+  const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                      navigator.userAgent.includes("Capacitor");
+
+  if (isNativeApp) {
+    const PushNotifications = window.Capacitor?.Plugins?.PushNotifications;
+    if (!PushNotifications) {
+      console.warn('Capacitor PushNotifications plugin is not available.');
+      return;
+    }
+
+    try {
+      let permStatus = await PushNotifications.requestPermissions();
+      if (permStatus.receive === 'granted') {
+        await PushNotifications.register();
+
+        PushNotifications.addListener('registration', async (token) => {
+          const fcmToken = token.value;
+          if (fcmToken) {
+            localStorage.setItem('fcmToken', fcmToken);
+            console.log('[Native FCM] Token registered:', fcmToken);
+            
+            // Register with backend to self-heal
+            await apiFetch(`${API}/api/fcm/token`, {
+              method: 'POST',
+              body: JSON.stringify({ token: fcmToken })
+            });
+            showToast('Push notifications enabled! ✅', 'success');
+            renderFcmBannerState();
+          }
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+          console.error('[Native FCM] Registration Error:', error);
+          showToast('Failed to register native push channel.', 'error');
+        });
+      } else {
+        localStorage.setItem('fcmNotificationsDisabled', 'true');
+        renderFcmBannerState();
+      }
+    } catch (err) {
+      console.error('Native Push setup failed:', err);
+    }
+    return;
+  }
+
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.warn('Notifications not supported in this browser.');
     return;
@@ -8815,7 +8860,7 @@ async function initPushNotifications(forcePrompt = false) {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=30');
+        await navigator.serviceWorker.register('/sw.js?v=31');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
@@ -8852,29 +8897,48 @@ function renderFcmBannerState() {
   const banner = document.getElementById('fcm-permission-banner');
   if (!banner) return;
 
+  const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                      navigator.userAgent.includes("Capacitor");
+
   const titleEl = document.getElementById('fcm-banner-title');
   const descEl = document.getElementById('fcm-banner-desc');
   const btnEl = document.getElementById('fcm-banner-btn');
   const iconWrap = document.getElementById('fcm-banner-icon-wrap');
 
-  if (!('Notification' in window)) {
+  // WebView might not have window.Notification, but native APK supports pushes natively!
+  if (!isNativeApp && !('Notification' in window)) {
     banner.style.display = 'none';
     return;
   }
 
   banner.style.display = 'flex';
-  const permission = Notification.permission;
+  
+  // Resolve permission dynamically
+  let permission = 'default';
+  if (isNativeApp) {
+    permission = localStorage.getItem('fcmToken') ? 'granted' : 'default';
+    if (localStorage.getItem('fcmNotificationsDisabled') === 'true') {
+      permission = 'granted';
+    }
+  } else {
+    permission = Notification.permission;
+  }
+
   const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
 
   if (permission === 'default') {
     iconWrap.style.background = 'var(--yellow)';
     iconWrap.innerHTML = '<i data-lucide="bell" style="width: 20px; height: 20px; color: var(--black);"></i>';
     titleEl.textContent = 'Notifications: Off';
-    descEl.textContent = 'Notification access is required to receive real-time notifications.';
+    descEl.textContent = isNativeApp 
+      ? 'Enable high-priority native notifications for direct chat alerts.'
+      : 'Notification access is required to receive real-time notifications.';
     btnEl.style.display = 'block';
     btnEl.textContent = 'Turn On';
     btnEl.onclick = async () => {
-      const perm = await Notification.requestPermission();
+      if (!isNativeApp) {
+        await Notification.requestPermission();
+      }
       localStorage.removeItem('fcmNotificationsDisabled');
       initPushNotifications(true);
     };

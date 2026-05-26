@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v30';
+const CACHE_NAME = 'consistency-cache-v31';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -103,20 +103,15 @@ self.addEventListener('fetch', (event) => {
   // Skip Jitsi Meet - let the browser handle its own CSP and network
   if (url.hostname.includes('jitsi.belnet.be')) return;
 
-  // Check if it's a core asset or a common static file extension
-  const isCoreAsset = STATIC_ASSETS.includes(url.pathname) || 
-                     url.pathname === '/' || 
-                     url.pathname.endsWith('.js') || 
-                     url.pathname.endsWith('.css') || 
-                     url.pathname.endsWith('.png') || 
-                     url.pathname.endsWith('.jpg') || 
-                     url.pathname.endsWith('.jpeg') || 
-                     url.pathname.endsWith('.svg') || 
-                     url.pathname.endsWith('.woff2') || 
-                     url.pathname.endsWith('.ttf') || 
-                     url.pathname.endsWith('.html');
+  // Only core code assets (HTML, main JS, CSS) should run in Network-First to ensure instant updates
+  const isCoreCodeAsset = url.pathname === '/' || 
+                          url.pathname === '/index.html' || 
+                          url.pathname === '/landing.html' || 
+                          url.pathname === '/auth.html' || 
+                          url.pathname === '/script.js' || 
+                          url.pathname === '/style.css';
 
-  if (isCoreAsset) {
+  if (isCoreCodeAsset) {
     // Network-First for core application files
     event.respondWith(
       fetch(event.request)
