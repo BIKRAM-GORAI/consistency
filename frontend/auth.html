@@ -1160,7 +1160,11 @@
     async function handleOAuthLogin(providerName) {
       clearErrors();
       let provider;
-      if (providerName === 'google') provider = new GoogleAuthProvider();
+      if (providerName === 'google') {
+        provider = new GoogleAuthProvider();
+        // Forces Google's OAuth flow to always present the account chooser page, enabling easy account switching
+        provider.setCustomParameters({ prompt: 'select_account' });
+      }
       else if (providerName === 'github') provider = new GithubAuthProvider();
       else if (providerName === 'facebook') provider = new FacebookAuthProvider();
 
