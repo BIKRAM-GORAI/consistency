@@ -1,7 +1,7 @@
 /* ============================================================
    CONSISTENCY TRACKER — Frontend Script
    GSAP-powered animations · Ripple effects · Smooth UX
-   Groups feature · Mobile-optimised
+   Groups feature · Mobile-optimised · Redeployment Trigger
    ============================================================ */
 
 // Detect if running inside Capacitor Android native wrapper
