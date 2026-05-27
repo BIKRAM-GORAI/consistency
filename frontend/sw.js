@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v42';
+const CACHE_NAME = 'consistency-cache-v43';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -100,8 +100,8 @@ self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests immediately (let the browser handle all external calls directly)
   if (url.origin !== self.location.origin) return;
 
-  // Skip non-GET and API calls (let them go to network)
-  if (event.request.method !== 'GET' || url.pathname.includes('/api/')) return;
+  // Skip non-GET, API calls, and version JSON requests (let them go to network un-cached)
+  if (event.request.method !== 'GET' || url.pathname.includes('/api/') || url.pathname === '/app-version.json') return;
 
   // Only core code assets (HTML, main JS, CSS) should run in Network-First to ensure instant updates
   const isCoreCodeAsset = url.pathname === '/' || 
