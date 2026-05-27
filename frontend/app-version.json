@@ -1,5 +1,5 @@
 {
-  "latestVersion": "1.2",
+  "latestVersion": "1.3",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
   "releaseNotes": "Critical Security & Reliability Update: Adds full offline boot support, fixes icon rendering, resolves network login errors, and upgrades offline data synchronization."

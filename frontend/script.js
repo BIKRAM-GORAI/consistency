@@ -7113,7 +7113,7 @@ async function checkNativeAppUpdates() {
   if (!isAndroidNative) return;
   
   try {
-    const res = await fetch('https://consistency-daily.vercel.app/app-version.json');
+    const res = await fetch('/app-version.json');
     if (!res.ok) return;
     const data = await res.json();
     

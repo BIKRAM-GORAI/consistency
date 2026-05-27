@@ -2621,7 +2621,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const wasUpdated = urlParams.has('sw_updated');
 
-      navigator.serviceWorker.register('/sw.js?v=31').then(reg => {
+      navigator.serviceWorker.register('/sw.js?v=32').then(reg => {
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
