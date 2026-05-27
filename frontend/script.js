@@ -11,7 +11,7 @@ if (isAndroidNative) {
 }
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "1.0";
+let runningAppVersion = "1.4";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {
@@ -1437,12 +1437,32 @@ const syncManager = {
 };
 
 // Also listen for online event to trigger sync and re-enable network buttons
-window.addEventListener('online', () => {
+window.addEventListener('online', async () => {
   _wasOffline = false;
   syncManager.processQueue();
   updateOfflineButtonState(false); // navigator.onLine should be true now
   setLeaderboardTogglesEnabled(true);
   showToast('Back online! AI features enabled.', 'success');
+
+  // Re-authenticate Firebase Auth when connection is restored
+  await initFirebaseChat();
+
+  // If a group chat is currently open, cleanly re-subscribe to pull online changes
+  if (typeof activeChatGroupId !== 'undefined' && activeChatGroupId) {
+    const chatModal = document.getElementById('modal-group-chat');
+    if (chatModal && chatModal.classList.contains('active')) {
+      const groupName = document.getElementById('chat-group-name').textContent;
+      const groupIconWrap = document.getElementById('chat-group-icon-wrap');
+      const img = groupIconWrap ? groupIconWrap.querySelector('img') : null;
+      const groupIcon = img ? img.src : '';
+      
+      if (typeof chatUnsubscribe === 'function') {
+        try { chatUnsubscribe(); } catch (e) {}
+      }
+      openGroupChat(activeChatGroupId, groupName, groupIcon, false);
+    }
+  }
+
   // Refresh AI badge count and reload data from server
   fetchAiLimit();
   loadDays(1);
@@ -7612,13 +7632,8 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   if (bulkDeleteBtn) {
     bulkDeleteBtn.style.display = isOwner ? 'flex' : 'none';
   }
-
   // Re-initialize all icons in the modal (Fixes missing Close/Send icons)
   if (window.lucide) lucide.createIcons({ root: modal });
-
-  // Real-time Presence
-  updatePresence(groupId, true);
-  subscribeToPresence(groupId);
 
   const iconWrap = document.getElementById('chat-group-icon-wrap');
   iconWrap.innerHTML = groupIcon 
@@ -7632,15 +7647,21 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
     msgsList.innerHTML = '<div style="text-align:center; padding:40px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; animation: pulse 1.5s infinite;">Connecting to stream...</div>';
   }
 
-  // Subscribe to read receipts
-  subscribeToReadStatuses(groupId);
-
   // Set up real-time listener
   const { firebaseDb, firestore } = window;
   if (!firebaseDb || !firestore) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">FIREBASE OFFLINE</div>';
+    if (msgsList) {
+      msgsList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">FIREBASE OFFLINE</div>';
+    }
     return;
   }
+
+  // Real-time Presence
+  updatePresence(groupId, true);
+  subscribeToPresence(groupId);
+
+  // Subscribe to read receipts
+  subscribeToReadStatuses(groupId);
 
   const msgsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'messages');
   const q = firestore.query(msgsRef, firestore.orderBy('timestamp', 'desc'), firestore.limit(chatMessagesLimit));
@@ -7701,7 +7722,7 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
           msgsList.appendChild(sep);
           lastDateLabel = dateLabel;
         }
-        renderChatMessage(msg, msgsList, false);
+        renderChatMessage(msg, msgsList, false, doc.metadata.hasPendingWrites);
       });
       
       // If we were paginating, maintain scroll position accurately
@@ -7735,7 +7756,10 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
     }
   }, (err) => {
     console.error('🔥 Firestore Messages Error:', err.code, err.message);
-    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">CONNECTION ERROR: ${err.code}</div>`;
+    const msgsList = document.getElementById('chat-messages-list');
+    if (msgsList) {
+      msgsList.innerHTML = `<div style="text-align:center; padding:20px; color:var(--red); font-weight:900;">CONNECTION ERROR: ${err.code}</div>`;
+    }
   });
 
   // Start listening for typing indicators
@@ -7752,6 +7776,7 @@ function subscribeToActiveVideoCall(groupId) {
   }
 
   const { firebaseRtdb, rtdb } = window;
+  if (!firebaseRtdb || !rtdb) return;
   const callRef = rtdb.ref(firebaseRtdb, `video_calls/${groupId}/participants`);
   
   videoCallUnsubscribe = rtdb.onValue(callRef, (snapshot) => {
@@ -8090,6 +8115,10 @@ async function startGroupVideoCall() {
   if (!groupId) return;
 
   const { firebaseRtdb, rtdb } = window;
+  if (!firebaseRtdb || !rtdb) {
+    return showToast('Video calls are not available offline.', 'warn');
+  }
+
   const userId = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName');
   const userPhoto = localStorage.getItem('userProfilePicture');
@@ -8287,9 +8316,11 @@ function closeVideoCall() {
   // Remove from RTDB immediately (non-blocking)
   if (activeChatGroupId) {
     const { firebaseRtdb, rtdb } = window;
-    const userId = localStorage.getItem('userId');
-    const participantRef = rtdb.ref(firebaseRtdb, `video_calls/${activeChatGroupId}/participants/${userId}`);
-    rtdb.remove(participantRef);
+    if (firebaseRtdb && rtdb) {
+      const userId = localStorage.getItem('userId');
+      const participantRef = rtdb.ref(firebaseRtdb, `video_calls/${activeChatGroupId}/participants/${userId}`);
+      rtdb.remove(participantRef);
+    }
   }
 
   // Force a read-receipt check now that the video call is hidden
@@ -8434,6 +8465,9 @@ async function handleChatSubmit(e) {
   }
 
   const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) {
+    return showToast('Chat is currently offline.', 'error');
+  }
   const userId = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName');
   const userPhoto = localStorage.getItem('userProfilePicture');
@@ -8548,6 +8582,7 @@ async function submitEditChatMessage(docId) {
   if (!newText || !activeChatGroupId) return;
 
   const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) return showToast('Cannot edit while offline.', 'error');
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
 
   try {
@@ -8567,6 +8602,7 @@ async function submitEditChatMessage(docId) {
 
 async function toggleReaction(docId, emoji = '❤️') {
   const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) return;
   const userId = localStorage.getItem('userId');
   if (!activeChatGroupId) return;
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
@@ -8597,6 +8633,7 @@ async function toggleReaction(docId, emoji = '❤️') {
 async function deleteChatMessage(docId) {
   if (!confirm('Are you sure you want to delete this message for everyone?')) return;
   const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) return showToast('Cannot delete while offline.', 'error');
   if (!activeChatGroupId) return;
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
   
@@ -8708,7 +8745,7 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
   if (e) e.stopPropagation();
   
   const { firebaseDb, firestore } = window;
-  if (!activeChatGroupId) return;
+  if (!firebaseDb || !firestore || !activeChatGroupId) return;
   
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
   
@@ -8907,6 +8944,7 @@ function throttledUpdateReadStatus() {
     if (!activeChatGroupId || !myHighestReadTimestamp) return;
     
     const { firebaseDb, firestore } = window;
+    if (!firebaseDb || !firestore) return;
     const userId = localStorage.getItem('userId');
     const readRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'last_reads', userId);
     
@@ -8924,6 +8962,7 @@ function subscribeToReadStatuses(groupId) {
   memberReadStatuses = {}; // Reset for new group
   
   const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) return;
   const userId = localStorage.getItem('userId');
   const readsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'last_reads');
   
@@ -8971,6 +9010,13 @@ function updateMessageInDOM(msg, isPending = false) {
   
   const userId = localStorage.getItem('userId');
   const isSelf = String(msg.senderId) === String(userId);
+  
+  // Proactively update timestamp text in UI once saved to server
+  const timeEl = el.querySelector('.chat-time');
+  if (timeEl && msg.timestamp) {
+    const time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    timeEl.textContent = time;
+  }
   
   if (isSelf) {
     const tick = el.querySelector('.chat-tick');
@@ -9072,6 +9118,7 @@ function handleTyping() {
 async function updateTypingStatus(isTyping) {
   if (!activeChatGroupId) return;
   const { firebaseRtdb, rtdb } = window;
+  if (!firebaseRtdb || !rtdb) return;
   const userId = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName');
   
@@ -9099,6 +9146,7 @@ function listenForTyping() {
   }
 
   const { firebaseRtdb, rtdb } = window;
+  if (!firebaseRtdb || !rtdb) return;
   const userId = localStorage.getItem('userId');
   const typingRef = rtdb.ref(firebaseRtdb, `typing/${activeChatGroupId}`);
   
@@ -9935,6 +9983,11 @@ async function executeBulkDelete() {
   btn.innerHTML = '<span class="spinner-inline"></span> Deleting...';
 
   const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return showToast('Cannot bulk delete while offline.', 'error');
+  }
   try {
     const msgsRef = firestore.collection(firebaseDb, 'group_chats', activeChatGroupId, 'messages');
     
@@ -9987,6 +10040,7 @@ async function executeBulkDelete() {
 async function updatePresence(groupId, isOnline) {
   if (!groupId) return;
   const { firebaseRtdb, rtdb } = window;
+  if (!firebaseRtdb || !rtdb) return;
   const userId = localStorage.getItem('userId');
   const userName = localStorage.getItem('userName');
   const userPic = localStorage.getItem('userProfilePicture');
@@ -10026,6 +10080,7 @@ function subscribeToPresence(groupId) {
   }
   
   const { firebaseRtdb, rtdb } = window;
+  if (!firebaseRtdb || !rtdb) return;
   const presenceRef = rtdb.ref(firebaseRtdb, `presence/${groupId}`);
   const myId = localStorage.getItem('userId');
   

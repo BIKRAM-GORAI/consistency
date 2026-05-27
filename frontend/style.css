@@ -4159,6 +4159,23 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   transition: all 0.3s ease;
 }
 
+.chat-tick.pending {
+  color: var(--text-muted) !important;
+  opacity: 0.55 !important;
+}
+
+.chat-tick.pending svg {
+  stroke: var(--text-muted) !important;
+  animation: pulse 1.5s infinite;
+}
+
+[data-theme="dark"] .chat-tick.pending,
+[data-theme="dark"] .chat-tick.pending svg {
+  color: #000000 !important;
+  opacity: 0.45 !important;
+  stroke: #000000 !important;
+}
+
 .chat-tick.blue {
   color: #3b82f6 !important; /* Modern Blue */
   opacity: 1 !important;

@@ -1508,12 +1508,18 @@
   </div>
 
   <!-- Firebase SDKs -->
+  <!-- Firebase SDKs -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
-    import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
+    import { initializeApp } from "./libs/firebase-app.js";
+    import { getAuth, signInWithCustomToken } from "./libs/firebase-auth.js";
+    import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp as firestoreTimestamp } from "./libs/firebase-firestore.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from "./libs/firebase-database.js";
+    import { getMessaging, getToken, onMessage, isSupported } from "./libs/firebase-messaging.js";
+
+    // Unconditionally register functions to window right away to prevent script.js crashes if configuration/initialization fails
+    window.firestore = { collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp: firestoreTimestamp };
+    window.rtdb = { ref, set, onValue, onDisconnect, serverTimestamp: rtdbTimestamp, remove };
+    window.signInWithFirebase = signInWithCustomToken;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
@@ -1526,46 +1532,71 @@
       measurementId: "G-GQCYL05KBH"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    
-    // Modern way to enable persistence with multi-tab sync support
-    const db = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
-    });
-    
-    const rtdb = getDatabase(app);
+    let app, auth, db, rtdb;
 
-    // Export to global scope for script.js
-    window.firebaseDb = db;
-    window.firebaseAuth = auth;
-    window.firebaseRtdb = rtdb;
-    window.signInWithFirebase = signInWithCustomToken;
-    window.firestore = { collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit, limitToLast, serverTimestamp: firestoreTimestamp };
-    window.rtdb = { ref, set, onValue, onDisconnect, serverTimestamp: rtdbTimestamp, remove };
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      window.firebaseAuth = auth;
+      console.log("🚀 Firebase app and auth initialized successfully");
+    } catch (appErr) {
+      console.error("❌ Critical: Failed to initialize Firebase app or auth:", appErr);
+    }
 
-    // Synchronously check push support to prevent any deferred promise race conditions on startup
-    const pushSupported = ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
-    
-    if (pushSupported) {
+    if (app) {
+      // Modern way to enable persistence with multi-tab sync support
       try {
-        window.firebaseMessaging = getMessaging(app);
-        window.getFcmToken = getToken;
-        window.onFcmMessage = onMessage;
-        console.log("✅ FCM Messaging initialized successfully");
-      } catch (err) {
-        console.warn("⚠️ FCM Messaging initialization caught error (e.g. Incognito or blocked service worker):", err);
+        db = initializeFirestore(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+          })
+        });
+        console.log("🚀 Firestore initialized with multi-tab persistent cache");
+      } catch (cacheErr) {
+        console.warn("⚠️ Failed to initialize Firestore with persistent multi-tab cache, trying existing instance or fallback:", cacheErr);
+        try {
+          db = getFirestore(app);
+          console.log("🚀 Firestore retrieved existing instance using getFirestore");
+        } catch (getErr) {
+          try {
+            db = initializeFirestore(app);
+            console.log("🚀 Firestore initialized fallback default instance");
+          } catch (fallbackErr) {
+            console.error("❌ Failed to initialize Firestore fallback:", fallbackErr);
+          }
+        }
+      }
+      
+      window.firebaseDb = db;
+
+      try {
+        rtdb = getDatabase(app);
+        window.firebaseRtdb = rtdb;
+        console.log("🚀 RTDB initialized successfully");
+      } catch (rtdbErr) {
+        console.error("❌ Failed to initialize RTDB:", rtdbErr);
+      }
+
+      // Synchronously check push support to prevent any deferred promise race conditions on startup
+      const pushSupported = ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+      
+      if (pushSupported) {
+        try {
+          window.firebaseMessaging = getMessaging(app);
+          window.getFcmToken = getToken;
+          window.onFcmMessage = onMessage;
+          console.log("✅ FCM Messaging initialized successfully");
+        } catch (err) {
+          console.warn("⚠️ FCM Messaging initialization caught error (e.g. Incognito or blocked service worker):", err);
+          window.firebaseMessaging = null;
+          window.getFcmToken = null;
+        }
+      } else {
+        console.warn("⚠️ FCM Push Notifications are not supported in this browser.");
         window.firebaseMessaging = null;
         window.getFcmToken = null;
       }
-    } else {
-      console.warn("⚠️ FCM Push Notifications are not supported in this browser.");
-      window.firebaseMessaging = null;
-      window.getFcmToken = null;
     }
-
   </script>
 
   <script>
