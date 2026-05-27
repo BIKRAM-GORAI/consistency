@@ -6915,7 +6915,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=46');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=47');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -7071,21 +7071,11 @@ function triggerApkDownload(apkUrl, forceUpdate) {
   const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
                       navigator.userAgent.includes("Capacitor");
   if (isNativeApp) {
-    // Standard Vercel URL (e.g. https://consistency-daily.vercel.app/Consistency.Daily.apk)
-    // We convert it to a native Android Intent scheme to force the Android OS to open it 
-    // in the default system browser (Chrome/Samsung Internet) instead of trying to load it inside the WebView!
-    try {
-      const cleanUrl = apkUrl.replace('https://', '').replace('http://', '');
-      const intentUrl = `intent://${cleanUrl}#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end`;
-      console.log('[Native Update] Dispatching Android intent:', intentUrl);
-      window.location.href = intentUrl;
-    } catch (e) {
-      console.warn('[Native Update] Intent failed, falling back to window.open:', e);
-      if (window.Capacitor?.Plugins?.Browser) {
-        window.Capacitor.Plugins.Browser.open({ url: apkUrl });
-      } else {
-        window.open(apkUrl, '_system');
-      }
+    // Force opening in native system browser so it delegates the download cleanly
+    if (window.Capacitor?.Plugins?.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: apkUrl });
+    } else {
+      window.open(apkUrl, '_system');
     }
   } else {
     // PWA/Web: trigger standard direct download
@@ -9213,7 +9203,7 @@ async function initPushNotifications(forcePrompt = false) {
         }
 
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=46');
+        await navigator.serviceWorker.register('/sw.js?v=47');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
