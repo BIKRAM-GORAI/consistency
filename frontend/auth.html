@@ -46,6 +46,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="capacitor.js"></script>
   <script src="libs/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1137,7 +1138,9 @@
 
   <script type="module">
     import { initializeApp } from "./libs/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, fetchSignInMethodsForEmail } from "./libs/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, fetchSignInMethodsForEmail, signInWithCredential } from "./libs/firebase-auth.js";
+
+    console.log("[Auth Module] ES Module script loaded successfully!");
 
     const firebaseConfig = {
       apiKey: "AIzaSyBRQcI00guB6LhRKqUrx_4NbmTFi30r96Y",
@@ -1200,6 +1203,7 @@
     })();
 
     async function handleOAuthLogin(providerName) {
+      console.log("[Auth Module] handleOAuthLogin execution triggered for provider:", providerName);
       clearErrors();
       let provider;
       if (providerName === 'google') {
@@ -1221,6 +1225,51 @@
 
       try {
         if (isNativeApp) {
+          if (providerName === 'google') {
+            const GoogleSignInPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleSignIn;
+            if (GoogleSignInPlugin) {
+              console.log("[Native Auth] Native Google Sign-In plugin detected. Starting native flow...");
+              if (overlay) {
+                overlay.style.display = 'flex';
+                document.getElementById('oauth-loading-title').textContent = "Connecting...";
+                document.getElementById('oauth-loading-sub').textContent = "Opening native Google accounts selector...";
+              }
+              try {
+                await GoogleSignInPlugin.initialize({
+                  clientId: '760797805516-qkjeh5uial8nca032ngea199chjhhqnj.apps.googleusercontent.com'
+                });
+                const nativeRes = await GoogleSignInPlugin.signIn();
+                if (nativeRes && nativeRes.idToken) {
+                  console.log("[Native Auth] Native Google Sign-In successful, authenticating with Firebase...");
+                  document.getElementById('oauth-loading-title').textContent = "Authenticating...";
+                  document.getElementById('oauth-loading-sub').textContent = "Completing secure sign-in, please wait.";
+                  
+                  const credential = GoogleAuthProvider.credential(nativeRes.idToken);
+                  const firebaseResult = await signInWithCredential(auth, credential);
+                  if (firebaseResult && firebaseResult.user) {
+                    await processUserOAuth(firebaseResult.user, 'google');
+                    return; // Login finished successfully
+                  }
+                }
+                throw new Error("No ID Token returned from native sign-in.");
+              } catch (nativeError) {
+                console.error("[Native Auth] Native Google Sign-In failed or cancelled:", nativeError);
+                // If user cancelled, just hide the overlay and return
+                const errMsg = nativeError.message || String(nativeError);
+                if (errMsg.includes("cancel") || errMsg.includes("12501") || errMsg.includes("User cancelled")) {
+                  console.log("[Native Auth] User cancelled native Google Sign-In.");
+                  if (overlay) overlay.style.display = 'none';
+                  return;
+                }
+                
+                // Otherwise, fall back to standard redirect login as a robust fail-safe!
+                console.log("[Native Auth] Falling back to standard WebView Redirect flow...");
+              }
+            } else {
+              console.warn("[Native Auth] Native Google Sign-In plugin not found. Using Redirect fallback.");
+            }
+          }
+
           // Bypasses popup window blocks inside native WebViews by triggering a redirect
           console.log("Native app detected. Proceeding with Redirect Login for:", providerName);
           sessionStorage.setItem('pending_oauth_redirect', 'true');
@@ -1327,12 +1376,32 @@
     }
 
     // Attach event listeners to the newly added OAuth buttons
-    document.getElementById('oauth-login-google').addEventListener('click', () => handleOAuthLogin('google'));
-    document.getElementById('oauth-login-github').addEventListener('click', () => handleOAuthLogin('github'));
-    document.getElementById('oauth-login-facebook').addEventListener('click', () => handleOAuthLogin('facebook'));
-    document.getElementById('oauth-register-google').addEventListener('click', () => handleOAuthLogin('google'));
-    document.getElementById('oauth-register-github').addEventListener('click', () => handleOAuthLogin('github'));
-    document.getElementById('oauth-register-facebook').addEventListener('click', () => handleOAuthLogin('facebook'));
+    console.log("[Auth Module] Attaching click listeners to buttons...");
+    try {
+      const attachListener = (id, provider) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log(`[Auth Module] Button ${id} clicked! Triggering OAuth flow for: ${provider}`);
+            handleOAuthLogin(provider);
+          });
+          console.log(`[Auth Module] Bound listener to #${id}`);
+        } else {
+          console.warn(`[Auth Module] Button #${id} not found in DOM!`);
+        }
+      };
+      
+      attachListener('oauth-login-google', 'google');
+      attachListener('oauth-login-github', 'github');
+      attachListener('oauth-login-facebook', 'facebook');
+      attachListener('oauth-register-google', 'google');
+      attachListener('oauth-register-github', 'github');
+      attachListener('oauth-register-facebook', 'facebook');
+      console.log("[Auth Module] All event listeners processed!");
+    } catch (bindError) {
+      console.error("[Auth Module] Critical error binding event listeners:", bindError);
+    }
     
     lucide.createIcons();
   </script>

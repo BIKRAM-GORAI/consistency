@@ -6,6 +6,9 @@
     "allowNavigation": [
       "consistency-daily.vercel.app",
       "*.firebaseapp.com",
+      "*.web.app",
+      "*.google.com",
+      "*.googleusercontent.com",
       "accounts.google.com",
       "github.com",
       "*.github.com",

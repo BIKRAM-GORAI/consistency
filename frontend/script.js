@@ -11,7 +11,7 @@ if (isAndroidNative) {
 }
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "1.4";
+let runningAppVersion = "1.5";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {
@@ -7013,7 +7013,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=50');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=55');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -9329,7 +9329,7 @@ async function initPushNotifications(forcePrompt = false) {
         }
 
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=50');
+        await navigator.serviceWorker.register('/sw.js?v=55');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;

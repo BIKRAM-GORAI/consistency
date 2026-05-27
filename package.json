@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@capacitor/push-notifications": "^8.1.1",
+    "@capawesome/capacitor-google-sign-in": "^0.1.2",
     "axios": "^1.15.2",
     "bcrypt": "^6.0.0",
     "cheerio": "^1.2.0",

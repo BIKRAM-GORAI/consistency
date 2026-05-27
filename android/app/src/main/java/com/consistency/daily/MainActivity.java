@@ -10,17 +10,24 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Intercept native notification click on cold start
         android.content.Intent intent = getIntent();
-        if (intent != null && intent.getExtras() != null) {
-            String groupId = intent.getExtras().getString("groupId");
-            if (groupId != null && !groupId.isEmpty()) {
-                // Construct launch URL with query parameters which will be forwarded to index.html after splash
-                String launchUrl = "https://consistency-daily.vercel.app/?openChat=" + groupId + "&t=" + System.currentTimeMillis();
-                intent.setData(android.net.Uri.parse(launchUrl));
-            }
-        }
+        final String coldStartGroupId = (intent != null && intent.getExtras() != null)
+            ? intent.getExtras().getString("groupId")
+            : null;
 
         super.onCreate(savedInstanceState);
         
+        // Style the default WebView background color as yellow to seamlessly blend splash transition
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            this.bridge.getWebView().setBackgroundColor(android.graphics.Color.parseColor("#FFD60A"));
+            
+            // If cold start came from a notification click, load it directly in the WebView
+            if (coldStartGroupId != null && !coldStartGroupId.isEmpty()) {
+                String localServerUrl = getLocalServerUrl();
+                String launchUrl = localServerUrl + "/index.html?openChat=" + coldStartGroupId + "&t=" + System.currentTimeMillis();
+                this.bridge.getWebView().loadUrl(launchUrl);
+            }
+        }
+
         // Bypasses Google's WebView OAuth block by setting a standard mobile Chrome User-Agent
         String versionName = BuildConfig.VERSION_NAME;
         this.bridge.getWebView().getSettings().setUserAgentString(
@@ -39,8 +46,9 @@ public class MainActivity extends BridgeActivity {
                     || currentUrl.startsWith("file://");
                     
                 if (!isInternalAppPage && !currentUrl.isEmpty()) {
-                    // Cancel external OAuth flow → go back to auth page cleanly
-                    webView.loadUrl("https://consistency-daily.vercel.app/auth.html");
+                    // Cancel external OAuth flow → go back to local auth page cleanly
+                    String localServerUrl = getLocalServerUrl();
+                    webView.loadUrl(localServerUrl + "/auth.html");
                 } else if (webView.canGoBack()) {
                     webView.goBack();
                 } else {
@@ -89,11 +97,22 @@ public class MainActivity extends BridgeActivity {
             String groupId = intent.getExtras().getString("groupId");
             if (groupId != null && !groupId.isEmpty()) {
                 // If running, load index.html directly to bypass splash screen and open chat instantly
-                String launchUrl = "https://consistency-daily.vercel.app/index.html?openChat=" + groupId + "&t=" + System.currentTimeMillis();
                 if (this.bridge != null && this.bridge.getWebView() != null) {
+                    String localServerUrl = getLocalServerUrl();
+                    String launchUrl = localServerUrl + "/index.html?openChat=" + groupId + "&t=" + System.currentTimeMillis();
                     this.bridge.getWebView().loadUrl(launchUrl);
                 }
             }
         }
+    }
+
+    private String getLocalServerUrl() {
+        if (this.bridge != null) {
+            String serverUrl = this.bridge.getServerUrl();
+            if (serverUrl != null && !serverUrl.isEmpty() && !serverUrl.equals("null") && !serverUrl.contains("null")) {
+                return serverUrl;
+            }
+        }
+        return "https://localhost";
     }
 }

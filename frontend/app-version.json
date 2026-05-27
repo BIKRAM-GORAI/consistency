@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.4",
+  "latestVersion": "1.5",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "Critical Stability Update: Fixes live chat crashing and offline mode loading loops. All users must update to continue using group chat."
+  "releaseNotes": "Critical Security Update: Bypasses Google authentication redirects and adds native Google Sign-In with 1-tap support!"
 }
