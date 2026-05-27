@@ -177,6 +177,11 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
     }],
+    // AI Productivity Insights Bio (Public/Shared)
+    productivityBio: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

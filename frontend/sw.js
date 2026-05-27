@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v35';
+const CACHE_NAME = 'consistency-cache-v41';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -97,11 +97,11 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
+  // Skip cross-origin requests immediately (let the browser handle all external calls directly)
+  if (url.origin !== self.location.origin) return;
+
   // Skip non-GET and API calls (let them go to network)
   if (event.request.method !== 'GET' || url.pathname.includes('/api/')) return;
-  
-  // Skip Jitsi Meet - let the browser handle its own CSP and network
-  if (url.hostname.includes('jitsi.belnet.be') || url.hostname.includes('meet.ffmuc.net')) return;
 
   // Only core code assets (HTML, main JS, CSS) should run in Network-First to ensure instant updates
   const isCoreCodeAsset = url.pathname === '/' || 

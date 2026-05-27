@@ -236,6 +236,29 @@ function renderProfile(data) {
   document.getElementById('stat-highest-streak').textContent = data.highestStreak;
   document.getElementById('stat-groups').textContent = data.groupCount || 0;
 
+  // Render Standalone AI Productivity Bio
+  const bioCard = document.getElementById('ai-bio-card');
+  const bioText = document.getElementById('ai-bio-text');
+  const btnRefresh = document.getElementById('btn-refresh-bio');
+  
+  if (bioCard && bioText) {
+    const isOwnUsername = data.username.toLowerCase() === (localStorage.getItem('userUsername') || '').toLowerCase();
+    
+    if (data.productivityBio || isOwnUsername) {
+      bioCard.style.display = 'block';
+      bioText.textContent = data.productivityBio || "Generate your custom AI Productivity Biography to showcase your active consistency streaks and task milestones on your public profile!";
+      
+      if (isOwnUsername) {
+        btnRefresh.style.display = 'inline-flex';
+        updateBioCooldownUI(data.lastBioGeneratedAt);
+      } else {
+        btnRefresh.style.display = 'none';
+      }
+    } else {
+      bioCard.style.display = 'none';
+    }
+  }
+
   // Avatar
   const initial = data.name.charAt(0).toUpperCase();
   document.getElementById('prof-initial').textContent = initial;
@@ -543,4 +566,94 @@ function showError(msg) {
   const overlay = document.getElementById('error-overlay');
   overlay.style.display = 'flex';
   document.getElementById('error-msg').textContent = msg;
+}
+
+/**
+ * Cooldown UI update logic for biography refreshes
+ */
+function updateBioCooldownUI(lastGeneratedAt) {
+  const btn = document.getElementById('btn-refresh-bio');
+  const cooldownMsg = document.getElementById('bio-cooldown-message');
+  if (!btn || !cooldownMsg) return;
+
+  if (!lastGeneratedAt) {
+    btn.disabled = false;
+    btn.style.display = 'inline-flex';
+    cooldownMsg.style.display = 'none';
+    return;
+  }
+
+  const lastGenTime = new Date(lastGeneratedAt).getTime();
+  const cooldownMs = 24 * 60 * 60 * 1000; // 24-hour window
+  const elapsed = Date.now() - lastGenTime;
+
+  if (elapsed < cooldownMs) {
+    btn.disabled = true;
+    btn.style.display = 'none';
+    cooldownMsg.style.display = 'block';
+    
+    const remainingMs = cooldownMs - elapsed;
+    const hoursLeft = Math.ceil(remainingMs / (1000 * 60 * 60));
+    cooldownMsg.innerHTML = `<span style="font-size: 13px;">⏳</span> Cooldown active. Refresh in <strong>${hoursLeft} hours</strong>`;
+  } else {
+    btn.disabled = false;
+    btn.style.display = 'inline-flex';
+    cooldownMsg.style.display = 'none';
+  }
+}
+
+/**
+ * Submits POST request to recalculate User productivity highlights
+ */
+async function refreshProductivityBio() {
+  if (!navigator.onLine) {
+    alert('Offline: Cannot refresh biography.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-refresh-bio');
+  const bioText = document.getElementById('ai-bio-text');
+  const cooldownMsg = document.getElementById('bio-cooldown-message');
+  if (!btn || !bioText) return;
+
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner-ring" style="width: 14px; height: 14px; border-width: 2px; border-color: var(--yellow) transparent transparent transparent;"></div> <span>Calculating...</span>';
+
+  try {
+    const token = localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API}/api/ai/productivity-bio`, {
+      method: 'POST',
+      headers
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to refresh bio.');
+    }
+
+    const resData = await res.json();
+    if (resData && resData.productivityBio) {
+      bioText.textContent = resData.productivityBio;
+      
+      // Update cooldown timestamp dynamically
+      updateBioCooldownUI(new Date().toISOString());
+      
+      // GSAP smooth recalculation zoom entrance
+      if (window.gsap) {
+        gsap.fromTo(bioText, { scale: 0.98, opacity: 0.7 }, { scale: 1, opacity: 1, duration: 0.45, ease: 'power2.out' });
+      }
+      
+      // Update local storage in case they edit other things
+      localStorage.setItem('userProductivityBio', resData.productivityBio);
+    }
+  } catch (err) {
+    console.error('refreshProductivityBio error:', err);
+    alert(err.message || 'Error occurred while generating biography.');
+  } finally {
+    btn.innerHTML = originalHTML;
+  }
 }

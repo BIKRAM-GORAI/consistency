@@ -20,6 +20,7 @@ const adminRoutes       = require('./routes/adminRoutes');
 const systemRoutes      = require('./routes/systemRoutes');
 const syncRoutes        = require('./routes/syncRoutes');
 const fcmRoutes         = require('./routes/fcmRoutes');
+const aiRoutes          = require('./routes/aiRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -71,7 +72,7 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Disable browser features the app doesn't use, but allow microphone/camera for voice/video
-  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be"), microphone=(self "https://jitsi.belnet.be"), display-capture=(self "https://jitsi.belnet.be"), geolocation=(), payment=()');
+  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be" "https://meet.jit.si"), microphone=(self "https://jitsi.belnet.be" "https://meet.jit.si"), display-capture=(self "https://jitsi.belnet.be" "https://meet.jit.si"), geolocation=(), payment=()');
 
   // Content Security Policy — robust for production
   const isDev = process.env.NODE_ENV === 'development';
@@ -101,7 +102,11 @@ app.use((req, res, next) => {
     "https://cdn.jsdelivr.net",
     "https://www.google.com",
     "https://jitsi.belnet.be",
-    "wss://jitsi.belnet.be"
+    "wss://jitsi.belnet.be",
+    "https://meet.jit.si",
+    "wss://meet.jit.si",
+    "https://*.clarity.ms",
+    "https://c.bing.com"
   ];
   if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001", "ws://localhost:5000", "ws://localhost:5001");
 
@@ -109,14 +114,14 @@ app.use((req, res, next) => {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be",
-      "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be",
-      "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://jitsi.belnet.be",
-      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms",
+      "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be https://meet.jit.si",
+      "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://jitsi.belnet.be https://meet.jit.si",
+      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms https://c.bing.com",
       "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       `connect-src ${connectSrc.join(' ')}`,
-      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be",
+      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be https://meet.jit.si",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
@@ -159,6 +164,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/fcm',          authenticateToken, dataModificationLimiter, fcmRoutes);
+app.use('/api/ai',           authenticateToken, dataModificationLimiter, aiRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

@@ -106,6 +106,8 @@ window.onpageshow = function(event) {
 
 // ── State ──────────────────────────────────────────────────
 let allDays  = [];
+let allWeeklySummaries = [];
+let totalDaysCountInDb = 0;
 let currentPage = 1;
 const daysPerPage = 10;
 let hasMoreDays = false;
@@ -522,7 +524,6 @@ async function apiFetch(url, options = {}) {
   try {
     const res = await fetch(url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeoutId);
-
     if (!res.ok) {
       if (res.status === 401) {
         localStorage.clear();
@@ -590,6 +591,15 @@ async function loadDays(page = 1) {
   try {
     const data = await apiFetch(`${API}/api/days?page=${page}&limit=${daysPerPage}`);
     
+    // Concurrent fetch of all saved WeeklySummaries on page 1 load
+    if (page === 1 && navigator.onLine) {
+      try {
+        allWeeklySummaries = await apiFetch(`${API}/api/ai/weekly-summaries`);
+      } catch (err) {
+        console.warn('Failed to load weekly summaries:', err);
+      }
+    }
+
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       if (page === 1) {
         // Preserve local-only changes (those not yet synced) — don't overwrite them
@@ -625,12 +635,13 @@ async function loadDays(page = 1) {
       
       backendStreak = data.streak || 0;
       hasMoreDays = data.hasMore || false;
+      totalDaysCountInDb = data.total || allDays.length;
     } else {
       // Fallback for non-paginated API
       if (page === 1) {
         allDays = data;
         await localDb.days.clear();
-        await localDb.days.bulkAdd(data);
+         await localDb.days.bulkAdd(data);
       } else {
         allDays.push(...data);
         await localDb.days.bulkPut(data);
@@ -753,8 +764,6 @@ async function renderDays(appendOnly = false) {
   let batchAchievements = [];
   if (dayIds.length > 0) {
     if (window.localDb) {
-      // Local-first: Query IndexedDB directly. ProactiveSync keeps this in sync with server,
-      // so the local query is always the source of truth, avoiding heavy server batch hits on every render.
       try {
         batchAchievements = await window.localDb.achievements.where('dayId').anyOf(dayIds).toArray();
       } catch (err) {
@@ -825,7 +834,27 @@ async function renderDays(appendOnly = false) {
   }
 
   const fragment = document.createDocumentFragment();
-  for (const day of sorted) {
+  const totalDaysCount = sorted.length;
+  const baseCountForChrono = totalDaysCountInDb || allDays.length;
+  const sortedAllDays = [...allDays].sort((a, b) => b.date.localeCompare(a.date));
+
+  for (let i = 0; i < totalDaysCount; i++) {
+    const day = sorted[i];
+    const globalIndex = sortedAllDays.findIndex(d => d._id === day._id);
+    const chronoIndex = globalIndex >= 0 ? (baseCountForChrono - globalIndex) : (baseCountForChrono - i);
+
+    // Inject 7-Day AI Wrap-Up cards/generate-buttons chronologically in between daily cards
+    if (chronoIndex > 0 && chronoIndex % 7 === 0) {
+      const summary = allWeeklySummaries.find(s => s.date === day.date);
+      if (summary) {
+        const summaryCard = buildWeeklySummaryCard(summary);
+        fragment.appendChild(summaryCard);
+      } else {
+        const generateBtnCard = buildWeeklySummaryButtonCard(day._id, day.date);
+        fragment.appendChild(generateBtnCard);
+      }
+    }
+
     const dayAchs = (batchAchievements || []).filter(a => a.dayId === day._id);
     const card = buildDayCard(day, dayAchs);
     // Mark as new for animation if we are appending
@@ -854,7 +883,7 @@ async function renderDays(appendOnly = false) {
 
   // ── Mobile-aware GSAP entrance ──────────────────────────
   // If appendOnly, we only animate the newly added cards
-  const animTarget = appendOnly ? '.is-new-card' : '.day-card';
+  const animTarget = appendOnly ? '.is-new-card, .weekly-summary-card, .weekly-summary-button-card' : '.day-card';
   
   if (window.gsap) {
     if (isMobile()) {
@@ -862,7 +891,7 @@ async function renderDays(appendOnly = false) {
         opacity: 0,
         duration: 0.3,
         ease: 'power2.out',
-        clearProps: 'all',
+        clearProps: 'opacity,transform',
         onComplete: () => {
           if (appendOnly) document.querySelectorAll('.is-new-card').forEach(el => el.classList.remove('is-new-card'));
         }
@@ -874,7 +903,7 @@ async function renderDays(appendOnly = false) {
         duration: 0.5,
         stagger: 0.08,
         ease: 'power3.out',
-        clearProps: 'all',
+        clearProps: 'opacity,transform,y',
         onComplete: () => {
           if (appendOnly) document.querySelectorAll('.is-new-card').forEach(el => el.classList.remove('is-new-card'));
         }
@@ -968,6 +997,25 @@ function buildDayCard(day, preLoadedAchievements = null) {
     `;
   }
 
+  // AI Daily Recap Section HTML
+  let aiRecapHTML = '';
+  const daySummary = day.summary || '';
+  if (daySummary) {
+    aiRecapHTML = `
+      <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative;">
+        <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">
+          <span>✨</span> <span>AI Daily Insights</span>
+          <button class="btn-refresh-recap" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; margin-left: auto; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
+        </div>
+        <p class="ai-recap-text" id="ai-recap-text-${day._id}" style="color: var(--text); font-weight: 600; white-space: pre-wrap; margin: 0;">${escHtml(daySummary)}</p>
+      </div>
+    `;
+  } else {
+    aiRecapHTML = `
+      <div class="ai-recap-block empty-recap" id="ai-recap-block-${day._id}" style="display: none; margin-top: 0;"></div>
+    `;
+  }
+
   card.innerHTML = `
     <div class="card-header">
       <div class="card-date-wrap">
@@ -995,12 +1043,21 @@ function buildDayCard(day, preLoadedAchievements = null) {
     </div>
 
     ${addCatBtn}
+    
+    ${aiRecapHTML}
 
-    <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')">
-      <span><i data-lucide="file-text"></i></span>
-      <span>Notes</span>
-      <span class="summary-chevron"><i data-lucide="chevron-down"></i></span>
-    </button>
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-left: 14px;">
+      <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0;">
+        <span><i data-lucide="file-text"></i></span>
+        <span>Notes</span>
+        <span class="summary-chevron"><i data-lucide="chevron-down"></i></span>
+      </button>
+      ${daySummary ? '' : `
+        <button class="summary-toggle ripple" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
+          <span>✨ AI Insights</span>
+        </button>
+      `}
+    </div>
     <div class="summary-content" id="summary-content-${day._id}">
       <div class="summary-inner">${summaryInner}</div>
     </div>
@@ -1019,7 +1076,6 @@ function buildDayCard(day, preLoadedAchievements = null) {
   `;
 
   // Animate progress bar after card is inserted into DOM
-  // Using double-rAF to guarantee the element is painted before animating
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       animateProgressBar(`pct-fill-${day._id}`, pct);
@@ -1031,9 +1087,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
     if (preLoadedAchievements && preLoadedAchievements.length > 0) {
       renderDayAchievements(day._id, preLoadedAchievements, card);
     }
-    // Removed individual load fallback to prevent 429 rate limiting
   } else {
-    // For temp days, achievements are only in memory/local until synced
     renderDayAchievements(day._id, allAchievements.filter(a => a.dayId === day._id), card);
   }
 
@@ -1814,6 +1868,7 @@ async function submitAddDay() {
   try {
     // 1. Update UI and Local DB instantly (Optimistic)
     allDays.push(localDay);
+    totalDaysCountInDb++;
     await window.localDb.days.add(localDay);
     closeModal('modal-add-day');
     renderDays();
@@ -10758,3 +10813,244 @@ setTimeout(() => {
     checkNativeAppUpdates();
   }
 }, 800); // 800ms delay to let Dexie DB and Auth fully initialize
+
+
+/* ============================================================
+   AI INSIGHTS & WEEKLY WRAP-UP CARDS — FRONTEND OPERATIONS
+   ============================================================ */
+
+/**
+ * Sends a POST request to generate a 2-sentence AI Daily Recap and updates the Day card.
+ */
+async function generateDailySummary(dayId, dateStr) {
+  if (!navigator.onLine) {
+    showToast('Offline: Cannot generate AI recap.', 'warn');
+    return;
+  }
+
+  const container = document.getElementById(`ai-recap-block-${dayId}`);
+  if (!container) return;
+
+  const wasEmpty = container.classList.contains('empty-recap') || !container.innerHTML.trim();
+  const originalHTML = container.innerHTML;
+
+  // Make sure container is visible and styled properly
+  container.style.display = 'block';
+  container.style.marginTop = '15px';
+
+  // Render glowing loader card
+  container.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; background: var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black);">
+      <div class="spinner-ring" style="width: 18px; height: 18px; border-width: 2.5px; border-color: var(--text) transparent transparent transparent;"></div>
+      <span style="font-size: 12px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase;">AI is summarizing today's tasks...</span>
+    </div>
+  `;
+
+  try {
+    const res = await apiFetch(`${API}/api/ai/daily-summary/${dateStr}`, {
+      method: 'POST'
+    });
+
+    if (res && res.summary) {
+      // Find in memory array to update cache
+      const day = allDays.find(d => d._id === dayId);
+      if (day) {
+        day.summary = res.summary;
+        if (window.localDb) {
+          await window.localDb.days.put(day);
+        }
+      }
+
+      // Re-render only this Day card smoothly
+      const cardEl = document.getElementById(`day-card-${dayId}`);
+      if (cardEl) {
+        const preLoadedAchs = (typeof batchAchievements !== 'undefined' && batchAchievements) 
+          ? batchAchievements.filter(a => a.dayId === dayId) 
+          : [];
+        cardEl.replaceWith(buildDayCard(day, preLoadedAchs));
+      }
+      showToast('Daily summary successfully generated!', 'success');
+    }
+  } catch (err) {
+    console.error('Failed to generate daily summary:', err);
+    showToast(err.message || 'Failed to generate recap.', 'error');
+    container.innerHTML = originalHTML; // restore button
+    if (wasEmpty) {
+      container.style.display = 'none';
+      container.style.marginTop = '0';
+    }
+  }
+}
+
+/**
+ * Builds a beautiful standalone Weekly Summary Card element to place inline.
+ */
+function buildWeeklySummaryCard(summary) {
+  const card = document.createElement('div');
+  card.className = 'day-card weekly-summary-card';
+  card.id = `weekly-summary-${summary._id}`;
+  card.style.cssText = `
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%), var(--bg-card);
+    border: 3.5px solid var(--black);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    box-shadow: 7px 7px 0 var(--black);
+    position: relative;
+    margin-bottom: 24px;
+  `;
+  
+  card.innerHTML = `
+    <button onclick="deleteWeeklySummaryCard('${summary._id}')" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px;" title="Delete wrap-up"><i data-lucide="trash-2" style="width: 18px; height: 18px;"></i></button>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+      <span style="font-size: 26px;">🏆</span>
+      <div>
+        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 16px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px; margin: 0; line-height: 1.2;">7-Day AI Wrap-Up</h3>
+        <span style="font-size: 10px; font-weight: 900; color: var(--black); text-transform: uppercase; background: var(--lime); padding: 2px 8px; border: 1.5px solid var(--black); border-radius: 4px; box-shadow: 1.5px 1.5px 0 var(--black); display: inline-block; margin-top: 4px;">${escHtml(summary.rangeText)}</span>
+      </div>
+    </div>
+    <p style="font-size: 13.5px; line-height: 1.65; color: var(--text); font-weight: 600; margin: 0;">${escHtml(summary.summaryText)}</p>
+  `;
+  
+  if (window.lucide) {
+    setTimeout(() => lucide.createIcons({ root: card }), 10);
+  }
+  return card;
+}
+
+/**
+ * Builds the glowing "Generate Weekly Wrap-Up" milestone card.
+ */
+function buildWeeklySummaryButtonCard(dayId, dateStr) {
+  const card = document.createElement('div');
+  card.className = 'day-card weekly-summary-button-card';
+  card.id = `weekly-summary-btn-card-${dayId}`;
+  card.style.cssText = `
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.03) 100%);
+    border: 3px dashed var(--black);
+    border-radius: var(--r-lg);
+    padding: 28px 24px;
+    box-shadow: 5px 5px 0 var(--black);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+  `;
+  
+  card.innerHTML = `
+    <div style="margin-bottom: 10px; font-size: 26px;">✨</div>
+    <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px;">7-Card Milestone Achieved!</h3>
+    <p style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); max-width: 320px; margin: 0 auto 16px; line-height: 1.5;">Combine your past 7 logged cards into a single AI weekly productivity summary.</p>
+    <button class="ripple" onclick="generateWeeklySummaryCard('${dayId}')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--black); color: var(--yellow); border: 2px solid var(--black); border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 11px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
+      <span>GENERATE WEEKLY WRAP-UP</span>
+    </button>
+  `;
+  return card;
+}
+
+/**
+ * Submits POST request to compile preceding 7 days of logs into a standalone WeeklySummary.
+ */
+async function generateWeeklySummaryCard(dayId) {
+  if (!navigator.onLine) {
+    showToast('Offline: Cannot generate AI wrap-up.', 'warn');
+    return;
+  }
+
+  const container = document.getElementById(`weekly-summary-btn-card-${dayId}`);
+  if (!container) return;
+
+  const originalHTML = container.innerHTML;
+
+  // Render loading state
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.textAlign = 'center';
+
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px 0; width: 100%;">
+      <div class="spinner-ring" style="width: 28px; height: 28px; border-width: 3px; border-color: var(--text) transparent transparent transparent; margin-bottom: 16px;"></div>
+      <h4 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px; margin: 0 0 6px 0;">Analyzing Your Streak...</h4>
+      <p style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 0; max-width: 320px;">Consolidating all completed tasks and streaks for the past 7 cards...</p>
+    </div>
+  `;
+
+  try {
+    const responseSummary = await apiFetch(`${API}/api/ai/weekly-summary/${dayId}`, {
+      method: 'POST'
+    });
+
+    if (responseSummary && responseSummary._id) {
+      allWeeklySummaries.push(responseSummary);
+      
+      // Morphs/replaces the button card with the final AI summary card smoothly
+      const freshCard = buildWeeklySummaryCard(responseSummary);
+      container.replaceWith(freshCard);
+      
+      // GSAP entrance zoom
+      if (window.gsap) {
+        gsap.from(freshCard, { scale: 0.95, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' });
+      }
+      showToast('7-Day wrap-up generated successfully!', 'success');
+    }
+  } catch (err) {
+    console.error('Failed to generate weekly summary:', err);
+    showToast(err.message || 'Failed to generate wrap-up.', 'error');
+    container.innerHTML = originalHTML; // restore button
+  }
+}
+
+/**
+ * Triggers DELETE request to delete a standalone WeeklySummary document.
+ */
+async function deleteWeeklySummaryCard(summaryId) {
+  if (!navigator.onLine) {
+    showToast('Offline: Cannot delete card.', 'warn');
+    return;
+  }
+
+  if (!confirm('Are you sure you want to delete this Weekly Wrap-Up card?')) return;
+
+  try {
+    const res = await apiFetch(`${API}/api/ai/weekly-summary/${summaryId}`, {
+      method: 'DELETE'
+    });
+
+    if (res && res.deletedId) {
+      allWeeklySummaries = allWeeklySummaries.filter(s => s._id !== summaryId);
+      
+      const cardEl = document.getElementById(`weekly-summary-${summaryId}`);
+      if (cardEl) {
+        if (window.gsap) {
+          gsap.to(cardEl, {
+            opacity: 0,
+            scale: 0.9,
+            height: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            marginTop: 0,
+            marginBottom: 0,
+            duration: 0.35,
+            ease: 'power2.inOut',
+            onComplete: () => {
+              cardEl.remove();
+              renderDays(); // Triggers a complete feed rebuild to restore the Generate button at that index
+            }
+          });
+        } else {
+          cardEl.remove();
+          renderDays();
+        }
+      }
+      showToast('Weekly summary deleted successfully.', 'success');
+    }
+  } catch (err) {
+    console.error('Failed to delete weekly summary:', err);
+    showToast(err.message || 'Failed to delete summary.', 'error');
+  }
+}
+

@@ -214,7 +214,7 @@ const getAllDays = async (req, res) => {
       }).catch(() => {});
 
       const hasMore = (skip + paginatedDays.length) < total;
-      return res.json({ days: paginatedDays, streak: currentStreak, hasMore });
+      return res.json({ days: paginatedDays, streak: currentStreak, hasMore, total });
 
     } else {
       // Non-paginated fallback

@@ -350,6 +350,18 @@
         </div>
       </div>
 
+      <!-- AI Productivity Biography Card -->
+      <div class="profile-card" id="ai-bio-card" style="display: none; padding: 24px; text-align: left; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.05) 100%); border: 3px solid var(--black); border-radius: var(--r-lg); box-shadow: 6px 6px 0 var(--black); position: relative;">
+        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; color: var(--black); letter-spacing: 0.5px;">
+          <span>✨</span> AI Productivity Bio
+        </h3>
+        <p id="ai-bio-text" style="font-size: 13.5px; line-height: 1.65; color: var(--text); font-weight: 600; margin-bottom: 18px;"></p>
+        <button id="btn-refresh-bio" class="ripple" onclick="refreshProductivityBio()" style="width: 100%; display: none; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: var(--black); color: var(--yellow); border: 2px solid var(--black); border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
+          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> <span>RECALCULATE BIO</span>
+        </button>
+        <div id="bio-cooldown-message" style="display: none; font-size: 11px; color: var(--text-muted); font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;"></div>
+      </div>
+
       <div class="profile-card" style="padding: 24px; text-align: center; background: var(--bg-muted);">
         <a href="landing.html" style="text-decoration: none; display: inline-block; margin-bottom: 24px;">
           <span style="background: var(--yellow); padding: 8px 16px; border: 3px solid var(--black); border-radius: 8px; box-shadow: 4px 4px 0 var(--black); font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 900; color: var(--black); text-transform: uppercase; transition: all 0.2s;" onmouseover="this.parentElement.style.transform='translate(-2px, -2px)'" onmouseout="this.parentElement.style.transform='none'">

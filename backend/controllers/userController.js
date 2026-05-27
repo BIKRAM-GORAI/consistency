@@ -109,7 +109,9 @@ async function getPublicProfile(req, res) {
       totalDays: daysRaw.length,
       claimedBadges: user.claimedBadges || [],
       isPublicProfile: user.isPublicProfile !== false,
-      showPrivateDetails: showPrivateDetails
+      showPrivateDetails: showPrivateDetails,
+      productivityBio: user.productivityBio || '',
+      lastBioGeneratedAt: user.lastBioGeneratedAt || null
     });
 
   } catch (err) {
