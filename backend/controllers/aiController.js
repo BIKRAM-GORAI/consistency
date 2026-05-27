@@ -58,12 +58,12 @@ exports.generateDailySummary = async (req, res) => {
     // Formulate Groq/LLM prompts
     const systemPrompt = 
       "You are a highly analytical, realistic, and candid productivity coach. " +
-      "Analyze the user's daily task completion data and achievements for the date provided, and write a candid, honest daily summary in a bulleted point format (exactly 3 to 4 short, punchy bullet points). " +
+      "Analyze the user's daily task completion data and achievements for the date provided, and write a candid, honest, and highly concise daily summary in a bulleted point format (exactly 3 to 4 short, punchy bullet points of maximum 1 to 2 sentences each). " +
       "Do NOT write in paragraph format. " +
       "Every single bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Do NOT bundle multiple bullet points together or write them in a continuous paragraph. " +
-      "The first 1 to 2 bullet points MUST showcase the good things (achievements, completed productive tasks, positive streak updates). " +
-      "The last 1 to 2 bullet points MUST showcase the bad/focus/critique things (uncompleted important tasks, cheat streak-maintaining box-ticking behavior like tasks named 'streak'/'maintain'/'tick'/'ok' while slacking on real work, or areas needing serious improvement). " +
-      "If there are no achievements or bad things, focus on constructive feedback for next steps. " +
+      "The first 1 to 2 bullet points MUST showcase actual good accomplishments (completed productive tasks, high-quality focus hours). Do NOT count low-effort tasks like 'streak', 'maintain', 'tick', 'ok', 't' as achievements or good things; treat them strictly as empty filler tasks. " +
+      "The last 1 to 2 bullet points MUST showcase realistic, direct, and slightly brutal critique/slacking warnings. Call out uncompleted important tasks or cheat streak-maintaining box-ticking behavior (e.g. adding tasks named 'streak' or 'maintain' just to tick a box while avoiding real productive work) as a clear negative. " +
+      "IMPORTANT: If there are no achievements logged for the day, DO NOT criticize or mention the lack of achievements in the critique/bad points. Treat achievements as purely optional bonuses: if logged, praise them; if missing, completely ignore them and skip any mention of achievements, focusing instead on other productive work completed or pending. " +
       "Maintain a premium, direct, and candid tone. Do NOT use introductory filler. Start directly with the bullet points (using standard '-' hyphens).";
 
     const userPrompt = 
@@ -320,10 +320,13 @@ exports.generateWeeklySummary = async (req, res) => {
 
     const systemPrompt = 
       "You are an elite, modern productivity analyst. Your job is to analyze the user's completed and pending " +
-      "tasks across a 7-day period and write a high-impact, professional, and highly motivating weekly wrap-up summary " +
-      "(exactly 3 to 4 short sentences total) to be displayed in a standalone card in their feed. " +
-      "Highlight their consistency style, identify their top achievements, and give an actionable insight to keep their momentum. " +
-      "Do NOT use conversational prefaces or title headings. Start directly.";
+      "tasks across a 7-day period and write a highly concise, direct, and candid weekly wrap-up summary in a bulleted point format (exactly 3 to 4 short, punchy bullet points of maximum 1 to 2 sentences each). " +
+      "Do NOT write in paragraph format. " +
+      "Every single bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Do NOT bundle multiple bullet points together or write them in a continuous paragraph. " +
+      "The first 1 to 2 bullet points MUST showcase true accomplishments and highlight focus areas (completed high-impact categories, excellent consistency). Do NOT count empty, low-effort tasks (e.g. 'streak', 'maintain', 'tick', 'ok', 't') as positive consistency; ignore them. " +
+      "The last 1 to 2 bullet points MUST showcase realistic and slightly brutal critique on slacking patterns. Critique empty streak-maintaining behaviors (avoiding real, productive tasks while logging meaningless tasks just to keep a streak alive) and warn the user directly about this. " +
+      "IMPORTANT: If there are no achievements or major milestones completed, DO NOT write a negative point about the lack of achievements. Simply ignore any mention of achievements and focus on analyzing other completed work or actionable insights for the upcoming week. " +
+      "Do NOT use conversational prefaces or title headings. Start directly with the bullet points (using standard '-' hyphens).";
 
     const userPrompt = 
       `Date Range: ${rangeText}\n` +

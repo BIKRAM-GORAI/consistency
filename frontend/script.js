@@ -9163,8 +9163,21 @@ async function initPushNotifications(forcePrompt = false) {
     try {
       const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';
       if (!manuallyDisabled) {
+        // Clean up legacy duplicate firebase-messaging-sw.js to prevent double notifications in PWA
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) {
+            if (r.active && r.active.scriptURL.includes('firebase-messaging-sw.js')) {
+              await r.unregister();
+              console.log('[SW Cleanup] Unregistered duplicate firebase-messaging-sw.js worker.');
+            }
+          }
+        } catch (swErr) {
+          console.warn('Service worker cleanup failed:', swErr);
+        }
+
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=35');
+        await navigator.serviceWorker.register('/sw.js?v=42');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
@@ -10908,7 +10921,7 @@ function buildWeeklySummaryCard(summary) {
         <span style="font-size: 10px; font-weight: 900; color: var(--black); text-transform: uppercase; background: var(--lime); padding: 2px 8px; border: 1.5px solid var(--black); border-radius: 4px; box-shadow: 1.5px 1.5px 0 var(--black); display: inline-block; margin-top: 4px;">${escHtml(summary.rangeText)}</span>
       </div>
     </div>
-    <p style="font-size: 13.5px; line-height: 1.65; color: var(--text); font-weight: 600; margin: 0;">${escHtml(summary.summaryText)}</p>
+    <p style="font-size: 13.5px; line-height: 1.65; color: var(--text); font-weight: 600; margin: 0; white-space: pre-wrap;">${escHtml(summary.summaryText)}</p>
   `;
   
   if (window.lucide) {

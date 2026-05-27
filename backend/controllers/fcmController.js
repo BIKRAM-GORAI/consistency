@@ -41,7 +41,7 @@ async function sendMulticastPush(group, bodyText, tokens, isSilent) {
     android: {
       priority: isSilent ? 'normal' : 'high',
       notification: {
-        channelId: isSilent ? 'default' : 'consistency_chime_channel_v1'
+        channelId: isSilent ? 'default' : 'consistency_chime_channel_v2'
       }
     },
     webpush: {

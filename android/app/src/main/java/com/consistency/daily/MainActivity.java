@@ -52,7 +52,7 @@ public class MainActivity extends BridgeActivity {
 
         // Create custom sound Notification Channel for high-priority chat alerts
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            String channelId = "consistency_chime_channel_v1";
+            String channelId = "consistency_chime_channel_v2";
             CharSequence name = "Chat Messages";
             String description = "Notifications with custom chime alert";
             int importance = android.app.NotificationManager.IMPORTANCE_HIGH;
