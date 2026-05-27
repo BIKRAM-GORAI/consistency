@@ -1,6 +1,9 @@
-const API = window.location.origin.includes('localhost') 
-  ? (window.location.port === '5001' ? '' : 'http://localhost:5001') 
-  : '';
+const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
+const API = isAndroidNative 
+  ? 'https://consistency-daily.vercel.app' 
+  : (window.location.origin.includes('localhost') 
+      ? (window.location.port === '5001' ? '' : 'http://localhost:5001') 
+      : '');
 
 let currentUser = null;
 let currentDaysPage = 0;

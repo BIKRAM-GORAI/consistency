@@ -57,7 +57,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-  <script src="/js/libs/lucide/lucide.min.js"></script>
+  <script src="libs/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     *,
@@ -2451,6 +2451,8 @@
   </div>
 
   <script>
+    const API = navigator.userAgent.includes("CapacitorNative/Android") ? 'https://consistency-daily.vercel.app' : '';
+
     // ── Reviews Logic ──
     function openSubmitReviewModal() {
       document.getElementById('submit-review-modal').classList.add('show');
@@ -2466,7 +2468,7 @@
       const description = document.getElementById('review-desc').value;
 
       try {
-        const res = await fetch('/api/reviews', {
+        const res = await fetch(API + '/api/reviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, description })
@@ -2490,7 +2492,7 @@
 
     async function openViewReviewsModal() {
       try {
-        const modeRes = await fetch('/api/reviews/access-mode');
+        const modeRes = await fetch(API + '/api/reviews/access-mode');
         const modeData = await modeRes.json();
 
         let password = '';
@@ -2504,7 +2506,7 @@
           headers['x-admin-password'] = password;
         }
 
-        const res = await fetch('/api/reviews', { headers });
+        const res = await fetch(API + '/api/reviews', { headers });
         const data = await res.json();
 
         if (!res.ok) {

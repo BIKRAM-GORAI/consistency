@@ -26,7 +26,7 @@ if (!navigator.onLine) {
   document.body.classList.add('is-offline');
 }
 
-const API = '';  // Same origin
+const API = isAndroidNative ? 'https://consistency-daily.vercel.app' : '';  // Same origin or remote if native app wrapper
 
 // ── Security Helpers ──────────────────────────────────────
 /** Escapes HTML special characters to prevent XSS */
@@ -7113,7 +7113,7 @@ async function checkNativeAppUpdates() {
   if (!isAndroidNative) return;
   
   try {
-    const res = await fetch('/app-version.json');
+    const res = await fetch('https://consistency-daily.vercel.app/app-version.json');
     if (!res.ok) return;
     const data = await res.json();
     

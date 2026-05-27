@@ -46,7 +46,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <script src="/js/libs/lucide/lucide.min.js"></script>
+  <script src="libs/lucide.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -727,7 +727,8 @@
   </div>
 
   <script>
-    const API = '';  // Empty string means same origin
+    const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
+    const API = isAndroidNative ? 'https://consistency-daily.vercel.app' : '';
 
     // ── Tab switching ──────────────────────────────────────────
     function switchTab(tab) {
@@ -786,7 +787,7 @@
       btn.textContent = 'Logging in...';
 
       try {
-        const res = await fetch('/api/auth/login', {
+        const res = await fetch(API + '/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -976,7 +977,7 @@
       btn.textContent = 'Creating account...';
 
       try {
-        const res = await fetch('/api/auth/register', {
+        const res = await fetch(API + '/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, username, email, password, profilePicture }),
@@ -1017,7 +1018,7 @@
       btn.disabled = true; btn.textContent = 'Sending...';
 
       try {
-        const res = await fetch('/api/auth/forgot-password-otp', {
+        const res = await fetch(API + '/api/auth/forgot-password-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
@@ -1048,7 +1049,7 @@
       btn.disabled = true; btn.textContent = 'Validating...';
 
       try {
-        const res = await fetch('/api/auth/validate-otp', {
+        const res = await fetch(API + '/api/auth/validate-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp }),
@@ -1086,7 +1087,7 @@
       btn.disabled = true; btn.textContent = 'Updating...';
 
       try {
-        const res = await fetch('/api/auth/reset-password', {
+        const res = await fetch(API + '/api/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp, newPassword }),
@@ -1155,6 +1156,7 @@
     const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
                         navigator.userAgent.includes("Capacitor") ||
                         (window.location.protocol === 'file:' || window.location.hostname === 'localhost' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    const API = isNativeApp ? 'https://consistency-daily.vercel.app' : '';
 
     const overlay = document.getElementById('oauth-loading-overlay');
 
@@ -1251,7 +1253,7 @@
       const idToken = await user.getIdToken();
 
       // Send token to our backend for verification and account merge
-      const res = await fetch('/api/auth/oauth-login', {
+      const res = await fetch(API + '/api/auth/oauth-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

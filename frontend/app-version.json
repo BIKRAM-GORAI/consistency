@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.1",
+  "latestVersion": "1.2",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "Notification system upgrades: beautiful app icons in status alerts and reliable custom chime sounds."
+  "releaseNotes": "Critical Security & Reliability Update: Adds full offline boot support, fixes icon rendering, resolves network login errors, and upgrades offline data synchronization."
 }

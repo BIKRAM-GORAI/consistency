@@ -3,7 +3,6 @@
   "appName": "Consistency Daily",
   "webDir": "frontend",
   "server": {
-    "url": "https://consistency-daily.vercel.app",
     "allowNavigation": [
       "consistency-daily.vercel.app",
       "*.firebaseapp.com",
