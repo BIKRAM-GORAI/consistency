@@ -19,6 +19,13 @@ if (isAndroidNative) {
   }
 }
 
+// ── Offline detection: apply SYNCHRONOUSLY before any async work ──────────
+// This ensures the is-offline CSS class is on <body> BEFORE cards are rendered,
+// so buttons are never clickable even briefly during the Dexie load phase.
+if (!navigator.onLine) {
+  document.body.classList.add('is-offline');
+}
+
 const API = '';  // Same origin
 
 // ── Security Helpers ──────────────────────────────────────
@@ -107,11 +114,14 @@ window.onpageshow = function(event) {
 // ── State ──────────────────────────────────────────────────
 let allDays  = [];
 let allWeeklySummaries = [];
+let generationsLeft = 15;
 let totalDaysCountInDb = 0;
 let currentPage = 1;
 const daysPerPage = 10;
 let hasMoreDays = false;
 let backendStreak = 0;
+// Tracks if the last apiFetch failed due to a real network error (used to re-enable buttons on next success)
+let _wasOffline = false;
 let allGoals = [];
 let goalsSortOption = 'default';
 let visibleGoalsCount = 10;
@@ -543,10 +553,22 @@ async function apiFetch(url, options = {}) {
       err.data = body;
       throw err;
     }
-    return res.json();
+    return res.json().then(data => {
+      // Any successful response → we are online. Re-enable buttons if they were disabled offline.
+      if (_wasOffline) {
+        _wasOffline = false;
+        updateOfflineButtonState(false); // false = not forced offline
+      }
+      return data;
+    });
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') throw new Error('Request timed out. Please check your connection.');
+    // Real network error (no internet) → disable all network-dependent buttons immediately
+    if (err instanceof TypeError) {
+      _wasOffline = true;
+      updateOfflineButtonState(true); // forceOffline=true bypasses navigator.onLine
+    }
     throw err;
   }
 }
@@ -560,10 +582,19 @@ async function loadDays(page = 1) {
   }
   const loadingEl = document.getElementById('loading-days');
 
-  // 1. STALE: Load from IndexedDB instantly
+  // 1. STALE: Load from IndexedDB instantly (including weekly summaries, so they render offline too)
   if (page === 1) {
     try {
       const cached = await localDb.days.toArray();
+
+      // Always pre-load weekly/monthly summaries from Dexie so they show in the feed immediately
+      // This runs whether online or offline — server will overwrite with fresh data if online
+      try {
+        allWeeklySummaries = await localDb.weeklySummaries.toArray();
+      } catch (dexieErr) {
+        console.warn('Failed to read weekly summaries from Dexie cache:', dexieErr);
+      }
+
       if (cached.length > 0) {
         allDays = cached;
         renderDays();
@@ -578,25 +609,36 @@ async function loadDays(page = 1) {
   // 2. REVALIDATE: Load from Server (Only if online)
   if (!navigator.onLine) {
     if (allDays.length > 0) {
-      showToast('Offline: Using cached days.', 'info');
+      showToast('Offline: Using cached data.', 'info');
     } else {
-      // Offline with no days present - render the empty state so the user can create cards offline!
+      // Offline with no days present — render the empty state so user can create cards offline
       renderDays();
       updateStreak();
     }
+    // Ensure all network-dependent buttons are disabled in offline mode
+    updateOfflineButtonState();
     if (loadingEl) loadingEl.innerHTML = '';
     return;
   }
 
+
   try {
     const data = await apiFetch(`${API}/api/days?page=${page}&limit=${daysPerPage}`);
     
-    // Concurrent fetch of all saved WeeklySummaries on page 1 load
-    if (page === 1 && navigator.onLine) {
+    // Sync fresh Weekly & Monthly Summaries from server on page 1 load
+    // (Dexie was already loaded above in the stale-cache step)
+    if (page === 1) {
       try {
-        allWeeklySummaries = await apiFetch(`${API}/api/ai/weekly-summaries`);
+        const freshSummaries = await apiFetch(`${API}/api/ai/weekly-summaries`);
+        if (freshSummaries && Array.isArray(freshSummaries)) {
+          allWeeklySummaries = freshSummaries;
+          if (window.localDb) {
+            await window.localDb.weeklySummaries.clear();
+            await window.localDb.weeklySummaries.bulkPut(freshSummaries);
+          }
+        }
       } catch (err) {
-        console.warn('Failed to load weekly summaries:', err);
+        console.warn('Failed to load weekly summaries from server:', err);
       }
     }
 
@@ -658,6 +700,13 @@ async function loadDays(page = 1) {
     setLeaderboardTogglesEnabled(true);
   } catch (err) {
     console.error('Error loading days:', err);
+
+    // Detect real offline (fetch failure = no internet even if navigator.onLine was true)
+    const isNetworkError = err instanceof TypeError && err.message.includes('fetch');
+    if (isNetworkError) {
+      // Actual connectivity lost — disable all network-dependent buttons
+      updateOfflineButtonState(true);
+    }
     
     // If we have cached data, don't show a big error, just a small notice
     if (allDays.length > 0) {
@@ -843,9 +892,18 @@ async function renderDays(appendOnly = false) {
     const globalIndex = sortedAllDays.findIndex(d => d._id === day._id);
     const chronoIndex = globalIndex >= 0 ? (baseCountForChrono - globalIndex) : (baseCountForChrono - i);
 
-    // Inject 7-Day AI Wrap-Up cards/generate-buttons chronologically in between daily cards
-    if (chronoIndex > 0 && chronoIndex % 7 === 0) {
-      const summary = allWeeklySummaries.find(s => s.date === day.date);
+    // Inject 30-Day or 7-Day AI Summary cards/generate-buttons chronologically in between daily cards
+    if (chronoIndex > 0 && chronoIndex % 30 === 0) {
+      const summary = allWeeklySummaries.find(s => s.date === day.date && s.daysCount === 30);
+      if (summary) {
+        const summaryCard = buildMonthlySummaryCard(summary);
+        fragment.appendChild(summaryCard);
+      } else {
+        const generateBtnCard = buildMonthlySummaryButtonCard(day._id, day.date);
+        fragment.appendChild(generateBtnCard);
+      }
+    } else if (chronoIndex > 0 && chronoIndex % 7 === 0) {
+      const summary = allWeeklySummaries.find(s => s.date === day.date && (s.daysCount === 7 || !s.daysCount));
       if (summary) {
         const summaryCard = buildWeeklySummaryCard(summary);
         fragment.appendChild(summaryCard);
@@ -910,6 +968,9 @@ async function renderDays(appendOnly = false) {
       });
     }
   }
+
+  // Apply correct offline/online button state for all newly rendered network-dependent buttons
+  updateOfflineButtonState();
 }
 
 function buildDayCard(day, preLoadedAchievements = null) {
@@ -1005,7 +1066,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
       <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative;">
         <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">
           <span>✨</span> <span>AI Daily Insights</span>
-          <button class="btn-refresh-recap" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; margin-left: auto; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
+          <button class="btn-refresh-recap" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; margin-left: auto; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
         </div>
         <p class="ai-recap-text" id="ai-recap-text-${day._id}" style="color: var(--text); font-weight: 600; white-space: pre-wrap; margin: 0;">${escHtml(daySummary)}</p>
       </div>
@@ -1053,8 +1114,8 @@ function buildDayCard(day, preLoadedAchievements = null) {
         <span class="summary-chevron"><i data-lucide="chevron-down"></i></span>
       </button>
       ${daySummary ? '' : `
-        <button class="summary-toggle ripple" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
-          <span>✨ AI Insights</span>
+        <button class="summary-toggle ripple" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
+          <span>✨ AI Insights (<span class="ai-limit-badge">⚡ ${generationsLeft} left</span>)</span>
         </button>
       `}
     </div>
@@ -1375,8 +1436,25 @@ const syncManager = {
   }
 };
 
-// Also listen for online event to trigger sync
-window.addEventListener('online', () => syncManager.processQueue());
+// Also listen for online event to trigger sync and re-enable network buttons
+window.addEventListener('online', () => {
+  _wasOffline = false;
+  syncManager.processQueue();
+  updateOfflineButtonState(false); // navigator.onLine should be true now
+  setLeaderboardTogglesEnabled(true);
+  showToast('Back online! AI features enabled.', 'success');
+  // Refresh AI badge count and reload data from server
+  fetchAiLimit();
+  loadDays(1);
+});
+
+// Disable network buttons when user goes offline
+window.addEventListener('offline', () => {
+  _wasOffline = true;
+  updateOfflineButtonState(true); // force-disable regardless of navigator.onLine
+  setLeaderboardTogglesEnabled(false);
+  showToast('You are offline. AI features are disabled.', 'warn');
+});
 
 // ── Delete Day Card Completely ──────────────────────────────
 async function deleteDayCard(dayId) {
@@ -6915,7 +6993,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=49');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=50');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -9203,7 +9281,7 @@ async function initPushNotifications(forcePrompt = false) {
         }
 
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=49');
+        await navigator.serviceWorker.register('/sw.js?v=50');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
@@ -10100,6 +10178,7 @@ async function proactiveSync(force = false) {
 
     // 1. Sync Profile & Config
     await fetchConfig();
+    await fetchAiLimit();
     const profile = await apiFetch(`${API}/api/auth/settings`);
     if (profile) {
       profile.userId = userId;
@@ -10859,6 +10938,59 @@ setTimeout(() => {
    ============================================================ */
 
 /**
+ * Fetches the remaining daily AI generations count from the server.
+ */
+async function fetchAiLimit() {
+  try {
+    const res = await apiFetch(`${API}/api/ai/generations-left`);
+    if (res && typeof res.generationsLeft !== 'undefined') {
+      generationsLeft = res.generationsLeft;
+      updateAllAiInsightButtons();
+    }
+  } catch (err) {
+    console.warn('[AI Limit] Failed to fetch generations left:', err);
+  } finally {
+    // Always apply offline state after fetching (or failing to fetch) the limit
+    updateOfflineButtonState();
+  }
+}
+
+/**
+ * Updates all dynamically visible AI recap and milestone buttons with the latest daily limits count.
+ */
+function updateAllAiInsightButtons() {
+  const badges = document.querySelectorAll('.ai-limit-badge');
+  badges.forEach(b => {
+    b.textContent = `⚡ ${generationsLeft} left`;
+  });
+}
+
+/**
+ * Toggles the body.is-offline class to enable/disable all network-dependent buttons via CSS.
+ * forceOffline=true bypasses navigator.onLine (used when a real network fetch failure occurs).
+ * The CSS rule in index.html handles all the visual disabling — no per-button DOM walking needed.
+ */
+function updateOfflineButtonState(forceOffline = false) {
+  const isOnline = !forceOffline && navigator.onLine;
+  if (isOnline) {
+    document.body.classList.remove('is-offline');
+    // Also explicitly re-enable any buttons that had disabled=true set (belt + suspenders)
+    document.querySelectorAll('[data-requires-network="true"]').forEach(btn => {
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+      btn.style.pointerEvents = '';
+    });
+  } else {
+    document.body.classList.add('is-offline');
+    // Also explicitly set disabled to prevent keyboard/programmatic activation
+    document.querySelectorAll('[data-requires-network="true"]').forEach(btn => {
+      btn.disabled = true;
+    });
+  }
+}
+
+/**
  * Sends a POST request to generate a 2-sentence AI Daily Recap and updates the Day card.
  */
 async function generateDailySummary(dayId, dateStr) {
@@ -10891,6 +11023,10 @@ async function generateDailySummary(dayId, dateStr) {
     });
 
     if (res && res.summary) {
+      if (typeof res.generationsLeft !== 'undefined') {
+        generationsLeft = res.generationsLeft;
+        updateAllAiInsightButtons();
+      }
       // Find in memory array to update cache
       const day = allDays.find(d => d._id === dayId);
       if (day) {
@@ -10908,7 +11044,7 @@ async function generateDailySummary(dayId, dateStr) {
           : [];
         cardEl.replaceWith(buildDayCard(day, preLoadedAchs));
       }
-      showToast('Daily summary successfully generated!', 'success');
+      showToast(`Daily insights generated successfully! (⚡ ${generationsLeft} left today)`, 'success');
     }
   } catch (err) {
     console.error('Failed to generate daily summary:', err);
@@ -10939,7 +11075,7 @@ function buildWeeklySummaryCard(summary) {
   `;
   
   card.innerHTML = `
-    <button onclick="deleteWeeklySummaryCard('${summary._id}')" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px;" title="Delete wrap-up"><i data-lucide="trash-2" style="width: 18px; height: 18px;"></i></button>
+    <button onclick="deleteWeeklySummaryCard('${summary._id}')" data-requires-network="true" data-original-title="Delete wrap-up" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px;" title="Delete wrap-up"><i data-lucide="trash-2" style="width: 18px; height: 18px;"></i></button>
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
       <span style="font-size: 26px;">🏆</span>
       <div>
@@ -10982,8 +11118,8 @@ function buildWeeklySummaryButtonCard(dayId, dateStr) {
     <div style="margin-bottom: 10px; font-size: 26px;">✨</div>
     <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px;">7-Card Milestone Achieved!</h3>
     <p style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); max-width: 320px; margin: 0 auto 16px; line-height: 1.5;">Combine your past 7 logged cards into a single AI weekly productivity summary.</p>
-    <button class="ripple" onclick="generateWeeklySummaryCard('${dayId}')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--black); color: var(--yellow); border: 2px solid var(--black); border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 11px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
-      <span>GENERATE WEEKLY WRAP-UP</span>
+    <button class="ripple" data-requires-network="true" data-original-title="Generate Weekly Wrap-Up" onclick="generateWeeklySummaryCard('${dayId}')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--black); color: var(--yellow); border: 2px solid var(--black); border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 11px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
+      <span>GENERATE WEEKLY WRAP-UP (<span class="ai-limit-badge">⚡ ${generationsLeft} left</span>)</span>
     </button>
   `;
   return card;
@@ -11024,7 +11160,20 @@ async function generateWeeklySummaryCard(dayId) {
     });
 
     if (responseSummary && responseSummary._id) {
+      if (typeof responseSummary.generationsLeft !== 'undefined') {
+        generationsLeft = responseSummary.generationsLeft;
+        updateAllAiInsightButtons();
+      }
       allWeeklySummaries.push(responseSummary);
+      
+      // Save locally in Dexie for offline persistence
+      if (window.localDb) {
+        try {
+          await window.localDb.weeklySummaries.put(responseSummary);
+        } catch (dexieErr) {
+          console.warn('Failed to cache weekly summary offline:', dexieErr);
+        }
+      }
       
       // Morphs/replaces the button card with the final AI summary card smoothly
       const freshCard = buildWeeklySummaryCard(responseSummary);
@@ -11034,7 +11183,7 @@ async function generateWeeklySummaryCard(dayId) {
       if (window.gsap) {
         gsap.from(freshCard, { scale: 0.95, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' });
       }
-      showToast('7-Day wrap-up generated successfully!', 'success');
+      showToast(`7-Day wrap-up generated successfully! (⚡ ${generationsLeft} left today)`, 'success');
     }
   } catch (err) {
     console.error('Failed to generate weekly summary:', err);
@@ -11061,6 +11210,15 @@ async function deleteWeeklySummaryCard(summaryId) {
 
     if (res && res.deletedId) {
       allWeeklySummaries = allWeeklySummaries.filter(s => s._id !== summaryId);
+      
+      // Delete locally from Dexie for offline persistence
+      if (window.localDb) {
+        try {
+          await window.localDb.weeklySummaries.delete(summaryId);
+        } catch (dexieErr) {
+          console.warn('Failed to delete weekly summary from offline database:', dexieErr);
+        }
+      }
       
       const cardEl = document.getElementById(`weekly-summary-${summaryId}`);
       if (cardEl) {
@@ -11090,6 +11248,132 @@ async function deleteWeeklySummaryCard(summaryId) {
   } catch (err) {
     console.error('Failed to delete weekly summary:', err);
     showToast(err.message || 'Failed to delete summary.', 'error');
+  }
+}
+
+/**
+ * Builds a beautiful standalone 30-Day (Monthly) Summary Card element.
+ */
+function buildMonthlySummaryCard(summary) {
+  const card = document.createElement('div');
+  card.className = 'day-card weekly-summary-card monthly-summary-card';
+  card.id = `weekly-summary-${summary._id}`;
+  card.style.cssText = `
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.12) 0%, rgba(139, 92, 246, 0.12) 50%, rgba(99, 102, 241, 0.12) 100%), var(--bg-card);
+    border: 3.5px solid var(--black);
+    border-radius: var(--r-lg);
+    padding: 26px 30px;
+    box-shadow: 7px 7px 0 var(--black);
+    position: relative;
+    margin-bottom: 24px;
+  `;
+  
+  card.innerHTML = `
+    <button onclick="deleteWeeklySummaryCard('${summary._id}')" data-requires-network="true" data-original-title="Delete wrap-up" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px;" title="Delete wrap-up"><i data-lucide="trash-2" style="width: 18px; height: 18px;"></i></button>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+      <span style="font-size: 28px;">👑</span>
+      <div>
+        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 16px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px; margin: 0; line-height: 1.2;">30-Day Elite Summary</h3>
+        <span style="font-size: 10px; font-weight: 900; color: #fff; text-transform: uppercase; background: var(--pink); padding: 2px 8px; border: 1.5px solid var(--black); border-radius: 4px; box-shadow: 1.5px 1.5px 0 var(--black); display: inline-block; margin-top: 4px;">${escHtml(summary.rangeText)}</span>
+      </div>
+    </div>
+    <div class="monthly-summary-content" style="font-size: 13px; line-height: 1.65; color: var(--text); font-weight: 600; margin: 0; white-space: pre-wrap;">${escHtml(summary.summaryText)}</div>
+  `;
+  
+  if (window.lucide) {
+    setTimeout(() => lucide.createIcons({ root: card }), 10);
+  }
+  return card;
+}
+
+/**
+ * Builds the glowing "Generate 30-Day Summary" milestone card.
+ */
+function buildMonthlySummaryButtonCard(dayId, dateStr) {
+  const card = document.createElement('div');
+  card.className = 'day-card weekly-summary-button-card monthly-summary-button-card';
+  card.id = `weekly-summary-btn-card-${dayId}`;
+  card.style.cssText = `
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%), var(--bg-card);
+    border: 3.5px dashed var(--pink);
+    border-radius: var(--r-lg);
+    padding: 30px 24px;
+    box-shadow: 6px 6px 0 var(--black);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+  `;
+  
+  card.innerHTML = `
+    <div style="margin-bottom: 10px; font-size: 28px;">💎</div>
+    <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px;">30-Card Diamond Milestone!</h3>
+    <p style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); max-width: 320px; margin: 0 auto 16px; line-height: 1.5;">Compile your past 30 days of consistent logging into a deep AI monthly productivity summary.</p>
+    <button class="ripple" data-requires-network="true" data-original-title="Generate 30-Day Summary" onclick="generateMonthlySummaryCard('${dayId}')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--pink); color: #fff; border: 2px solid var(--black); border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 11px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
+      <span>GENERATE 30-DAY SUMMARY (<span class="ai-limit-badge">⚡ ${generationsLeft} left</span>)</span>
+    </button>
+  `;
+  return card;
+}
+
+/**
+ * Submits POST request to compile preceding 30 days of logs into a standalone Monthly summary.
+ */
+async function generateMonthlySummaryCard(dayId) {
+  if (!navigator.onLine) {
+    showToast('Offline: Cannot generate AI monthly summary.', 'warn');
+    return;
+  }
+
+  const container = document.getElementById(`weekly-summary-btn-card-${dayId}`);
+  if (!container) return;
+
+  const originalHTML = container.innerHTML;
+
+  // Render loading state
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.textAlign = 'center';
+
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px 0; width: 100%;">
+      <div class="spinner-ring" style="width: 28px; height: 28px; border-width: 3px; border-color: var(--text) transparent transparent transparent; margin-bottom: 16px;"></div>
+      <h4 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px; margin: 0 0 6px 0;">Assembling Monthly Archive...</h4>
+      <p style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 0; max-width: 320px;">Synthesizing your consistency metrics, habits, and highlights for the past 30 cards...</p>
+    </div>
+  `;
+
+  try {
+    const responseSummary = await apiFetch(`${API}/api/ai/monthly-summary/${dayId}`, {
+      method: 'POST'
+    });
+
+    if (responseSummary && responseSummary._id) {
+      if (typeof responseSummary.generationsLeft !== 'undefined') {
+        generationsLeft = responseSummary.generationsLeft;
+        updateAllAiInsightButtons();
+      }
+      allWeeklySummaries.push(responseSummary);
+      
+      // Morphs/replaces the button card with the final AI summary card smoothly
+      const freshCard = buildMonthlySummaryCard(responseSummary);
+      container.replaceWith(freshCard);
+      
+      // GSAP entrance zoom
+      if (window.gsap) {
+        gsap.from(freshCard, { scale: 0.95, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' });
+      }
+      showToast(`30-Day elite insights generated! (⚡ ${generationsLeft} left today)`, 'success');
+    }
+  } catch (err) {
+    console.error('Failed to generate monthly summary:', err);
+    showToast(err.message || 'Failed to generate monthly summary.', 'error');
+    container.innerHTML = originalHTML; // restore button
   }
 }
 

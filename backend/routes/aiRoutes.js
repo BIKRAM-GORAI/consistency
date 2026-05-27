@@ -15,6 +15,12 @@ router.post('/weekly-summary/:dayId', authenticateToken, aiController.generateWe
 // Route to fetch all weekly summaries for the authenticated user
 router.get('/weekly-summaries', authenticateToken, aiController.getWeeklySummaries);
 
+// Route to fetch remaining daily AI summary generations left
+router.get('/generations-left', authenticateToken, aiController.getGenerationsLeft);
+
+// Route to compile and generate a standalone 30-day (Monthly) summary card
+router.post('/monthly-summary/:dayId', authenticateToken, aiController.generateMonthlySummary);
+
 // Route to delete a weekly summary card by ID
 router.delete('/weekly-summary/:id', authenticateToken, aiController.deleteWeeklySummary);
 

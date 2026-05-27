@@ -50,7 +50,19 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=21" />
+  <link rel="stylesheet" href="style.css?v=22" />
+  <style>
+    /* ── Offline mode: disable all network-dependent buttons instantly via body class ── */
+    body.is-offline [data-requires-network="true"] {
+      opacity: 0.4 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+      filter: grayscale(0.3);
+    }
+    body.is-offline [data-requires-network="true"]::after {
+      content: '';
+    }
+  </style>
   <script src="libs/gsap.min.js"></script>
   <script src="libs/ScrollTrigger.min.js"></script>
   <script src="libs/dexie.js"></script>
@@ -1556,7 +1568,7 @@
 
     // ── INDEXED DB INITIALIZATION (OFFLINE-FIRST) ──
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(7).stores({
+    dbLocal.version(8).stores({
       days: "_id, date, status, tasks, userId",
       goals: "_id, title, targetDate, status, userId",
       groups: "_id, name, code, isPublic",
@@ -1567,7 +1579,8 @@
       badges: "_id",
       templates: "_id, name",
       mediaCache: "url",
-      scratchpads: "dayId"
+      scratchpads: "dayId",
+      weeklySummaries: "_id, date, userId, daysCount"
     });
     window.localDb = dbLocal;
   </script>
@@ -1634,7 +1647,7 @@
     </style>
   </div>
 
-  <script src="script.js?v=49"></script>
+  <script src="script.js?v=54"></script>
   <script>
     lucide.createIcons();
   </script>

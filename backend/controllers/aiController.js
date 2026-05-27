@@ -5,6 +5,65 @@ const WeeklySummary = require('../models/WeeklySummary');
 const Achievement = require('../models/Achievement');
 
 /**
+ * Gets the daily limit configured in the environment variables, defaulting to 15.
+ */
+const getAiDailyLimit = () => {
+  const limitVal = parseInt(process.env.AI_DAILY_LIMIT, 10);
+  return isNaN(limitVal) ? 15 : limitVal;
+};
+
+/**
+ * Checks the user's daily AI summary generation count, resetting it if a calendar day has passed.
+ */
+const checkAiLimit = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.aiGenerationResetTime ? new Date(user.aiGenerationResetTime) : new Date(0);
+
+  // Compare calendar days
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.aiGenerationCount = 0;
+    user.aiGenerationResetTime = now;
+    await user.save();
+  }
+
+  const limit = getAiDailyLimit();
+  const generationsLeft = Math.max(0, limit - user.aiGenerationCount);
+  return { user, generationsLeft, limit };
+};
+
+/**
+ * Increments the user's daily AI summary generation count upon successful generation.
+ */
+const incrementAiLimit = async (user) => {
+  user.aiGenerationCount += 1;
+  await user.save();
+  const limit = getAiDailyLimit();
+  return Math.max(0, limit - user.aiGenerationCount);
+};
+
+/**
+ * GET /api/ai/generations-left
+ * Fetches the remaining daily AI generations count.
+ */
+exports.getGenerationsLeft = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { generationsLeft, limit } = await checkAiLimit(userId);
+    res.status(200).json({ generationsLeft, limit });
+  } catch (error) {
+    console.error('[Vercel-Backend] getGenerationsLeft error:', error.message);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+/**
  * Generates an AI productivity summary for a single day, persisting it in the Day model.
  */
 exports.generateDailySummary = async (req, res) => {
@@ -14,6 +73,14 @@ exports.generateDailySummary = async (req, res) => {
 
     if (!date) {
       return res.status(400).json({ message: 'Date parameter is required (format: YYYY-MM-DD).' });
+    }
+
+    // 1. Enforce Daily AI Summary Rate Limiting
+    const { user, generationsLeft, limit } = await checkAiLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+      });
     }
 
     // Retrieve the Day document
@@ -103,10 +170,14 @@ exports.generateDailySummary = async (req, res) => {
     day.summary = summaryText;
     await day.save();
 
+    // 2. Increment Daily AI Summary counter upon successful generation
+    const remaining = await incrementAiLimit(user);
+
     res.status(200).json({
       date,
       completionRate,
-      summary: summaryText
+      summary: summaryText,
+      generationsLeft: remaining
     });
 
   } catch (error) {
@@ -262,6 +333,14 @@ exports.generateWeeklySummary = async (req, res) => {
       return res.status(400).json({ message: 'Anchor Day ID parameter is required.' });
     }
 
+    // 1. Enforce Daily AI Summary Rate Limiting
+    const { user, generationsLeft, limit } = await checkAiLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+      });
+    }
+
     // Retrieve the anchor Day document
     const anchorDay = await Day.findOne({ _id: dayId, userId });
     if (!anchorDay) {
@@ -373,7 +452,13 @@ exports.generateWeeklySummary = async (req, res) => {
     
     const savedSummary = await weeklySummary.save();
 
-    res.status(200).json(savedSummary);
+    // 2. Increment Daily AI Summary counter upon successful generation
+    const remaining = await incrementAiLimit(user);
+
+    res.status(200).json({
+      ...savedSummary.toObject(),
+      generationsLeft: remaining
+    });
 
   } catch (error) {
     console.error('[Vercel-Backend] generateWeeklySummary error:', error.message);
@@ -424,6 +509,168 @@ exports.getWeeklySummaries = async (req, res) => {
   } catch (error) {
     console.error('[Vercel-Backend] getWeeklySummaries error:', error.message);
     res.status(500).json({ message: 'Internal Server Error while retrieving weekly summaries.' });
+  }
+};
+
+/**
+ * Combines up to 30 preceding Day logs and triggers an AI call to create a standalone 30-day (Monthly) Summary card.
+ */
+exports.generateMonthlySummary = async (req, res) => {
+  try {
+    const { dayId } = req.params;
+    const userId = req.user.userId;
+
+    if (!dayId) {
+      return res.status(400).json({ message: 'Anchor Day ID parameter is required.' });
+    }
+
+    // 1. Enforce Daily AI Summary Rate Limiting
+    const { user, generationsLeft, limit } = await checkAiLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+      });
+    }
+
+    // Retrieve the anchor Day document
+    const anchorDay = await Day.findOne({ _id: dayId, userId });
+    if (!anchorDay) {
+      return res.status(404).json({ message: 'Anchor day card not found.' });
+    }
+
+    // Fetch up to 30 chronologically preceding days (including the anchor itself)
+    const consolidatedDays = await Day.find({
+      userId,
+      date: { $lte: anchorDay.date }
+    })
+    .sort({ date: -1 })
+    .limit(30);
+
+    if (!consolidatedDays || consolidatedDays.length === 0) {
+      return res.status(404).json({ message: 'No cards found to summarize.' });
+    }
+
+    // Sort consolidated days chronologically oldest to newest for prompt consistency
+    consolidatedDays.reverse();
+
+    const oldestDate = consolidatedDays[0].date;
+    const newestDate = consolidatedDays[consolidatedDays.length - 1].date;
+    const rangeText = `${formatDateLabel(oldestDate)} - ${formatDateLabel(newestDate)}`;
+
+    // Compile tasks and categories for prompt payload
+    let totalTasks = 0;
+    let completedTasks = 0;
+    let taskListStr = '';
+    const dayIds = [];
+
+    consolidatedDays.forEach(day => {
+      dayIds.push(day._id);
+      taskListStr += `\n📅 Date: ${day.date}\n`;
+      if (day.categories && day.categories.length > 0) {
+        day.categories.forEach(cat => {
+          taskListStr += `Category: ${cat.name}\n`;
+          if (cat.tasks && cat.tasks.length > 0) {
+            cat.tasks.forEach(t => {
+              totalTasks++;
+              if (t.completed) completedTasks++;
+              taskListStr += `- [${t.completed ? 'x' : ' '}] ${t.title}\n`;
+            });
+          } else {
+            taskListStr += `  (No tasks)\n`;
+          }
+        });
+      }
+    });
+
+    if (totalTasks === 0) {
+      return res.status(400).json({ message: 'No tasks found across the selected 30 days. Cannot generate AI monthly summary.' });
+    }
+
+    // Fetch all achievements logged across these 30 days
+    const achievements = await Achievement.find({ userId, dayId: { $in: dayIds } });
+    let achievementsStr = '';
+    if (achievements && achievements.length > 0) {
+      achievementsStr = achievements.map(a => `- ${a.title}`).join('\n');
+    }
+
+    const completionRate = Math.round((completedTasks / totalTasks) * 100);
+
+    // Formulate a premium system prompt for detailed monthly summaries with exactly three sections
+    const systemPrompt = 
+      "You are an elite, modern productivity analyst and senior lifestyle coach. Your job is to analyze the user's completed/pending tasks and achievements across a 30-day period and write a detailed, highly professional, and slightly brutal monthly review. " +
+      "You MUST structure your response into exactly three distinct sections separated by empty lines. Do NOT use markdown code blocks for the sections. Use exactly these section headers:\n\n" +
+      "🏆 THE GOOD\n" +
+      "Write 2 to 3 detailed bullet points celebrating wins, high-priority accomplishments, and highlights. Mention and praise any logged achievements beautifully. If no achievements are logged, ignore achievements entirely and focus on other positive task completions and categories (do NOT write negative critiques about a lack of achievements).\n\n" +
+      "📈 AREAS FOR IMPROVEMENT / UP-THE-BAT\n" +
+      "Write 2 to 3 bullet points analyzing low-effort routine filler tasks (like 'streak', 'maintain', 'ok', 'tick') and warning the user about slacking habits, avoidance behaviors, or minor performance drops.\n\n" +
+      "🚨 CRITICAL RED ALERTS\n" +
+      "Write 1 to 2 powerful, direct bullet points calling out critical regressions, incomplete high-impact tasks, or severe issues that must be addressed immediately to ensure meaningful personal growth.\n\n" +
+      "Every bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Maintain a premium, executive, and candid tone. Do NOT include introductory filler or conversational prefaces. Start immediately with the section '🏆 THE GOOD'.";
+
+    const userPrompt = 
+      `Date Range: ${rangeText}\n` +
+      `Days Count: ${consolidatedDays.length} days analyzed\n` +
+      `Completion Rate: ${completionRate}% (${completedTasks} completed out of ${totalTasks} total tasks)\n\n` +
+      `Logged Achievements in Past 30 Days:\n${achievementsStr || '(None logged)'}\n\n` +
+      `Historical Logs:\n${taskListStr}`;
+
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceSecret = process.env.AI_SERVICE_SECRET;
+
+    if (!aiServiceSecret) {
+      console.error('[Vercel-Backend] Shared secret AI_SERVICE_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    console.log(`[Vercel-Backend] Proxying monthly-summary for anchor ${anchorDay.date} to AI service`);
+
+    // Call Render AI Microservice
+    const aiResponse = await axios.post(`${aiServiceUrl}/api/ai/generate`, {
+      systemPrompt,
+      userPrompt
+    }, {
+      headers: {
+        'x-ai-service-secret': aiServiceSecret,
+        'Content-Type': 'application/json'
+      },
+      timeout: 25000
+    });
+
+    const wrapUpText = aiResponse.data.result;
+    if (!wrapUpText) {
+      return res.status(502).json({ message: 'Failed to retrieve monthly summary content from AI service.' });
+    }
+
+    // Save standalone WeeklySummary document in MongoDB with daysCount: 30
+    const monthlySummary = new WeeklySummary({
+      userId,
+      date: anchorDay.date,
+      summaryText: wrapUpText,
+      rangeText,
+      daysCount: consolidatedDays.length, // typically 30
+      dayIds
+    });
+    
+    const savedSummary = await monthlySummary.save();
+
+    // 2. Increment Daily AI Summary counter upon successful generation
+    const remaining = await incrementAiLimit(user);
+
+    res.status(200).json({
+      ...savedSummary.toObject(),
+      generationsLeft: remaining
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] generateMonthlySummary error:', error.message);
+    if (error.response) {
+      console.error('[Vercel-Backend] AI service error response:', error.response.data);
+      return res.status(error.response.status).json({
+        message: 'AI Service Exception',
+        details: error.response.data.error || error.response.data
+      });
+    }
+    res.status(500).json({ message: 'Internal Server Error while generating monthly summary.' });
   }
 };
 

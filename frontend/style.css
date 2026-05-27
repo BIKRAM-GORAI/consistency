@@ -6074,4 +6074,14 @@ body.native-android .push-notif-banner.show {
   position: relative !important;
 }
 
-
+/* ── Offline Mode: disable all network-dependent buttons instantly ────────────
+   The body.is-offline class is added by script.js (synchronously on load if
+   navigator.onLine is false, and on any fetch TypeError). CSS handles the
+   visual disable immediately for ALL matching buttons, even future ones. */
+body.is-offline [data-requires-network="true"] {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  filter: grayscale(0.3) !important;
+  user-select: none !important;
+}

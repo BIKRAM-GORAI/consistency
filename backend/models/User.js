@@ -182,6 +182,15 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // AI Daily Generation tracking
+    aiGenerationCount: {
+      type: Number,
+      default: 0,
+    },
+    aiGenerationResetTime: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );
