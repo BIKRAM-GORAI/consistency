@@ -1,6 +1,6 @@
 {
   "latestVersion": "1.1",
   "apkUrl": "https://consistency-daily.vercel.app/Consistency.Daily.apk",
-  "forceUpdate": false,
+  "forceUpdate": true,
   "releaseNotes": "Notification system upgrades: beautiful app icons in status alerts and reliable custom chime sounds."
 }

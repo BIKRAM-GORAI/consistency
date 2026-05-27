@@ -7067,6 +7067,32 @@ async function checkNativeAppUpdates() {
   }
 }
 
+function triggerApkDownload(apkUrl, forceUpdate) {
+  const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                      navigator.userAgent.includes("Capacitor");
+  if (isNativeApp) {
+    // Force opening in native browser so it downloads the APK file cleanly
+    if (window.Capacitor?.Plugins?.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: apkUrl });
+    } else {
+      window.open(apkUrl, '_system');
+    }
+  } else {
+    // PWA/Web: trigger standard direct download
+    const link = document.createElement('a');
+    link.href = apkUrl;
+    link.download = 'Consistency.Daily.apk';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  if (!forceUpdate) {
+    const modal = document.getElementById('native-update-modal');
+    if (modal) modal.remove();
+  }
+}
+
 function showUpdateModal(latestVersion, apkUrl, forceUpdate, releaseNotes) {
   const existing = document.getElementById('native-update-modal');
   if (existing) existing.remove();
@@ -7096,11 +7122,11 @@ function showUpdateModal(latestVersion, apkUrl, forceUpdate, releaseNotes) {
         <p style="font-size: 13px; font-weight: 600; color: #444; line-height: 1.5; white-space: pre-wrap; margin: 0;">${releaseNotes || 'Bug fixes and performance improvements.'}</p>
       </div>
       <div style="display: flex; gap: 14px; flex-direction: column;">
-        <a href="${apkUrl}" class="btn-primary ripple" style="text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 14px; font-size: 16px; text-transform: uppercase; font-weight: 900; letter-spacing: 0.5px; background: var(--pink); color: #fff; width: 100%; margin: 0; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;" onclick="if(!${forceUpdate}) { document.getElementById('native-update-modal').remove(); }">
+        <button onclick="triggerApkDownload('${apkUrl}', ${forceUpdate})" class="btn-primary ripple" style="display: flex; align-items: center; justify-content: center; padding: 14px; font-size: 16px; text-transform: uppercase; font-weight: 900; letter-spacing: 0.5px; background: var(--pink); color: #fff; width: 100%; margin: 0; border: 3px solid var(--black); cursor: pointer; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box;">
           Install Update
-        </a>
+        </button>
         ${!forceUpdate ? `
-          <button class="btn-ghost ripple" style="border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 14px; padding: 12px; text-transform: uppercase; font-weight: 800; box-shadow: 3px 3px 0 #0a0a0a;" onclick="document.getElementById('native-update-modal').remove()">
+          <button class="btn-ghost ripple" style="border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 14px; padding: 12px; text-transform: uppercase; font-weight: 800; box-shadow: 3px 3px 0 #0a0a0a; cursor: pointer;" onclick="document.getElementById('native-update-modal').remove()">
             Maybe Later
           </button>
         ` : `
