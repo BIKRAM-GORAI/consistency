@@ -2846,62 +2846,21 @@
       }
     });
 
-    // ── PWA Installation Logic ──
-    let deferredPrompt;
-    const installBtn = document.createElement('button');
+    // ── APK Download Button ──
+    const APK_URL = 'https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk';
+    const installBtn = document.createElement('a');
     installBtn.className = 'install-floating-btn';
-    installBtn.innerHTML = '<i data-lucide="download"></i> Install App';
-    installBtn.style.display = 'none'; // Hidden initially
+    installBtn.innerHTML = '<i data-lucide="download"></i> Get App';
+    installBtn.href = APK_URL;
+    installBtn.download = 'Consistency.Daily.apk';
+    installBtn.style.display = 'flex';
     document.body.appendChild(installBtn);
+    lucide.createIcons({ root: installBtn });
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
-      e.preventDefault();
-      // Stash the event so it can be triggered later.
-      deferredPrompt = e;
-      
-      // Update UI to show the install button
-      installBtn.style.display = 'flex';
-      lucide.createIcons({ root: installBtn });
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) {
-        alert('App is already installed or your browser doesn\'t support this feature.');
-        return;
-      }
-      
-      // Show the install prompt
-      deferredPrompt.prompt();
-      
-      // Wait for the user to respond to the prompt
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to the install prompt: ${outcome}`);
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-        installBtn.style.display = 'none';
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      
-      // We've used the prompt, and can't use it again, throw it away
-      deferredPrompt = null;
-    });
-
-    window.addEventListener('appinstalled', (evt) => {
-      console.log('PWA was installed');
-      installBtn.style.display = 'none';
-    });
-
-    // Check if already in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-      installBtn.style.display = 'none';
-    }
-
-    // Detect if running inside Capacitor Android native wrapper
+    // Hide button and detect Capacitor Android native wrapper
     const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
     if (isAndroidNative) {
+      installBtn.style.display = 'none';
       document.body.classList.add('native-android');
     }
 
