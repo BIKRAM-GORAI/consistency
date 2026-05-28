@@ -736,7 +736,7 @@
 
     @media (max-width: 480px) {
       .landing-wrap {
-        padding: 40px 16px 60px;
+        padding: 96px 16px 60px;
       }
 
       .landing-actions {
@@ -2041,6 +2041,10 @@
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="calendar"></i></span> Daily Cards</div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="target"></i></span> Long-Term Goals</div>
       <div class="feature-pill"><span class="feature-pill-icon"><i data-lucide="lock"></i></span> Private Accounts</div>
+      <div class="feature-pill" style="background: var(--coral); color: #fff;"><span class="feature-pill-icon"><i data-lucide="activity"></i></span> Screen Time</div>
+      <div class="feature-pill" style="background: var(--purple); color: #fff;"><span class="feature-pill-icon"><i data-lucide="sparkles"></i></span> AI Summaries</div>
+      <div class="feature-pill" style="background: var(--pink); color: #fff;"><span class="feature-pill-icon"><i data-lucide="bell"></i></span> Push Notifs</div>
+      <div class="feature-pill" style="background: var(--lime);"><span class="feature-pill-icon"><i data-lucide="pen-line"></i></span> Scratchpad</div>
     </div>
 
     <p class="landing-footer-note">Consistency is the key <i data-lucide="zap"></i></p>
@@ -2061,24 +2065,24 @@
     </div>
 
     <!-- Interactive Demo Habit Card -->
-    <div class="demo-habit-card reveal" onclick="tryDemoHabit(this)" style="margin-top: 20px; margin-bottom: 50px;">
+    <div class="demo-habit-card reveal" style="margin-top: 20px; margin-bottom: 50px;">
       <div class="demo-header">
         <span class="demo-title">Today's Goals</span>
         <span style="font-size: 10px; font-weight: 900; background: var(--black); color: #fff; padding: 2px 6px; border-radius: 4px;">TRY IT LIVE</span>
       </div>
-      <div class="demo-task">
+      <div class="demo-task" onclick="tryDemoHabit(this)">
         <div class="demo-checkbox"></div>
         <span>Drink 2L Water</span>
       </div>
-      <div class="demo-task">
+      <div class="demo-task" onclick="tryDemoHabit(this)">
         <div class="demo-checkbox"></div>
         <span>Code for 1 Hour</span>
       </div>
-      <div class="demo-task">
+      <div class="demo-task" onclick="tryDemoHabit(this)">
         <div class="demo-checkbox"></div>
         <span>Read 10 Pages</span>
       </div>
-      <p style="font-size: 10px; font-weight: 900; text-align: center; margin-top: 10px; color: #888; text-transform: uppercase;">Experience the satisfying click!</p>
+      <p style="font-size: 10px; font-weight: 900; text-align: center; margin-top: 10px; color: #888; text-transform: uppercase;">Click a task to check it off!</p>
     </div>
 
 
@@ -2129,6 +2133,54 @@
         <h3>Privacy First</h3>
         <p>Your data stays yours. We offer <b>End-to-End focus</b> on your privacy. No data selling. Just a clean, secure space for your personal growth.</p>
       </div>
+
+      <!-- Screen Time & Focus Tracker -->
+      <div class="feature-card reveal" style="background: var(--lime);">
+        <span class="feature-tag" style="background: var(--black); color: #fff;">Android Exclusive</span>
+        <i data-lucide="activity"></i>
+        <h3>Screen Time &amp; Focus</h3>
+        <p>Grant usage access on the native app to track which apps are <b>stealing your focus</b>. Distracting apps are flagged in your <b>Daily Summary</b> — so you know exactly where your time went.</p>
+      </div>
+
+      <!-- AI-Generated Summaries -->
+      <div class="feature-card reveal" style="background: #C4B5FD; color: var(--black);">
+        <span class="feature-tag" style="background: var(--black); color: #C4B5FD;">AI Insights</span>
+        <i data-lucide="sparkles"></i>
+        <h3>AI-Generated Reports</h3>
+        <p>Generate your <b>Daily</b>, <b>7-Day</b>, or <b>30-Day</b> productivity summary with one tap. See what you crushed, what you skipped, and get smart suggestions on where to improve.</p>
+      </div>
+
+      <!-- Live Push Notifications -->
+      <div class="feature-card reveal" style="background: var(--coral);">
+        <span class="feature-tag" style="background: var(--black); color: #fff;">Always On</span>
+        <i data-lucide="bell" style="color: #fff;"></i>
+        <h3>Live Push Notifications</h3>
+        <p>Never miss a message. Group chat alerts arrive even when the app is <b>fully closed</b>. Tap a notification to jump straight into the live chat. <b>Mute</b> individual chats anytime.</p>
+      </div>
+
+      <!-- Scratchpad Canvas -->
+      <div class="feature-card reveal">
+        <span class="feature-tag">Daily Cards</span>
+        <i data-lucide="pen-line"></i>
+        <h3>Built-in Scratchpad</h3>
+        <p>Each daily card has a built-in <b>canvas scratchpad</b>. Draw, sketch, or jot notes with your finger or trackpad. Animated on open, persistent across edits — always there when inspiration strikes.</p>
+      </div>
+
+      <!-- Global Leaderboard -->
+      <div class="feature-card reveal" style="background: var(--teal);">
+        <span class="feature-tag" style="background: var(--black); color: #fff;">Compete</span>
+        <i data-lucide="crown"></i>
+        <h3>Global Leaderboard</h3>
+        <p>See how you stack up against thousands of users worldwide. Climb the <b>daily rankings</b> and prove your consistency is unmatched. Updated live, every single day.</p>
+      </div>
+
+      <!-- Shareable Profile -->
+      <div class="feature-card reveal" style="background: var(--yellow);">
+        <span class="feature-tag">Social</span>
+        <i data-lucide="share-2"></i>
+        <h3>Shareable Profile</h3>
+        <p>Flex your streaks and badges with a <b>public profile link</b>. Share your consistency journey with friends or post it on social media. Your progress, your proof.</p>
+      </div>
     </div>
   </section>
 
@@ -2136,9 +2188,9 @@
 
   <!-- PWA Feature Section -->
   <section class="landing-about reveal" style="background: var(--teal); border-top: var(--border); border-bottom: var(--border);">
-    <h2 class="landing-section-title" style="background: #fff; padding: 0 14px; border: var(--border); box-shadow: var(--shadow);">PWA Magic ✨</h2>
+    <h2 class="landing-section-title" style="background: #fff; padding: 0 14px; border: var(--border); box-shadow: var(--shadow);">Native App + Web ✨</h2>
     <p style="font-weight: 800; font-size: 18px; max-width: 700px; margin: 0 auto 40px; color: var(--black); text-transform: uppercase;">
-      Experience the power of a modern progressive web app. Fast, reliable, and always available.
+      Use it in your browser or download the native Android APK — push notifications, screen time tracking, and offline support all included.
     </p>
     <div class="about-grid" style="margin-top: 0;">
       <div class="about-card" style="background: #fff; transform: rotate(-2deg);">
@@ -2270,6 +2322,10 @@
         Daily Cards</div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="lock"></i></span> <span
           class="upcoming-text">Advanced Privacy Controls</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="activity"></i></span> <span class="upcoming-text">Screen Time Tracker</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="sparkles"></i></span> <span class="upcoming-text">AI Summaries</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="bell"></i></span> <span class="upcoming-text">Push Notifications</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="pen-line"></i></span> <span class="upcoming-text">Scratchpad Canvas</span></div>
     </div>
   </section>
 
@@ -2370,7 +2426,7 @@
           <span class="faq-icon">+</span>
         </div>
         <div class="faq-content">
-          <p class="faq-answer">Absolutely. It's a Progressive Web App (PWA). Just click the 'Install App' button or 'Add to Home Screen' in your mobile browser for a native-app experience with offline support.</p>
+          <p class="faq-answer">Absolutely. You can use it in any mobile browser, or download the native <b>Android APK</b> via the "Get App" button for the full experience — including push notifications, screen time tracking, and more.</p>
         </div>
       </div>
 
@@ -2393,6 +2449,28 @@
         </div>
         <div class="faq-content">
           <p class="faq-answer">Your streak will reset, but don't worry! Every new day is a fresh start. You can use our 'Save Template' feature to quickly set up your daily goals and get back on track instantly.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 6 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">Do I need the Android APK for all features?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">The web version covers most features. But for <b>Screen Time Tracking</b> and <b>Live Push Notifications</b> (when the app is fully closed), you'll need the native Android APK — downloadable via the "Get App" button on this page.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 7 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">Does the AI Summary work offline?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">No — generating a summary requires an internet connection since it's AI-powered. However, all your task data is stored locally and always available offline. The moment you reconnect, you can generate your report instantly.</p>
         </div>
       </div>
     </div>
@@ -2764,61 +2842,63 @@
     }
 
     // ── Interactive Demo Logic ──
-    function tryDemoHabit(card) {
+    function tryDemoHabit(task) {
+      // Only toggle if not already done
+      if (task.classList.contains('done')) return;
+
+      const card = task.closest('.demo-habit-card');
       const tasks = card.querySelectorAll('.demo-task');
-      const unchecked = Array.from(tasks).filter(t => !t.classList.contains('done'));
-      
-      if (unchecked.length > 0) {
-        const next = unchecked[0];
-        next.classList.add('done');
-        next.querySelector('.demo-checkbox').innerHTML = '<i data-lucide="check" style="width:16px; color:#fff;"></i>';
-        lucide.createIcons();
-        
-        // Confetti on each check
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          origin: { y: 0.7 },
-          colors: ['#facc15', '#FF3EA5', '#00C9A7', '#FF6B35']
-        });
 
-        if (unchecked.length === 1) {
-          card.classList.add('completed');
-          // Mega confetti "Firecracker" effect
-          const end = Date.now() + (2 * 1000);
-          const colors = ['#facc15', '#fb7185', '#22d3ee', '#4ade80'];
+      task.classList.add('done');
+      task.querySelector('.demo-checkbox').innerHTML = '<i data-lucide="check" style="width:16px; color:#fff;"></i>';
+      lucide.createIcons();
 
-          (function frame() {
-            confetti({
-              particleCount: 3,
-              angle: 60,
-              spread: 55,
-              origin: { x: 0 },
-              colors: colors
-            });
-            confetti({
-              particleCount: 3,
-              angle: 120,
-              spread: 55,
-              origin: { x: 1 },
-              colors: colors
-            });
+      // Confetti on each check
+      confetti({
+        particleCount: 40,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ['#facc15', '#FF3EA5', '#00C9A7', '#FF6B35']
+      });
 
-            if (Date.now() < end) {
-              requestAnimationFrame(frame);
-            }
-          }());
+      // Check if all tasks are now done
+      const allDone = Array.from(tasks).every(t => t.classList.contains('done'));
+      if (allDone) {
+        card.classList.add('completed');
+        // Mega confetti "Firecracker" effect
+        const end = Date.now() + (2 * 1000);
+        const colors = ['#facc15', '#fb7185', '#22d3ee', '#4ade80'];
 
-          // Auto reset after animation
-          setTimeout(() => {
-            tasks.forEach(t => {
-              t.classList.remove('done');
-              t.querySelector('.demo-checkbox').innerHTML = '';
-            });
-            card.classList.remove('completed');
-            lucide.createIcons();
-          }, 3000);
-        }
+        (function frame() {
+          confetti({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors
+          });
+          confetti({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        }());
+
+        // Auto reset after animation
+        setTimeout(() => {
+          tasks.forEach(t => {
+            t.classList.remove('done');
+            t.querySelector('.demo-checkbox').innerHTML = '';
+          });
+          card.classList.remove('completed');
+          lucide.createIcons();
+        }, 3000);
       }
     }
 
