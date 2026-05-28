@@ -1185,6 +1185,33 @@
           </div>
         </div>
 
+        <!-- Android Screen Time & App Limits Section -->
+        <div id="android-usage-stats-card" style="display: none; padding: 16px; background: rgba(168, 85, 247, 0.15); border: 2px solid #a855f7; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="smartphone"></i> Screen Time &amp; App Limits</h3>
+          
+          <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2); margin-bottom: 12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <label style="margin:0; font-weight: 600; color: var(--text);">Enable Limit Tracking</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="distraction-limit-toggle" onchange="toggleDistractionTracking(this.checked)" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <p class="form-hint" style="margin: 0; line-height: 1.5;">Track, enforce and display limits for your distracting applications.</p>
+          </div>
+
+          <div id="distraction-apps-configuration" style="display: none;">
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+              <div id="selected-apps-limits-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+                <!-- Chosen apps with limit inputs/sliders will be injected here -->
+              </div>
+              <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--yellow); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 14px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="openAddDistractingAppModal()">
+                <span><i data-lucide="plus" class="no-theme" style="color: var(--black);"></i> Add Distracting App</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="lock"></i> Security & Visibility</h3>
           <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -1327,6 +1354,45 @@
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-profile')">Cancel</button>
         <button class="btn-primary ripple" onclick="submitProfileSettings()" id="submit-profile-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Add Distracting App ===== -->
+  <div class="modal-overlay" id="modal-add-distracting-app" onclick="closeModalOnOverlay(event, 'modal-add-distracting-app')">
+    <div class="modal" style="max-height: 80vh; display: flex; flex-direction: column; max-width: 450px;">
+      <div class="modal-header" style="flex-shrink: 0;">
+        <h2><i data-lucide="plus"></i> Add Distracting App</h2>
+        <button class="modal-close" onclick="closeModal('modal-add-distracting-app')"><i data-lucide="x"></i></button>
+      </div>
+      <div style="padding: 16px; flex-shrink: 0; border-bottom: var(--border-2);">
+        <input type="text" id="app-search-input" class="form-control" placeholder="Search installed apps..." oninput="filterInstalledApps(this.value)" />
+      </div>
+      <div class="modal-body" id="installed-apps-list" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; min-height: 250px;">
+        <div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading installed apps...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Usage Stats Permission Info ===== -->
+  <div class="modal-overlay" id="modal-usage-stats-permission" onclick="closeModalOnOverlay(event, 'modal-usage-stats-permission')">
+    <div class="modal" style="max-width: 400px; text-align: center; padding: 24px; border: var(--border-2); border-radius: 12px; background: var(--bg); box-shadow: 8px 8px 0 var(--black);">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(168, 85, 247, 0.15); border: 2px solid #a855f7; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; margin-left: auto; margin-right: auto;">
+        <i data-lucide="smartphone" style="width: 32px; height: 32px; color: #a855f7;"></i>
+      </div>
+      <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; text-transform: uppercase; margin: 0 0 12px 0;">Usage Access Required</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: var(--text); margin: 0 0 20px 0;">
+        To automatically track and tick off your app limits, Consistency requires **Usage Access**.
+        <br/><br/>
+        Please find <strong>Consistency Daily</strong> on the next screen and toggle <strong>"Permit usage access"</strong> to <strong>ON</strong>.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn-primary ripple" style="justify-content: center; width: 100%; background: #a855f7; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; font-weight: 800; text-transform: uppercase; color: white;" onclick="confirmAndOpenUsageSettings()">
+          Open Settings
+        </button>
+        <button class="btn-ghost ripple" style="justify-content: center; width: 100%; border: 2px solid var(--black); font-size: 14px; font-weight: 700; text-transform: uppercase;" onclick="closeModal('modal-usage-stats-permission')">
+          Cancel
+        </button>
       </div>
     </div>
   </div>
@@ -1736,7 +1802,7 @@
   <script>
     // ── INDEXED DB INITIALIZATION (OFFLINE-FIRST) ──
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(9).stores({
+    dbLocal.version(10).stores({
       days: "_id, date, status, tasks, userId",
       goals: "_id, title, targetDate, status, userId",
       groups: "_id, name, code, isPublic",
@@ -1748,7 +1814,8 @@
       templates: "_id, name",
       mediaCache: "url",
       scratchpads: "dayId",
-      weeklySummaries: "_id, date, userId, daysCount"
+      weeklySummaries: "_id, date, userId, daysCount",
+      appLimits: "userId"
     });
     window.localDb = dbLocal;
   </script>

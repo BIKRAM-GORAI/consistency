@@ -51,6 +51,10 @@ const DaySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    screenTimeStats: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
   },
   { timestamps: true }
 );

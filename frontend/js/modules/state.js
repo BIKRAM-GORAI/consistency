@@ -8,7 +8,7 @@ if (isAndroidNative) {
 window.isAndroidNative = isAndroidNative;
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "1.7";
+let runningAppVersion = "1.8";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {
@@ -16,6 +16,114 @@ if (isAndroidNative) {
   }
 }
 window.runningAppVersion = runningAppVersion;
+
+/**
+ * Compares two semver strings (e.g. "1.7", "1.8", "2.0.1").
+ * Returns -1, 0, or 1 (like strcmp).
+ */
+function compareSemver(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
+/**
+ * Show a non-dismissible update dialog (blocks the user from using the old version).
+ */
+function showForceUpdateDialog(data) {
+  // Remove any previous instance
+  const prev = document.getElementById('__force-update-overlay');
+  if (prev) prev.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '__force-update-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; box-sizing: border-box;
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background: var(--bg-card, #1a1a2e); border: 3px solid var(--black, #111);
+      border-radius: 16px; padding: 28px 24px; max-width: 340px; width: 100%;
+      box-shadow: 6px 6px 0 var(--black, #111); text-align: center;
+    ">
+      <div style="font-size: 40px; margin-bottom: 12px;">🚀</div>
+      <h2 style="
+        font-family: 'Space Grotesk', sans-serif; font-weight: 900;
+        font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px;
+        color: var(--text, #fff); margin: 0 0 8px;
+      ">Update Required</h2>
+      <p style="font-size: 12px; font-weight: 600; color: var(--text-muted, #aaa); margin: 0 0 14px; line-height: 1.5;">
+        Version <strong style="color: var(--yellow, #FFD60A);">v${data.latestVersion}</strong> is available.<br>
+        You are on <strong>v${runningAppVersion}</strong>.
+      </p>
+      <p style="font-size: 11.5px; color: var(--text-muted, #aaa); margin: 0 0 20px; line-height: 1.5; text-align: left; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 12px;">
+        ${data.releaseNotes || 'Bug fixes and improvements.'}
+      </p>
+      <a id="__update-download-btn" href="${data.apkUrl}" download style="
+        display: block; width: 100%; box-sizing: border-box;
+        background: var(--yellow, #FFD60A); color: #111; border: 2px solid #111;
+        border-radius: 10px; padding: 12px 16px; font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;
+        text-decoration: none; box-shadow: 3px 3px 0 #111; cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+      ">
+        ⬇ Download Update
+      </a>
+    </div>
+  `;
+
+  // Prevent any touch/click on the backdrop from dismissing it
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) e.stopPropagation();
+  });
+
+  document.body.appendChild(overlay);
+}
+
+/**
+ * Fetches /app-version.json from the server and triggers a forced update dialog
+ * if the server version is newer than the currently running APK version.
+ * Only runs on native Android builds.
+ */
+async function checkForAppUpdate() {
+  if (!isAndroidNative) return;
+  try {
+    // Always fetch fresh (bypass cache) so the version file is never stale
+    const res = await fetch(`${API || 'https://consistency-daily.vercel.app'}/app-version.json?t=${Date.now()}`, {
+      cache: 'no-store'
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !data.latestVersion) return;
+
+    const isOutdated = compareSemver(runningAppVersion, data.latestVersion) < 0;
+    if (isOutdated && data.forceUpdate) {
+      // Wait for DOM to be ready before injecting the dialog
+      const injectDialog = () => showForceUpdateDialog(data);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectDialog, { once: true });
+      } else {
+        injectDialog();
+      }
+    }
+  } catch (err) {
+    console.warn('[UpdateCheck] Failed to check for app update:', err.message);
+  }
+}
+// Run the update check immediately on page load
+checkForAppUpdate();
+
 
 // ── Offline detection: apply SYNCHRONOUSLY before any async work ──────────
 if (!navigator.onLine) {

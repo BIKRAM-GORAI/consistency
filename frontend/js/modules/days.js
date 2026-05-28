@@ -8,6 +8,34 @@ async function loadDays(page = 1) {
     console.warn('Local database not initialized');
     return;
   }
+
+  // Pre-load app limits on page 1 startup to make limit evaluations and settings responsive on login
+  if (page === 1) {
+    (async () => {
+      try {
+        let limits = await localDb.appLimits.get(window.userId);
+        if (limits) {
+          window.currentAppLimits = limits;
+          if (typeof evaluateDaysDistractions === 'function') {
+            evaluateDaysDistractions();
+          }
+        }
+        if (navigator.onLine) {
+          const fresh = await window.apiFetch(`${window.API}/api/applimits`);
+          if (fresh) {
+            window.currentAppLimits = { ...fresh, userId: window.userId };
+            await localDb.appLimits.put(window.currentAppLimits);
+            if (typeof evaluateDaysDistractions === 'function') {
+              evaluateDaysDistractions();
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Startup appLimits pre-load failed:', err);
+      }
+    })();
+  }
+
   const loadingEl = document.getElementById('loading-days');
 
   // 1. STALE: Load from IndexedDB instantly (including weekly summaries, so they render offline too)
@@ -399,6 +427,10 @@ async function renderDays(appendOnly = false) {
 
   // Apply correct offline/online button state for all newly rendered network-dependent buttons
   updateOfflineButtonState();
+  
+  if (typeof evaluateDaysDistractions === 'function') {
+    evaluateDaysDistractions();
+  }
 }
 
 function buildDayCard(day, preLoadedAchievements = null) {
@@ -491,12 +523,15 @@ function buildDayCard(day, preLoadedAchievements = null) {
   const daySummary = day.summary || '';
   if (daySummary) {
     aiRecapHTML = `
-      <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative;">
+      <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative; cursor: pointer;" onclick="toggleAiRecapExpansion(this, event)">
         <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">
           <span>✨</span> <span>AI Daily Insights</span>
-          <button class="btn-refresh-recap" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; margin-left: auto; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
+          <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;" onclick="event.stopPropagation()">
+            <button class="btn-refresh-recap" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
+            <button class="btn-delete-recap" data-requires-network="true" onclick="deleteDailySummary('${day._id}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--red);" title="Delete Summary"><i data-lucide="trash-2" style="width: 13px; height: 13px;"></i></button>
+          </div>
         </div>
-        <p class="ai-recap-text" id="ai-recap-text-${day._id}" style="color: var(--text); font-weight: 600; white-space: pre-wrap; margin: 0;">${window.escHtml(daySummary)}</p>
+        <p class="ai-recap-text" id="ai-recap-text-${day._id}" style="color: var(--text); font-weight: 600; white-space: pre-wrap; margin: 0; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${window.escHtml(daySummary)}</p>
       </div>
     `;
   } else {
@@ -536,13 +571,13 @@ function buildDayCard(day, preLoadedAchievements = null) {
     ${aiRecapHTML}
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-left: 14px;">
-      <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0;">
-        <span><i data-lucide="file-text"></i></span>
+      <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0; padding: 0 12px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px;">
+        <span style="display: inline-flex; align-items: center; margin-right: 4px;"><i data-lucide="file-text" style="width: 13px; height: 13px;"></i></span>
         <span>Notes</span>
-        <span class="summary-chevron"><i data-lucide="chevron-down"></i></span>
+        <span class="summary-chevron" style="display: inline-flex; align-items: center; margin-left: 4px;"><i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i></span>
       </button>
       ${daySummary ? '' : `
-        <button class="summary-toggle ripple" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
+        <button class="summary-toggle ripple" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; padding: 0 10px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
           <span>✨ AI Insights (<span class="ai-limit-badge">⚡ ${window.generationsLeft} left</span>)</span>
         </button>
       `}
@@ -1521,4 +1556,281 @@ window.submitEditCategory = submitEditCategory;
 window.openEditGoalModal = openEditGoalModal;
 window.addEditGoalTaskField = addEditGoalTaskField;
 window.submitEditGoal = submitEditGoal;
+
+// ── Screen Time Distractions Evaluation Engine ───────────────
+window.cachedUsageStats = null;
+window.cachedUsageStatsTime = 0;
+
+async function evaluateDaysDistractions() {
+  if (!window.isAndroidNative || !window.Capacitor || !window.Capacitor.Plugins.UsageStatsPlugin) {
+    return;
+  }
+
+  // 1. Get distraction limits config
+  let limits = null;
+  try {
+    limits = await window.localDb.appLimits.get(window.userId);
+  } catch (e) {
+    console.error('Error fetching app limits for cards:', e);
+  }
+
+  if (!limits || !limits.enabled || !limits.apps || limits.apps.length === 0) {
+    document.querySelectorAll('.app-distraction-block').forEach(el => el.remove());
+    return;
+  }
+
+  // 2. Verify Android permission is still active
+  const granted = await window.checkAndroidPermissionStatus();
+  if (!granted) {
+    document.querySelectorAll('.app-distraction-block').forEach(el => el.remove());
+    return;
+  }
+
+  // 3. Query native foreground stats for the last 8 days (cache for 30 seconds for optimal scrolling performance)
+  const now = Date.now();
+  if (!window.cachedUsageStats || (now - window.cachedUsageStatsTime > 30000)) {
+    try {
+      window.cachedUsageStats = await window.Capacitor.Plugins.UsageStatsPlugin.getUsageStats({ days: 8 });
+      window.cachedUsageStatsTime = now;
+    } catch (err) {
+      console.error('Failed to get usage stats from plugin:', err);
+      return;
+    }
+  }
+
+  const usageStats = window.cachedUsageStats;
+  if (!usageStats) return;
+
+  // 4. Iterate over rendered day cards to append distraction limit stats
+  const cards = document.querySelectorAll('.day-card');
+  const today = window.todayStr();
+
+  cards.forEach(card => {
+    const cardDate = card.getAttribute('data-date');
+    if (!cardDate) return;
+
+    // RULE: Skip tracking for the current calendar day
+    if (cardDate === today) {
+      return;
+    }
+
+    // Find day in memory
+    const day = window.allDays.find(d => (d.date || '').split('T')[0] === cardDate);
+    if (!day) return;
+
+    // RULE: Track only for the past 7 days (or load locked stats for older days)
+    const cardTime = new Date(cardDate).getTime();
+    const todayTime = new Date(today).getTime();
+    const diffDays = Math.round((todayTime - cardTime) / (24 * 60 * 60 * 1000));
+
+    if (diffDays <= 0) {
+      const existing = card.querySelector('.app-distraction-block');
+      if (existing) existing.remove();
+      return;
+    }
+
+    // For 8th day and older, we display ONLY if we have saved stats
+    if (diffDays >= 8 && (!day.screenTimeStats || (Array.isArray(day.screenTimeStats) && day.screenTimeStats.length === 0))) {
+      const existing = card.querySelector('.app-distraction-block');
+      if (existing) existing.remove();
+      return;
+    }
+
+    let top5 = [];
+    let totalMinutes = 0;
+
+    if (diffDays >= 8) {
+      // 8th day and older: lock and read frozen array from database!
+      if (Array.isArray(day.screenTimeStats)) {
+        top5 = day.screenTimeStats;
+      } else {
+        // Freeze active limits one-time for this past day card
+        const rawStats = (day.screenTimeStats && typeof day.screenTimeStats === 'object') ? day.screenTimeStats : {};
+        const appStats = limits.apps.map(app => {
+          const actualMinutes = rawStats[app.packageName] !== undefined ? rawStats[app.packageName] : 0;
+          return {
+            packageName: app.packageName,
+            appName: app.appName,
+            limitMinutes: app.limitMinutes,
+            iconBase64: app.iconBase64,
+            actualMinutes,
+            completed: actualMinutes <= app.limitMinutes
+          };
+        });
+
+        appStats.sort((a, b) => {
+          if (a.completed !== b.completed) return a.completed ? 1 : -1;
+          return b.actualMinutes - a.actualMinutes;
+        });
+
+        top5 = appStats.slice(0, 5);
+
+        // Permanently lock this frozen array in local/server database!
+        day.screenTimeStats = top5;
+        window.localDb.days.put(day).catch(err => console.error("Error freezing appLimits stats locally:", err));
+        window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: top5 });
+      }
+
+      // Calculate total screen time from frozen list
+      top5.forEach(app => {
+        totalMinutes += app.actualMinutes || 0;
+      });
+    } else {
+      // Past 7 days: evaluate dynamically!
+      let rawStats = {};
+      if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && !Array.isArray(day.screenTimeStats)) {
+        rawStats = day.screenTimeStats;
+      } else {
+        rawStats = usageStats[cardDate] || {};
+        if (Object.keys(rawStats).length > 0) {
+          day.screenTimeStats = rawStats;
+          window.localDb.days.put(day).catch(err => console.error("Error saving raw stats:", err));
+          window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: rawStats });
+        }
+      }
+
+      const appStats = limits.apps.map(app => {
+        const actualMinutes = rawStats[app.packageName] !== undefined ? rawStats[app.packageName] : 0;
+        return {
+          packageName: app.packageName,
+          appName: app.appName,
+          limitMinutes: app.limitMinutes,
+          iconBase64: app.iconBase64,
+          actualMinutes,
+          completed: actualMinutes <= app.limitMinutes
+        };
+      });
+
+      appStats.sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return b.actualMinutes - a.actualMinutes;
+      });
+
+      top5 = appStats.slice(0, 5);
+
+      for (const pkg in rawStats) {
+        totalMinutes += rawStats[pkg] || 0;
+      }
+    }
+
+    const totalHours = Math.floor(totalMinutes / 60);
+    const remainingMins = totalMinutes % 60;
+    const totalScreenTimeStr = totalHours > 0 ? `${totalHours}h ${remainingMins}m` : `${remainingMins}m`;
+
+    // 7. Compose HTML
+    let listHtml = '';
+    top5.forEach(app => {
+      const iconSrc = app.iconBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      const rowStyle = app.completed
+        ? 'background: var(--bg-distraction-green); border-color: var(--distraction-green);'
+        : 'background: var(--bg-distraction-red); border-color: var(--distraction-red);';
+
+      listHtml += `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; ${rowStyle} border: 2px solid; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <img src="${iconSrc}" style="width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; object-fit: contain;" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='" />
+            <span style="font-weight: 700; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.appName}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            <span style="font-size: 11px; font-weight: 800; padding: 2px 6px; border: 1px solid var(--black); border-radius: 12px; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; background: var(--bg-card); color: var(--text); box-shadow: 1px 1px 0 var(--black);">
+              ${app.actualMinutes}m / ${app.limitMinutes}m
+            </span>
+          </div>
+        </div>
+      `;
+    });
+
+    const blockHtml = `
+      <div class="app-distraction-block category-section" style="margin-top: 16px; padding: 14px; background: rgba(168, 85, 247, 0.08); border: 2px solid #a855f7; border-radius: 8px; box-shadow: 3px 3px 0 var(--black);">
+        <div style="display: flex; align-items: center; gap: 6px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 10px; font-size: 11px; color: #a855f7; letter-spacing: 0.5px;">
+          <i data-lucide="zap" style="width: 14px; height: 14px; fill: #a855f7;"></i>
+          <span>Screen Time &amp; Limits</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
+          ${listHtml}
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px dashed rgba(168, 85, 247, 0.3); padding-top: 8px; margin-top: 6px;">
+          <i data-lucide="smartphone" style="width: 14px; height: 14px;"></i>
+          <span>Total Mobile Screen Time: <strong style="color: var(--text);">${totalScreenTimeStr}</strong></span>
+        </div>
+      </div>
+    `;
+
+    let existing = card.querySelector('.app-distraction-block');
+    if (existing) {
+      existing.outerHTML = blockHtml;
+    } else {
+      const insertionPoint = card.querySelector('.ach-add-row') || card.querySelector('.summary-content');
+      if (insertionPoint) {
+        const temp = document.createElement('div');
+        temp.innerHTML = blockHtml;
+        card.insertBefore(temp.firstElementChild, insertionPoint);
+      } else {
+        card.insertAdjacentHTML('beforeend', blockHtml);
+      }
+    }
+  });
+
+  if (window.lucide) {
+    lucide.createIcons({ root: document.getElementById('cards-container') });
+  }
+}
+
+// Focus listener to refresh stats when returning to the app
+window.addEventListener('focus', () => {
+  if (typeof evaluateDaysDistractions === 'function') {
+    evaluateDaysDistractions();
+  }
+});
+
+async function deleteDailySummary(dayId) {
+  if (!navigator.onLine) {
+    showToast('Offline: Cannot delete AI recap.', 'warn');
+    return;
+  }
+  if (!confirm("Are you sure you want to delete this AI Daily Insight?")) return;
+  const day = window.allDays.find(d => d._id === dayId);
+  if (day) {
+    day.summary = "";
+    try {
+      // 1. Update Local DB
+      await window.localDb.days.put(day);
+      // 2. Queue Sync
+      window.syncManager.addToQueue('PUT', 'days', dayId, { summary: "" });
+      showToast('AI Daily Insights deleted successfully!', 'success');
+      
+      // Re-render only this Day card smoothly
+      const cardEl = document.getElementById(`day-card-${dayId}`);
+      if (cardEl) {
+        const preLoadedAchs = (typeof batchAchievements !== 'undefined' && batchAchievements) 
+          ? batchAchievements.filter(a => a.dayId === dayId) 
+          : [];
+        cardEl.replaceWith(buildDayCard(day, preLoadedAchs));
+      }
+    } catch (err) {
+      console.error('Offline delete error:', err);
+    }
+  }
+}
+
+function toggleAiRecapExpansion(el, event) {
+  const textEl = el.querySelector('.ai-recap-text') || el;
+  if (!textEl) return;
+  
+  if (textEl.style.webkitLineClamp === '3' || textEl.style.webkitLineClamp === '') {
+    textEl.style.display = 'block';
+    textEl.style.webkitLineClamp = 'none';
+    textEl.style.overflow = 'visible';
+  } else {
+    textEl.style.display = '-webkit-box';
+    textEl.style.webkitLineClamp = '3';
+    textEl.style.overflow = 'hidden';
+  }
+}
+
+// Bind to window
+window.evaluateDaysDistractions = evaluateDaysDistractions;
+window.deleteDailySummary = deleteDailySummary;
+window.toggleAiRecapExpansion = toggleAiRecapExpansion;
+
 console.log("[Module] days.js loaded and Days functions bound to window");

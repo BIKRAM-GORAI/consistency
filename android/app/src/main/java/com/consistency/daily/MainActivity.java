@@ -8,6 +8,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(UsageStatsPlugin.class);
+        
         // Intercept native notification click on cold start
         android.content.Intent intent = getIntent();
         final String coldStartGroupId = (intent != null && intent.getExtras() != null)

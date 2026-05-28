@@ -73,7 +73,7 @@ async function loadOwnProfileOffline() {
     throw new Error('Dexie is not loaded');
   }
   const dbLocal = new Dexie("ConsistencyDb");
-  dbLocal.version(9).stores({
+  dbLocal.version(10).stores({
     days: "_id, date, status, tasks, userId",
     goals: "_id, title, targetDate, status, userId",
     groups: "_id, name, code, isPublic",
@@ -85,7 +85,8 @@ async function loadOwnProfileOffline() {
     templates: "_id, name",
     mediaCache: "url",
     scratchpads: "dayId",
-    weeklySummaries: "_id, date, userId, daysCount"
+    weeklySummaries: "_id, date, userId, daysCount",
+    appLimits: "userId"
   });
 
   const userId = localStorage.getItem('userId');
@@ -151,7 +152,7 @@ async function viewProgressOffline() {
 
   try {
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(9).stores({
+    dbLocal.version(10).stores({
       days: "_id, date, status, tasks, userId",
       goals: "_id, title, targetDate, status, userId",
       groups: "_id, name, code, isPublic",
@@ -163,7 +164,8 @@ async function viewProgressOffline() {
       templates: "_id, name",
       mediaCache: "url",
       scratchpads: "dayId",
-      weeklySummaries: "_id, date, userId, daysCount"
+      weeklySummaries: "_id, date, userId, daysCount",
+      appLimits: "userId"
     });
     
     const userId = localStorage.getItem('userId');
@@ -205,7 +207,7 @@ async function loadMoreDaysOffline() {
   btn.disabled = true; btn.textContent = 'Loading...';
   try {
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(9).stores({
+    dbLocal.version(10).stores({
       days: "_id, date, status, tasks, userId",
       goals: "_id, title, targetDate, status, userId",
       groups: "_id, name, code, isPublic",
@@ -217,7 +219,8 @@ async function loadMoreDaysOffline() {
       templates: "_id, name",
       mediaCache: "url",
       scratchpads: "dayId",
-      weeklySummaries: "_id, date, userId, daysCount"
+      weeklySummaries: "_id, date, userId, daysCount",
+      appLimits: "userId"
     });
     const userId = localStorage.getItem('userId');
     const localDays = await dbLocal.days.where('userId').equals(userId).toArray();

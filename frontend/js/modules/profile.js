@@ -47,25 +47,47 @@ async function openProfileModal() {
   };
   renderProfileData(baselineUser);
 
-  // 1. STALE: Load from cache instantly
-  const userId = localStorage.getItem('window.userId');
+  // 1. INSTANT: Show in-memory cache first (already loaded at startup by loadDays)
+  if (window.currentAppLimits && typeof loadAppLimits === 'function') {
+    // Show app limits section immediately without any async wait
+    const card = document.getElementById('android-usage-stats-card');
+    if (card && window.isAndroidNative) {
+      card.style.display = 'block';
+      renderAppLimitsUI(window.currentAppLimits);
+    }
+  }
+
+  // 2. STALE: Load full profile from IndexedDB cache instantly (sync-like)
   try {
     const cached = await window.localDb.userProfile.get(window.userId);
     if (cached) renderProfileData(cached);
   } catch (e) {}
 
-  // 2. REVALIDATE: Load from server
-  try {
-    const res = await apiFetch(`${window.API}/api/auth/settings`);
-    res.userId = window.userId;
-    await cacheProfileImagesOffline(res);
-    await window.localDb.userProfile.put(res);
-    renderProfileData(res);
-    // Confirmed real internet — safe to enable the leaderboard showcase toggles
-    setLeaderboardTogglesEnabled(true);
-  } catch (err) {
-    console.error('Error loading profile:', err);
-    if (!navigator.onLine) showToast('Showing offline profile data.', 'info');
+  // 3. REVALIDATE: Fetch from server in the background — never blocks the UI
+  if (navigator.onLine) {
+    (async () => {
+      try {
+        const res = await apiFetch(`${window.API}/api/auth/settings`);
+        res.userId = window.userId;
+        // Only fetch and cache the image if it is not already a base64 data URI
+        if (res.profilePicture && !res.profilePicture.startsWith('data:')) {
+          await cacheProfileImagesOffline(res);
+        } else if (!res.profilePicture) {
+          // Preserve the cached base64 so we don't lose the offline copy
+          const existing = await window.localDb.userProfile.get(window.userId).catch(() => null);
+          if (existing && existing.profilePicture && existing.profilePicture.startsWith('data:')) {
+            res.profilePicture = existing.profilePicture;
+          }
+        }
+        await window.localDb.userProfile.put(res);
+        renderProfileData(res);
+        setLeaderboardTogglesEnabled(true);
+        // Background-refresh app limits too (non-blocking)
+        if (typeof loadAppLimits === 'function') loadAppLimits();
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    })();
   }
 }
 
@@ -1065,6 +1087,355 @@ function buildReadOnlyAchievementCard(ach) {
   return card;
 }
 
+// ── Screen Time & App Limits Logic ───────────────────────────
+async function loadAppLimits() {
+  const card = document.getElementById('android-usage-stats-card');
+  if (!card) return;
+
+  if (!window.isAndroidNative) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+
+  // 1. INSTANT: Use in-memory cache if already loaded (fastest path — no I/O at all)
+  if (window.currentAppLimits) {
+    renderAppLimitsUI(window.currentAppLimits);
+  }
+
+  // 2. FAST FALLBACK: Load from IndexedDB if not in memory yet
+  let limits = window.currentAppLimits || null;
+  if (!limits) {
+    try {
+      limits = await window.localDb.appLimits.get(window.userId);
+      if (limits) {
+        window.currentAppLimits = limits;
+        renderAppLimitsUI(limits);
+      }
+    } catch (e) {
+      console.error('Error loading local app limits:', e);
+    }
+  }
+
+  // 3. BACKGROUND REVALIDATE: Refresh from server without blocking the UI
+  if (navigator.onLine) {
+    try {
+      const res = await apiFetch(`${window.API}/api/applimits`);
+      if (res) {
+        limits = res;
+        window.currentAppLimits = limits;
+        await window.localDb.appLimits.put({ ...res, userId: window.userId });
+        // Only re-render if something actually changed to avoid UI flicker
+        renderAppLimitsUI(limits);
+      }
+    } catch (err) {
+      console.error('Error loading app limits from server:', err);
+    }
+  }
+
+  // Default fallback if nothing loaded
+  if (!limits) {
+    limits = { enabled: false, apps: [] };
+    window.currentAppLimits = limits;
+    renderAppLimitsUI(limits);
+  }
+}
+
+function renderAppLimitsUI(limits) {
+  const toggle = document.getElementById('distraction-limit-toggle');
+  const config = document.getElementById('distraction-apps-configuration');
+  if (toggle) toggle.checked = limits.enabled;
+
+  if (limits.enabled) {
+    config.style.display = 'block';
+    
+    // Check permission in background to prevent interface freezes
+    checkAndroidPermissionStatus().then(granted => {
+      if (!granted) {
+        document.getElementById('selected-apps-limits-list').innerHTML = `
+          <div style="padding: 12px; background: rgba(239, 68, 68, 0.15); border: 2px solid var(--red); border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 12px;">
+            ⚠️ Usage Access permission is not granted.
+            <button class="btn-ghost ripple" style="margin-top: 8px; padding: 4px 8px; font-size: 11px; border: 1px solid var(--red); color: var(--red); text-transform: uppercase;" onclick="openUsageStatsPermissionModal()">Grant Permission</button>
+          </div>
+        `;
+      } else {
+        renderAppLimitsList(limits.apps);
+      }
+    });
+  } else {
+    config.style.display = 'none';
+  }
+}
+
+async function checkAndroidPermissionStatus() {
+  if (!window.isAndroidNative || !window.Capacitor || !window.Capacitor.Plugins.UsageStatsPlugin) {
+    return false;
+  }
+  try {
+    const res = await window.Capacitor.Plugins.UsageStatsPlugin.checkPermission();
+    return res && res.granted;
+  } catch (e) {
+    console.error('Failed to check Android permission status:', e);
+    return false;
+  }
+}
+
+function renderAppLimitsList(apps) {
+  const container = document.getElementById('selected-apps-limits-list');
+  if (!container) return;
+
+  if (!apps || apps.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 13px; font-weight: 600; border: 1px dashed var(--border-color); border-radius: 8px;">
+        No apps added yet. Add up to 10 apps to start tracking.
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  apps.forEach(app => {
+    const iconSrc = app.iconBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    html += `
+      <div class="limit-app-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border: var(--border-2); border-radius: 8px;" data-package="${app.packageName}">
+        <img src="${iconSrc}" style="width: 32px; height: 32px; border-radius: 6px; object-fit: contain;" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='" />
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);">${app.appName}</div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <input type="range" min="5" max="240" step="5" value="${app.limitMinutes}" 
+                   style="flex: 1; height: 6px; background: var(--bg-muted); border-radius: 3px; accent-color: #a855f7; cursor: pointer;"
+                   oninput="updateLimitLabel(this, '${app.packageName}')" 
+                   onchange="saveLimitValue('${app.packageName}', parseInt(this.value, 10))" />
+            <span class="limit-val" style="font-weight: 900; font-size: 12px; color: #a855f7; min-width: 40px; text-align: right;">${app.limitMinutes}m</span>
+          </div>
+        </div>
+        <button class="btn-ghost ripple" style="padding: 6px; border: 1px solid var(--red); color: var(--red); border-radius: 6px; flex-shrink: 0;" onclick="removeAppFromLimits('${app.packageName}')">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+        </button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+  if (window.lucide) lucide.createIcons({ root: container });
+}
+
+function updateLimitLabel(slider, packageName) {
+  const label = slider.nextElementSibling;
+  if (label) {
+    label.textContent = slider.value + 'm';
+  }
+}
+
+async function saveLimitValue(packageName, minutes) {
+  if (!window.currentAppLimits) return;
+  const app = window.currentAppLimits.apps.find(a => a.packageName === packageName);
+  if (app) {
+    app.limitMinutes = minutes;
+    await persistAppLimits(window.currentAppLimits);
+  }
+}
+
+async function persistAppLimits(limits) {
+  try {
+    limits.userId = window.userId;
+    await window.localDb.appLimits.put(limits);
+    window.syncManager.addToQueue('PUT', 'appLimits', window.userId, {
+      enabled: limits.enabled,
+      apps: limits.apps
+    });
+    
+    // Evaluate days distraction limits immediately to update day cards
+    if (typeof evaluateDaysDistractions === 'function') {
+      evaluateDaysDistractions();
+    }
+  } catch (err) {
+    console.error('Failed to persist app limits:', err);
+  }
+}
+
+async function openAddDistractingAppModal() {
+  openModal('modal-add-distracting-app');
+  const container = document.getElementById('installed-apps-list');
+  const searchInput = document.getElementById('app-search-input');
+  if (searchInput) searchInput.value = '';
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; font-weight: 600;">
+      <div class="spinner-ring" style="width: 24px; height: 24px; border-width: 3px; margin: 0 auto 12px; border-color: #a855f7 #0000 #0000 #0000;"></div>
+      Querying installed apps...
+    </div>
+  `;
+
+  try {
+    if (!window.Capacitor || !window.Capacitor.Plugins.UsageStatsPlugin) {
+      throw new Error('Capacitor UsageStatsPlugin is not available');
+    }
+    
+    const res = await window.Capacitor.Plugins.UsageStatsPlugin.getInstalledApps();
+    const apps = res.apps || [];
+    apps.sort((a, b) => a.name.localeCompare(b.name));
+    window.allInstalledApps = apps;
+    
+    renderInstalledAppsList(apps);
+  } catch (err) {
+    console.error('Failed to load installed apps:', err);
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--red); font-size: 13px; font-weight: 600;">
+        ⚠️ Failed to query installed apps: ${err.message || err}
+      </div>
+    `;
+  }
+}
+
+function renderInstalledAppsList(apps) {
+  const container = document.getElementById('installed-apps-list');
+  if (!container) return;
+
+  const configured = window.currentAppLimits ? window.currentAppLimits.apps.map(a => a.packageName) : [];
+  const unconfigured = apps.filter(app => !configured.includes(app.package));
+
+  if (unconfigured.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; font-weight: 600;">
+        No apps available to configure.
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  unconfigured.forEach(app => {
+    const pkgSafe = app.package.replace(/'/g, "\\'");
+    const nameSafe = app.name.replace(/'/g, "\\'");
+    const iconSrc = app.icon || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+    html += `
+      <div class="installed-app-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; background: var(--bg-card); border: var(--border-2); border-radius: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <img src="${iconSrc}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: contain;" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='" />
+          <div style="min-width: 0;">
+            <div style="font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);">${app.name}</div>
+            <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.package}</div>
+          </div>
+        </div>
+        <button class="btn-primary ripple" style="padding: 4px 10px; font-size: 11px; background: var(--teal); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); color: var(--black); text-transform: uppercase; font-weight: 800;" onclick="addAppToLimits('${pkgSafe}', '${nameSafe}', '${app.icon || ''}')">
+          Add
+        </button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function filterInstalledApps(query) {
+  if (!window.allInstalledApps) return;
+  const filtered = window.allInstalledApps.filter(app => 
+    app.name.toLowerCase().includes(query.toLowerCase()) || 
+    app.package.toLowerCase().includes(query.toLowerCase())
+  );
+  renderInstalledAppsList(filtered);
+}
+
+async function addAppToLimits(packageName, appName, iconBase64) {
+  if (!window.currentAppLimits) {
+    window.currentAppLimits = { enabled: true, apps: [] };
+  }
+
+  if (window.currentAppLimits.apps.length >= 10) {
+    showToast('You can add a maximum of 10 distracting apps.', 'warning');
+    return;
+  }
+
+  window.currentAppLimits.apps.push({
+    packageName,
+    appName,
+    limitMinutes: 45,
+    iconBase64: iconBase64 || ''
+  });
+
+  await persistAppLimits(window.currentAppLimits);
+  renderAppLimitsUI(window.currentAppLimits);
+  
+  // Keep the modal open and re-render the list immediately, preserving any active search query
+  const searchInput = document.getElementById('app-search-input');
+  const query = searchInput ? searchInput.value.trim() : '';
+  if (query) {
+    filterInstalledApps(query);
+  } else if (window.allInstalledApps) {
+    renderInstalledAppsList(window.allInstalledApps);
+  }
+
+  showToast(`${appName} added to limits!`, 'success');
+}
+
+async function removeAppFromLimits(packageName) {
+  if (!window.currentAppLimits) return;
+  
+  window.currentAppLimits.apps = window.currentAppLimits.apps.filter(app => app.packageName !== packageName);
+  await persistAppLimits(window.currentAppLimits);
+  renderAppLimitsUI(window.currentAppLimits);
+  showToast('App removed from limits.', 'info');
+}
+
+function openUsageStatsPermissionModal() {
+  openModal('modal-usage-stats-permission');
+}
+
+async function confirmAndOpenUsageSettings() {
+  closeModal('modal-usage-stats-permission');
+  if (window.Capacitor && window.Capacitor.Plugins.UsageStatsPlugin) {
+    try {
+      await window.Capacitor.Plugins.UsageStatsPlugin.requestPermission();
+    } catch (e) {
+      console.error(e);
+      showToast('Could not launch settings page.', 'error');
+    }
+  }
+}
+
+async function toggleDistractionTracking(checked) {
+  if (!window.currentAppLimits) {
+    window.currentAppLimits = { enabled: false, apps: [] };
+  }
+
+  if (checked) {
+    const granted = await checkAndroidPermissionStatus();
+    if (!granted) {
+      document.getElementById('distraction-limit-toggle').checked = false;
+      openUsageStatsPermissionModal();
+      return;
+    }
+
+    window.currentAppLimits.enabled = true;
+    await persistAppLimits(window.currentAppLimits);
+    renderAppLimitsUI(window.currentAppLimits);
+  } else {
+    window.currentAppLimits.enabled = false;
+    await persistAppLimits(window.currentAppLimits);
+    renderAppLimitsUI(window.currentAppLimits);
+  }
+}
+
+// Auto recheck permission when returning to focus in the settings modal
+window.addEventListener('focus', async () => {
+  const profileModal = document.getElementById('modal-profile');
+  if (profileModal && profileModal.classList.contains('active')) {
+    const granted = await checkAndroidPermissionStatus();
+    if (granted) {
+      if (!window.currentAppLimits) {
+        window.currentAppLimits = { enabled: false, apps: [] };
+      }
+      if (!window.currentAppLimits.enabled) {
+        window.currentAppLimits.enabled = true;
+        await persistAppLimits(window.currentAppLimits);
+      }
+      loadAppLimits();
+    }
+  }
+});
+
 
 // ── Profile Module Bindings ──────────────────────────────────
 window.openProfileModal = openProfileModal;
@@ -1087,4 +1458,22 @@ window.previewMinimalProfile = previewMinimalProfile;
 window.renderContributionGraph = renderContributionGraph;
 window.buildReadOnlyDayCard = buildReadOnlyDayCard;
 window.buildReadOnlyAchievementCard = buildReadOnlyAchievementCard;
+
+// Distraction limits bindings
+window.loadAppLimits = loadAppLimits;
+window.renderAppLimitsUI = renderAppLimitsUI;
+window.checkAndroidPermissionStatus = checkAndroidPermissionStatus;
+window.renderAppLimitsList = renderAppLimitsList;
+window.updateLimitLabel = updateLimitLabel;
+window.saveLimitValue = saveLimitValue;
+window.persistAppLimits = persistAppLimits;
+window.openAddDistractingAppModal = openAddDistractingAppModal;
+window.renderInstalledAppsList = renderInstalledAppsList;
+window.filterInstalledApps = filterInstalledApps;
+window.addAppToLimits = addAppToLimits;
+window.removeAppFromLimits = removeAppFromLimits;
+window.openUsageStatsPermissionModal = openUsageStatsPermissionModal;
+window.confirmAndOpenUsageSettings = confirmAndOpenUsageSettings;
+window.toggleDistractionTracking = toggleDistractionTracking;
+
 console.log("[Module] profile.js loaded and Profile bound to window");

@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.7",
+  "latestVersion": "1.8",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "Stable Release v1.7: Solves all ReferenceError bugs on group chat tabs, implements circular microphone badges and durations for voice replies, and corrects desktop/laptop Enter key ergonomics for instant sending."
+  "releaseNotes": "v1.8: AI Daily, Weekly & Monthly Insights now factor in your screen time and app limit compliance. Weekly & monthly summaries now include a 10-point productivity rating. All AI insights evaluate distraction stats even if tracking toggle is off."
 }

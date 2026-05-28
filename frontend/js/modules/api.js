@@ -150,6 +150,7 @@ const syncManager = {
         else if (item.entity === 'groups') url = `${API}/api/groups/${item.targetId || ''}`;
         else if (item.entity === 'auth/settings') url = `${API}/api/auth/settings`;
         else if (item.entity === 'scratchpads') url = `${API}/api/days/${item.targetId || ''}/scratchpad`;
+        else if (item.entity === 'appLimits') url = `${API}/api/applimits`;
 
         const response = await apiFetch(url, {
           method: item.method,

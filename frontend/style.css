@@ -72,6 +72,11 @@
   --bg-cat-input:      #fff9c4;
   --bg-ach-section:    #fffbf0;
   --bg-ach-note:       #f0ece4;
+
+  --distraction-green: #10B981; /* highly bright, visible green in light mode */
+  --distraction-red: #FF3B30;   /* punchy vibrant red in light mode */
+  --bg-distraction-green: rgba(16, 185, 129, 0.1);
+  --bg-distraction-red: rgba(255, 59, 48, 0.1);
 }
 
 [data-theme="dark"] {
@@ -95,6 +100,11 @@
 
   --black:     #000000;
   --border-color: #333333;
+
+  --distraction-green: #39FF14; /* neon bright green in dark mode */
+  --distraction-red: #FF3131;   /* neon bright red in dark mode */
+  --bg-distraction-green: rgba(57, 255, 20, 0.15);
+  --bg-distraction-red: rgba(255, 49, 49, 0.15);
 }
 
 [data-theme="dark"] .lucide:not(.no-theme) {
