@@ -1391,6 +1391,39 @@ body {
   color: inherit !important;
 }
 
+/* Screen Time Section Card (Theme Aware) */
+.screentime-section-card {
+  padding: 16px;
+  background: #faf5ff;
+  border: 2px solid #a855f7;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+[data-theme="dark"] .screentime-section-card {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: #a855f7;
+}
+
+.screentime-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  color: #7e22ce;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-theme="dark"] .screentime-section-title {
+  color: #c084fc;
+}
+
+.screentime-section-title .lucide {
+  color: inherit !important;
+}
+
 /* ============================================================
    FORM ELEMENTS
    ============================================================ */

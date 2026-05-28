@@ -17,10 +17,10 @@ async function openProfileModal() {
   if (pwdIcon) pwdIcon.textContent = '▼';
 
   // Synchronous baseline population from localStorage to ensure instant loading of username, email, photo, showcase status, and LeetCode details on refresh/offline
-  const storedName = localStorage.getItem('window.userName') || '';
+  const storedName = localStorage.getItem('window.userName') || localStorage.getItem('userName') || '';
   const storedEmail = localStorage.getItem('userEmail') || '';
   const storedUsername = localStorage.getItem('userUsername') || '';
-  const storedPic = localStorage.getItem('window.userProfilePicture') || '';
+  const storedPic = localStorage.getItem('window.userProfilePicture') || localStorage.getItem('userProfilePicture') || '';
   const storedShowcase = localStorage.getItem('showOnLeaderboard');
 
   const storedLcUsername = localStorage.getItem('leetcodeUsername') || '';
@@ -666,12 +666,12 @@ async function openQuickView(username) {
       // Reconstruct view from local data
       const qpName = document.getElementById('qp-name');
       const qpUsername = document.getElementById('qp-username');
-      if (qpName) qpName.textContent = localStorage.getItem('window.userName') || 'You';
+      if (qpName) qpName.textContent = localStorage.getItem('window.userName') || localStorage.getItem('userName') || 'You';
       if (qpUsername) qpUsername.textContent = `@${myUsername}`;
       
       const avatarImg = document.getElementById('qp-avatar-img');
       const avatarPlc = document.getElementById('qp-avatar-placeholder');
-      const myPic = localStorage.getItem('window.userProfilePicture');
+      const myPic = localStorage.getItem('window.userProfilePicture') || localStorage.getItem('userProfilePicture');
       if (avatarImg && avatarPlc) {
         if (myPic) {
           avatarImg.src = myPic;
@@ -680,7 +680,7 @@ async function openQuickView(username) {
         } else {
           avatarImg.style.display = 'none';
           avatarPlc.style.display = 'flex';
-          avatarPlc.textContent = (localStorage.getItem('window.userName') || 'U').charAt(0).toUpperCase();
+          avatarPlc.textContent = (localStorage.getItem('window.userName') || localStorage.getItem('userName') || 'U').charAt(0).toUpperCase();
         }
       }
 
@@ -1419,20 +1419,28 @@ async function toggleDistractionTracking(checked) {
 }
 
 // Auto recheck permission when returning to focus in the settings modal
-window.addEventListener('focus', async () => {
+window.addEventListener('focus', () => {
   const profileModal = document.getElementById('modal-profile');
-  if (profileModal && profileModal.classList.contains('active')) {
-    const granted = await checkAndroidPermissionStatus();
-    if (granted) {
-      if (!window.currentAppLimits) {
-        window.currentAppLimits = { enabled: false, apps: [] };
-      }
-      if (!window.currentAppLimits.enabled) {
-        window.currentAppLimits.enabled = true;
-        await persistAppLimits(window.currentAppLimits);
+  if (profileModal && profileModal.classList.contains('open')) {
+    // Add a 300ms delay to allow the Android OS to settle and register the granted permission before we query it
+    setTimeout(async () => {
+      const granted = await checkAndroidPermissionStatus();
+      if (granted) {
+        if (!window.currentAppLimits) {
+          window.currentAppLimits = { enabled: false, apps: [] };
+        }
+        if (!window.currentAppLimits.enabled) {
+          window.currentAppLimits.enabled = true;
+          await persistAppLimits(window.currentAppLimits);
+        } else {
+          // Even if already enabled, evaluate distraction limits immediately to update day cards now that permission is active
+          if (typeof window.evaluateDaysDistractions === 'function') {
+            window.evaluateDaysDistractions();
+          }
+        }
       }
       loadAppLimits();
-    }
+    }, 300);
   }
 });
 

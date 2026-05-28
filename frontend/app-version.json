@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.8",
+  "latestVersion": "1.9",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "v1.8: AI Daily, Weekly & Monthly Insights now factor in your screen time and app limit compliance. Weekly & monthly summaries now include a 10-point productivity rating. All AI insights evaluate distraction stats even if tracking toggle is off."
+  "releaseNotes": "v1.9: Fixed screen time calculation accuracy, permission checking on settings focus, auto-enabling tracking upon granting permissions, and resolved Android APK update download redirection issue."
 }

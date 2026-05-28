@@ -31,3 +31,6 @@ scratch/
 *.bak
 frontend/js/modules/tracker.md
 .claude/
+
+# Database scripts
+/backend/scripts/clear-screen-time.js

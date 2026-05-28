@@ -8,7 +8,7 @@ if (isAndroidNative) {
 window.isAndroidNative = isAndroidNative;
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "1.8";
+let runningAppVersion = "1.9";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {
@@ -16,6 +16,9 @@ if (isAndroidNative) {
   }
 }
 window.runningAppVersion = runningAppVersion;
+
+const API = isAndroidNative ? 'https://consistency-daily.vercel.app' : '';
+window.API = API;
 
 /**
  * Compares two semver strings (e.g. "1.7", "1.8", "2.0.1").
@@ -70,7 +73,7 @@ function showForceUpdateDialog(data) {
       <p style="font-size: 11.5px; color: var(--text-muted, #aaa); margin: 0 0 20px; line-height: 1.5; text-align: left; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 12px;">
         ${data.releaseNotes || 'Bug fixes and improvements.'}
       </p>
-      <a id="__update-download-btn" href="${data.apkUrl}" download style="
+      <a id="__update-download-btn" href="#" style="
         display: block; width: 100%; box-sizing: border-box;
         background: var(--yellow, #FFD60A); color: #111; border: 2px solid #111;
         border-radius: 10px; padding: 12px 16px; font-family: 'Space Grotesk', sans-serif;
@@ -82,6 +85,30 @@ function showForceUpdateDialog(data) {
       </a>
     </div>
   `;
+
+  // Redirect to download via external system browser
+  const downloadBtn = overlay.querySelector('#__update-download-btn');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                          navigator.userAgent.includes("Capacitor");
+      if (isNativeApp) {
+        if (window.Capacitor?.Plugins?.Browser) {
+          window.Capacitor.Plugins.Browser.open({ url: data.apkUrl });
+        } else {
+          window.open(data.apkUrl, '_system');
+        }
+      } else {
+        const link = document.createElement('a');
+        link.href = data.apkUrl;
+        link.download = 'Consistency.Daily.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    });
+  }
 
   // Prevent any touch/click on the backdrop from dismissing it
   overlay.addEventListener('click', (e) => {
@@ -129,9 +156,6 @@ checkForAppUpdate();
 if (!navigator.onLine) {
   document.body.classList.add('is-offline');
 }
-
-const API = isAndroidNative ? 'https://consistency-daily.vercel.app' : '';
-window.API = API;
 
 // ── Security Helpers ──────────────────────────────────────
 function setLeaderboardTogglesEnabled(enabled) {

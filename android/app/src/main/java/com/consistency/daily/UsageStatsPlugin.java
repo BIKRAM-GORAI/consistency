@@ -2,6 +2,7 @@ package com.consistency.daily;
 
 import android.app.AppOpsManager;
 import android.app.usage.UsageEvents;
+import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
@@ -113,6 +114,33 @@ public class UsageStatsPlugin extends Plugin {
         }
     }
 
+    private static class DayRange {
+        String dateStr;
+        long start;
+        long end;
+        DayRange(String dateStr, long start, long end) {
+            this.dateStr = dateStr;
+            this.start = start;
+            this.end = end;
+        }
+    }
+
+    private void recordSession(String pkg, long start, long end, List<DayRange> dayRanges, Map<String, Map<String, Long>> dailyStats) {
+        if (pkg == null || start >= end) return;
+        for (DayRange dr : dayRanges) {
+            long overlapStart = Math.max(start, dr.start);
+            long overlapEnd = Math.min(end, dr.end);
+            if (overlapStart < overlapEnd) {
+                long duration = overlapEnd - overlapStart;
+                Map<String, Long> dayMap = dailyStats.get(dr.dateStr);
+                if (dayMap != null) {
+                    long existing = dayMap.containsKey(pkg) ? dayMap.get(pkg) : 0L;
+                    dayMap.put(pkg, existing + duration);
+                }
+            }
+        }
+    }
+
     @PluginMethod
     public void getUsageStats(PluginCall call) {
         try {
@@ -136,84 +164,102 @@ public class UsageStatsPlugin extends Plugin {
             }
             launcherPackages.add(context.getPackageName()); // Include our own app in totals
             
-            JSObject result = new JSObject();
+            List<DayRange> dayRanges = new java.util.ArrayList<>();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
             cal.set(Calendar.MILLISECOND, 0);
+            sdf.setTimeZone(cal.getTimeZone());
             
             for (int d = 0; d < days; d++) {
                 long startOfDay = cal.getTimeInMillis();
                 long endOfDay = startOfDay + (24 * 60 * 60 * 1000L) - 1;
-                
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
                 String dateStr = sdf.format(cal.getTime());
-                
-                // Query absolute events in this exact 24-hour interval
-                UsageEvents events = usm.queryEvents(startOfDay, endOfDay);
-                
-                Map<String, Long> pkgForegroundMap = new HashMap<>();
-                Map<String, Long> resumeTimeMap = new HashMap<>();
-                
-                if (events != null) {
-                    UsageEvents.Event event = new UsageEvents.Event();
-                    while (events.hasNextEvent()) {
-                        events.getNextEvent(event);
-                        String pkg = event.getPackageName();
-                        
-                        // Performance: Only track user-facing launcher applications
-                        if (!launcherPackages.contains(pkg)) {
-                            continue;
-                        }
-                        
-                        int type = event.getEventType();
-                        long timestamp = event.getTimeStamp();
-                        
-                        if (type == UsageEvents.Event.ACTIVITY_RESUMED) { // Value: 1 (Move to foreground)
-                            resumeTimeMap.put(pkg, timestamp);
-                        } else if (type == UsageEvents.Event.ACTIVITY_PAUSED) { // Value: 2 (Move to background)
-                            if (resumeTimeMap.containsKey(pkg)) {
-                                long resumeTime = resumeTimeMap.get(pkg);
-                                long duration = timestamp - resumeTime;
-                                if (duration > 0) {
-                                    long total = pkgForegroundMap.containsKey(pkg) ? pkgForegroundMap.get(pkg) : 0L;
-                                    pkgForegroundMap.put(pkg, total + duration);
-                                }
-                                resumeTimeMap.remove(pkg);
-                            }
-                            // Ignores ACTIVITY_PAUSED events that do not have a matching ACTIVITY_RESUMED today,
-                            // completely eliminating false midnight-to-pause active duration inflation!
-                        }
-                    }
-                }
-                
-                // Flush any active session open at endOfDay
-                for (Map.Entry<String, Long> entry : resumeTimeMap.entrySet()) {
-                    String pkg = entry.getKey();
-                    long resumeTime = entry.getValue();
-                    long duration = endOfDay - resumeTime;
-                    if (duration > 0) {
-                        long total = pkgForegroundMap.containsKey(pkg) ? pkgForegroundMap.get(pkg) : 0L;
-                        pkgForegroundMap.put(pkg, total + duration);
-                    }
-                }
-                
-                // Convert millisecond totals to minutes for Javascript consumption
-                JSObject dayStats = new JSObject();
-                for (Map.Entry<String, Long> entry : pkgForegroundMap.entrySet()) {
-                    String pkg = entry.getKey();
-                    long timeInMs = entry.getValue();
-                    if (timeInMs > 0) {
-                        long minutes = timeInMs / (1000 * 60);
-                        if (minutes > 0) {
-                            dayStats.put(pkg, (int) minutes);
-                        }
-                    }
-                }
-                
-                result.put(dateStr, dayStats);
+                dayRanges.add(new DayRange(dateStr, startOfDay, endOfDay));
                 cal.add(Calendar.DAY_OF_YEAR, -1);
+            }
+            
+            long overallStart = dayRanges.get(dayRanges.size() - 1).start - 12 * 60 * 60 * 1000L;
+            long overallEnd = System.currentTimeMillis();
+            
+            Map<String, Map<String, Long>> dailyStats = new HashMap<>();
+            for (DayRange dr : dayRanges) {
+                dailyStats.put(dr.dateStr, new HashMap<String, Long>());
+            }
+            
+            UsageEvents events = usm.queryEvents(overallStart, overallEnd);
+            
+            String currentApp = null;
+            long lastResumeTime = 0L;
+            boolean isScreenInteractive = true;
+            
+            if (events != null) {
+                UsageEvents.Event event = new UsageEvents.Event();
+                while (events.hasNextEvent()) {
+                    events.getNextEvent(event);
+                    String pkg = event.getPackageName();
+                    int type = event.getEventType();
+                    long timestamp = event.getTimeStamp();
+                    
+                    if (type == 16 || type == 17) { // SCREEN_NON_INTERACTIVE or KEYGUARD_SHOWN
+                        if (isScreenInteractive) {
+                            if (currentApp != null) {
+                                recordSession(currentApp, lastResumeTime, timestamp, dayRanges, dailyStats);
+                            }
+                            isScreenInteractive = false;
+                        }
+                    } else if (type == 15 || type == 18) { // SCREEN_INTERACTIVE or KEYGUARD_HIDDEN
+                        if (!isScreenInteractive) {
+                            isScreenInteractive = true;
+                            if (currentApp != null) {
+                                lastResumeTime = timestamp;
+                            }
+                        }
+                    } else if (type == 1) { // ACTIVITY_RESUMED
+                        if (launcherPackages.contains(pkg)) {
+                            if (currentApp != null && isScreenInteractive) {
+                                recordSession(currentApp, lastResumeTime, timestamp, dayRanges, dailyStats);
+                            }
+                            currentApp = pkg;
+                            lastResumeTime = timestamp;
+                        }
+                    } else if (type == 2) { // ACTIVITY_PAUSED
+                        if (pkg.equals(currentApp)) {
+                            if (isScreenInteractive) {
+                                recordSession(currentApp, lastResumeTime, timestamp, dayRanges, dailyStats);
+                            }
+                            currentApp = null;
+                        }
+                    }
+                }
+            }
+            
+            // Flush final session at the end of events
+            if (currentApp != null && isScreenInteractive && lastResumeTime < overallEnd) {
+                recordSession(currentApp, lastResumeTime, overallEnd, dayRanges, dailyStats);
+            }
+            
+            // Convert millisecond totals to minutes for Javascript consumption
+            JSObject result = new JSObject();
+            for (DayRange dr : dayRanges) {
+                JSObject dayStats = new JSObject();
+                Map<String, Long> dayMap = dailyStats.get(dr.dateStr);
+                if (dayMap != null) {
+                    for (Map.Entry<String, Long> entry : dayMap.entrySet()) {
+                        String pkg = entry.getKey();
+                        long timeInMs = entry.getValue();
+                        if (timeInMs > 0) {
+                            long minutes = timeInMs / (1000 * 60);
+                            if (minutes > 0) {
+                                dayStats.put(pkg, (int) minutes);
+                            }
+                        }
+                    }
+                }
+                result.put(dr.dateStr, dayStats);
             }
             
             call.resolve(result);

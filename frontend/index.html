@@ -1186,8 +1186,8 @@
         </div>
 
         <!-- Android Screen Time & App Limits Section -->
-        <div id="android-usage-stats-card" style="display: none; padding: 16px; background: rgba(168, 85, 247, 0.15); border: 2px solid #a855f7; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="smartphone"></i> Screen Time &amp; App Limits</h3>
+        <div id="android-usage-stats-card" class="screentime-section-card" style="display: none;">
+          <h3 class="screentime-section-title"><i data-lucide="smartphone"></i> Screen Time &amp; App Limits</h3>
           
           <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2); margin-bottom: 12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
@@ -1206,7 +1206,7 @@
                 <!-- Chosen apps with limit inputs/sliders will be injected here -->
               </div>
               <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--yellow); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 14px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="openAddDistractingAppModal()">
-                <span><i data-lucide="plus" class="no-theme" style="color: var(--black);"></i> Add Distracting App</span>
+                <i data-lucide="plus" class="no-theme" style="color: var(--black);"></i> Add Distracting App
               </button>
             </div>
           </div>
@@ -1376,23 +1376,36 @@
 
   <!-- ===== MODAL: Usage Stats Permission Info ===== -->
   <div class="modal-overlay" id="modal-usage-stats-permission" onclick="closeModalOnOverlay(event, 'modal-usage-stats-permission')">
-    <div class="modal" style="max-width: 400px; text-align: center; padding: 24px; border: var(--border-2); border-radius: 12px; background: var(--bg); box-shadow: 8px 8px 0 var(--black);">
-      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(168, 85, 247, 0.15); border: 2px solid #a855f7; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; margin-left: auto; margin-right: auto;">
-        <i data-lucide="smartphone" style="width: 32px; height: 32px; color: #a855f7;"></i>
+    <div class="modal" style="max-width: 400px; display: flex; flex-direction: column;">
+      <div class="modal-header" style="flex-shrink: 0; justify-content: center; position: relative;">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 800; text-transform: uppercase;"><i data-lucide="shield-alert"></i> Permission Required</h2>
+        <button class="modal-close" onclick="closeModal('modal-usage-stats-permission')" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%);"><i data-lucide="x"></i></button>
       </div>
-      <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800; text-transform: uppercase; margin: 0 0 12px 0;">Usage Access Required</h2>
-      <p style="font-size: 14px; line-height: 1.6; color: var(--text); margin: 0 0 20px 0;">
-        To automatically track and tick off your app limits, Consistency requires **Usage Access**.
-        <br/><br/>
-        Please find <strong>Consistency Daily</strong> on the next screen and toggle <strong>"Permit usage access"</strong> to <strong>ON</strong>.
-      </p>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button class="btn-primary ripple" style="justify-content: center; width: 100%; background: #a855f7; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; font-weight: 800; text-transform: uppercase; color: white;" onclick="confirmAndOpenUsageSettings()">
-          Open Settings
-        </button>
-        <button class="btn-ghost ripple" style="justify-content: center; width: 100%; border: 2px solid var(--black); font-size: 14px; font-weight: 700; text-transform: uppercase;" onclick="closeModal('modal-usage-stats-permission')">
-          Cancel
-        </button>
+      <div class="modal-body" style="padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(168, 85, 247, 0.15); border: 2px solid #a855f7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i data-lucide="smartphone" style="width: 30px; height: 30px; color: #a855f7;"></i>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <h3 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; text-transform: uppercase; color: var(--text);">Usage Access</h3>
+          <p style="font-size: 13px; line-height: 1.5; color: var(--text-muted); margin: 0; text-align: center;">
+            To automatically track and enforce your application limits, Consistency requires <strong>Usage Access</strong> permission.
+          </p>
+          <div style="background: var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.6; text-align: left; color: var(--text); margin-top: 8px; box-shadow: 2px 2px 0 var(--black);">
+            <p style="margin: 0; font-weight: 700; text-transform: uppercase; font-size: 10px; color: #a855f7; margin-bottom: 4px;">Instructions:</p>
+            1. Click <strong>Open Settings</strong> below.<br>
+            2. Find <strong>Consistency Daily</strong> in the list.<br>
+            3. Toggle <strong>"Permit usage access"</strong> to <strong>ON</strong>.
+          </div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px;">
+          <button class="btn-primary ripple" style="justify-content: center; width: 100%; background: #a855f7; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 14px; font-weight: 800; text-transform: uppercase; color: white;" onclick="confirmAndOpenUsageSettings()">
+            Open Settings
+          </button>
+          <button class="btn-ghost ripple" style="justify-content: center; width: 100%; border: 2px solid var(--black); font-size: 13px; font-weight: 700; text-transform: uppercase;" onclick="closeModal('modal-usage-stats-permission')">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   </div>
