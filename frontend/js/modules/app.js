@@ -723,7 +723,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=57');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=59');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
@@ -843,7 +843,7 @@ async function checkNativeAppUpdates() {
   if (!isAndroidNative) return;
   
   try {
-    const res = await fetch('/app-version.json');
+    const res = await fetch('https://consistency-daily.vercel.app/app-version.json');
     if (!res.ok) return;
     const data = await res.json();
     

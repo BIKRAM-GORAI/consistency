@@ -319,12 +319,6 @@ exports.notifyGroupChat = async (req, res) => {
       groupNotifCooldowns.set(String(groupId), state);
     }
 
-    // Clear any active debouncing timer
-    if (state.timeoutId) {
-      clearTimeout(state.timeoutId);
-      state.timeoutId = null;
-    }
-
     const elapsedSinceLastNotif = now - state.lastNotificationSentAt;
 
     // SCENARIO A: Quiet Group conversation (10+ seconds of silence)
@@ -346,20 +340,22 @@ exports.notifyGroupChat = async (req, res) => {
       });
     } 
     // SCENARIO B: Rapid burst / spam mode (less than 10s apart)
-    // Queue message and schedule silent stacked update in 10s
+    // Queue message and schedule silent stacked update in 10s (if not already scheduled)
     else {
       state.pendingCount++;
       state.pendingList.push({ senderName, senderId, text: bodyText });
 
-      state.timeoutId = setTimeout(async () => {
-        try {
-          await deliverPendingNotifications(String(groupId));
-        } catch (e) {
-          console.error('[FCM Smart Debouncer] Background delivery timer failed:', e);
-        }
-      }, 10000);
+      if (!state.timeoutId) {
+        state.timeoutId = setTimeout(async () => {
+          try {
+            await deliverPendingNotifications(String(groupId));
+          } catch (e) {
+            console.error('[FCM Smart Debouncer] Background delivery timer failed:', e);
+          }
+        }, 10000);
+      }
 
-      console.log(`[FCM Smart Throttle] Burst mode. Queueing message from ${senderName} for silent delivery in 10s.`);
+      console.log(`[FCM Smart Throttle] Burst mode. Queueing message from ${senderName} (Total pending: ${state.pendingCount})`);
       return res.json({ 
         success: true, 
         throttled: true, 

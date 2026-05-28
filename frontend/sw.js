@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v57';
+const CACHE_NAME = 'consistency-cache-v59';
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -179,7 +179,17 @@ self.addEventListener('push', function(event) {
     }
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // If the app is open and focused in the foreground, suppress the background system notification.
+      const anyFocused = windowClients.some(client => client.focused);
+      if (anyFocused) {
+        console.log('[SW] App is open and focused in foreground. Suppressing system notification.');
+        return;
+      }
+      return self.registration.showNotification(title, options);
+    })
+  );
 });
 
 self.addEventListener('notificationclick', function(event) {

@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.6",
+  "latestVersion": "1.7",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "Critical Update: Bumps version to v1.6. Upgrades offline sync database schema to Version 9, improves visual aesthetics, optimizes local and remote synchronization stability, and addresses network-first modular caching."
+  "releaseNotes": "Stable Release v1.7: Solves all ReferenceError bugs on group chat tabs, implements circular microphone badges and durations for voice replies, and corrects desktop/laptop Enter key ergonomics for instant sending."
 }

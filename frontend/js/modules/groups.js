@@ -3,7 +3,7 @@ console.log("[Module] groups.js initializing...");
 
 let allGroups = [];
 
-let allJoinedGroups = [];
+let allJoinedGroups = []; window.allJoinedGroups = allJoinedGroups;
 let availablePublicGroups = [];
 
 let _lastGroupsLoad = 0;
@@ -19,7 +19,7 @@ async function loadGroups() {
   try {
     const cached = await localDb.groups.toArray();
     if (cached.length > 0) {
-      allJoinedGroups = cached;
+      allJoinedGroups = cached; window.allJoinedGroups = allJoinedGroups;
       renderGroups();
     } else {
       container.innerHTML = `
@@ -62,7 +62,7 @@ async function loadGroups() {
       const serverJoined = joined;
       const safeJoined = serverJoined.filter(g => !pendingDeleteIds.has(g._id));
 
-      allJoinedGroups = safeJoined;
+      allJoinedGroups = safeJoined; window.allJoinedGroups = allJoinedGroups;
       availablePublicGroups = publicGroupsList;
 
       // Sync Local Cache
@@ -727,7 +727,7 @@ async function deleteGroup(groupId) {
   if (!confirm('Are you sure you want to completely delete this team? This action is permanent.')) return;
   try {
     // 1. Update UI and Local DB instantly
-    allJoinedGroups = allJoinedGroups.filter(g => g._id !== groupId);
+    allJoinedGroups = allJoinedGroups.filter(g => g._id !== groupId); window.allJoinedGroups = allJoinedGroups;
     await window.localDb.groups.delete(groupId);
     renderGroups();
 

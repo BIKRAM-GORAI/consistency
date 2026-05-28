@@ -67,8 +67,8 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   fetchMediaLimit();
 
   // Check if current user is the owner of this group
-  const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) 
-    ? allJoinedGroups.find(g => g._id === groupId) 
+  const group = (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) 
+    ? window.allJoinedGroups.find(g => g._id === groupId) 
     : null;
   const myUserId = localStorage.getItem('window.userId');
   
@@ -315,7 +315,7 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
   let isBlue = false;
   if (isSelf) {
     const tsMillis = timestamp.getTime();
-    const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) ? allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
+    const group = (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) ? window.allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
     const totalOthers = group ? Math.max(1, group.members.length - 1) : 1;
     const readCount = Object.values(memberReadStatuses).filter(lr => lr >= tsMillis).length;
     isBlue = (readCount / totalOthers) * 100 >= (window.globalConfig.chatReadThresholdPct || 10);
@@ -347,13 +347,35 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
 
   // Reply Snippet
   let replySnippetHtml = '';
-    if (msg.replyTo) {
+  if (msg.replyTo) {
+    const isAudioReply = msg.replyTo.mediaType === 'audio' || 
+                         (msg.replyTo.mediaUrl && (
+                           msg.replyTo.mediaUrl.match(/\.(mp3|wav|ogg|m4a|aac)($|\?)/i) || 
+                           msg.replyTo.mediaUrl.includes('audio') || 
+                           msg.replyTo.mediaUrl.includes('voice')
+                         ));
+    
+    const formatSecs = (seconds) => {
+      if (!seconds) return '';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    const durationText = msg.replyTo.audioDuration ? (window.formatDuration ? window.formatDuration(msg.replyTo.audioDuration) : formatSecs(msg.replyTo.audioDuration)) : '';
+    const voiceLabel = durationText ? `Voice Message (${durationText})` : 'Voice Message';
+    
     replySnippetHtml = `
       <div class="chat-reply-snippet" onclick="scrollToMessage('${msg.replyTo.docId}')">
-        ${msg.replyTo.mediaUrl ? `<img data-src="${msg.replyTo.mediaUrl}" class="chat-reply-thumbnail lazy-media" />` : ''}
+        ${msg.replyTo.mediaUrl ? (isAudioReply ? `
+          <div class="chat-reply-thumbnail" style="display:flex;align-items:center;justify-content:center;background:var(--purple);border:2px solid var(--black);border-radius:50%;width:32px;height:32px;flex-shrink:0;box-sizing:border-box;">
+            <i data-lucide="mic" style="width:14px;height:14px;color:#fff;"></i>
+          </div>
+        ` : `
+          <img data-src="${msg.replyTo.mediaUrl}" class="chat-reply-thumbnail lazy-media" />
+        `) : ''}
         <div style="flex:1; min-width:0;">
           <span class="chat-reply-sender">${escHtml(msg.replyTo.senderName)}</span>
-          <div class="chat-reply-text">${escHtml(msg.replyTo.text || (msg.replyTo.mediaUrl ? 'Photo' : ''))}</div>
+          <div class="chat-reply-text">${escHtml(msg.replyTo.text || (isAudioReply ? voiceLabel : (msg.replyTo.mediaUrl ? 'Photo' : '')))}</div>
         </div>
       </div>
     `;
@@ -366,7 +388,7 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
   const buttonsHtml = `
     <div class="chat-message-actions-outside" style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-self: center; margin: 0 12px; transition: opacity 0.2s;">
       <button class="chat-edit-btn" onclick="toggleReactionPicker(event, '${docId}')" title="React"><i data-lucide="smile" style="width:16px;height:16px;"></i></button>
-      <button class="chat-edit-btn" onclick="setReplyTo('${docId}', '${escJs(msg.text)}', '${escJs(msg.senderName)}', '${msg.mediaUrl || ''}')" title="Reply"><i data-lucide="reply" style="width:16px;height:16px;"></i></button>
+      <button class="chat-edit-btn" onclick="setReplyTo('${docId}', '${escJs(msg.text)}', '${escJs(msg.senderName)}', '${msg.mediaUrl || ''}', '${msg.mediaType || ''}', ${msg.audioDuration || 0})" title="Reply"><i data-lucide="reply" style="width:16px;height:16px;"></i></button>
       ${editBtn ? `
         <button class="chat-edit-btn" onclick="startEditChatMessage('${docId}', '${escJs(msg.text)}')" title="Edit"><i data-lucide="pencil" style="width:16px;height:16px;"></i></button>
         <button class="chat-edit-btn" onclick="deleteChatMessage('${docId}')" title="Delete" style="color:var(--red);"><i data-lucide="trash-2" style="width:16px;height:16px;"></i></button>
@@ -497,7 +519,7 @@ function initSwipeToReply(wrapper, bubble, isSelf, msg) {
       
       // Threshold to trigger reply
       if (Math.abs(diff) > 50) {
-        setReplyTo(msg.id, msg.text || '', msg.senderName, msg.mediaUrl || '');
+        setReplyTo(msg.id, msg.text || '', msg.senderName, msg.mediaUrl || '', msg.mediaType || '', msg.audioDuration || 0);
         if (window.navigator.vibrate) window.navigator.vibrate(15);
       }
     }
@@ -934,7 +956,9 @@ async function handleChatSubmit(e) {
         docId: activeReplyTo.docId || '',
         text: activeReplyTo.text || '',
         senderName: activeReplyTo.senderName || '',
-        mediaUrl: activeReplyTo.mediaUrl || null
+        mediaUrl: activeReplyTo.mediaUrl || null,
+        mediaType: activeReplyTo.mediaType || null,
+        audioDuration: activeReplyTo.audioDuration || null
       };
     }
 
@@ -1225,8 +1249,8 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
     html += `<div class="reaction-info-list">`;
     
     // Try to find names from allJoinedGroups members
-    const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) 
-      ? allJoinedGroups.find(g => g._id === activeChatGroupId) 
+    const group = (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) 
+      ? window.allJoinedGroups.find(g => g._id === activeChatGroupId) 
       : null;
     
     userIds.forEach(uid => {
@@ -1277,8 +1301,8 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
   } catch (err) { console.error(err); }
 }
 
-function setReplyTo(docId, text, senderName, mediaUrl) {
-  activeReplyTo = { docId, text, senderName, mediaUrl };
+function setReplyTo(docId, text, senderName, mediaUrl, mediaType = '', audioDuration = 0) {
+  activeReplyTo = { docId, text, senderName, mediaUrl, mediaType, audioDuration };
   let preview = document.getElementById('chat-reply-preview');
   if (!preview) {
     const footer = document.querySelector('#modal-group-chat .modal-footer');
@@ -1288,11 +1312,33 @@ function setReplyTo(docId, text, senderName, mediaUrl) {
     footer.parentNode.insertBefore(preview, footer);
   }
   
+  const isAudio = mediaType === 'audio' || 
+                  (mediaUrl && (
+                    mediaUrl.match(/\.(mp3|wav|ogg|m4a|aac)($|\?)/i) || 
+                    mediaUrl.includes('audio') || 
+                    mediaUrl.includes('voice')
+                  ));
+  
+  const formatSecs = (seconds) => {
+    if (!seconds) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  const durationText = audioDuration ? (window.formatDuration ? window.formatDuration(audioDuration) : formatSecs(audioDuration)) : '';
+  const voiceLabel = durationText ? `Voice Message (${durationText})` : 'Voice Message';
+  
   preview.innerHTML = `
-    ${mediaUrl ? `<img src="${mediaUrl}" class="chat-reply-thumbnail" />` : ''}
+    ${mediaUrl ? (isAudio ? `
+      <div class="chat-reply-thumbnail" style="display:flex;align-items:center;justify-content:center;background:var(--purple);border:2px solid var(--black);border-radius:50%;width:32px;height:32px;flex-shrink:0;box-sizing:border-box;">
+        <i data-lucide="mic" style="width:14px;height:14px;color:#fff;"></i>
+      </div>
+    ` : `
+      <img src="${mediaUrl}" class="chat-reply-thumbnail" />
+    `) : ''}
     <div class="chat-reply-preview-content">
       <div class="chat-reply-preview-name">Replying to ${escHtml(senderName)}</div>
-      <div class="chat-reply-preview-text">${escHtml(text || (mediaUrl ? 'Photo' : ''))}</div>
+      <div class="chat-reply-preview-text">${escHtml(text || (isAudio ? voiceLabel : (mediaUrl ? 'Photo' : '')))}</div>
     </div>
     <button class="chat-edit-btn" onclick="clearReply()" style="opacity:1;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
   `;
@@ -1428,7 +1474,7 @@ function subscribeToReadStatuses(groupId) {
 }
 
 function updateExistingTicks() {
-  const group = allJoinedGroups.find(g => g._id === activeChatGroupId);
+  const group = (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) ? window.allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
   if (!group) return;
   const totalOthers = Math.max(1, group.members.length - 1);
   
@@ -1484,7 +1530,7 @@ function updateMessageInDOM(msg, isPending = false) {
 
 function calculateBlueStatus(msg) {
   const tsMillis = msg.timestamp?.toMillis ? msg.timestamp.toMillis() : (msg.timestamp?.toDate ? msg.timestamp.toDate().getTime() : Date.now());
-  const group = (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) ? allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
+  const group = (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) ? window.allJoinedGroups.find(g => g._id === activeChatGroupId) : null;
   const totalOthers = group ? Math.max(1, group.members.length - 1) : 1;
   const readCount = Object.values(memberReadStatuses).filter(lr => lr >= tsMillis).length;
   return (readCount / totalOthers) * 100 >= (window.globalConfig.chatReadThresholdPct || 10);
@@ -1527,12 +1573,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Handle Shift+Enter to send (as requested)
+    // Enter sends, Shift+Enter new line (on desktop/laptop devices)
     chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.shiftKey) {
-        e.preventDefault();
-        // Manually trigger the form submit handler
-        handleChatSubmit(e); 
+      if (e.key === 'Enter') {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.isAndroidNative;
+        if (!isMobile) {
+          if (!e.shiftKey) {
+            e.preventDefault();
+            handleChatSubmit(e);
+          }
+        }
       }
     });
   }
@@ -1776,7 +1826,7 @@ async function initPushNotifications(forcePrompt = false) {
         }
 
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=57');
+        await navigator.serviceWorker.register('/sw.js?v=59');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
@@ -2000,8 +2050,8 @@ async function openQuickViewByMemberId(memberId, memberName) {
       const myUsername = localStorage.getItem('userUsername');
       if (myUsername) return openQuickView(myUsername);
     }
-    if (typeof allJoinedGroups !== 'undefined' && allJoinedGroups) {
-      const group = allJoinedGroups.find(g => g._id === activeChatGroupId);
+    if (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) {
+      const group = window.allJoinedGroups.find(g => g._id === activeChatGroupId);
       if (group && group.members) {
         const member = group.members.find(m => (m._id || m) === memberId);
         if (member && typeof member === 'object' && member.username) {
