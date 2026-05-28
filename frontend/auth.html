@@ -1158,7 +1158,7 @@
     // WebView and Native environment check
     const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
                         navigator.userAgent.includes("Capacitor") ||
-                        (window.location.protocol === 'file:' || window.location.hostname === 'localhost' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+                        window.location.protocol === 'file:';
     const API = isNativeApp ? 'https://consistency-daily.vercel.app' : '';
 
     const overlay = document.getElementById('oauth-loading-overlay');

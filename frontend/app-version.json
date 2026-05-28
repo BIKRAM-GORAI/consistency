@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.5",
+  "latestVersion": "1.6",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "Critical Security Update: Bypasses Google authentication redirects and adds native Google Sign-In with 1-tap support!"
+  "releaseNotes": "Critical Update: Bumps version to v1.6. Upgrades offline sync database schema to Version 9, improves visual aesthetics, optimizes local and remote synchronization stability, and addresses network-first modular caching."
 }

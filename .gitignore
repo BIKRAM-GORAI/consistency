@@ -25,3 +25,9 @@ build/
 # Dev Log
 dev_changes.md
 .vercel
+
+# Refactoring Scratches, Backups & Developer Information
+scratch/
+*.bak
+frontend/js/modules/tracker.md
+.claude/

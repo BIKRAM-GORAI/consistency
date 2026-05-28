@@ -73,17 +73,19 @@ async function loadOwnProfileOffline() {
     throw new Error('Dexie is not loaded');
   }
   const dbLocal = new Dexie("ConsistencyDb");
-  dbLocal.version(6).stores({
+  dbLocal.version(9).stores({
     days: "_id, date, status, tasks, userId",
     goals: "_id, title, targetDate, status, userId",
     groups: "_id, name, code, isPublic",
     achievements: "_id, title, date, userId, dayId",
-    syncQueue: "++id, action, entity, data, timestamp",
+    syncQueue: "++id, action, entity, targetId, localId, timestamp",
     leaderboard: "sort",
     userProfile: "userId",
     badges: "_id",
     templates: "_id, name",
-    mediaCache: "url"
+    mediaCache: "url",
+    scratchpads: "dayId",
+    weeklySummaries: "_id, date, userId, daysCount"
   });
 
   const userId = localStorage.getItem('userId');
@@ -149,8 +151,19 @@ async function viewProgressOffline() {
 
   try {
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(6).stores({
-      days: "_id, date, status, tasks, userId"
+    dbLocal.version(9).stores({
+      days: "_id, date, status, tasks, userId",
+      goals: "_id, title, targetDate, status, userId",
+      groups: "_id, name, code, isPublic",
+      achievements: "_id, title, date, userId, dayId",
+      syncQueue: "++id, action, entity, targetId, localId, timestamp",
+      leaderboard: "sort",
+      userProfile: "userId",
+      badges: "_id",
+      templates: "_id, name",
+      mediaCache: "url",
+      scratchpads: "dayId",
+      weeklySummaries: "_id, date, userId, daysCount"
     });
     
     const userId = localStorage.getItem('userId');
@@ -192,8 +205,19 @@ async function loadMoreDaysOffline() {
   btn.disabled = true; btn.textContent = 'Loading...';
   try {
     const dbLocal = new Dexie("ConsistencyDb");
-    dbLocal.version(6).stores({
-      days: "_id, date, status, tasks, userId"
+    dbLocal.version(9).stores({
+      days: "_id, date, status, tasks, userId",
+      goals: "_id, title, targetDate, status, userId",
+      groups: "_id, name, code, isPublic",
+      achievements: "_id, title, date, userId, dayId",
+      syncQueue: "++id, action, entity, targetId, localId, timestamp",
+      leaderboard: "sort",
+      userProfile: "userId",
+      badges: "_id",
+      templates: "_id, name",
+      mediaCache: "url",
+      scratchpads: "dayId",
+      weeklySummaries: "_id, date, userId, daysCount"
     });
     const userId = localStorage.getItem('userId');
     const localDays = await dbLocal.days.where('userId').equals(userId).toArray();
