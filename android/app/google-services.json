@@ -60,6 +60,14 @@
           }
         },
         {
+          "client_id": "760797805516-s5eo54slk7e5j7bjj259s3adpcj78sge.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.consistency.tracker",
+            "certificate_hash": "d27bedc3bd11ab34757d35837cd2e2b15a5c2686"
+          }
+        },
+        {
           "client_id": "760797805516-qkjeh5uial8nca032ngea199chjhhqnj.apps.googleusercontent.com",
           "client_type": 3
         }

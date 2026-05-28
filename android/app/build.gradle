@@ -1,11 +1,23 @@
 apply plugin: 'com.android.application'
 
 android {
+
     namespace = "com.consistency.daily"
     compileSdk = rootProject.ext.compileSdkVersion
+
     buildFeatures {
         buildConfig true
     }
+
+    signingConfigs {
+        release {
+            storeFile file('release-key.jks')
+            storePassword 'consistency@bikram'
+            keyAlias 'todoai'
+            keyPassword 'consistency@bikram'
+        }
+    }
+
     defaultConfig {
         applicationId "com.consistency.daily"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -13,18 +25,20 @@ android {
         versionCode 9
         versionName "1.8"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
         aaptOptions {
-             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
-             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
 }
 
 repositories {
@@ -54,4 +68,12 @@ try {
     }
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
+
+// Force Java 17 compatibility to override any automatically generated settings in capacitor.build.gradle
+android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 }
