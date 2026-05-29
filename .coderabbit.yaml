@@ -1,0 +1,12 @@
+# CodeRabbit AI Code Review Configuration
+# For detailed settings, see https://docs.coderabbit.ai/
+
+language: "en-US"
+
+reviews:
+  profile: "chill"  # Options: chill, assertive, standard
+  request_reviews_from_ai: true
+  auto_review: true
+
+chat:
+  auto_reply: true

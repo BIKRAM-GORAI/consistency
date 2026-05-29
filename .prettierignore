@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+android/
+.vercel/
+.gemini/
+brain/
+package-lock.json
+frontend/libs/
+frontend/libs/*
