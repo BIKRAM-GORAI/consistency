@@ -16,6 +16,13 @@ async function openProfileModal() {
   const pwdIcon = document.getElementById('toggle-pwd-icon');
   if (pwdIcon) pwdIcon.textContent = '▼';
 
+  // Initialize temporary state for app limits and dark theme toggle
+  window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
+  const darkThemeToggle = document.getElementById('dark-theme-toggle');
+  if (darkThemeToggle) {
+    darkThemeToggle.checked = localStorage.getItem('theme') === 'dark';
+  }
+
   // Synchronous baseline population from localStorage to ensure instant loading of username, email, photo, showcase status, and LeetCode details on refresh/offline
   const storedName = localStorage.getItem('window.userName') || localStorage.getItem('userName') || '';
   const storedEmail = localStorage.getItem('userEmail') || '';
@@ -89,6 +96,42 @@ async function openProfileModal() {
       }
     })();
   }
+
+  // Dynamic App version rendering logic
+  const versionContainer = document.getElementById('app-version-info');
+  if (versionContainer) {
+    versionContainer.innerHTML = `
+      <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;">
+        Version Running: v${window.runningAppVersion || '1.9'} (checking...)
+      </div>
+    `;
+    fetch('https://consistency-daily.vercel.app/app-version.json?t=' + Date.now())
+      .then(r => r.json())
+      .then(data => {
+        const latest = data.latestVersion;
+        const current = window.runningAppVersion || '1.9';
+        
+        let updateText = '';
+        if (latest !== current) {
+          updateText = ` <span style="color: var(--pink); font-weight: 900;">(v${latest} available)</span>`;
+        } else {
+          updateText = ` <span style="color: var(--green); font-weight: 900;">(Up to date)</span>`;
+        }
+        
+        versionContainer.innerHTML = `
+          <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;">
+            Version Running: v${current} &nbsp;&nbsp;|&nbsp;&nbsp; Latest Release: v${latest}${updateText}
+          </div>
+        `;
+      })
+      .catch(() => {
+        versionContainer.innerHTML = `
+          <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;">
+            Version Running: v${window.runningAppVersion || '1.9'}
+          </div>
+        `;
+      });
+  }
 }
 
 /** Helper to populate profile fields from a user object */
@@ -153,6 +196,13 @@ function renderProfileData(user) {
       const hint = document.getElementById('profile-username-hint');
       if (hint) hint.innerHTML = '<i data-lucide="check-circle" style="width:14px;height:14px;color:var(--green)"></i> Username is locked.';
       if (window.lucide) lucide.createIcons({ root: hint });
+    } else {
+      unameInput.readOnly = false;
+      const hint = document.getElementById('profile-username-hint');
+      if (hint) {
+        hint.innerHTML = 'Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br><i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Username can be set only once.';
+        if (window.lucide) lucide.createIcons({ root: hint });
+      }
     }
   }
   
@@ -208,6 +258,7 @@ async function submitProfileSettings() {
     const payload = { emailNotifications, isPublicProfile, showOnLeaderboard };
     if (!usernameInput.readOnly && username) {
       payload.username = username;
+      localStorage.setItem('userUsername', username);
     }
     if (profilePicture) {
       payload.profilePicture = profilePicture;
@@ -222,6 +273,24 @@ async function submitProfileSettings() {
       window.syncManager.addToQueue('PATCH', 'auth/settings', null, payload);
     }
     localStorage.setItem('showOnLeaderboard', showOnLeaderboard.toString());
+
+    // Commit temporary app limits if they exist
+    if (window.tempAppLimits) {
+      window.currentAppLimits = JSON.parse(JSON.stringify(window.tempAppLimits));
+      await persistAppLimits(window.currentAppLimits);
+    }
+
+    // Apply and sync dark theme if changed
+    const darkThemeToggle = document.getElementById('dark-theme-toggle');
+    if (darkThemeToggle) {
+      const isDark = darkThemeToggle.checked;
+      const currentTheme = localStorage.getItem('theme');
+      if ((isDark ? 'dark' : 'light') !== currentTheme) {
+        if (typeof window.toggleDarkTheme === 'function') {
+          await window.toggleDarkTheme(isDark);
+        }
+      }
+    }
 
     // 3. SHOW SUCCESS INSTANTLY
     showToast('Settings saved!', 'success');
@@ -1143,6 +1212,14 @@ async function loadAppLimits() {
 }
 
 function renderAppLimitsUI(limits) {
+  const profileModal = document.getElementById('modal-profile');
+  if (profileModal && profileModal.classList.contains('open')) {
+    if (!window.tempAppLimits) {
+      window.tempAppLimits = JSON.parse(JSON.stringify(limits || { enabled: false, apps: [] }));
+    }
+    limits = window.tempAppLimits;
+  }
+
   const toggle = document.getElementById('distraction-limit-toggle');
   const config = document.getElementById('distraction-apps-configuration');
   if (toggle) toggle.checked = limits.enabled;
@@ -1228,11 +1305,12 @@ function updateLimitLabel(slider, packageName) {
 }
 
 async function saveLimitValue(packageName, minutes) {
-  if (!window.currentAppLimits) return;
-  const app = window.currentAppLimits.apps.find(a => a.packageName === packageName);
+  if (!window.tempAppLimits) {
+    window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
+  }
+  const app = window.tempAppLimits.apps.find(a => a.packageName === packageName);
   if (app) {
     app.limitMinutes = minutes;
-    await persistAppLimits(window.currentAppLimits);
   }
 }
 
@@ -1293,7 +1371,10 @@ function renderInstalledAppsList(apps) {
   const container = document.getElementById('installed-apps-list');
   if (!container) return;
 
-  const configured = window.currentAppLimits ? window.currentAppLimits.apps.map(a => a.packageName) : [];
+  const limits = (document.getElementById('modal-profile')?.classList.contains('open') && window.tempAppLimits)
+    ? window.tempAppLimits
+    : (window.currentAppLimits || { enabled: false, apps: [] });
+  const configured = limits.apps.map(a => a.packageName);
   const unconfigured = apps.filter(app => !configured.includes(app.package));
 
   if (unconfigured.length === 0) {
@@ -1339,24 +1420,23 @@ function filterInstalledApps(query) {
 }
 
 async function addAppToLimits(packageName, appName, iconBase64) {
-  if (!window.currentAppLimits) {
-    window.currentAppLimits = { enabled: true, apps: [] };
+  if (!window.tempAppLimits) {
+    window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: true, apps: [] }));
   }
 
-  if (window.currentAppLimits.apps.length >= 10) {
-    showToast('You can add a maximum of 10 distracting apps.', 'warning');
+  if (window.tempAppLimits.apps.length >= 10) {
+    showToast('You can add a maximum of 10 distracting apps.', 'warn');
     return;
   }
 
-  window.currentAppLimits.apps.push({
+  window.tempAppLimits.apps.push({
     packageName,
     appName,
     limitMinutes: 45,
     iconBase64: iconBase64 || ''
   });
 
-  await persistAppLimits(window.currentAppLimits);
-  renderAppLimitsUI(window.currentAppLimits);
+  renderAppLimitsUI(window.tempAppLimits);
   
   // Keep the modal open and re-render the list immediately, preserving any active search query
   const searchInput = document.getElementById('app-search-input');
@@ -1371,11 +1451,12 @@ async function addAppToLimits(packageName, appName, iconBase64) {
 }
 
 async function removeAppFromLimits(packageName) {
-  if (!window.currentAppLimits) return;
+  if (!window.tempAppLimits) {
+    window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
+  }
   
-  window.currentAppLimits.apps = window.currentAppLimits.apps.filter(app => app.packageName !== packageName);
-  await persistAppLimits(window.currentAppLimits);
-  renderAppLimitsUI(window.currentAppLimits);
+  window.tempAppLimits.apps = window.tempAppLimits.apps.filter(app => app.packageName !== packageName);
+  renderAppLimitsUI(window.tempAppLimits);
   showToast('App removed from limits.', 'info');
 }
 
@@ -1418,6 +1499,26 @@ async function toggleDistractionTracking(checked) {
   }
 }
 
+async function handleDistractionLimitToggle(checked) {
+  if (!window.tempAppLimits) {
+    window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
+  }
+
+  if (checked) {
+    const granted = await checkAndroidPermissionStatus();
+    if (!granted) {
+      const toggle = document.getElementById('distraction-limit-toggle');
+      if (toggle) toggle.checked = false;
+      openUsageStatsPermissionModal();
+      return;
+    }
+    window.tempAppLimits.enabled = true;
+  } else {
+    window.tempAppLimits.enabled = false;
+  }
+  renderAppLimitsUI(window.tempAppLimits);
+}
+
 // Auto recheck permission when returning to focus in the settings modal
 window.addEventListener('focus', () => {
   const profileModal = document.getElementById('modal-profile');
@@ -1426,20 +1527,14 @@ window.addEventListener('focus', () => {
     setTimeout(async () => {
       const granted = await checkAndroidPermissionStatus();
       if (granted) {
-        if (!window.currentAppLimits) {
-          window.currentAppLimits = { enabled: false, apps: [] };
+        if (!window.tempAppLimits) {
+          window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
         }
-        if (!window.currentAppLimits.enabled) {
-          window.currentAppLimits.enabled = true;
-          await persistAppLimits(window.currentAppLimits);
-        } else {
-          // Even if already enabled, evaluate distraction limits immediately to update day cards now that permission is active
-          if (typeof window.evaluateDaysDistractions === 'function') {
-            window.evaluateDaysDistractions();
-          }
+        if (!window.tempAppLimits.enabled) {
+          window.tempAppLimits.enabled = true;
         }
       }
-      loadAppLimits();
+      renderAppLimitsUI(window.tempAppLimits);
     }, 300);
   }
 });
@@ -1483,5 +1578,6 @@ window.removeAppFromLimits = removeAppFromLimits;
 window.openUsageStatsPermissionModal = openUsageStatsPermissionModal;
 window.confirmAndOpenUsageSettings = confirmAndOpenUsageSettings;
 window.toggleDistractionTracking = toggleDistractionTracking;
+window.handleDistractionLimitToggle = handleDistractionLimitToggle;
 
 console.log("[Module] profile.js loaded and Profile bound to window");

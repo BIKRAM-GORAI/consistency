@@ -46,17 +46,17 @@ function applyTemplate() {
   if (!t) return;
   
   document.getElementById('categories-builder').innerHTML = '';
-  categoryCount = 0;
+  window.categoryCount = 0;
   
   for (const cat of t.categories) {
-    const idx = categoryCount++;
+    const idx = window.categoryCount++;
     const builder = document.getElementById('categories-builder');
     const item = document.createElement('div');
     item.className = 'category-builder-item';
     item.id = `cat-build-${idx}`;
     item.innerHTML = `
       <div class="cat-top-row">
-        <input type="text" class="form-control" placeholder="Category name" id="cat-name-${idx}" value="${escHtml(cat.name)}" />
+        <input type="text" class="form-control" placeholder="Category name" id="cat-name-${idx}" value="${window.escHtml(cat.name)}" />
         <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
       </div>
       <div class="tasks-builder" id="tasks-build-${idx}"></div>
@@ -69,13 +69,16 @@ function applyTemplate() {
       const row = document.createElement('div');
       row.className = 'task-input-row';
       row.innerHTML = `
-        <input type="text" class="form-control" placeholder="Task title..." value="${escHtml(task.title)}" />
+        <input type="text" class="form-control" placeholder="Task title..." value="${window.escHtml(task.title)}" />
         <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
       `;
       tasksBuilder.appendChild(row);
     }
   }
   if (window.lucide) lucide.createIcons({ root: document.getElementById('categories-builder') });
+  if (typeof window.validateAddDayForm === 'function') {
+    window.validateAddDayForm();
+  }
   showToast('Template imported! You can edit before creating.', 'success');
 }
 
@@ -1434,6 +1437,9 @@ async function generateDailySummary(dayId, dateStr) {
           ? batchAchievements.filter(a => a.dayId === dayId) 
           : [];
         cardEl.replaceWith(buildDayCard(day, preLoadedAchs));
+        if (typeof window.evaluateDaysDistractions === 'function') {
+          window.evaluateDaysDistractions();
+        }
       }
       showToast(`Daily insights generated successfully! (⚡ ${window.generationsLeft} left today)`, 'success');
     }

@@ -565,7 +565,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-add-day')">Cancel</button>
-        <button class="btn-primary ripple" onclick="submitAddDay()" id="submit-day-btn">Create Card</button>
+        <button class="btn-primary ripple" onclick="submitAddDay()" id="submit-day-btn" disabled>Create Card</button>
       </div>
     </div>
   </div>
@@ -1193,7 +1193,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
               <label style="margin:0; font-weight: 600; color: var(--text);">Enable Limit Tracking</label>
               <label class="toggle-switch">
-                <input type="checkbox" id="distraction-limit-toggle" onchange="toggleDistractionTracking(this.checked)" />
+                <input type="checkbox" id="distraction-limit-toggle" onchange="handleDistractionLimitToggle(this.checked)" />
                 <span class="toggle-track"><span class="toggle-thumb"></span></span>
               </label>
             </div>
@@ -1262,7 +1262,7 @@
               <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
                 <label style="margin:0; font-weight: 600; color: var(--text);">Dark Theme</label>
                 <label class="toggle-switch">
-                  <input type="checkbox" id="dark-theme-toggle" onchange="toggleDarkTheme(this.checked)" />
+                  <input type="checkbox" id="dark-theme-toggle" />
                   <span class="toggle-track"><span class="toggle-thumb"></span></span>
                 </label>
               </div>
@@ -1348,6 +1348,12 @@
           <button class="log-out-btn ripple" onclick="logout()">
             <span>🚪 Log Out</span>
           </button>
+        </div>
+
+        <div id="app-version-info" style="margin-top: 6px; margin-bottom: 2px;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">
+            Version Running: v1.9
+          </div>
         </div>
 
       </div>

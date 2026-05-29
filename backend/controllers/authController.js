@@ -190,12 +190,31 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword } = req.body;
+    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username } = req.body;
 
     if (typeof emailNotifications === 'boolean') user.emailNotifications = emailNotifications;
     if (typeof isPublicProfile === 'boolean') user.isPublicProfile = isPublicProfile;
     if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) user.theme = theme;
+
+    if (username && username.trim() !== '') {
+      const cleanUsername = username.toLowerCase().trim();
+      if (user.username && user.username !== cleanUsername) {
+        return res.status(400).json({ message: 'Username is locked and cannot be changed' });
+      }
+      if (!user.username) {
+        // Validate format
+        const usernameRegex = /^[!-~]{4,20}$/;
+        if (!usernameRegex.test(cleanUsername)) {
+          return res.status(400).json({ message: 'Username must be 4-20 characters long and contain no spaces' });
+        }
+        const existingUser = await User.findOne({ username: cleanUsername });
+        if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+          return res.status(400).json({ message: 'Username already taken' });
+        }
+        user.username = cleanUsername;
+      }
+    }
 
     if (profilePicture && profilePicture.startsWith('data:image')) {
       if (user.profilePictureId) await cloudinary.uploader.destroy(user.profilePictureId);
@@ -211,8 +230,29 @@ async function setProfileSettings(req, res) {
     }
 
     await user.save();
-    res.json({ message: 'Profile updated' });
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+    res.json({
+      message: 'Profile updated',
+      name: user.name,
+      email: user.email,
+      username: user.username || '',
+      profilePicture: user.profilePicture || '',
+      emailNotifications: user.emailNotifications !== false,
+      achievementsPublic: user.achievementsPublic !== false,
+      isPublicProfile: user.isPublicProfile !== false,
+      showOnLeaderboard: user.showOnLeaderboard !== false,
+      theme: user.theme || 'light',
+      leetcodeUsername: user.leetcodeUsername || null,
+      leetcodePendingUsername: user.leetcodePendingUsername || null,
+      leetcodeVerificationCode: user.leetcodeVerificationCode || null,
+      leetcodeVerificationStatus: user.leetcodeVerificationStatus || 'none',
+      leetcodeLastVerifiedAt: user.leetcodeLastVerifiedAt || null,
+      leetcodeProfilePicture: user.leetcodeProfilePicture || '',
+      leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
+      currentStreak: user.currentStreak || 0,
+      highestStreak: user.highestStreak || 0,
+      mutedGroups: user.mutedGroups || []
+    });
+  } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
 }
 
 async function uploadProfilePicture(req, res) {

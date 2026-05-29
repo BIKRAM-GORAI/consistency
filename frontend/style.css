@@ -463,28 +463,21 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--r-sm);
+  padding: 6px 14px;
+  border-radius: 20px;
   background: var(--teal);
-  border: 3px solid var(--black);
-  box-shadow: 4px 4px 0 var(--black), 0 0 15px rgba(100, 255, 218, 0.3);
+  border: 2px dashed var(--black);
   font-size: 11px;
   font-weight: 900;
   color: var(--black);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   flex-shrink: 0;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
   cursor: default;
 }
 
 .header-motivation .lucide {
   color: var(--black) !important;
-}
-
-.header-motivation:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 var(--black), 0 0 20px rgba(100, 255, 218, 0.5);
 }
 
 .motivation-icon { font-size: 16px; }

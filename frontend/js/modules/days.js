@@ -1110,19 +1110,53 @@ async function claimBadge(badgeId) {
 }
 
 // ── Add Day Modal ──────────────────────────────────────────
-let categoryCount = 0;
+window.categoryCount = 0;
+
+function validateAddDayForm() {
+  const btn = document.getElementById('submit-day-btn');
+  if (!btn) return;
+  
+  const catItems = document.querySelectorAll('.category-builder-item');
+  let hasValidCategoryAndTask = false;
+  
+  for (const item of catItems) {
+    const nameInput = item.querySelector('input[type="text"]');
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) continue;
+    
+    const taskInputs = item.querySelectorAll('.task-input-row input');
+    for (const inp of taskInputs) {
+      const title = inp.value.trim();
+      if (title) {
+        hasValidCategoryAndTask = true;
+        break;
+      }
+    }
+    if (hasValidCategoryAndTask) break;
+  }
+  
+  btn.disabled = !hasValidCategoryAndTask;
+}
+window.validateAddDayForm = validateAddDayForm;
 
 function openAddDayModal() {
   document.getElementById('day-date-input').value    = window.todayStr();
   document.getElementById('day-summary-input').value = '';
-  document.getElementById('categories-builder').innerHTML = '';
-  categoryCount = 0;
+  const builder = document.getElementById('categories-builder');
+  builder.innerHTML = '';
+  window.categoryCount = 0;
   addCategoryField();
   openModal('modal-add-day');
+  
+  if (builder && !builder.hasAddDayValidationListener) {
+    builder.addEventListener('input', validateAddDayForm);
+    builder.hasAddDayValidationListener = true;
+  }
+  validateAddDayForm();
 }
 
 function addCategoryField() {
-  const idx = categoryCount++;
+  const idx = window.categoryCount++;
   const builder = document.getElementById('categories-builder');
   const item = document.createElement('div');
   item.className = 'category-builder-item';
@@ -1144,9 +1178,20 @@ function removeCategoryField(idx) {
   const el = document.getElementById(`cat-build-${idx}`);
   if (!el) return;
   if (window.gsap) {
-    gsap.to(el, { opacity: 0, height: 0, marginBottom: 0, duration: 0.2, ease: 'power2.in', onComplete: () => el.remove() });
+    gsap.to(el, { 
+      opacity: 0, 
+      height: 0, 
+      marginBottom: 0, 
+      duration: 0.2, 
+      ease: 'power2.in', 
+      onComplete: () => { 
+        el.remove(); 
+        validateAddDayForm(); 
+      } 
+    });
   } else {
     el.remove();
+    validateAddDayForm();
   }
 }
 
@@ -1156,10 +1201,11 @@ function addTaskField(catIdx) {
   row.className = 'task-input-row';
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Task title..." />
-    <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
+    <button class="btn-remove" onclick="this.parentElement.remove(); if (window.validateAddDayForm) window.validateAddDayForm();" title="Remove"><i data-lucide="trash-2"></i></button>
   `;
   builder.appendChild(row);
   if (window.lucide) lucide.createIcons({ root: row });
+  validateAddDayForm();
 }
 
 async function submitAddDay() {
@@ -1227,6 +1273,13 @@ async function submitAddDay() {
         tasks
       });
     }
+  }
+
+  if (categories.length === 0) {
+    window.showToast('Please add at least one category and one task.', 'warn');
+    btn.disabled = false;
+    btn.textContent = 'Create Card';
+    return;
   }
 
   btn.textContent = 'Creating...';
@@ -1778,6 +1831,9 @@ async function deleteDailySummary(dayId) {
           ? batchAchievements.filter(a => a.dayId === dayId) 
           : [];
         cardEl.replaceWith(buildDayCard(day, preLoadedAchs));
+        if (typeof evaluateDaysDistractions === 'function') {
+          evaluateDaysDistractions();
+        }
       }
     } catch (err) {
       console.error('Offline delete error:', err);
