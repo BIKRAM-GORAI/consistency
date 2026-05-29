@@ -251,10 +251,59 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 30px 15px;
+            }
+            header {
+                margin-bottom: 40px;
+            }
+            h1 {
+                font-size: clamp(24px, 7vw, 44px);
+                padding: 8px 16px;
+                transform: rotate(-1deg);
+            }
+            .notice-badge {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+                margin-bottom: 25px;
+            }
+            .subtitle {
+                font-size: 1rem;
+                letter-spacing: 1px;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
             .details-grid {
                 grid-template-columns: 1fr;
+                gap: 25px;
             }
-            h1 { font-size: 2.5rem; }
+            .detail-box {
+                padding: 20px;
+            }
+            .detail-box::before {
+                top: -6px;
+                left: -6px;
+            }
+            .flow-item {
+                padding: 15px 20px;
+                font-size: 0.85rem;
+                min-width: auto;
+                width: 100%;
+                max-width: 280px;
+            }
+            .flow-section {
+                margin-bottom: 50px;
+            }
+            .section-title {
+                font-size: 1.8rem;
+                margin-bottom: 25px;
+            }
+            footer {
+                margin-top: 60px;
+                padding: 30px 15px;
+            }
         }
     </style>
 </head>
@@ -301,6 +350,17 @@
                     <li>XSS Protection <span class="tech-tag">Sanitization</span></li>
                 </ul>
             </div>
+
+            <div class="card">
+                <h2 class="card-title"><i data-lucide="smartphone"></i> AI & Mobile</h2>
+                <ul class="tech-list">
+                    <li>Capacitor SDK <span class="tech-tag">Android Wrapper</span></li>
+                    <li>Usage Stats API <span class="tech-tag">Screen Time</span></li>
+                    <li>Firebase FCM <span class="tech-tag">Push Alerts</span></li>
+                    <li>Groq API / Llama 3.3 <span class="tech-tag">AI summaries</span></li>
+                    <li>Render Cloud <span class="tech-tag">AI Microservice</span></li>
+                </ul>
+            </div>
         </div>
 
         <!-- Flow Section -->
@@ -318,6 +378,42 @@
                 <div class="flow-item accent">JWT Token Issued</div>
                 <div class="arrow"></div>
                 <div class="flow-item primary">Dashboard Access</div>
+            </div>
+        </section>
+
+        <!-- Flow Section for AI Summaries -->
+        <section class="flow-section">
+            <h2 class="section-title">AI Daily Summary Flow</h2>
+            <div class="flow-container">
+                <div class="flow-item primary">Daily Tasks Logged (IndexedDB)</div>
+                <div class="arrow"></div>
+                <div class="flow-item accent">Request AI Report (Vercel Backend)</div>
+                <div class="arrow"></div>
+                <div class="flow-item secondary">Secure Proxy (HMAC) to Render AI Service</div>
+                <div class="arrow"></div>
+                <div class="flow-item">Groq Llama 3.3 Generates Summary</div>
+                <div class="arrow"></div>
+                <div class="flow-item primary">Saved to MongoDB & Cached to Dexie</div>
+                <div class="arrow"></div>
+                <div class="flow-item secondary">Displayed directly in the App Dashboard</div>
+            </div>
+        </section>
+
+        <!-- Flow Section for FCM Notifications -->
+        <section class="flow-section">
+            <h2 class="section-title">Squad Live Chat Push Notification Flow</h2>
+            <div class="flow-container">
+                <div class="flow-item primary">New Squad Message Sent</div>
+                <div class="arrow"></div>
+                <div class="flow-item">Stored in Firestore DB</div>
+                <div class="arrow"></div>
+                <div class="flow-item secondary">Firebase Admin SDK Detects Message Event</div>
+                <div class="arrow"></div>
+                <div class="flow-item accent">FCM Dispatches Push Payload</div>
+                <div class="arrow"></div>
+                <div class="flow-item primary">Delivered to Device Background</div>
+                <div class="arrow"></div>
+                <div class="flow-item secondary">Interactive Mobile Alert Notification Shown</div>
             </div>
         </section>
 
@@ -363,6 +459,26 @@
                     <li><strong>Live Chat:</strong> Firestore handles group messaging with minimal overhead.</li>
                     <li><strong>Status Sync:</strong> Online/Offline presence and read receipts are updated in real-time.</li>
                     <li><strong>Rate Limiting:</strong> All real-time operations are throttled to prevent spam and system abuse.</li>
+                </ul>
+            </div>
+
+            <div class="detail-box">
+                <h3><i data-lucide="smartphone"></i> Mobile Native Wrapper</h3>
+                <p>Native Capacitor layer for advanced device features:</p>
+                <ul>
+                    <li><strong>Screen Time Stats:</strong> Requests usage access permissions to track distraction metrics.</li>
+                    <li><strong>Push Notification Sync:</strong> Captures background intents to route alerts when the app is completely closed.</li>
+                    <li><strong>Offline Cache:</strong> Automatically updates local SQLite/IndexedDB structures for responsive offline startup.</li>
+                </ul>
+            </div>
+
+            <div class="detail-box">
+                <h3><i data-lucide="brain-circuit"></i> AI Coaching Core</h3>
+                <p>AI integrations powered by Groq Llama 3.3 models:</p>
+                <ul>
+                    <li><strong>Data Minimization:</strong> Only task titles, statuses, and distraction times are transmitted to the AI microservice.</li>
+                    <li><strong>Shared API Secret:</strong> Requests are signed with an HMAC shared secret to prevent third-party access.</li>
+                    <li><strong>Rate Limiting:</strong> Enforces daily API token budgets per user to balance provider usage.</li>
                 </ul>
             </div>
         </div>

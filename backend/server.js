@@ -25,7 +25,7 @@ const appLimitRoutes    = require('./routes/appLimitRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
-app.set("trust proxy", 1); // ✅ ADD THIS HERE
+app.set("trust proxy", 1); // Trust first reverse proxy (required for accurate client IP rate limiting on Vercel)
 
 
 // Ensure database is connected for every request
