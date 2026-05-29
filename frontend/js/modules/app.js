@@ -1435,7 +1435,7 @@ async function generateDailySummary(dayId, dateStr) {
 
     if (!aiResponse.ok) {
       const errorBody = await aiResponse.json().catch(() => ({}));
-      throw new Error(errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`);
+      throw new Error(errorBody.details || errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
@@ -1462,7 +1462,7 @@ async function generateDailySummary(dayId, dateStr) {
       // Find in memory array to update cache
       const day = window.allDays.find(d => d._id === dayId);
       if (day) {
-        day.summary = commitRes.summary;
+        day.aiSummary = commitRes.aiSummary || commitRes.summary;
         if (window.localDb) {
           await window.localDb.days.put(day);
         }

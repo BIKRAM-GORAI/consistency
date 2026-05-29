@@ -267,7 +267,7 @@ const getDayById = async (req, res) => {
 const createDay = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { date, categories, summary } = req.body;
+    const { date, categories, summary, aiSummary } = req.body;
     const clientDate = req.headers['x-client-date'];
 
     // Prevent duplicate dates per user
@@ -276,7 +276,13 @@ const createDay = async (req, res) => {
       return res.status(400).json({ message: 'A card for this date already exists' });
     }
 
-    const day   = new Day({ userId, date, categories: categories || [], summary: summary || '' });
+    const day   = new Day({ 
+      userId, 
+      date, 
+      categories: categories || [], 
+      summary: summary || '',
+      aiSummary: aiSummary || ''
+    });
     const saved = await day.save();
 
     // Recalculate and persist streak, get new value back

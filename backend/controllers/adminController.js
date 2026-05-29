@@ -599,7 +599,7 @@ async function updateAdminUserProfilePicture(req, res) {
 async function createAdminDay(req, res) {
   try {
     const userId = req.params.id;
-    const { date, categories, summary } = req.body;
+    const { date, categories, summary, aiSummary } = req.body;
 
     // Fix: Validate userId format to prevent Mongoose cast errors (500)
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -619,7 +619,8 @@ async function createAdminDay(req, res) {
       userId,
       date,
       categories: categories || [],
-      summary: summary || ''
+      summary: summary || '',
+      aiSummary: aiSummary || ''
     });
 
     await newDay.save();

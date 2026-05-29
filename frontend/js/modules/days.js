@@ -520,7 +520,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
 
   // AI Daily Recap Section HTML
   let aiRecapHTML = '';
-  const daySummary = day.summary || '';
+  const daySummary = day.aiSummary || '';
   if (daySummary) {
     aiRecapHTML = `
       <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative; cursor: pointer;" onclick="toggleAiRecapExpansion(this, event)">
@@ -1315,7 +1315,7 @@ async function submitAddDay() {
 
   btn.textContent = 'Creating...';
   const tempId = `temp_${Date.now()}`;
-  const localDay = { _id: tempId, date, categories, summary, userId: localStorage.getItem('userId'), tasks: [] };
+  const localDay = { _id: tempId, date, categories, summary, aiSummary: '', userId: localStorage.getItem('userId'), tasks: [] };
 
   try {
     // 1. Update UI and Local DB instantly (Optimistic)
@@ -1326,7 +1326,7 @@ async function submitAddDay() {
     renderDays();
 
     // 2. Queue for sync
-    window.syncManager.addToQueue('POST', 'days', null, { date, categories, summary }, tempId);
+    window.syncManager.addToQueue('POST', 'days', null, { date, categories, summary, aiSummary: '' }, tempId);
 
     // Reset button
     btn.disabled = false;
@@ -1847,12 +1847,12 @@ async function deleteDailySummary(dayId) {
   if (!confirm("Are you sure you want to delete this AI Daily Insight?")) return;
   const day = window.allDays.find(d => d._id === dayId);
   if (day) {
-    day.summary = "";
+    day.aiSummary = "";
     try {
       // 1. Update Local DB
       await window.localDb.days.put(day);
       // 2. Queue Sync
-      window.syncManager.addToQueue('PUT', 'days', dayId, { summary: "" });
+      window.syncManager.addToQueue('PUT', 'days', dayId, { aiSummary: "" });
       showToast('AI Daily Insights deleted successfully!', 'success');
       
       // Re-render only this Day card smoothly
@@ -1968,7 +1968,7 @@ async function triggerTaskImageScan() {
 
       if (!aiResponse.ok) {
         const errorBody = await aiResponse.json().catch(() => ({}));
-        const errorMsg = errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`;
+        const errorMsg = errorBody.details || errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`;
         throw new Error(errorMsg);
       }
 

@@ -211,7 +211,7 @@ exports.generateDailySummary = async (req, res) => {
     }
 
     // Save summary in MongoDB
-    day.summary = summaryText;
+    day.aiSummary = summaryText;
     await day.save();
 
     // 2. Increment Daily AI Summary counter upon successful generation
@@ -221,6 +221,7 @@ exports.generateDailySummary = async (req, res) => {
       date,
       completionRate,
       summary: summaryText,
+      aiSummary: summaryText,
       generationsLeft: remaining
     });
 
@@ -1003,7 +1004,7 @@ exports.commitDailySummary = async (req, res) => {
     }
 
     // Save summary in MongoDB
-    day.summary = summary;
+    day.aiSummary = summary;
     await day.save();
 
     // Increment Daily AI Summary counter (deduct credit)
@@ -1028,6 +1029,7 @@ exports.commitDailySummary = async (req, res) => {
       date: decoded.date,
       completionRate,
       summary: summary,
+      aiSummary: summary,
       generationsLeft: remaining
     });
 

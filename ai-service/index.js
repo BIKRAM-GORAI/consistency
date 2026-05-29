@@ -229,6 +229,30 @@ app.post('/api/ai/extract-tasks', upload.single('image'), async (req, res) => {
     const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
     console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini model ${modelName} for task extraction...`);
 
+    // Sanitize MIME-type to avoid Unsupported MIME type errors (e.g. application/octet-stream)
+    let mimeType = req.file.mimetype;
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif'];
+    
+    if (mimeType === 'image/jpg') {
+      mimeType = 'image/jpeg';
+    } else if (!allowedMimeTypes.includes(mimeType)) {
+      // Attempt to infer from original filename extension
+      const originalName = req.file.originalname || '';
+      const ext = originalName.split('.').pop().toLowerCase();
+      if (ext === 'png') {
+        mimeType = 'image/png';
+      } else if (ext === 'webp') {
+        mimeType = 'image/webp';
+      } else if (ext === 'heic') {
+        mimeType = 'image/heic';
+      } else if (ext === 'heif') {
+        mimeType = 'image/heif';
+      } else {
+        // Default to image/jpeg if unknown or unsupported
+        mimeType = 'image/jpeg';
+      }
+    }
+
     const systemInstruction = 
       "Extract all handwritten or typed tasks and their corresponding categories from this image.\n" +
       "You MUST output a single valid JSON object following this schema:\n" +
@@ -256,7 +280,7 @@ app.post('/api/ai/extract-tasks', upload.single('image'), async (req, res) => {
             { text: systemInstruction },
             {
               inline_data: {
-                mime_type: req.file.mimetype,
+                mime_type: mimeType,
                 data: imageBase64
               }
             }
@@ -271,9 +295,21 @@ app.post('/api/ai/extract-tasks', upload.single('image'), async (req, res) => {
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error(`[AI-Service] Gemini API returned status ${geminiResponse.status}:`, errorText);
+      
+      let parsedError;
+      try {
+        parsedError = JSON.parse(errorText);
+      } catch (e) {
+        parsedError = null;
+      }
+      
+      const detailedMessage = parsedError && parsedError.error && parsedError.error.message 
+        ? parsedError.error.message 
+        : errorText;
+
       return res.status(geminiResponse.status).json({
         error: 'Gemini API error',
-        details: errorText
+        details: detailedMessage
       });
     }
 

@@ -44,6 +44,7 @@ const sanitizeDay = (day) => {
     date: day.date,
     categories: day.categories,
     summary: day.summary,
+    aiSummary: day.aiSummary,
     createdAt: day.createdAt,
     updatedAt: day.updatedAt
   };

@@ -99,6 +99,11 @@ const createDayValidation = [
     .trim()
     .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
     .escape(),
+  body('aiSummary')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('AI Insights must not exceed 1000 characters')
+    .escape(),
   validate
 ];
 
@@ -115,6 +120,11 @@ const updateDayValidation = [
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
+    .escape(),
+  body('aiSummary')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('AI Insights must not exceed 1000 characters')
     .escape(),
   validate
 ];
