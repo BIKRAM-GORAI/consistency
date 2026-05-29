@@ -23,7 +23,7 @@
     "express-rate-limit": "^8.4.1",
     "express-validator": "^7.3.2",
     "firebase": "^12.12.1",
-    "firebase-admin": "^13.8.0",
+    "firebase-admin": "^13.10.0",
     "jsonwebtoken": "^9.0.3",
     "lucide": "^1.14.0",
     "mongoose": "^8.2.3",
