@@ -1412,19 +1412,57 @@ async function generateDailySummary(dayId, dateStr) {
   `;
 
   try {
-    const res = await apiFetch(`${window.API}/api/ai/daily-summary/${dateStr}`, {
+    // 1. Authorize: Request token and compiled prompts from Vercel backend
+    const authRes = await apiFetch(`${window.API}/api/ai/authorize-daily-summary/${dateStr}`, {
       method: 'POST'
     });
 
-    if (res && res.summary) {
-      if (typeof res.generationsLeft !== 'undefined') {
-        window.generationsLeft = res.generationsLeft;
+    if (!authRes || !authRes.generationToken) {
+      throw new Error('Failed to obtain generation authorization from server.');
+    }
+
+    const { generationToken, systemPrompt, userPrompt, aiServiceUrl } = authRes;
+
+    // 2. Generate: Send direct request to the Render AI service
+    const aiResponse = await fetch(`${aiServiceUrl}/api/ai/generate-summary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${generationToken}`
+      },
+      body: JSON.stringify({ systemPrompt, userPrompt })
+    });
+
+    if (!aiResponse.ok) {
+      const errorBody = await aiResponse.json().catch(() => ({}));
+      throw new Error(errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const summaryText = aiData.result;
+
+    if (!summaryText) {
+      throw new Error('Empty summary returned from Render AI Service.');
+    }
+
+    // 3. Commit: Send the generated summary and the token back to Vercel to save and deduct credit
+    const commitRes = await apiFetch(`${window.API}/api/ai/commit-daily-summary`, {
+      method: 'POST',
+      body: JSON.stringify({
+        generationToken,
+        summary: summaryText
+      })
+    });
+
+    if (commitRes && commitRes.summary) {
+      if (typeof commitRes.generationsLeft !== 'undefined') {
+        window.generationsLeft = commitRes.generationsLeft;
         updateAllAiInsightButtons();
       }
       // Find in memory array to update cache
       const day = window.allDays.find(d => d._id === dayId);
       if (day) {
-        day.summary = res.summary;
+        day.summary = commitRes.summary;
         if (window.localDb) {
           await window.localDb.days.put(day);
         }

@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.9",
+  "latestVersion": "2.0",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "v1.9: Fixed screen time calculation accuracy, permission checking on settings focus, auto-enabling tracking upon granting permissions, and resolved Android APK update download redirection issue."
+  "releaseNotes": "✨ What's new in v2.0:\n• 📷 Scan handwritten task lists from photos using AI — instantly populates your day card\n• 🔒 Smart scan protection: daily card modal locks while your photo is being processed so no credits go to waste\n• 🤖 AI-powered daily recap summaries now processed directly from our AI service for faster generation\n• 🏆 Leaderboard visibility controls — choose whether to appear on the public leaderboard\n• 🐛 Various bug fixes, performance improvements, and UI polish"
 }

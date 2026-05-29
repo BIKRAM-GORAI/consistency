@@ -1153,6 +1153,37 @@ function openAddDayModal() {
     builder.hasAddDayValidationListener = true;
   }
   validateAddDayForm();
+
+  // Fetch photo limit credits remaining and update button text
+  (async () => {
+    try {
+      const scanBtn = document.getElementById('scan-list-btn');
+      if (scanBtn) {
+        if (!navigator.onLine) {
+          scanBtn.innerHTML = `
+            <span style="display:flex;align-items:center;gap:7px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span style="font-weight:800;">Scan List from Photo</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;font-size:10px;font-weight:900;background:#1a0008;color:#ffb3d9;padding:2px 10px;border-radius:3px;letter-spacing:0.5px;white-space:nowrap;text-transform:uppercase;">Offline</span>
+          `;
+          scanBtn.style.flexDirection = 'column';
+          scanBtn.style.gap = '4px';
+          scanBtn.disabled = true;
+          return;
+        }
+        scanBtn.disabled = false;
+        const res = await window.apiFetch(`${window.API}/api/ai/photo-limits`);
+        if (res && typeof res.generationsLeft !== 'undefined') {
+          window.photoGenerationsLeft = res.generationsLeft;
+          window.photoLimit = res.limit;
+          updateScanButtonText();
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch photo limit credits:', err);
+    }
+  })();
 }
 
 function addCategoryField() {
@@ -1856,9 +1887,190 @@ function toggleAiRecapExpansion(el, event) {
   }
 }
 
+async function triggerTaskImageScan() {
+  const dateInput = document.getElementById('day-date-input');
+  const selectedDate = dateInput ? dateInput.value : '';
+  if (!selectedDate) {
+    showToast('Please select a date first before scanning.', 'warn');
+    return;
+  }
+
+  // Check if a card already exists for this date in local cache / memory
+  const exists = window.allDays && window.allDays.some(d => d.date === selectedDate);
+  if (exists) {
+    showToast(`A daily card for ${selectedDate} already exists! Please select a different date.`, 'error');
+    return;
+  }
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+
+  fileInput.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const scanBtn = document.getElementById('scan-list-btn');
+    if (!scanBtn) return;
+
+    // Lock the modal so the user cannot close it during the scan
+    window.isScanInProgress = true;
+    const lockBanner = document.getElementById('scan-lock-banner');
+    if (lockBanner) lockBanner.style.display = 'flex';
+
+    // Disable the modal's X close button visually
+    const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
+    if (modalCloseBtn) {
+      modalCloseBtn.disabled = true;
+      modalCloseBtn.style.opacity = '0.35';
+      modalCloseBtn.style.cursor = 'not-allowed';
+      modalCloseBtn.title = 'Cannot close while scan is in progress';
+    }
+
+    const originalHTML = scanBtn.innerHTML;
+    scanBtn.disabled = true;
+    scanBtn.innerHTML = `
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="spinner-ring" style="width:13px;height:13px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
+        <span style="font-weight:800;">Scanning image...</span>
+      </span>
+    `;
+    scanBtn.style.flexDirection = 'column';
+    scanBtn.style.gap = '4px';
+
+    try {
+      // Step 1: Request token and AI service URL from Vercel backend
+      const authRes = await window.apiFetch(`${window.API}/api/ai/authorize-task-extraction`, {
+        method: 'POST'
+      });
+
+      if (!authRes || !authRes.generationToken) {
+        throw new Error('Failed to obtain scan authorization from server.');
+      }
+
+      if (authRes && typeof authRes.generationsLeft !== 'undefined') {
+        window.photoGenerationsLeft = authRes.generationsLeft;
+      }
+
+      const { generationToken, aiServiceUrl } = authRes;
+
+      // Step 2: Upload photo directly to Render AI service
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const aiResponse = await fetch(`${aiServiceUrl}/api/ai/extract-tasks`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${generationToken}`
+        },
+        body: formData
+      });
+
+      if (!aiResponse.ok) {
+        const errorBody = await aiResponse.json().catch(() => ({}));
+        const errorMsg = errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`;
+        throw new Error(errorMsg);
+      }
+
+      const extractedData = await aiResponse.json();
+
+      if (!extractedData || !extractedData.categories || !Array.isArray(extractedData.categories)) {
+        throw new Error('Malformed categories data returned from AI service.');
+      }
+
+      // Step 3: Populate modal UI
+      const builder = document.getElementById('categories-builder');
+      if (builder) {
+        builder.innerHTML = '';
+        window.categoryCount = 0;
+
+        extractedData.categories.forEach(cat => {
+          const idx = window.categoryCount++;
+          const item = document.createElement('div');
+          item.className = 'category-builder-item';
+          item.id = `cat-build-${idx}`;
+          item.innerHTML = `
+            <div class="cat-top-row">
+              <input type="text" class="form-control" placeholder="Category name (e.g. Work, Fitness...)" id="cat-name-${idx}" value="${window.escHtml ? window.escHtml(cat.name) : cat.name}" />
+              <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
+            </div>
+            <div class="tasks-builder" id="tasks-build-${idx}"></div>
+            <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
+          `;
+          builder.appendChild(item);
+          if (window.lucide) lucide.createIcons({ root: item });
+
+          const tasksBuilder = document.getElementById(`tasks-build-${idx}`);
+          if (cat.tasks && cat.tasks.length > 0) {
+            cat.tasks.forEach(taskTitle => {
+              const row = document.createElement('div');
+              row.className = 'task-input-row';
+              row.innerHTML = `
+                <input type="text" class="form-control" placeholder="Task title..." value="${window.escHtml ? window.escHtml(taskTitle) : taskTitle}" />
+                <button class="btn-remove" onclick="this.parentElement.remove(); if (window.validateAddDayForm) window.validateAddDayForm();" title="Remove"><i data-lucide="trash-2"></i></button>
+              `;
+              tasksBuilder.appendChild(row);
+              if (window.lucide) lucide.createIcons({ root: row });
+            });
+          } else {
+            addTaskField(idx);
+          }
+        });
+
+        if (typeof validateAddDayForm === 'function') {
+          validateAddDayForm();
+        }
+        showToast('List scanned and populated successfully!', 'success');
+      }
+    } catch (err) {
+      console.error('Failed to scan tasks image:', err);
+      showToast(err.message || 'Failed to scan image.', 'error');
+    } finally {
+      // Unlock the modal
+      window.isScanInProgress = false;
+      const lockBanner = document.getElementById('scan-lock-banner');
+      if (lockBanner) lockBanner.style.display = 'none';
+
+      // Re-enable the X close button
+      const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
+      if (modalCloseBtn) {
+        modalCloseBtn.disabled = false;
+        modalCloseBtn.style.opacity = '';
+        modalCloseBtn.style.cursor = '';
+        modalCloseBtn.title = '';
+      }
+
+      scanBtn.disabled = false;
+      updateScanButtonText();
+    }
+  };
+
+  fileInput.click();
+}
+
+function updateScanButtonText() {
+  const scanBtn = document.getElementById('scan-list-btn');
+  if (scanBtn) {
+    const left = typeof window.photoGenerationsLeft !== 'undefined' ? window.photoGenerationsLeft : '?';
+    const limit = typeof window.photoLimit !== 'undefined' ? window.photoLimit : '?';
+    const isEmpty = left === 0;
+    const badgeColor = isEmpty ? '#ff6b6b' : '#ffb3d9';
+    scanBtn.innerHTML = `
+      <span style="display:flex;align-items:center;gap:7px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <span style="font-weight:800;">Scan List from Photo</span>
+      </span>
+      <span id="scan-credits-badge" style="display:inline-flex;align-items:center;font-size:10px;font-weight:900;background:#1a0008;color:${badgeColor};padding:2px 10px;border-radius:3px;letter-spacing:0.5px;white-space:nowrap;text-transform:uppercase;">${left}/${limit} credits left today</span>
+    `;
+    scanBtn.style.flexDirection = 'column';
+    scanBtn.style.gap = '4px';
+  }
+}
+
 // Bind to window
 window.evaluateDaysDistractions = evaluateDaysDistractions;
 window.deleteDailySummary = deleteDailySummary;
 window.toggleAiRecapExpansion = toggleAiRecapExpansion;
+window.triggerTaskImageScan = triggerTaskImageScan;
 
 console.log("[Module] days.js loaded and Days functions bound to window");

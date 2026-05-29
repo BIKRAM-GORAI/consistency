@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 // Current System Version (Bump this to force all clients to update)
-const APP_VERSION = '1.0.5'; 
+const APP_VERSION = '2.0.0'; 
+
 
 router.get('/version', (req, res) => {
   res.json({ 

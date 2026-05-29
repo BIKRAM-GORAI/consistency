@@ -102,14 +102,14 @@ async function openProfileModal() {
   if (versionContainer) {
     versionContainer.innerHTML = `
       <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;">
-        Version Running: v${window.runningAppVersion || '1.9'} (checking...)
+        Version Running: v${window.runningAppVersion || '2.0'} (checking...)
       </div>
     `;
     fetch('https://consistency-daily.vercel.app/app-version.json?t=' + Date.now())
       .then(r => r.json())
       .then(data => {
         const latest = data.latestVersion;
-        const current = window.runningAppVersion || '1.9';
+        const current = window.runningAppVersion || '2.0';
         
         let updateText = '';
         if (latest !== current) {
@@ -127,7 +127,7 @@ async function openProfileModal() {
       .catch(() => {
         versionContainer.innerHTML = `
           <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;">
-            Version Running: v${window.runningAppVersion || '1.9'}
+            Version Running: v${window.runningAppVersion || '2.0'}
           </div>
         `;
       });

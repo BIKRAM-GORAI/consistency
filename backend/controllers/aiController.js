@@ -1,4 +1,5 @@
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const Day = require('../models/Day');
 const User = require('../models/User');
 const WeeklySummary = require('../models/WeeklySummary');
@@ -799,6 +800,346 @@ exports.generateMonthlySummary = async (req, res) => {
       });
     }
     res.status(500).json({ message: 'Internal Server Error while generating monthly summary.' });
+  }
+};
+
+/**
+ * POST /api/ai/authorize-daily-summary/:date
+ * Validates user limits, compiles prompts, and issues a 5-minute signed JWT token
+ */
+exports.authorizeDailySummary = async (req, res) => {
+  try {
+    const { date } = req.params;
+    const userId = req.user.userId;
+
+    if (!date) {
+      return res.status(400).json({ message: 'Date parameter is required (format: YYYY-MM-DD).' });
+    }
+
+    // 1. Enforce Daily AI Summary Rate Limiting
+    const { user, generationsLeft, limit } = await checkAiLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+      });
+    }
+
+    // Retrieve the Day document
+    const day = await Day.findOne({ userId, date });
+    if (!day) {
+      return res.status(404).json({ message: 'No day sheet found for this date. Please create tasks first.' });
+    }
+
+    // Retrieve achievements logged for this day
+    const achievements = await Achievement.find({ userId, dayId: day._id });
+    let achievementsStr = '';
+    if (achievements && achievements.length > 0) {
+      achievementsStr = achievements.map(a => `- ${a.title}`).join('\n');
+    }
+
+    // Process and format tasks for the prompt
+    let totalTasks = 0;
+    let completedTasks = 0;
+    let taskListStr = '';
+
+    if (day.categories && day.categories.length > 0) {
+      day.categories.forEach(cat => {
+        taskListStr += `\nCategory: ${cat.name}\n`;
+        if (cat.tasks && cat.tasks.length > 0) {
+          cat.tasks.forEach(t => {
+            totalTasks++;
+            if (t.completed) completedTasks++;
+            taskListStr += `- [${t.completed ? 'x' : ' '}] ${t.title}\n`;
+          });
+        } else {
+          taskListStr += `  (No tasks)\n`;
+        }
+      });
+    }
+
+    if (totalTasks === 0) {
+      return res.status(400).json({ message: 'No tasks registered for today. Cannot generate AI insights.' });
+    }
+
+    const completionRate = Math.round((completedTasks / totalTasks) * 100);
+
+    // Fetch distraction app limits and actual screen times
+    const appLimits = await AppLimit.findOne({ userId });
+    let distractionStatsStr = '';
+    if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
+      distractionStatsStr += `\nDistraction Limits Configuration (no matter enabled/disabled toggle status):\n`;
+      appLimits.apps.forEach(app => {
+        let actualMinutes = 0;
+        if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
+          if (Array.isArray(day.screenTimeStats)) {
+            const found = day.screenTimeStats.find(a => a.packageName === app.packageName);
+            if (found) actualMinutes = found.actualMinutes || 0;
+          } else {
+            actualMinutes = day.screenTimeStats[app.packageName] !== undefined ? day.screenTimeStats[app.packageName] : 0;
+          }
+        }
+        const exceeded = actualMinutes > app.limitMinutes;
+        distractionStatsStr += `- ${app.appName}: used ${actualMinutes} minutes (configured limit: ${app.limitMinutes} minutes) ${exceeded ? '[LIMIT EXCEEDED!]' : '[COMPLIANT/WITHIN LIMIT]'}\n`;
+      });
+
+      // Calculate total screen time foreground sum
+      let totalMinutes = 0;
+      if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
+        if (Array.isArray(day.screenTimeStats)) {
+          day.screenTimeStats.forEach(app => {
+            totalMinutes += app.actualMinutes || 0;
+          });
+        } else {
+          for (const pkg in day.screenTimeStats) {
+            totalMinutes += day.screenTimeStats[pkg] || 0;
+          }
+        }
+      }
+      distractionStatsStr += `Total Mobile Screen Time Today: ${totalMinutes} minutes\n`;
+    } else {
+      distractionStatsStr += `\nNo distracting app limits configured for today.\n`;
+    }
+
+    // Formulate Groq/LLM prompts
+    const systemPrompt = 
+      "You are a highly analytical, realistic, and candid productivity coach. " +
+      "Analyze the user's daily task completion data, achievements, and distraction screen time statistics for the date provided, and write a candid, honest, and highly concise daily summary. " +
+      "Your response MUST start with a productivity score line on the first line in the exact format: '🏆 Productivity Rating: X/5' (where X is a score between 1 and 5). " +
+      "Rate the day realistically: 5/5 means outstanding task completion rate, high achievements, and perfect distraction limit compliance (little or no distraction time). " +
+      "Penalize the score heavily if task completion is low, if there are slacking behaviors, if total mobile screen time is excessive, or if any distraction app limits were exceeded. " +
+      "Immediately following the productivity rating line, write exactly 3 to 4 short, punchy bullet points of maximum 1 to 2 sentences each analyzing the day. " +
+      "Do NOT write in paragraph format. " +
+      "Every single bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Do NOT bundle multiple bullet points together or write them in a continuous paragraph. " +
+      "The first 1 to 2 bullet points MUST showcase actual good accomplishments (completed productive tasks, high-quality focus hours). Do NOT count low-effort tasks like 'streak', 'maintain', 'tick', 'ok', 't' as achievements or good things; treat them strictly as empty filler tasks. " +
+      "The last 1 to 2 bullet points MUST showcase realistic, direct, and slightly brutal critique/slacking warnings. Call out uncompleted important tasks, cheat streak-maintaining box-ticking behavior, excessive screen time, or blown distraction limits as a clear negative. " +
+      "IMPORTANT: If there are no achievements logged for the day, DO NOT criticize or mention the lack of achievements in the critique/bad points. Treat achievements as purely optional bonuses: if logged, praise them; if missing, completely ignore them and skip any mention of achievements, focusing instead on other productive work completed or pending. " +
+      "Maintain a premium, direct, and candid tone. Do NOT use introductory filler. Start directly with the '🏆 Productivity Rating: X/5' line.";
+
+    const userPrompt = 
+      `Date: ${date}\n` +
+      `Completion Rate: ${completionRate}% (${completedTasks} completed out of ${totalTasks} total tasks)\n\n` +
+      `Logged Achievements for Today:\n${achievementsStr || '(None logged)'}\n\n` +
+      `Tasks Accomplished & Pending:\n${taskListStr}\n` +
+      `${distractionStatsStr}`;
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Vercel-Backend] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    // Sign the 5-minute single-use generation token
+    const generationToken = jwt.sign(
+      {
+        userId,
+        date,
+        dayId: day._id,
+        action: 'generate-daily-summary'
+      },
+      jwtSecret,
+      { expiresIn: '5m' }
+    );
+
+    res.status(200).json({
+      generationToken,
+      systemPrompt,
+      userPrompt,
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002'
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] authorizeDailySummary error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error while authorizing daily insights.' });
+  }
+};
+
+/**
+ * POST /api/ai/commit-daily-summary
+ * Validates the single-use JWT generationToken, saves the summary, and decrements AI credit
+ */
+exports.commitDailySummary = async (req, res) => {
+  try {
+    const { generationToken, summary } = req.body;
+    const userId = req.user.userId;
+
+    if (!generationToken || !summary) {
+      return res.status(400).json({ message: 'generationToken and summary content are required.' });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Vercel-Backend] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(generationToken, jwtSecret);
+    } catch (err) {
+      console.warn(`[Vercel-Backend] Generation token verification failed: ${err.message}`);
+      return res.status(401).json({ message: 'Invalid or expired generation token. Please try again.' });
+    }
+
+    if (decoded.action !== 'generate-daily-summary') {
+      return res.status(403).json({ message: 'Forbidden: Invalid action for this token.' });
+    }
+
+    if (decoded.userId !== userId) {
+      return res.status(403).json({ message: 'Forbidden: User mismatch.' });
+    }
+
+    // Double check AI limit
+    const { user, generationsLeft, limit } = await checkAiLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+      });
+    }
+
+    // Retrieve the Day document
+    const day = await Day.findOne({ _id: decoded.dayId, userId: decoded.userId });
+    if (!day) {
+      return res.status(404).json({ message: 'Day sheet not found.' });
+    }
+
+    // Save summary in MongoDB
+    day.summary = summary;
+    await day.save();
+
+    // Increment Daily AI Summary counter (deduct credit)
+    const remaining = await incrementAiLimit(user);
+
+    // Compute completion rate for returning payload (UI expectation)
+    let totalTasks = 0;
+    let completedTasks = 0;
+    if (day.categories && day.categories.length > 0) {
+      day.categories.forEach(cat => {
+        if (cat.tasks && cat.tasks.length > 0) {
+          cat.tasks.forEach(t => {
+            totalTasks++;
+            if (t.completed) completedTasks++;
+          });
+        }
+      });
+    }
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    res.status(200).json({
+      date: decoded.date,
+      completionRate,
+      summary: summary,
+      generationsLeft: remaining
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] commitDailySummary error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error while saving daily insights.' });
+  }
+};
+
+/**
+ * Gets the daily photo upload limit configured in the environment variables, defaulting to 5.
+ */
+const getAiPhotoLimit = () => {
+  const limitVal = parseInt(process.env.AI_PHOTO_LIMIT, 10);
+  return isNaN(limitVal) ? 5 : limitVal;
+};
+
+/**
+ * Checks the user's daily AI photo scan count, resetting it if a calendar day has passed.
+ */
+const checkAiPhotoLimit = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.aiPhotoExtractionResetTime ? new Date(user.aiPhotoExtractionResetTime) : new Date(0);
+
+  // Compare calendar days
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.aiPhotoExtractionCount = 0;
+    user.aiPhotoExtractionResetTime = now;
+    await user.save();
+  }
+
+  const limit = getAiPhotoLimit();
+  const generationsLeft = Math.max(0, limit - user.aiPhotoExtractionCount);
+  return { user, generationsLeft, limit };
+};
+
+/**
+ * Increments the user's daily AI photo scan count.
+ */
+const incrementAiPhotoLimit = async (user) => {
+  user.aiPhotoExtractionCount += 1;
+  await user.save();
+  const limit = getAiPhotoLimit();
+  return Math.max(0, limit - user.aiPhotoExtractionCount);
+};
+
+/**
+ * POST /api/ai/authorize-task-extraction
+ * Validates user daily photo limits and issues a 5-minute signed JWT generation token
+ */
+exports.authorizeTaskExtraction = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Enforce Daily AI Photo rate limiting
+    const { user, generationsLeft, limit } = await checkAiPhotoLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI photo upload limit reached. You can scan up to ${limit} photos per day.`
+      });
+    }
+
+    // Increment (deduct credit immediately on authorization ticket issue)
+    const remaining = await incrementAiPhotoLimit(user);
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Vercel-Backend] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    // Sign the 5-minute single-use generation token
+    const generationToken = jwt.sign(
+      {
+        userId,
+        action: 'extract-tasks-from-image'
+      },
+      jwtSecret,
+      { expiresIn: '5m' }
+    );
+
+    res.status(200).json({
+      generationToken,
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002',
+      generationsLeft: remaining
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] authorizeTaskExtraction error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error while authorizing task image scan.' });
+  }
+};
+
+/**
+ * GET /api/ai/photo-limits
+ * Fetches remaining daily photo scans limit for the user
+ */
+exports.getPhotoLimits = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { generationsLeft, limit } = await checkAiPhotoLimit(userId);
+    res.status(200).json({ generationsLeft, limit });
+  } catch (error) {
+    console.error('[Vercel-Backend] getPhotoLimits error:', error.message);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
   }
 };
 

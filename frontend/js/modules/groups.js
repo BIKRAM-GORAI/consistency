@@ -1057,6 +1057,16 @@ function openModal(id) {
 }
 
 function closeModal(id) {
+  // Block closing the day card modal while an image scan is in progress
+  if (window.isScanInProgress && id === 'modal-add-day') {
+    const banner = document.getElementById('scan-lock-banner');
+    if (banner) {
+      // Shake the banner to draw attention
+      banner.style.animation = 'none';
+      requestAnimationFrame(() => { banner.style.animation = 'scan-lock-shake 0.4s ease'; });
+    }
+    return;
+  }
   const overlay = document.getElementById(id);
   const modalEl = overlay.querySelector('.modal');
 
@@ -1089,7 +1099,17 @@ function closeModal(id) {
   }
 }
 
-function closeModalOnOverlay(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+function closeModalOnOverlay(e, id) {
+  if (window.isScanInProgress && id === 'modal-add-day') {
+    const banner = document.getElementById('scan-lock-banner');
+    if (banner) {
+      banner.style.animation = 'none';
+      requestAnimationFrame(() => { banner.style.animation = 'scan-lock-shake 0.4s ease'; });
+    }
+    return;
+  }
+  if (e.target === e.currentTarget) closeModal(id);
+}
 
 
 // [LeetCode reset/verify extracted to leetcode.js]

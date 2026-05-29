@@ -6,6 +6,14 @@ const { authenticateToken } = require('../middleware/auth');
 // Route to generate or refresh a daily productivity summary
 router.post('/daily-summary/:date', authenticateToken, aiController.generateDailySummary);
 
+// New routes for direct client-to-Render AI summary flow
+router.post('/authorize-daily-summary/:date', authenticateToken, aiController.authorizeDailySummary);
+router.post('/commit-daily-summary', authenticateToken, aiController.commitDailySummary);
+
+// Route for direct client-to-Render image-to-task scanning
+router.post('/authorize-task-extraction', authenticateToken, aiController.authorizeTaskExtraction);
+router.get('/photo-limits', authenticateToken, aiController.getPhotoLimits);
+
 // Route to generate or refresh the public profile productivity biography
 router.post('/productivity-bio', authenticateToken, aiController.generateProductivityBio);
 

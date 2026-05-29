@@ -76,6 +76,20 @@
   <script src="https://jitsi.belnet.be/external_api.js"></script>
   <style>
     /* ===== NEO-BRUTALIST WEB SPLASH SCREEN OVERLAY ===== */
+    @keyframes scan-lock-shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-5px); }
+      40%      { transform: translateX(5px); }
+      60%      { transform: translateX(-3px); }
+      80%      { transform: translateX(3px); }
+    }
+    @keyframes scan-banner-in {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #scan-lock-banner {
+      animation: scan-banner-in 0.25s ease forwards;
+    }
     .web-splash-overlay {
       position: fixed;
       top: 0;
@@ -531,6 +545,11 @@
         <h2><i data-lucide="calendar"></i> New Day Card</h2>
         <button class="modal-close" onclick="closeModal('modal-add-day')"><i data-lucide="x"></i></button>
       </div>
+      <!-- Scan-in-progress lock banner (hidden by default, shown during AI scan) -->
+      <div id="scan-lock-banner" style="display:none; justify-content:center; align-items:center; gap:6px; background:#fff0f5; border-bottom:2px solid var(--pink); padding:7px 14px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c0006e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span style="font-size:11px;font-weight:800;color:#6b0031;">Scan in progress — <strong>do not close</strong> or your credit will be lost.</span>
+      </div>
       <div style="background: rgba(255, 214, 10, 0.1); border-bottom: 2px solid var(--black); padding: 10px 20px; text-align: center;">
         <p style="font-size: 11px; font-weight: 800; color: var(--text); margin: 0; text-transform: uppercase; letter-spacing: 1px;">
           <i data-lucide="info" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
@@ -539,13 +558,21 @@
       </div>
       <div class="modal-body">
         <div class="form-group" style="margin-bottom: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 12px;">
-          <label for="import-template-select">Import Template</label>
-          <div style="display:flex; gap:8px;">
-            <select id="import-template-select" class="form-control">
+          <label for="import-template-select">Import Template &amp; Options</label>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <select id="import-template-select" class="form-control" style="flex:1;">
               <option value="">-- Select a template to import --</option>
             </select>
-            <button class="btn-primary ripple" onclick="applyTemplate()" id="apply-template-btn" style="padding: 10px 16px;">Import</button>
+            <button class="btn-primary ripple" onclick="applyTemplate()" id="apply-template-btn" style="padding: 10px 16px; white-space: nowrap;">Import</button>
           </div>
+          <button class="btn-primary ripple" onclick="triggerTaskImageScan()" id="scan-list-btn" style="width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 14px; background: var(--pink); border: 2px solid #6b0031; box-shadow: 3px 3px 0 #6b0031; display: flex; box-sizing: border-box; color: #1a0008; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 800;" title="Scan handwritten list from image">
+            <span style="display:flex;align-items:center;gap:7px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span style="font-weight: 800;">Scan List from Photo</span>
+            </span>
+            <span id="scan-credits-badge" style="display: inline-flex; align-items: center; font-size: 10px; font-weight: 900; background: #1a0008; color: #ffb3d9; padding: 2px 10px; border-radius: 3px; letter-spacing: 0.5px; white-space: nowrap; text-transform: uppercase;">checking credits...</span>
+          </button>
+
         </div>
         <div class="form-group">
           <label for="day-date-input">Date</label>

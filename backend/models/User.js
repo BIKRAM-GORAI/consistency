@@ -191,6 +191,15 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // AI Daily Task Extraction (Photo Upload) tracking
+    aiPhotoExtractionCount: {
+      type: Number,
+      default: 0,
+    },
+    aiPhotoExtractionResetTime: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

@@ -110,9 +110,24 @@ app.use((req, res, next) => {
     "https://meet.jit.si",
     "wss://meet.jit.si",
     "https://*.clarity.ms",
-    "https://c.bing.com"
+    "https://c.bing.com",
+    "https://*.onrender.com"
   ];
-  if (isDev) connectSrc.push("http://localhost:5000", "http://localhost:5001", "ws://localhost:5000", "ws://localhost:5001");
+
+  if (process.env.AI_SERVICE_URL) {
+    connectSrc.push(process.env.AI_SERVICE_URL);
+  }
+
+  if (isDev) {
+    connectSrc.push(
+      "http://localhost:5000",
+      "http://localhost:5001",
+      "http://localhost:5002",
+      "ws://localhost:5000",
+      "ws://localhost:5001",
+      "ws://localhost:5002"
+    );
+  }
 
   res.setHeader(
     'Content-Security-Policy',
