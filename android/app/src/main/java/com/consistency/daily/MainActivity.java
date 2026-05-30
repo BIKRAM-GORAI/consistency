@@ -48,7 +48,34 @@ public class MainActivity extends BridgeActivity {
         // Accept third-party cookies so Razorpay session cookies work cross-origin
         android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this.bridge.getWebView(), true);
 
-        // ─── CORE FIX: Override WebChromeClient to intercept window.open() popups ───
+        // ─── STATUS BAR PADDING INJECTION FOR PAYMENT PAGES ───
+        // When the Razorpay/bank page loads inside the main WebView, their fixed header
+        // overlaps the device's status bar. We detect non-app URLs and inject CSS
+        // padding-top equal to the actual status bar height.
+        int statusBarHeight = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+        }
+        final int statusBarHeightPx = statusBarHeight;
+        final float density = getResources().getDisplayMetrics().density;
+        final int statusBarHeightDp = Math.round(statusBarHeightPx / density);
+
+        this.bridge.getWebView().setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Only inject on external payment/bank pages, not on our own app pages
+                if (url != null && !url.contains("localhost") && !url.startsWith("file://")
+                        && !url.contains("consistency-daily.vercel.app")) {
+                    String css = "document.documentElement.style.paddingTop = '" + statusBarHeightDp + "px';";
+                    view.evaluateJavascript(css, null);
+                    android.util.Log.d("StatusBarPad", "Injected " + statusBarHeightDp + "dp padding-top into: " + url);
+                }
+            }
+        });
+
+
         // When Razorpay redirects to the bank's 3D-Secure page via window.open(),
         // Android fires a system Intent → "Open with" browser picker appears.
         // We override onCreateWindow here, extract the target URL from the popup

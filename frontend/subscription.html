@@ -890,66 +890,31 @@
         if (recoveryArea) recoveryArea.style.display = 'block';
       }
 
-      // Update values dynamically inside the 3-column comparison table
-      if (data.limits) {
-        const boostAiVal = 10;
-        const boostPhotoVal = 10;
-        const boostChatVal = 10;
-        const boostTemplateVal = 10;
-        const boostLeetcodeVal = 3;
+      // Update the 3-column comparison table using server-computed limitsComparison
+      // (accurate to actual .env values — no hardcoded boost constants needed)
+      if (data.limitsComparison) {
+        const lc = data.limitsComparison;
 
-        let baseAi, premiumAi;
-        let basePhoto, premiumPhoto;
-        let baseChat, premiumChat;
-        let baseTemplate, premiumTemplate;
-        let baseLeetcode, premiumLeetcode;
+        const boostAi       = lc.ai.premium       - lc.ai.base;
+        const boostPhoto    = lc.photo.premium     - lc.photo.base;
+        const boostChat     = lc.chat.premium      - lc.chat.base;
+        const boostTemplate = lc.template.premium  - lc.template.base;
+        const boostLeetcode = lc.leetcode.premium  - lc.leetcode.base;
 
-        if (data.isPremium) {
-          premiumAi = data.limits.aiLimit;
-          baseAi = premiumAi - boostAiVal;
+        document.getElementById('limit-ai-base').textContent = lc.ai.base;
+        document.getElementById('limit-ai-premium').innerHTML = `${lc.ai.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostAi})</span>`;
 
-          premiumPhoto = data.limits.photoLimit;
-          basePhoto = premiumPhoto - boostPhotoVal;
+        document.getElementById('limit-photo-base').textContent = lc.photo.base;
+        document.getElementById('limit-photo-premium').innerHTML = `${lc.photo.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostPhoto})</span>`;
 
-          premiumChat = data.limits.chatImageLimit;
-          baseChat = premiumChat - boostChatVal;
+        document.getElementById('limit-chat-base').textContent = lc.chat.base;
+        document.getElementById('limit-chat-premium').innerHTML = `${lc.chat.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostChat})</span>`;
 
-          premiumTemplate = data.limits.templateLimit;
-          baseTemplate = premiumTemplate - boostTemplateVal;
+        document.getElementById('limit-template-base').textContent = lc.template.base;
+        document.getElementById('limit-template-premium').innerHTML = `${lc.template.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostTemplate})</span>`;
 
-          premiumLeetcode = data.limits.leetcodeLimit;
-          baseLeetcode = premiumLeetcode - boostLeetcodeVal;
-        } else {
-          baseAi = data.limits.aiLimit;
-          premiumAi = baseAi + boostAiVal;
-
-          basePhoto = data.limits.photoLimit;
-          premiumPhoto = basePhoto + boostPhotoVal;
-
-          baseChat = data.limits.chatImageLimit;
-          premiumChat = baseChat + boostChatVal;
-
-          baseTemplate = data.limits.templateLimit;
-          premiumTemplate = baseTemplate + boostTemplateVal;
-
-          baseLeetcode = data.limits.leetcodeLimit;
-          premiumLeetcode = baseLeetcode + boostLeetcodeVal;
-        }
-
-        document.getElementById('limit-ai-base').textContent = baseAi;
-        document.getElementById('limit-ai-premium').innerHTML = `${premiumAi} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostAiVal})</span>`;
-
-        document.getElementById('limit-photo-base').textContent = basePhoto;
-        document.getElementById('limit-photo-premium').innerHTML = `${premiumPhoto} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostPhotoVal})</span>`;
-
-        document.getElementById('limit-chat-base').textContent = baseChat;
-        document.getElementById('limit-chat-premium').innerHTML = `${premiumChat} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostChatVal})</span>`;
-
-        document.getElementById('limit-template-base').textContent = baseTemplate;
-        document.getElementById('limit-template-premium').innerHTML = `${premiumTemplate} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostTemplateVal})</span>`;
-
-        document.getElementById('limit-leetcode-base').textContent = baseLeetcode;
-        document.getElementById('limit-leetcode-premium').innerHTML = `${premiumLeetcode} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostLeetcodeVal})</span>`;
+        document.getElementById('limit-leetcode-base').textContent = lc.leetcode.base;
+        document.getElementById('limit-leetcode-premium').innerHTML = `${lc.leetcode.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostLeetcode})</span>`;
       }
       lucide.createIcons();
     }
@@ -995,7 +960,7 @@
           currency: orderData.currency,
           name: 'Consistency Daily Premium',
           description: duration === '1_month' ? 'Monthly Pass - 30 Days' : 'Annual Pass - 365 Days',
-          image: '/favicon.ico',
+          image: 'https://consistency-daily.vercel.app/icon-512.png',
           order_id: orderData.orderId,
           handler: async function (response) {
             showToast('Payment verified successfully! Finalizing subscription...', 'success');
