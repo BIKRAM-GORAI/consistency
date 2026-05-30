@@ -76,8 +76,21 @@ public class MainActivity extends BridgeActivity {
                 popupWebView.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView popupView, WebResourceRequest request) {
-                        // Redirect the URL into the main app WebView
                         String url = request.getUrl().toString();
+                        
+                        // If the popup target is an APK download, launch it via native intent in the system browser
+                        if (url.endsWith(".apk") || url.contains("Consistency.Daily.apk")) {
+                            android.util.Log.d("PaymentPopup", "Intercepted APK download popup → launching system browser: " + url);
+                            try {
+                                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                                MainActivity.this.startActivity(intent);
+                            } catch (Exception e) {
+                                android.util.Log.e("PaymentPopup", "Failed to launch native intent for APK download", e);
+                            }
+                            return true;
+                        }
+                        
+                        // Redirect the URL into the main app WebView (for Razorpay popup redirects)
                         android.util.Log.d("PaymentPopup", "Intercepted popup → loading in main WebView: " + url);
                         MainActivity.this.bridge.getWebView().loadUrl(url);
                         return true;
