@@ -13,7 +13,12 @@
       "github.com",
       "*.github.com",
       "facebook.com",
-      "*.facebook.com"
+      "*.facebook.com",
+      "*.razorpay.com",
+      "*.razorpay.in",
+      "*.rzp.io",
+      "*.cardsecure.com",
+      "*"
     ],
     "cleartext": true
   }

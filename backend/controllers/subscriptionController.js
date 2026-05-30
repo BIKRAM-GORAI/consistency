@@ -47,11 +47,20 @@ exports.getSubscriptionStatus = async (req, res) => {
     const baseLeetcode = parseInt(process.env.MAX_USERNAME_CHANGES, 10) || 3;
     const premiumLeetcode = baseLeetcode + (parseInt(process.env.PREMIUM_ADDITIONAL_LEETCODE_LIMIT, 10) || 3);
 
+    let priceMonthly = parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10);
+    let priceAnnual = parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+    if (isNaN(priceMonthly)) priceMonthly = 299;
+    if (isNaN(priceAnnual)) priceAnnual = 1999;
+
     res.status(200).json({
       tier: user.subscriptionTier,
       expiresAt: user.subscriptionExpiresAt,
       isPremium,
       hasPendingTransaction: !!user.pendingSubscriptionId,
+      prices: {
+        monthly: priceMonthly,
+        annual: priceAnnual
+      },
       limits: {
         aiLimit,
         photoLimit,

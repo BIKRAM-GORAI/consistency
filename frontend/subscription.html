@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>Premium Subscription &amp; Limits | Consistency Daily</title>
   
+  <script>
+    if (navigator.userAgent.includes("CapacitorNative/Android")) {
+      document.documentElement.classList.add('native-android');
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('native-android');
+      });
+    }
+  </script>
+  
   <!-- We intentionally DO NOT load Microsoft Clarity here to satisfy tracking exclusion requirements -->
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,6 +104,38 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    /* Android Native safe area / notch support */
+    body.native-android .nav-header,
+    html.native-android .nav-header {
+      padding-top: calc(16px + env(safe-area-inset-top, 24px)) !important;
+    }
+
+    /* Responsive Back button & Header */
+    .back-text-mobile {
+      display: none;
+    }
+
+    @media (max-width: 480px) {
+      .nav-header {
+        padding: 12px 14px;
+        gap: 8px;
+      }
+      .nav-title {
+        font-size: 15px;
+        gap: 4px;
+      }
+      .btn-back {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+      .back-text-desktop {
+        display: none;
+      }
+      .back-text-mobile {
+        display: inline;
+      }
     }
 
     .container {
@@ -488,7 +529,7 @@
 
   <!-- ── Header ── -->
   <header class="nav-header">
-    <a href="index.html" class="btn-back"><i data-lucide="arrow-left"></i> Back to Dashboard</a>
+    <a href="index.html" class="btn-back"><i data-lucide="arrow-left"></i> <span class="back-text-desktop">Back to Dashboard</span><span class="back-text-mobile">Back</span></a>
     <h2 class="nav-title"><i data-lucide="crown" style="color: #fbbf24; fill: #fbbf24;"></i> Premium Passes</h2>
     <div style="width: 120px; display: none;" class="native-spacer"></div> <!-- Spacer to align center on native -->
   </header>
@@ -550,7 +591,7 @@
           <div>
             <div class="pass-type">Light Plan</div>
             <h4 class="pass-title">Monthly Pass</h4>
-            <div class="pass-price">₹299 <span>/ 30 Days</span></div>
+            <div class="pass-price" id="price-display-monthly">₹299 <span>/ 30 Days</span></div>
             <p class="pass-validity">Perfect for deep sprint routines.</p>
           </div>
           <button class="btn-buy btn-buy-monthly" onclick="triggerPurchase('1_month')">
@@ -560,11 +601,11 @@
 
         <!-- Annual Pass -->
         <div class="price-card price-card-annual">
-          <div class="save-tag">SAVE 45%</div>
+          <div class="save-tag" id="save-tag-display">SAVE 45%</div>
           <div>
             <div class="pass-type">Super Plan</div>
             <h4 class="pass-title">Annual Pass</h4>
-            <div class="pass-price">₹1999 <span>/ 365 Days</span></div>
+            <div class="pass-price" id="price-display-annual">₹1999 <span>/ 365 Days</span></div>
             <p class="pass-validity">Best for building unbreakable lifetime habits.</p>
           </div>
           <button class="btn-buy btn-buy-annual" onclick="triggerPurchase('1_year')">
@@ -786,6 +827,29 @@
 
     function renderSubscriptionUI(data) {
       if (!data) return;
+
+      // Update Dynamic Pricing Cards from Env
+      if (data.prices) {
+        const priceMonthly = document.getElementById('price-display-monthly');
+        const priceAnnual = document.getElementById('price-display-annual');
+        const saveTag = document.getElementById('save-tag-display');
+        
+        if (priceMonthly) priceMonthly.innerHTML = `₹${data.prices.monthly} <span>/ 30 Days</span>`;
+        if (priceAnnual) priceAnnual.innerHTML = `₹${data.prices.annual} <span>/ 365 Days</span>`;
+        
+        if (saveTag) {
+          const monthlyCost = data.prices.monthly * 12;
+          const annualCost = data.prices.annual;
+          if (monthlyCost > annualCost) {
+            const savePct = Math.round((1 - (annualCost / monthlyCost)) * 100);
+            saveTag.textContent = `SAVE ${savePct}%`;
+            saveTag.style.display = 'block';
+          } else {
+            saveTag.style.display = 'none';
+          }
+        }
+      }
+
       const tierDisplay = document.getElementById('sub-tier-display');
       const expiryDisplay = document.getElementById('sub-expiry-display');
       const badgeContainer = document.getElementById('sub-badge-container');
