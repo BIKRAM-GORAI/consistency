@@ -8,7 +8,7 @@ if (isAndroidNative) {
 window.isAndroidNative = isAndroidNative;
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "2.2";
+let runningAppVersion = "2.3";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {
@@ -119,7 +119,102 @@ function showForceUpdateDialog(data) {
 }
 
 /**
- * Fetches /app-version.json from the server and triggers a forced update dialog
+ * Show a dismissible soft update dialog (does not block the user).
+ */
+function showSoftUpdateDialog(data) {
+  // Remove any previous instance
+  const prev = document.getElementById('__soft-update-overlay');
+  if (prev) prev.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '__soft-update-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; box-sizing: border-box;
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background: var(--bg-card, #1a1a2e); border: 3px solid var(--black, #111);
+      border-radius: 16px; padding: 28px 24px; max-width: 340px; width: 100%;
+      box-shadow: 6px 6px 0 var(--black, #111); text-align: center;
+    ">
+      <div style="font-size: 40px; margin-bottom: 12px;">🚀</div>
+      <h2 style="
+        font-family: 'Space Grotesk', sans-serif; font-weight: 900;
+        font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px;
+        color: var(--text, #fff); margin: 0 0 8px;
+      ">New Version Available</h2>
+      <p style="font-size: 12px; font-weight: 600; color: var(--text-muted, #aaa); margin: 0 0 14px; line-height: 1.5;">
+        Version <strong style="color: var(--yellow, #FFD60A);">v${data.latestVersion}</strong> is available.<br>
+        You are running <strong>v${runningAppVersion}</strong>.
+      </p>
+      <p style="font-size: 11.5px; color: var(--text-muted, #aaa); margin: 0 0 20px; line-height: 1.5; text-align: left; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 12px;">
+        ${data.releaseNotes || 'Bug fixes and improvements.'}
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <button id="__update-later-btn" style="
+          flex: 1; background: #333; color: #fff; border: 2px solid #111;
+          border-radius: 10px; padding: 12px; font-family: 'Space Grotesk', sans-serif;
+          font-weight: 900; font-size: 12px; text-transform: uppercase;
+          box-shadow: 2px 2px 0 #111; cursor: pointer;
+        ">
+          Later
+        </button>
+        <a id="__update-download-btn" href="#" style="
+          flex: 1.3; display: block; box-sizing: border-box;
+          background: var(--yellow, #FFD60A); color: #111; border: 2px solid #111;
+          border-radius: 10px; padding: 12px; font-family: 'Space Grotesk', sans-serif;
+          font-weight: 900; font-size: 12px; text-transform: uppercase;
+          text-decoration: none; box-shadow: 2px 2px 0 #111; cursor: pointer;
+          text-align: center;
+        ">
+          ⬇ Update
+        </a>
+      </div>
+    </div>
+  `;
+
+  // Redirect to download via external system browser
+  const downloadBtn = overlay.querySelector('#__update-download-btn');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                          navigator.userAgent.includes("Capacitor");
+      if (isNativeApp) {
+        if (window.Capacitor?.Plugins?.Browser) {
+          window.Capacitor.Plugins.Browser.open({ url: data.apkUrl });
+        } else {
+          window.open(data.apkUrl, '_system');
+        }
+      } else {
+        const link = document.createElement('a');
+        link.href = data.apkUrl;
+        link.download = 'Consistency.Daily.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    });
+  }
+
+  // Dismiss button action
+  const laterBtn = overlay.querySelector('#__update-later-btn');
+  if (laterBtn) {
+    laterBtn.addEventListener('click', () => {
+      sessionStorage.setItem('dismissedUpdate', 'true');
+      overlay.remove();
+    });
+  }
+
+  document.body.appendChild(overlay);
+}
+
+/**
+ * Fetches /app-version.json from the server and triggers a forced or soft update dialog
  * if the server version is newer than the currently running APK version.
  * Only runs on native Android builds.
  */
@@ -135,13 +230,25 @@ async function checkForAppUpdate() {
     if (!data || !data.latestVersion) return;
 
     const isOutdated = compareSemver(runningAppVersion, data.latestVersion) < 0;
-    if (isOutdated && data.forceUpdate) {
-      // Wait for DOM to be ready before injecting the dialog
-      const injectDialog = () => showForceUpdateDialog(data);
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectDialog, { once: true });
+    if (isOutdated) {
+      if (data.forceUpdate) {
+        // Wait for DOM to be ready before injecting the dialog
+        const injectDialog = () => showForceUpdateDialog(data);
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', injectDialog, { once: true });
+        } else {
+          injectDialog();
+        }
       } else {
-        injectDialog();
+        // Soft update dialog - check if already dismissed in this session
+        if (!sessionStorage.getItem('dismissedUpdate')) {
+          const injectDialog = () => showSoftUpdateDialog(data);
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', injectDialog, { once: true });
+          } else {
+            injectDialog();
+          }
+        }
       }
     }
   } catch (err) {

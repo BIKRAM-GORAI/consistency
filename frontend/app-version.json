@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.2",
+  "latestVersion": "2.3",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
-  "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.2:\n• 🐛 Native WebView Fixes: Restored programmatic file chooser, gallery scanner, and native microphone/media permission prompts in WebView\n• 🔒 Strict-mode script scope & toast reference runtime optimizations"
+  "forceUpdate": false,
+  "releaseNotes": "✨ What's new in v2.3:\n• 🎨 UI Symmetry Upgrades: Aligned feature grid layout to 15 symmetrical cards, optimized typography & color readability on Premium highlights\n• 📱 Screen Time & App Usage Limits split highlights for easier device focus tracking"
 }
