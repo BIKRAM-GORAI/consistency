@@ -786,5 +786,86 @@ module.exports = {
       console.error('deleteCoupon error:', err);
       res.status(500).json({ message: 'Server error deleting coupon.', error: err.message });
     }
+  },
+  getAdminPayments: async (req, res) => {
+    try {
+      const axios = require('axios');
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+      if (!keyId || !keySecret) {
+        return res.status(500).json({ message: 'Razorpay API keys not configured.' });
+      }
+
+      const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+      
+      const razorpayRes = await axios.get('https://api.razorpay.com/v1/payments?count=100', {
+        headers: { 'Authorization': `Basic ${authHeader}` }
+      });
+
+      const payments = razorpayRes.data.items || [];
+      const users = await User.find({}, 'name email profilePicture razorpayPaymentId subscriptionId');
+      
+      const userMap = new Map();
+      users.forEach(u => {
+        if (u.email) userMap.set(u.email.toLowerCase(), u);
+        if (u.razorpayPaymentId) userMap.set(u.razorpayPaymentId, u);
+        if (u.subscriptionId) userMap.set(u.subscriptionId, u);
+      });
+
+      const enrichedPayments = payments.map(p => {
+        let matchedUser = null;
+        if (p.email) matchedUser = userMap.get(p.email.toLowerCase());
+        if (!matchedUser && p.id) matchedUser = userMap.get(p.id);
+        if (!matchedUser && p.order_id) matchedUser = userMap.get(p.order_id);
+
+        return {
+          ...p,
+          user: matchedUser ? {
+            _id: matchedUser._id,
+            name: matchedUser.name,
+            profilePicture: matchedUser.profilePicture
+          } : null
+        };
+      });
+
+      res.json(enrichedPayments);
+    } catch (err) {
+      console.error('getAdminPayments error:', err.message);
+      res.status(500).json({ message: 'Failed to retrieve payments from Razorpay API.', error: err.message });
+    }
+  },
+  getAdminUserPayments: async (req, res) => {
+    try {
+      const axios = require('axios');
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+      if (!keyId || !keySecret) {
+        return res.status(500).json({ message: 'Razorpay API keys not configured.' });
+      }
+
+      const user = await User.findById(req.params.id);
+      if (!user) return res.status(404).json({ message: 'User not found.' });
+
+      const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+      
+      const razorpayRes = await axios.get('https://api.razorpay.com/v1/payments?count=100', {
+        headers: { 'Authorization': `Basic ${authHeader}` }
+      });
+
+      const payments = razorpayRes.data.items || [];
+      const userPayments = payments.filter(p => {
+        const emailMatch = p.email && user.email && p.email.toLowerCase() === user.email.toLowerCase();
+        const paymentIdMatch = p.id && user.razorpayPaymentId && p.id === user.razorpayPaymentId;
+        const orderIdMatch = p.order_id && user.subscriptionId && p.order_id === user.subscriptionId;
+        return emailMatch || paymentIdMatch || orderIdMatch;
+      });
+
+      res.json(userPayments);
+    } catch (err) {
+      console.error('getAdminUserPayments error:', err.message);
+      res.status(500).json({ message: 'Failed to retrieve user payment details.', error: err.message });
+    }
   }
 };

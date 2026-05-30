@@ -63,6 +63,7 @@ function showSection(section) {
   if (section === 'groups') loadGroups();
   if (section === 'badges') loadBadges();
   if (section === 'coupons') loadCoupons();
+  if (section === 'payments') loadPayments();
 }
 
 /**
@@ -577,6 +578,25 @@ function showUserTab(tab) {
           <p style="font-size: 11px; color: #666; font-weight: 700;">Click to upload a new avatar for this user</p>
         </div>
 
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 20px; border-radius: 12px; margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #666; margin-bottom: 6px;">Subscription Level</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge" style="background: ${user.subscriptionTier === 'premium' ? 'var(--purple)' : '#ccc'}; color: ${user.subscriptionTier === 'premium' ? 'var(--white)' : 'var(--black)'}; font-size: 14px; padding: 6px 12px; border-radius: 6px;">
+                ${user.subscriptionTier === 'premium' ? '👑 PREMIUM USER' : 'FREE TIER'}
+              </span>
+            </div>
+            ${user.subscriptionTier === 'premium' && user.subscriptionExpiresAt ? `
+              <div style="font-size: 12px; font-weight: 700; color: #555; margin-top: 8px;">
+                📅 Validity Expiration: <span style="color: var(--black); font-weight: 800;">${new Date(user.subscriptionExpiresAt).toLocaleString()}</span>
+              </div>
+            ` : ''}
+          </div>
+          <button class="btn-control" style="background: var(--blue); color: white; padding: 10px 18px; box-shadow: 4px 4px 0 #000;" onclick="showUserTab('payments')">
+            <i data-lucide="receipt"></i> View Payments History
+          </button>
+        </div>
+
         <div class="form-group">
           <label>Full Name</label>
           <input type="text" id="user-edit-name" value="${user.name}">
@@ -597,6 +617,17 @@ function showUserTab(tab) {
           <button class="btn-delete" style="width:100%; padding: 14px; font-size: 14px;" onclick="adminDeleteUser('${user._id}')">Delete User Account Completely</button>
         </div>
       `;
+      break;
+    case 'payments':
+      html = `
+        <div style="padding: 20px;">
+          <h4 style="margin-bottom: 20px; font-family: 'Space Grotesk';">Order &amp; Transaction History</h4>
+          <div id="user-payments-list" style="display: flex; flex-direction: column; gap: 16px;">
+            <p style="font-weight: 700; color: #666;">Querying real-time payment portal...</p>
+          </div>
+        </div>
+      `;
+      setTimeout(() => loadUserPayments(user._id), 100);
       break;
     case 'days':
       html = `
@@ -1552,5 +1583,171 @@ async function deleteCoupon(id) {
     console.error('Error deleting coupon:', err);
   }
 }
+
+/* ============================================================
+   PAYMENTS & BILLING MANAGEMENT
+   ============================================================ */
+
+async function loadPayments() {
+  const grid = document.getElementById('payments-grid');
+  if (!grid) return;
+  grid.innerHTML = '<p style="font-weight:800; color:#666;">Querying real-time payment portal...</p>';
+
+  try {
+    const res = await fetch(`${API}/api/admin/payments`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      const payments = await res.json();
+      renderPayments(payments, 'payments-grid');
+    } else {
+      grid.innerHTML = '<p style="font-weight:800; color:red;">Failed to retrieve transaction records.</p>';
+    }
+  } catch (err) {
+    console.error('loadPayments error:', err);
+    grid.innerHTML = '<p style="font-weight:800; color:red;">Connection error while loading payments.</p>';
+  }
+}
+
+function renderPayments(payments, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!payments.length) {
+    container.innerHTML = '<p style="font-weight:800; color:#666; padding: 20px; text-align:center;">No payment records found.</p>';
+    return;
+  }
+
+  payments.forEach(p => {
+    const amount = (p.amount / 100).toFixed(2);
+    const date = new Date(p.created_at * 1000).toLocaleString();
+    const card = document.createElement('div');
+    card.className = 'review-card';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.gap = '12px';
+
+    // Status colors
+    let statusBg = '#ccc';
+    let statusColor = '#000';
+    if (p.status === 'captured') { statusBg = 'var(--green)'; statusColor = 'var(--black)'; }
+    else if (p.status === 'failed') { statusBg = '#ef4444'; statusColor = '#fff'; }
+    else if (p.status === 'refunded') { statusBg = 'var(--blue)'; statusColor = '#fff'; }
+
+    // User section HTML
+    let userHtml = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="avatar-initial" style="width:30px; height:30px; font-size:12px; border-radius:50%; background:#eee; color:#666;">?</div>
+        <div>
+          <span style="font-weight:800;">Guest Payer</span>
+          <span style="font-size:10px; color:#999; margin-left:6px;">(Not registered)</span>
+        </div>
+      </div>
+    `;
+
+    if (p.user) {
+      userHtml = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${getAvatarHtml(p.user.profilePicture, p.user.name, 30)}
+          <div>
+            <span style="font-weight:900; font-family:'Space Grotesk'; color:var(--black);">${p.user.name}</span>
+            <button onclick="closeUserModal(); openUserModal('${p.user._id}')" style="background:none; border:none; text-decoration:underline; font-size:11px; font-weight:800; color:var(--blue); cursor:pointer; margin-left:8px;">Manage</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Payment details helper
+    let detailsStr = '';
+    if (p.method === 'card' && p.card) {
+      detailsStr = `💳 Card: ${p.card.network.toUpperCase()} ending in ${p.card.last4} (${p.card.type.toUpperCase()})`;
+    } else if (p.method === 'netbanking') {
+      detailsStr = `🏛️ Netbanking: ${p.bank || 'Unknown Bank'}`;
+    } else if (p.method === 'upi') {
+      detailsStr = `📱 UPI: ${p.vpa || 'VPA'}`;
+    } else if (p.method === 'wallet') {
+      detailsStr = `👜 Wallet: ${p.wallet || 'Wallet'}`;
+    } else {
+      detailsStr = `💰 Method: ${p.method.toUpperCase()}`;
+    }
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px dashed #eee; padding-bottom: 8px;">
+        ${userHtml}
+        <span class="badge" style="background:${statusBg}; color:${statusColor};">${p.status.toUpperCase()}</span>
+      </div>
+      <div>
+        <div style="font-size:13px; font-weight:700; color:#555; margin-bottom:4px;">Transaction ID: <span style="font-family:monospace; font-weight:800; color:#000;">${p.id}</span></div>
+        <div style="font-size:13px; font-weight:700; color:#555; margin-bottom:4px;">Order ID: <span style="font-family:monospace; font-weight:800; color:#000;">${p.order_id || 'N/A'}</span></div>
+        <div style="font-size:13px; font-weight:700; color:#555; margin-bottom:4px;">Paid Amount: <span style="font-weight:900; color:var(--purple); font-size:14px;">₹${amount} ${p.currency}</span></div>
+      </div>
+      <div style="background:#f9f9f9; border:2px solid #000; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:#333;">
+        <div>${detailsStr}</div>
+        <div style="margin-top:4px; font-size:11px; color:#666;">Date: ${date}</div>
+        <div style="margin-top:4px; font-size:11px; color:#666;">Email: ${p.email || 'N/A'}</div>
+        <div style="margin-top:4px; font-size:11px; color:#666;">Contact: ${p.contact || 'N/A'}</div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+async function loadUserPayments(userId) {
+  const container = document.getElementById('user-payments-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/users/${userId}/payments`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      const payments = await res.json();
+      container.innerHTML = '';
+      if (!payments.length) {
+        container.innerHTML = '<p style="font-weight:800; color:#666; text-align:center; padding:10px;">No payments found for this user.</p>';
+        return;
+      }
+      
+      payments.forEach(p => {
+        const amount = (p.amount / 100).toFixed(2);
+        const date = new Date(p.created_at * 1000).toLocaleString();
+        
+        let statusBg = '#ccc';
+        let statusColor = '#000';
+        if (p.status === 'captured') { statusBg = 'var(--green)'; statusColor = 'var(--black)'; }
+        else if (p.status === 'failed') { statusBg = '#ef4444'; statusColor = '#fff'; }
+        
+        const card = document.createElement('div');
+        card.style.padding = '14px';
+        card.style.border = '2px solid #000';
+        card.style.borderRadius = '10px';
+        card.style.background = '#fff';
+        card.style.boxShadow = '2px 2px 0 #000';
+        
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:6px;">
+            <span style="font-family:monospace; font-weight:800; font-size:12px;">ID: ${p.id}</span>
+            <span class="badge" style="background:${statusBg}; color:${statusColor}; font-size:9px; padding:2px 6px;">${p.status.toUpperCase()}</span>
+          </div>
+          <div style="font-size:12px; font-weight:700; color:#444;">
+            <div>Amount: <span style="font-weight:900; color:var(--purple);">₹${amount} ${p.currency}</span></div>
+            <div style="margin-top:2px;">Method: ${p.method.toUpperCase()} ${p.card ? `(${p.card.network.toUpperCase()})` : ''}</div>
+            <div style="margin-top:2px; font-size:11px; color:#666;">Date: ${date}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } else {
+      container.innerHTML = '<p style="font-weight:800; color:red; text-align:center; padding:10px;">Failed to load user transactions.</p>';
+    }
+  } catch (err) {
+    console.error('loadUserPayments error:', err);
+    container.innerHTML = '<p style="font-weight:800; color:red; text-align:center; padding:10px;">Connection error loading transactions.</p>';
+  }
+}
+
 
 

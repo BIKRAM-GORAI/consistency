@@ -467,6 +467,7 @@
         <button class="nav-link" id="nav-groups" onclick="showSection('groups')">Groups</button>
         <button class="nav-link" id="nav-badges" onclick="showSection('badges')">Badges</button>
         <button class="nav-link" id="nav-coupons" onclick="showSection('coupons')">Promo Coupons</button>
+        <button class="nav-link" id="nav-payments" onclick="showSection('payments')">Payments</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -573,6 +574,18 @@
             <!-- Loaded via JS -->
           </tbody>
         </table>
+    </div>
+    
+    <!-- Payments Section -->
+    <div id="section-payments" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <h2>Real-Time Payments History</h2>
+        <p style="font-weight: 800; color: #666; margin-top: 4px;">Direct live query from Razorpay gateway API</p>
+      </div>
+      
+      <!-- Payments Grid -->
+      <div id="payments-grid" class="review-grid">
+        <!-- Loaded via JS -->
       </div>
     </div>
 
@@ -682,6 +695,7 @@
         <button class="nav-link" id="tab-goals" onclick="showUserTab('goals')">Goals</button>
         <button class="nav-link" id="tab-groups" onclick="showUserTab('groups')">Groups</button>
         <button class="nav-link" id="tab-user-badges" onclick="showUserTab('badges')">Badges</button>
+        <button class="nav-link" id="tab-payments" onclick="showUserTab('payments')">Payments</button>
       </div>
 
       <div id="user-modal-content" style="flex: 1; overflow-y: auto; padding-right: 10px;">

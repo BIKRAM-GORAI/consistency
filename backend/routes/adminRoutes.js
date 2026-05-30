@@ -78,4 +78,8 @@ router.post('/coupons', authenticateAdmin, adminController.generateCoupon);
 router.get('/coupons', authenticateAdmin, adminController.getCoupons);
 router.delete('/coupons/:id', authenticateAdmin, adminController.deleteCoupon);
 
+// Payment Management
+router.get('/payments', authenticateAdmin, adminController.getAdminPayments);
+router.get('/users/:id/payments', authenticateAdmin, adminController.getAdminUserPayments);
+
 module.exports = router;
