@@ -851,15 +851,14 @@ module.exports = {
 
       const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
       
-      // Fetch paginated transactions from Razorpay
-      const razorpayRes = await axios.get(`https://api.razorpay.com/v1/payments?count=${limit}&skip=${skip}`, {
+      // Fetch latest 100 transactions from Razorpay
+      const razorpayRes = await axios.get('https://api.razorpay.com/v1/payments?count=100', {
         headers: { 'Authorization': `Basic ${authHeader}` }
       });
 
       const payments = razorpayRes.data.items || [];
-      const totalCount = razorpayRes.data.count || 1000;
 
-      // Selective optimization: Extract only matching IDs/emails from this slice
+      // Extract details across all 100 payments to match against our users collection
       const paymentEmails = payments.map(p => p.email).filter(Boolean);
       const paymentIds = payments.map(p => p.id).filter(Boolean);
       const orderIds = payments.map(p => p.order_id).filter(Boolean);
@@ -879,7 +878,21 @@ module.exports = {
         if (u.subscriptionId) userMap.set(u.subscriptionId, u);
       });
 
-      const enrichedPayments = payments.map(p => {
+      // Filter payments: keep ONLY payments that are matching a user registered on our site
+      const ourPayments = payments.filter(p => {
+        let matched = false;
+        if (p.email && userMap.has(p.email.toLowerCase())) matched = true;
+        if (!matched && p.id && userMap.has(p.id)) matched = true;
+        if (!matched && p.order_id && userMap.has(p.order_id)) matched = true;
+        return matched;
+      });
+
+      const totalCount = ourPayments.length;
+
+      // Slice the filtered results array dynamically for pagination
+      const paginatedPayments = ourPayments.slice(skip, skip + limit);
+
+      const enrichedPayments = paginatedPayments.map(p => {
         let matchedUser = null;
         if (p.email) matchedUser = userMap.get(p.email.toLowerCase());
         if (!matchedUser && p.id) matchedUser = userMap.get(p.id);
@@ -899,7 +912,7 @@ module.exports = {
         items: enrichedPayments,
         page,
         limit,
-        totalPages: Math.ceil(totalCount / limit) + (payments.length === limit ? 1 : 0)
+        totalPages: Math.ceil(totalCount / limit)
       });
     } catch (err) {
       console.error('getAdminPayments error:', err.message);

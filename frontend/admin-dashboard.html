@@ -437,22 +437,278 @@
     .admin-section h2 { margin-bottom: 16px; }
     .admin-section p  { color: #555; }
 
-    /* ── Mobile ── */
-    @media (max-width: 600px) {
+    /* ── Neo-Brutalist Layout Classes ── */
+    .user-subscription-box {
+      background: var(--white);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .group-card {
+      padding: 24px;
+      border: 3px solid var(--black);
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: 6px 6px 0 var(--black);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .group-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 15px;
+      gap: 16px;
+    }
+
+    .group-card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .group-card-right {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .group-card-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .group-owner-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-end;
+      background: #f8f8f8;
+      padding: 6px 10px;
+      border: 2px solid var(--black);
+      border-radius: 8px;
+    }
+
+    .group-members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    /* ── Mobile & Tablet Responsiveness (<= 768px) ── */
+    @media (max-width: 768px) {
       .container { padding: 0 14px; margin: 20px auto; }
 
-      .header-actions { width: 100%; }
+      /* Fluid Navigation */
+      .admin-nav {
+        flex-direction: column;
+        align-items: stretch !important;
+        padding: 12px 14px;
+        gap: 12px;
+      }
+      .nav-left {
+        flex-direction: column;
+        align-items: stretch !important;
+        width: 100%;
+        gap: 10px;
+      }
+      .nav-brand {
+        margin-right: 0 !important;
+        text-align: center;
+      }
+      .nav-links {
+        width: 100%;
+        justify-content: flex-start;
+        padding-bottom: 6px;
+      }
+      .btn-logout {
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+      }
 
-      .btn-control { padding: 10px 12px; font-size: 12px; }
+      /* Stack Headers & Search Bars */
+      .dashboard-header {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px;
+      }
+      .header-actions {
+        flex-direction: column;
+        align-items: stretch !important;
+        width: 100%;
+      }
+      .header-actions > * {
+        width: 100% !important;
+      }
+      .controls {
+        display: flex;
+        width: 100%;
+      }
+      .controls > button {
+        flex: 1;
+      }
+      #user-search {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* Table-to-Card Neo-Brutalist Layout Transformation */
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      table thead {
+        display: none; /* Hide standard headers */
+      }
+      tbody tr {
+        background: var(--white);
+        border: var(--border) !important;
+        box-shadow: var(--shadow) !important;
+        margin-bottom: 20px;
+        padding: 16px;
+        border-radius: 12px;
+      }
+      tbody td {
+        text-align: left !important;
+        padding: 8px 0 !important;
+        border-bottom: 1px dashed #eee;
+        position: relative;
+        padding-left: 40% !important; /* Spacing for label */
+      }
+      tbody td:last-child {
+        border-bottom: none;
+      }
+      tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 35%;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 11px;
+        color: #666;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Override data-label padding for specific td elements */
+      td[data-label="S.No"] {
+        font-size: 16px;
+        border-bottom: 2px solid var(--black);
+        padding-bottom: 6px;
+      }
+      td[data-label="Profile"] {
+        padding-left: 0 !important;
+        display: flex;
+        justify-content: flex-start;
+      }
+      td[data-label="Profile"]::before {
+        display: none;
+      }
+      td[data-label="User Info"], td[data-label="Promo Code"] {
+        padding-left: 0 !important;
+        font-size: 15px;
+      }
+      td[data-label="User Info"]::before, td[data-label="Promo Code"]::before {
+        display: none;
+      }
+
+      td[data-label="Actions"] {
+        padding-left: 0 !important;
+        display: flex;
+        justify-content: flex-start !important;
+        gap: 8px;
+        border-bottom: none;
+      }
+      td[data-label="Actions"]::before {
+        display: none;
+      }
+      td[data-label="Actions"] > div {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+      }
+      td[data-label="Actions"] button {
+        flex: 1 !important;
+      }
+
+      /* Modals Full Screen Touch Overlays */
+      .modal-overlay {
+        padding: 0 !important;
+      }
+      .modal {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100vh !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      #user-detail-modal .modal {
+        height: 100% !important;
+        max-height: 100vh !important;
+      }
 
       .form-grid { grid-template-columns: 1fr; }
-
       .badge-selection { grid-template-columns: 1fr; }
-
-      .modal { padding: 20px 16px; }
-
       .modal-footer { flex-direction: column; }
       .btn-save, .btn-cancel { flex: none; width: 100%; }
+
+      /* Subscription stacking */
+      .user-subscription-box {
+        flex-direction: column;
+        align-items: stretch !important;
+      }
+      .user-subscription-box button {
+        width: 100%;
+      }
+
+      /* Responsive Groups Card styling */
+      .group-card {
+        padding: 16px !important;
+      }
+      .group-card-header {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px;
+      }
+      .group-card-right {
+        align-items: stretch !important;
+        text-align: left !important;
+      }
+      .group-card-actions {
+        justify-content: flex-start !important;
+      }
+      .group-card-actions button {
+        flex: 1;
+      }
+      .group-owner-badge {
+        justify-content: space-between !important;
+      }
+      .group-members-grid {
+        grid-template-columns: 1fr !important;
+      }
     }
   </style>
 </head>
@@ -577,6 +833,7 @@
             <!-- Loaded via JS -->
           </tbody>
         </table>
+      </div>
     </div>
     
     <!-- Payments Section -->

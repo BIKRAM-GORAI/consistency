@@ -34,3 +34,4 @@ frontend/js/modules/tracker.md
 
 # Database scripts
 /backend/scripts/clear-screen-time.js
+/backend/scripts/reset-subscription.js

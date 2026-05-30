@@ -287,12 +287,12 @@ async function loadGroups() {
       const data = await res.json();
       allGroups = data.items || [];
       grid.innerHTML = allGroups.length ? allGroups.map(g => `
-        <div style="padding:24px; border:3px solid #000; background:#fff; border-radius:12px; box-shadow: 6px 6px 0 #000; position: relative; display: flex; flex-direction: column; gap: 20px;">
+        <div class="group-card">
           
           <!-- Header: Icon, Name, Buttons, Owner -->
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 15px;">
+          <div class="group-card-header">
              <!-- Left: Icon & Name -->
-             <div style="display: flex; align-items: center; gap: 12px;">
+             <div class="group-card-left">
                 <div id="group-icon-container-${g._id}">
                   ${getAvatarHtml(g.icon, g.name, 56, '10px')}
                 </div>
@@ -308,15 +308,15 @@ async function loadGroups() {
                   </div>
                 </div>
              </div>
-
+ 
              <!-- Right: Actions & Owner -->
-             <div style="text-align: right; display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; gap: 6px; justify-content: flex-end;">
+             <div class="group-card-right">
+                <div class="group-card-actions">
                   <button class="btn-control" style="padding: 6px 10px; font-size: 11px; box-shadow: 2px 2px 0 #000; background: var(--blue); color: #fff;" onclick="document.getElementById('admin-group-pic-input-${g._id}').click()">Change Icon</button>
                   <input type="file" id="admin-group-pic-input-${g._id}" style="display:none" accept="image/*" onchange="handleAdminGroupIconUpload(event, '${g._id}')">
                   <button class="btn-control" style="padding: 6px 10px; font-size: 11px; box-shadow: 2px 2px 0 #000;" onclick="openEditGroup('${g._id}')">Edit Info</button>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; background: #f8f8f8; padding: 6px 10px; border: 2px solid #000; border-radius: 8px;">
+                <div class="group-owner-badge">
                   <div style="text-align: right;">
                     <div style="font-size: 9px; font-weight: 900; color: #666; text-transform: uppercase; line-height: 1;">Owner</div>
                     <div style="font-weight: 900; font-size: 13px;">${g.owner?.name || 'Unknown'}</div>
@@ -338,7 +338,7 @@ async function loadGroups() {
             <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px; color: #666; display: flex; align-items: center; gap: 5px;">
               <i data-lucide="users" style="width: 14px;"></i> Members (${g.members.length})
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;">
+            <div class="group-members-grid">
               ${g.members.map(m => {
                 const isOwner = g.owner?._id === m._id;
                 return `
@@ -355,7 +355,7 @@ async function loadGroups() {
               }).join('')}
             </div>
           </div>
-
+ 
           <!-- Footer: Delete Action -->
           <button class="btn-delete" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; box-shadow: 4px 4px 0 #000; margin-top: 10px;" onclick="adminDeleteGroup('${g._id}')">
             Delete Group Permanently
@@ -522,27 +522,27 @@ function renderUsers(users, page = 1, limit = 10) {
     
     const serialNumber = (page - 1) * limit + index + 1;
     row.innerHTML = `
-      <td style="padding: 12px; font-weight: 800;">${serialNumber}</td>
-      <td style="padding: 12px;">
+      <td data-label="S.No" style="padding: 12px; font-weight: 800;">${serialNumber}</td>
+      <td data-label="Profile" style="padding: 12px;">
         ${getAvatarHtml(u.profilePicture, u.name, 40, '8px')}
       </td>
-      <td style="padding: 12px;">
+      <td data-label="User Info" style="padding: 12px;">
         <div style="font-weight: 900; font-family: 'Space Grotesk';">${u.name}</div>
         <div style="font-size: 12px; color: #666;">@${u.username || 'no-username'}</div>
         <div style="font-size: 11px; color: var(--blue);">${u.email}</div>
       </td>
-      <td style="padding: 12px; text-align: center;">
+      <td data-label="Stats" style="padding: 12px; text-align: center;">
         <div style="font-size: 11px; font-weight: 800; text-transform: uppercase;">
           Reviews: ${u.reviewCount || 0} <br>
           Groups: ${u.groupCount || 0}
         </div>
       </td>
-      <td style="padding: 12px; text-align: center;">
+      <td data-label="Status" style="padding: 12px; text-align: center;">
         <span class="badge" style="background: ${isBlacklisted ? '#ef4444' : '#22c55e'}; color: white;">
           ${isBlacklisted ? 'BLACKLISTED' : 'ACTIVE'}
         </span>
       </td>
-      <td style="padding: 12px; text-align: right;">
+      <td data-label="Actions" style="padding: 12px; text-align: right;">
         <div style="display: flex; gap: 12px; justify-content: flex-end;">
           <button class="btn-action btn-edit" style="flex:none; padding: 6px 14px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; background: var(--yellow); color: #000;" onclick="openUserModal('${u._id}')">Manage</button>
           <button class="btn-action ${isBlacklisted ? 'btn-save' : 'btn-delete'}" style="flex:none; padding: 6px 14px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; background: ${isBlacklisted ? '#22c55e' : '#ef4444'};" onclick="promptBlacklist('${u._id}')">${isBlacklisted ? 'Unblock' : 'Blacklist'}</button>
@@ -598,7 +598,7 @@ function showUserTab(tab) {
           <p style="font-size: 11px; color: #666; font-weight: 700;">Click to upload a new avatar for this user</p>
         </div>
 
-        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 20px; border-radius: 12px; margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+        <div class="user-subscription-box">
           <div>
             <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #666; margin-bottom: 6px;">Subscription Level</div>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -1532,15 +1532,15 @@ async function loadCoupons() {
       const row = document.createElement('tr');
       row.style.borderBottom = '1px solid #eee';
       row.innerHTML = `
-        <td style="padding:12px; font-weight:900; font-family:monospace; font-size:14px; letter-spacing:0.5px;">
+        <td data-label="Promo Code" style="padding:12px; font-weight:900; font-family:monospace; font-size:14px; letter-spacing:0.5px;">
           ${c.code}
           <button onclick="navigator.clipboard.writeText('${c.code}'); alert('Coupon copied to clipboard!');" style="margin-left:8px; padding:2px 6px; font-size:10px; font-weight:800; background:#eee; border:1px solid #000; cursor:pointer; text-transform:uppercase;">Copy</button>
         </td>
-        <td style="padding:12px; font-weight:800; font-size:13px;">${durationLabel}</td>
-        <td style="padding:12px; text-align:center;">${statusHtml}</td>
-        <td style="padding:12px; font-size:13px;">${redeemedBy}</td>
-        <td style="padding:12px; font-size:13px; color:#555;">${redeemedAt}</td>
-        <td style="padding:12px; text-align:right;">
+        <td data-label="Duration" style="padding:12px; font-weight:800; font-size:13px;">${durationLabel}</td>
+        <td data-label="Status" style="padding:12px; text-align:center;">${statusHtml}</td>
+        <td data-label="Redeemed By" style="padding:12px; font-size:13px;">${redeemedBy}</td>
+        <td data-label="Redeemed At" style="padding:12px; font-size:13px; color:#555;">${redeemedAt}</td>
+        <td data-label="Actions" style="padding:12px; text-align:right;">
           <button class="btn-action btn-delete" style="flex:none; padding:6px 12px; border:2px solid #000; box-shadow:2px 2px 0 #000;" onclick="deleteCoupon('${c._id}')">Delete</button>
         </td>
       `;
