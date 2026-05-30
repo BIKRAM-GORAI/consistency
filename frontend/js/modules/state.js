@@ -226,8 +226,23 @@ window.logout = logout;
 // Security: If admin token is set in another tab, logout user immediately
 window.addEventListener('storage', (e) => {
   if (e.key === 'adminToken' && e.newValue) {
-    localStorage.clear();
-    window.location.replace('auth.html');
+    // Clear user-specific credentials but preserve adminToken
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key !== 'adminToken') {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    
+    if (window.localDb) {
+      window.localDb.delete().catch(() => {}).finally(() => {
+        window.location.replace('auth.html');
+      });
+    } else {
+      window.location.replace('auth.html');
+    }
   }
   if (e.key === 'token' && !e.newValue) {
     window.location.replace('auth.html');

@@ -85,6 +85,9 @@ function applyTemplate() {
 function openSaveTemplateModal(dayId) {
   window.activeDayIdForTemplate = dayId;
   document.getElementById('template-name-input').value = '';
+  if (typeof window.applyDynamicUiLimits === 'function') {
+    window.applyDynamicUiLimits();
+  }
   openModal('modal-save-template');
 }
 
@@ -121,6 +124,9 @@ async function submitSaveTemplate() {
 
 function openManageTemplatesModal() {
   closeModal('modal-profile');
+  if (typeof window.applyDynamicUiLimits === 'function') {
+    window.applyDynamicUiLimits();
+  }
   openModal('modal-manage-templates');
   renderTemplatesList();
 }
@@ -446,7 +452,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Load badges into memory immediately for offline access
-  loadClaimedBadges();
+  if (typeof window.loadClaimedBadges === 'function') {
+    window.loadClaimedBadges();
+  }
 
   // Random motivation chip
   const chip = document.getElementById('motivation-chip');
@@ -499,6 +507,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   proactiveSync(); // Syncs profile, goals, achievements, etc.
   loadDays();
   loadTemplates();
+  if (typeof window.loadSubscriptionStatus === 'function') {
+    window.loadSubscriptionStatus();
+  }
 });
 
 function openLightbox(url) {
@@ -683,9 +694,10 @@ async function performSearch(query) {
         const item = document.createElement('div');
         item.className = 'search-item';
 
-        let avatarHtml = `<div class="search-avatar" style="background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
+        const avatarClass = u.isPremium ? 'search-avatar premium-nav-ring' : 'search-avatar';
+        let avatarHtml = `<div class="${avatarClass}" style="background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
         if (u.profilePicture) {
-          avatarHtml = `<img src="${u.profilePicture}" class="search-avatar" />`;
+          avatarHtml = `<img src="${u.profilePicture}" class="${avatarClass}" />`;
         }
 
         const streakBadge = u.highestStreak > 0
@@ -695,7 +707,10 @@ async function performSearch(query) {
         item.innerHTML = `
           ${avatarHtml}
           <div class="search-info">
-            <div class="search-name">${u.username}</div>
+            <div class="search-name" style="display:flex; align-items:center;">
+              <span>${u.username}</span>
+              ${u.isPremium ? '<span style="margin-left:4px; font-size:12px;" title="Premium Builder">👑</span>' : ''}
+            </div>
             ${streakBadge ? `<div style="margin-top:2px;">${streakBadge}</div>` : ''}
           </div>
         `;
@@ -1251,17 +1266,20 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
     card.classList.add('card-rank-3');
   }
 
+  const avatarClass = user.isPremium ? 'lb-avatar premium-nav-ring' : 'lb-avatar';
   const avatarHtml = user.profilePicture 
-    ? `<img src="${user.profilePicture}" class="lb-avatar" onclick="event.stopPropagation(); openLightbox('${user.profilePicture}')" alt="${escapeHTML(user.username)}">`
-    : `<div class="lb-avatar" style="display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; background:var(--bg-muted); color:var(--text-muted);">${(user.username || '?').charAt(0).toUpperCase()}</div>`;
+    ? `<img src="${user.profilePicture}" class="${avatarClass}" onclick="event.stopPropagation(); openLightbox('${user.profilePicture}')" alt="${escapeHTML(user.username)}">`
+    : `<div class="${avatarClass}" style="display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; background:var(--bg-muted); color:var(--text-muted);">${(user.username || '?').charAt(0).toUpperCase()}</div>`;
 
   card.innerHTML = `
-    <div class="lb-rank ${rankClass}">${rank === '?' ? '<i data-lucide="user"></i>' : rank}</div>
+    <div class="lb-rank ${rankClass}">
+      ${rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : (rank === '?' ? '<i data-lucide="user"></i>' : rank)))}
+    </div>
     ${avatarHtml}
     <div class="lb-info">
       <div class="lb-name-row">
         <span class="lb-name">${escapeHTML(user.name)}</span>
-        ${rank === 1 ? '<span>👑</span>' : ''}
+        ${user.isPremium ? '<span style="margin-left:4px;" title="Premium Builder">👑</span>' : ''}
       </div>
       <div class="lb-username">@${escapeHTML(user.username)}</div>
     </div>

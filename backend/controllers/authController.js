@@ -163,6 +163,12 @@ async function setAchievementPrivacy(req, res) {
 async function getProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
+    
+    // Calculate isPremium exactly like subscriptionController
+    const now = new Date();
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
     res.json({
       name: user.name,
       email: user.email,
@@ -182,7 +188,10 @@ async function getProfileSettings(req, res) {
       leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
       currentStreak: user.currentStreak || 0,
       highestStreak: user.highestStreak || 0,
-      mutedGroups: user.mutedGroups || []
+      mutedGroups: user.mutedGroups || [],
+      subscriptionTier: user.subscriptionTier || 'free',
+      subscriptionExpiresAt: user.subscriptionExpiresAt || null,
+      isPremium: isPremium
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }
@@ -230,6 +239,11 @@ async function setProfileSettings(req, res) {
     }
 
     await user.save();
+    
+    const now = new Date();
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
     res.json({
       message: 'Profile updated',
       name: user.name,
@@ -250,7 +264,10 @@ async function setProfileSettings(req, res) {
       leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
       currentStreak: user.currentStreak || 0,
       highestStreak: user.highestStreak || 0,
-      mutedGroups: user.mutedGroups || []
+      mutedGroups: user.mutedGroups || [],
+      subscriptionTier: user.subscriptionTier || 'free',
+      subscriptionExpiresAt: user.subscriptionExpiresAt || null,
+      isPremium: isPremium
     });
   } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
 }
@@ -358,17 +375,26 @@ async function getMediaUploadLimit(req, res) {
       reset = now;
     }
 
-    const MAX_IMAGE_LIMIT = parseInt(process.env.CHAT_IMAGE_LIMIT) || 20;
-    const MAX_AUDIO_LIMIT = parseInt(process.env.CHAT_AUDIO_LIMIT) || 20;
-    const MAX_AUDIO_FILE_LIMIT = parseInt(process.env.CHAT_AUDIO_FILE_LIMIT) || 5;
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+    let maxImage = parseInt(process.env.CHAT_IMAGE_LIMIT, 10) || 20;
+    let maxAudio = parseInt(process.env.CHAT_AUDIO_LIMIT, 10) || 20;
+    let maxAudioFile = parseInt(process.env.CHAT_AUDIO_FILE_LIMIT, 10) || 5;
+
+    if (isPremium) {
+      maxImage += parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_IMAGE_LIMIT, 10) || 10;
+      maxAudio += parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_AUDIO_LIMIT, 10) || 10;
+      maxAudioFile += parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_AUDIO_FILE_LIMIT, 10) || 5;
+    }
 
     res.json({
-      imageLimit: MAX_IMAGE_LIMIT,
-      audioLimit: MAX_AUDIO_LIMIT,
-      audioFileLimit: MAX_AUDIO_FILE_LIMIT,
-      imageRemaining: Math.max(0, MAX_IMAGE_LIMIT - imageCount),
-      audioRemaining: Math.max(0, MAX_AUDIO_LIMIT - audioCount),
-      audioFileRemaining: Math.max(0, MAX_AUDIO_FILE_LIMIT - audioFileCount),
+      imageLimit: maxImage,
+      audioLimit: maxAudio,
+      audioFileLimit: maxAudioFile,
+      imageRemaining: Math.max(0, maxImage - imageCount),
+      audioRemaining: Math.max(0, maxAudio - audioCount),
+      audioFileRemaining: Math.max(0, maxAudioFile - audioFileCount),
       resetTime: new Date(reset.getTime() + 60 * 60 * 1000)
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }

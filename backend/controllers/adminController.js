@@ -741,5 +741,50 @@ module.exports = {
     } catch (err) {
       res.status(500).json({ message: 'Server error', error: err.message });
     }
+  },
+  generateCoupon: async (req, res) => {
+    try {
+      const { duration } = req.body;
+      if (!duration || !['1_month', '1_year'].includes(duration)) {
+        return res.status(400).json({ message: 'Duration must be 1_month or 1_year.' });
+      }
+
+      const crypto = require('crypto');
+      const code = 'PROMO-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+
+      const Coupon = require('../models/Coupon');
+      const newCoupon = new Coupon({
+        code,
+        duration,
+        createdBy: req.admin.email
+      });
+
+      await newCoupon.save();
+      res.status(201).json(newCoupon);
+    } catch (err) {
+      console.error('generateCoupon error:', err);
+      res.status(500).json({ message: 'Server error generating coupon.', error: err.message });
+    }
+  },
+  getCoupons: async (req, res) => {
+    try {
+      const Coupon = require('../models/Coupon');
+      const coupons = await Coupon.find().populate('usedBy', 'name email username').sort({ createdAt: -1 });
+      res.json(coupons);
+    } catch (err) {
+      console.error('getCoupons error:', err);
+      res.status(500).json({ message: 'Server error fetching coupons.', error: err.message });
+    }
+  },
+  deleteCoupon: async (req, res) => {
+    try {
+      const Coupon = require('../models/Coupon');
+      const coupon = await Coupon.findByIdAndDelete(req.params.id);
+      if (!coupon) return res.status(404).json({ message: 'Coupon not found.' });
+      res.json({ message: 'Coupon deleted successfully.' });
+    } catch (err) {
+      console.error('deleteCoupon error:', err);
+      res.status(500).json({ message: 'Server error deleting coupon.', error: err.message });
+    }
   }
 };

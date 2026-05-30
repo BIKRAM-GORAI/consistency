@@ -87,6 +87,9 @@ async function openProfileModal() {
           }
         }
         await window.localDb.userProfile.put(res);
+        if (res.isPremium !== undefined) {
+          localStorage.setItem('isPremium', res.isPremium.toString());
+        }
         renderProfileData(res);
         setLeaderboardTogglesEnabled(true);
         // Background-refresh app limits too (non-blocking)
@@ -132,6 +135,9 @@ async function openProfileModal() {
         `;
       });
   }
+
+  // Load premium subscription & limits status
+  // loadSubscriptionStatus(); // Managed in subscription.html
 }
 
 /** Helper to populate profile fields from a user object */
@@ -142,6 +148,16 @@ function renderProfileData(user) {
     window.userProfilePicture = user.profilePicture;
     localStorage.setItem('window.userProfilePicture', window.userProfilePicture);
     updateNavAvatar();
+  }
+
+  const isPremium = localStorage.getItem('isPremium') === 'true' || user.isPremium === true;
+  const profileAvatarContainer = document.querySelector('.profile-avatar-container');
+  if (profileAvatarContainer) {
+    if (isPremium) {
+      profileAvatarContainer.classList.add('premium-avatar-ring');
+    } else {
+      profileAvatarContainer.classList.remove('premium-avatar-ring');
+    }
   }
 
   const avatarImg = document.getElementById('profile-avatar-img');
@@ -206,7 +222,9 @@ function renderProfileData(user) {
     }
   }
   
-  loadClaimedBadges();
+  if (typeof window.loadClaimedBadges === 'function') {
+    window.loadClaimedBadges();
+  }
   
   // Also load LeetCode status
   if (typeof loadLeetCodeProfileStatus === 'function') {
@@ -665,6 +683,16 @@ function updateNavAvatar() {
       chipAvatar.textContent = window.userName.charAt(0).toUpperCase();
     }
   }
+
+  const isPremium = localStorage.getItem('isPremium') === 'true';
+  const avatarContainer = document.querySelector('.nav-user-chip > div');
+  if (avatarContainer) {
+    if (isPremium) {
+      avatarContainer.classList.add('premium-nav-ring');
+    } else {
+      avatarContainer.classList.remove('premium-nav-ring');
+    }
+  }
 }
 
 async function urlToBase64(url) {
@@ -737,6 +765,34 @@ async function openQuickView(username) {
       const qpUsername = document.getElementById('qp-username');
       if (qpName) qpName.textContent = localStorage.getItem('window.userName') || localStorage.getItem('userName') || 'You';
       if (qpUsername) qpUsername.textContent = `@${myUsername}`;
+      
+      const isPremiumSelf = localStorage.getItem('isPremium') === 'true';
+      const avatarWrap = document.getElementById('qp-avatar-wrap');
+      let premiumBanner = document.getElementById('qp-premium-banner');
+      if (!premiumBanner && avatarWrap) {
+        premiumBanner = document.createElement('div');
+        premiumBanner.id = 'qp-premium-banner';
+        premiumBanner.className = 'premium-profile-banner';
+        premiumBanner.textContent = '👑 Premium Builder';
+        avatarWrap.parentNode.insertBefore(premiumBanner, avatarWrap);
+      }
+      if (isPremiumSelf) {
+        if (premiumBanner) premiumBanner.style.display = 'inline-flex';
+        if (avatarWrap) avatarWrap.classList.add('premium-avatar-ring');
+        if (qpName) qpName.classList.add('premium-profile-name');
+        const header = document.querySelector('#modal-public-profile .modal-header');
+        const body = document.querySelector('#modal-public-profile .modal-body');
+        if (header) header.style.background = 'linear-gradient(45deg, #fbbf24, #a855f7)';
+        if (body) body.style.background = 'linear-gradient(135deg, var(--bg-card), rgba(168, 85, 247, 0.08))';
+      } else {
+        if (premiumBanner) premiumBanner.style.display = 'none';
+        if (avatarWrap) avatarWrap.classList.remove('premium-avatar-ring');
+        if (qpName) qpName.classList.remove('premium-profile-name');
+        const header = document.querySelector('#modal-public-profile .modal-header');
+        const body = document.querySelector('#modal-public-profile .modal-body');
+        if (header) header.style.background = 'var(--yellow)';
+        if (body) body.style.background = 'var(--bg-card)';
+      }
       
       const avatarImg = document.getElementById('qp-avatar-img');
       const avatarPlc = document.getElementById('qp-avatar-placeholder');
@@ -830,6 +886,33 @@ async function openQuickView(username) {
     if (qpName) qpName.textContent = u.name;
     if (qpUsername) qpUsername.textContent = `@${u.username}`;
     
+    const avatarWrap = document.getElementById('qp-avatar-wrap');
+    let premiumBanner = document.getElementById('qp-premium-banner');
+    if (!premiumBanner && avatarWrap) {
+      premiumBanner = document.createElement('div');
+      premiumBanner.id = 'qp-premium-banner';
+      premiumBanner.className = 'premium-profile-banner';
+      premiumBanner.textContent = '👑 Premium Builder';
+      avatarWrap.parentNode.insertBefore(premiumBanner, avatarWrap);
+    }
+    if (u.isPremium) {
+      if (premiumBanner) premiumBanner.style.display = 'inline-flex';
+      if (avatarWrap) avatarWrap.classList.add('premium-avatar-ring');
+      if (qpName) qpName.classList.add('premium-profile-name');
+      const header = document.querySelector('#modal-public-profile .modal-header');
+      const body = document.querySelector('#modal-public-profile .modal-body');
+      if (header) header.style.background = 'linear-gradient(45deg, #fbbf24, #a855f7)';
+      if (body) body.style.background = 'linear-gradient(135deg, var(--bg-card), rgba(168, 85, 247, 0.08))';
+    } else {
+      if (premiumBanner) premiumBanner.style.display = 'none';
+      if (avatarWrap) avatarWrap.classList.remove('premium-avatar-ring');
+      if (qpName) qpName.classList.remove('premium-profile-name');
+      const header = document.querySelector('#modal-public-profile .modal-header');
+      const body = document.querySelector('#modal-public-profile .modal-body');
+      if (header) header.style.background = 'var(--yellow)';
+      if (body) body.style.background = 'var(--bg-card)';
+    }
+
     const avatarImg = document.getElementById('qp-avatar-img');
     const avatarPlc = document.getElementById('qp-avatar-placeholder');
     if (avatarImg && avatarPlc) {
@@ -1579,5 +1662,250 @@ window.openUsageStatsPermissionModal = openUsageStatsPermissionModal;
 window.confirmAndOpenUsageSettings = confirmAndOpenUsageSettings;
 window.toggleDistractionTracking = toggleDistractionTracking;
 window.handleDistractionLimitToggle = handleDistractionLimitToggle;
+
+// Premium Subscriptions and Coupon Bindings
+window.loadSubscriptionStatus = loadSubscriptionStatus;
+window.purchasePremium = purchasePremium;
+window.redeemPromoCoupon = redeemPromoCoupon;
+
+
+function applyDynamicUiLimits() {
+  const status = window.subscriptionStatus;
+  if (!status || !status.limitsComparison) return;
+
+  const comp = status.limitsComparison;
+
+  // 1. Update Template Save Modal Hint
+  const saveHint = document.getElementById('template-save-hint');
+  if (saveHint) {
+    saveHint.innerHTML = `Free users can save up to <strong>${comp.template.base}</strong> templates.<br>Premium Builders can save up to <strong>${comp.template.premium}</strong> templates.`;
+  }
+
+  // 2. Update Template Manage Warning Box
+  const warningBox = document.getElementById('template-premium-warning-box');
+  const warningText = document.getElementById('template-warning-text');
+  if (warningBox && warningText) {
+    if (status.isPremium) {
+      const excess = comp.template.premium - comp.template.base;
+      warningText.innerHTML = `When your premium subscription expires, your oldest <strong>${excess}</strong> templates will be automatically removed (only the latest <strong>${comp.template.base}</strong> templates are retained on the free tier).`;
+      warningBox.style.display = 'block';
+    } else {
+      warningBox.style.display = 'none';
+    }
+  }
+
+  // 3. Update LeetCode changes limits
+  if (status.limits && status.limits.leetcodeLimit !== undefined) {
+    window.MAX_USERNAME_CHANGES = status.limits.leetcodeLimit;
+    // Re-render LeetCode UI
+    if (typeof window.loadLeetCodeProfileStatus === 'function') {
+      window.loadLeetCodeProfileStatus();
+    }
+  }
+}
+window.applyDynamicUiLimits = applyDynamicUiLimits;
+
+async function loadSubscriptionStatus() {
+  try {
+    const res = await apiFetch(`${window.API}/api/subscriptions/status`);
+    window.subscriptionStatus = res;
+    updateSubscriptionUI(res);
+    applyDynamicUiLimits();
+  } catch (err) {
+    console.error('Failed to load subscription status:', err);
+  }
+}
+
+function updateSubscriptionUI(data) {
+  if (!data) return;
+
+  const isPremium = data.isPremium;
+  const tierDisplay = document.getElementById('sub-tier-display');
+  const expiryDisplay = document.getElementById('sub-expiry-display');
+  const badgeDisplay = document.getElementById('sub-badge-display');
+  const purchaseArea = document.getElementById('subscription-purchase-area');
+
+  // Limits elements
+  const limitAiCurrent = document.getElementById('limit-ai-current');
+  const limitAiBoost = document.getElementById('limit-ai-boost');
+  const limitPhotoCurrent = document.getElementById('limit-photo-current');
+  const limitPhotoBoost = document.getElementById('limit-photo-boost');
+  const limitChatCurrent = document.getElementById('limit-chat-current');
+  const limitChatBoost = document.getElementById('limit-chat-boost');
+  const limitTemplateCurrent = document.getElementById('limit-template-current');
+  const limitTemplateBoost = document.getElementById('limit-template-boost');
+  const limitLeetcodeCurrent = document.getElementById('limit-leetcode-current');
+  const limitLeetcodeBoost = document.getElementById('limit-leetcode-boost');
+
+  if (isPremium) {
+    if (tierDisplay) tierDisplay.textContent = 'Premium Builder';
+    if (expiryDisplay) {
+      if (data.expiresAt) {
+        const dateStr = new Date(data.expiresAt).toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        expiryDisplay.textContent = `Expires on: ${dateStr}`;
+        expiryDisplay.style.display = 'block';
+      } else {
+        expiryDisplay.textContent = 'Lifetime Access';
+        expiryDisplay.style.display = 'block';
+      }
+    }
+    if (badgeDisplay) {
+      badgeDisplay.innerHTML = `
+        <span style="display: inline-block; padding: 6px 12px; background: linear-gradient(45deg, #fbbf24, #f59e0b); color: #fff; border: 2px solid var(--black); border-radius: 6px; font-size: 12px; font-weight: 900; text-transform: uppercase; box-shadow: 2px 2px 0 var(--black); animation: pulse 2s infinite;">Premium</span>
+      `;
+    }
+    if (purchaseArea) purchaseArea.style.display = 'none';
+
+    // Show boosts
+    if (limitAiBoost) limitAiBoost.style.display = 'inline';
+    if (limitPhotoBoost) limitPhotoBoost.style.display = 'inline';
+    if (limitChatBoost) limitChatBoost.style.display = 'inline';
+    if (limitTemplateBoost) limitTemplateBoost.style.display = 'inline';
+    if (limitLeetcodeBoost) limitLeetcodeBoost.style.display = 'inline';
+  } else {
+    if (tierDisplay) tierDisplay.textContent = 'Free Tier';
+    if (expiryDisplay) {
+      expiryDisplay.style.display = 'none';
+      expiryDisplay.textContent = '';
+    }
+    if (badgeDisplay) {
+      badgeDisplay.innerHTML = `
+        <span style="display: inline-block; padding: 6px 12px; background: #94a3b8; color: #1e293b; border: 2px solid var(--black); border-radius: 6px; font-size: 12px; font-weight: 900; text-transform: uppercase; box-shadow: 2px 2px 0 var(--black);">Free</span>
+      `;
+    }
+    if (purchaseArea) purchaseArea.style.display = 'flex';
+
+    // Hide boosts
+    if (limitAiBoost) limitAiBoost.style.display = 'none';
+    if (limitPhotoBoost) limitPhotoBoost.style.display = 'none';
+    if (limitChatBoost) limitChatBoost.style.display = 'none';
+    if (limitTemplateBoost) limitTemplateBoost.style.display = 'none';
+    if (limitLeetcodeBoost) limitLeetcodeBoost.style.display = 'none';
+  }
+
+  // Update dynamic numbers
+  if (data.limits) {
+    if (limitAiCurrent) limitAiCurrent.textContent = data.limits.aiLimit;
+    if (limitPhotoCurrent) limitPhotoCurrent.textContent = data.limits.photoLimit;
+    if (limitChatCurrent) limitChatCurrent.textContent = data.limits.chatImageLimit;
+    if (limitTemplateCurrent) limitTemplateCurrent.textContent = data.limits.templateLimit;
+    if (limitLeetcodeCurrent) limitLeetcodeCurrent.textContent = data.limits.leetcodeLimit;
+  }
+}
+
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+async function purchasePremium(duration) {
+  try {
+    showToast('Starting secure payment checkout...', 'info');
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      showToast('Failed to load payment gateway. Please check your network connection.', 'error');
+      return;
+    }
+    
+    const orderData = await apiFetch(`${window.API}/api/subscriptions/razorpay/create-order`, {
+      method: 'POST',
+      body: JSON.stringify({ duration })
+    });
+    
+    if (!orderData.success) {
+      showToast('Failed to initialize transaction.', 'error');
+      return;
+    }
+    
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'Consistency Daily Premium',
+      description: duration === '1_month' ? 'Monthly Pass - 30 Days' : 'Annual Pass - 365 Days',
+      image: '/favicon.ico',
+      order_id: orderData.orderId,
+      handler: async function (response) {
+        showToast('Payment successful! Verifying...', 'info');
+        try {
+          const verifyData = await apiFetch(`${window.API}/api/subscriptions/razorpay/verify-payment`, {
+            method: 'POST',
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              duration
+            })
+          });
+          
+          if (verifyData.success) {
+            showToast('Premium unlocked successfully!', 'success');
+            await loadSubscriptionStatus();
+          } else {
+            showToast('Payment verification failed.', 'error');
+          }
+        } catch (err) {
+          showToast(err.message || 'Error verifying payment.', 'error');
+        }
+      },
+      prefill: {
+        name: localStorage.getItem('window.userName') || localStorage.getItem('userName') || '',
+        email: localStorage.getItem('userEmail') || ''
+      },
+      theme: {
+        color: '#a855f7'
+      }
+    };
+    
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function (response) {
+      showToast('Payment failed: ' + response.error.description, 'error');
+    });
+    rzp.open();
+    
+  } catch (err) {
+    console.error('purchasePremium error:', err);
+    showToast(err.message || 'Payment setup failed.', 'error');
+  }
+}
+
+async function redeemPromoCoupon() {
+  const input = document.getElementById('promo-coupon-input');
+  const code = input.value.trim();
+  if (!code) {
+    showToast('Please enter a coupon code.', 'warn');
+    return;
+  }
+  
+  try {
+    const res = await apiFetch(`${window.API}/api/subscriptions/apply-coupon`, {
+      method: 'POST',
+      body: JSON.stringify({ code })
+    });
+    
+    if (res.success) {
+      showToast(res.message, 'success');
+      input.value = '';
+      await loadSubscriptionStatus();
+    } else {
+      showToast(res.message || 'Failed to redeem coupon.', 'error');
+    }
+  } catch (err) {
+    showToast(err.message || 'Error redeeming coupon.', 'error');
+  }
+}
 
 console.log("[Module] profile.js loaded and Profile bound to window");

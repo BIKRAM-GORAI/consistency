@@ -15,6 +15,9 @@ let selectedMediaBlobs = []; // Array of { blob, type }
 let imageLimitRemaining = 20; 
 let audioLimitRemaining = 20; // recordings
 let audioFileLimitRemaining = 5; // manual uploads
+let imageLimitMax = 20;
+let audioLimitMax = 20;
+let audioFileLimitMax = 5;
 let lastMessageSentAt = 0; // For anti-spam cooldown
 
 // --- VOICE MESSAGE STATE ---
@@ -34,6 +37,11 @@ async function fetchMediaLimit() {
     imageLimitRemaining = res.imageRemaining;
     audioLimitRemaining = res.audioRemaining;
     audioFileLimitRemaining = (res.audioFileRemaining !== undefined) ? res.audioFileRemaining : 5;
+    
+    imageLimitMax = res.imageLimit || 20;
+    audioLimitMax = res.audioLimit || 20;
+    audioFileLimitMax = (res.audioFileLimit !== undefined) ? res.audioFileLimit : 5;
+    
     updateMediaLimitDisplay();
   } catch (err) {
     console.error('Failed to fetch media limit:', err);
@@ -44,9 +52,9 @@ function updateMediaLimitDisplay() {
   const el = document.getElementById('media-limit-text');
   if (!el) return;
   
-  const imgStr = imageLimitRemaining <= 0 ? '<span style="color:var(--red)">Images: 0</span>' : `Images: ${imageLimitRemaining}/h`;
-  const recStr = audioLimitRemaining <= 0 ? '<span style="color:var(--red)">Voice: 0</span>' : `Voice: ${audioLimitRemaining}/h`;
-  const fileStr = audioFileLimitRemaining <= 0 ? '<span style="color:var(--red)">Audio Files: 0</span>' : `Audio Files: ${audioFileLimitRemaining}/h`;
+  const imgStr = imageLimitRemaining <= 0 ? '<span style="color:var(--red)">Images: 0</span>' : `Images: ${imageLimitRemaining}/${imageLimitMax}`;
+  const recStr = audioLimitRemaining <= 0 ? '<span style="color:var(--red)">Voice: 0</span>' : `Voice: ${audioLimitRemaining}/${audioLimitMax}`;
+  const fileStr = audioFileLimitRemaining <= 0 ? '<span style="color:var(--red)">Audio Files: 0</span>' : `Audio Files: ${audioFileLimitRemaining}/${audioFileLimitMax}`;
   
   el.innerHTML = `${imgStr} • ${recStr} • ${fileStr}`;
 }
@@ -1007,7 +1015,6 @@ async function handleChatSubmit(e) {
         isFirstMedia = false;
         updateMediaLimitDisplay();
       }
-      clearMediaPreview();
     }
 
   } catch (err) {
@@ -1018,6 +1025,7 @@ async function handleChatSubmit(e) {
       fetchMediaLimit();
     }
   } finally {
+    clearMediaPreview(); // Always clear preview: success, partial, or error
     btn.disabled = false;
     btn.innerHTML = originalHtml;
     if (window.lucide) lucide.createIcons({ root: btn });
@@ -2974,5 +2982,13 @@ window.setupChatInfiniteScroll = setupChatInfiniteScroll;
 window.deleteFirestoreGroupData = deleteFirestoreGroupData;
 window.togglePlusMenu = togglePlusMenu;
 window.handleAudioSelect = handleAudioSelect;
+window.handleMediaSelect = handleMediaSelect;
+window.startAudioRecording = startAudioRecording;
+window.stopAudioRecording = stopAudioRecording;
+window.cancelAudioRecording = cancelAudioRecording;
+window.openBulkDeleteModal = openBulkDeleteModal;
+window.executeBulkDelete = executeBulkDelete;
+window.removeMediaItem = removeMediaItem;
+window.clearMediaPreview = clearMediaPreview;
 window.proactiveSync = proactiveSync;
 console.log("[Module] chat.js loaded and Chat functions bound to window");

@@ -152,6 +152,8 @@ async function verifyLeetCodeProfile() {
     document.getElementById('leetcode-connected').style.display = 'block';
     document.getElementById('leetcode-connected-username').textContent = data.leetcodeUsername;
     document.getElementById('leetcode-changes-remaining').textContent = data.remainingChanges;
+    const maxChanges = document.getElementById('leetcode-changes-max');
+    if (maxChanges) maxChanges.textContent = window.MAX_USERNAME_CHANGES;
 
     updateLeetCodeButtonsStatus(true);
     showToast('LeetCode profile verified successfully!', 'success');
@@ -633,8 +635,10 @@ function renderLeetCodeUI(user) {
       connSec.style.display = 'block';
       const connUser = document.getElementById('leetcode-connected-username');
       const remChanges = document.getElementById('leetcode-changes-remaining');
+      const maxChanges = document.getElementById('leetcode-changes-max');
       if (connUser) connUser.textContent = user.leetcodeUsername;
       if (remChanges) remChanges.textContent = window.MAX_USERNAME_CHANGES - (user.leetcodeUsernameChangeCount || 0);
+      if (maxChanges) maxChanges.textContent = window.MAX_USERNAME_CHANGES;
     }
 
     if (user.leetcodeProfilePicture && leetcodeProfilePic) {

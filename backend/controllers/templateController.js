@@ -26,14 +26,19 @@ exports.createTemplate = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Check limits for free tier
-    if (user.subscriptionTier !== 'premium') {
-      const templateCount = await Template.countDocuments({ userId });
-      if (templateCount >= 5) {
-        return res.status(403).json({
-          message: 'Free tier limit reached. You can only save up to 5 templates.',
-        });
-      }
+    // Check templates limit
+    let maxTemplates = 5;
+    const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+    if (isPremium) {
+      const additional = parseInt(process.env.PREMIUM_ADDITIONAL_TEMPLATE_LIMIT, 10);
+      maxTemplates += isNaN(additional) ? 10 : additional;
+    }
+
+    const templateCount = await Template.countDocuments({ userId });
+    if (templateCount >= maxTemplates) {
+      return res.status(403).json({
+        message: `${isPremium ? 'Premium' : 'Free'} tier limit reached. You can only save up to ${maxTemplates} templates.`,
+      });
     }
 
     const newTemplate = new Template({

@@ -21,7 +21,12 @@ async function apiFetch(url, options = {}) {
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(url, { ...options, headers, signal: controller.signal });
+    const res = await fetch(url, { 
+      cache: 'no-store', // Disable browser fetch cache explicitly to prevent stale dashboard/profile limits
+      ...options, 
+      headers, 
+      signal: controller.signal 
+    });
     clearTimeout(timeoutId);
     if (!res.ok) {
       if (res.status === 401) {

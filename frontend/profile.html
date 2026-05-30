@@ -316,6 +316,74 @@
         flex-direction: row;
       }
     }
+
+    /* ── Premium Styling System ── */
+    @keyframes premium-glow-pulse {
+      0%, 100% {
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.6), inset 0 0 5px rgba(251, 191, 36, 0.4), 6px 6px 0 var(--black);
+        border-color: #fbbf24;
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.9), inset 0 0 10px rgba(251, 191, 36, 0.6), 6px 6px 0 var(--black);
+        border-color: #f59e0b;
+      }
+    }
+
+    .premium-profile-ring {
+      border: 4px solid #fbbf24 !important;
+      animation: premium-glow-pulse 2s infinite ease-in-out !important;
+      position: relative !important;
+    }
+
+    .premium-profile-ring::after {
+      content: '👑';
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      font-size: 24px;
+      z-index: 5;
+      filter: drop-shadow(1px 2px 0px rgba(0,0,0,0.8));
+    }
+
+    .premium-profile-card {
+      background: linear-gradient(135deg, var(--bg-card), rgba(168, 85, 247, 0.08)) !important;
+      border: 3.5px solid #fbbf24 !important;
+      box-shadow: 8px 8px 0px var(--black) !important;
+    }
+
+    .premium-profile-name {
+      background: linear-gradient(45deg, #fbbf24, #f59e0b, #ec4899, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900 !important;
+      display: inline-block;
+    }
+
+    .premium-profile-banner {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(45deg, #fbbf24, #f59e0b);
+      color: var(--black) !important;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 11px;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border: 2.5px solid var(--black);
+      border-radius: 6px;
+      box-shadow: 3px 3px 0 var(--black);
+      margin: 12px auto 16px auto;
+      width: fit-content;
+      letter-spacing: 0.5px;
+      animation: pulse-grow-badge 2s infinite;
+    }
+
+    @keyframes pulse-grow-badge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
   </style>
 </head>
 <body>
@@ -323,7 +391,7 @@
   <div class="profile-layout" id="profile-layout" style="display:none;">
     <!-- SIDEBAR -->
     <aside class="profile-sidebar">
-      <div class="profile-card">
+      <div class="profile-card" id="prof-sidebar-card">
         <div class="profile-avatar-wrap" id="prof-avatar-container">
           <span class="profile-avatar-initial" id="prof-initial">?</span>
           <img id="prof-img" src="" alt="Profile" style="display:none;" />

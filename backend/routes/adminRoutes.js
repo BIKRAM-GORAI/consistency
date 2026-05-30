@@ -73,4 +73,9 @@ router.post('/badges', authenticateAdmin, adminController.createBadge);
 router.put('/badges/:id', authenticateAdmin, adminController.updateBadge);
 router.delete('/badges/:id', authenticateAdmin, adminController.deleteBadge);
 
+// Coupon Management
+router.post('/coupons', authenticateAdmin, adminController.generateCoupon);
+router.get('/coupons', authenticateAdmin, adminController.getCoupons);
+router.delete('/coupons/:id', authenticateAdmin, adminController.deleteCoupon);
+
 module.exports = router;

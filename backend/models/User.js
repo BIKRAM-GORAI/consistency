@@ -82,6 +82,26 @@ const UserSchema = new mongoose.Schema(
       enum: ['free', 'premium'],
       default: 'free',
     },
+    subscriptionExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    subscriptionId: {
+      type: String,
+      default: null,
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: null,
+    },
+    pendingSubscriptionId: {
+      type: String,
+      default: null,
+    },
+    pendingSubscriptionDuration: {
+      type: String,
+      default: null,
+    },
     // LeetCode Integration
     leetcodeUsername: {
       type: String,

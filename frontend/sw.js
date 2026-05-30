@@ -23,12 +23,13 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v60';
+const CACHE_NAME = 'consistency-cache-v61';
 const STATIC_ASSETS = [
   '/',
   'index.html',
   'landing.html',
   'script.js',
+  'subscription.html',
   'style.css',
   'manifest.json',
   'checklist.png',
@@ -110,7 +111,8 @@ self.addEventListener('fetch', (event) => {
                           url.pathname === '/auth.html' || 
                           url.pathname === '/script.js' || 
                           url.pathname === '/style.css' ||
-                          url.pathname.startsWith('/js/modules/');
+                          url.pathname.startsWith('/js/modules/') ||
+                          url.pathname === '/subscription.html';
 
   if (isCoreCodeAsset) {
     // Network-First for core application files

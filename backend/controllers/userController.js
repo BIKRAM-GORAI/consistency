@@ -36,10 +36,23 @@ async function searchUsers(req, res) {
       username: regex,
       isBlacklisted: { $ne: true }
     })
-    .select('username profilePicture currentStreak highestStreak')
+    .select('username profilePicture currentStreak highestStreak subscriptionTier subscriptionExpiresAt')
     .limit(10);
 
-    res.json(users);
+    const usersMapped = users.map(user => {
+      const isPremium = user.subscriptionTier === 'premium' && 
+        (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+      return {
+        _id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        currentStreak: user.currentStreak,
+        highestStreak: user.highestStreak,
+        isPremium
+      };
+    });
+
+    res.json(usersMapped);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -95,6 +108,9 @@ async function getPublicProfile(req, res) {
     }
 
     const groupCount = await Group.countDocuments({ members: user._id });
+    
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
 
     res.json({
       username: user.username,
@@ -111,7 +127,9 @@ async function getPublicProfile(req, res) {
       isPublicProfile: user.isPublicProfile !== false,
       showPrivateDetails: showPrivateDetails,
       productivityBio: user.productivityBio || '',
-      lastBioGeneratedAt: user.lastBioGeneratedAt || null
+      lastBioGeneratedAt: user.lastBioGeneratedAt || null,
+      subscriptionTier: user.subscriptionTier || 'free',
+      isPremium: isPremium
     });
 
   } catch (err) {
@@ -291,7 +309,7 @@ async function getLeaderboard(req, res) {
     };
 
     const usersRaw = await User.find(query)
-      .select('name username profilePicture currentStreak highestStreak lastActiveAt')
+      .select('name username profilePicture currentStreak highestStreak lastActiveAt subscriptionTier subscriptionExpiresAt')
       .sort({ [sortField]: -1, lastActiveAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -305,6 +323,21 @@ async function getLeaderboard(req, res) {
     if (skip + usersList.length > maxRankings) {
       usersList = usersList.slice(0, Math.max(0, maxRankings - skip));
     }
+
+    const usersMapped = usersList.map(user => {
+      const isPremium = user.subscriptionTier === 'premium' && 
+        (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+      return {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        currentStreak: user.currentStreak,
+        highestStreak: user.highestStreak,
+        lastActiveAt: user.lastActiveAt,
+        isPremium
+      };
+    });
 
     // 3. Calculate active user's rank and fresh streaks if authenticated and they are on the leaderboard
     let myRank = null;
@@ -348,7 +381,7 @@ async function getLeaderboard(req, res) {
     }
 
     res.json({
-      users: usersList,
+      users: usersMapped,
       total: cappedTotal,
       page,
       limit,

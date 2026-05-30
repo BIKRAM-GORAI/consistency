@@ -6,12 +6,15 @@ const WeeklySummary = require('../models/WeeklySummary');
 const Achievement = require('../models/Achievement');
 const AppLimit = require('../models/AppLimit');
 
-/**
- * Gets the daily limit configured in the environment variables, defaulting to 15.
- */
-const getAiDailyLimit = () => {
-  const limitVal = parseInt(process.env.AI_DAILY_LIMIT, 10);
-  return isNaN(limitVal) ? 15 : limitVal;
+const getAiDailyLimit = (user) => {
+  let limit = parseInt(process.env.AI_DAILY_LIMIT, 10);
+  if (isNaN(limit)) limit = 15;
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  if (isPremium) {
+    const additional = parseInt(process.env.PREMIUM_ADDITIONAL_AI_LIMIT, 10);
+    limit += isNaN(additional) ? 10 : additional;
+  }
+  return limit;
 };
 
 /**
@@ -35,7 +38,7 @@ const checkAiLimit = async (userId) => {
     await user.save();
   }
 
-  const limit = getAiDailyLimit();
+  const limit = getAiDailyLimit(user);
   const generationsLeft = Math.max(0, limit - user.aiGenerationCount);
   return { user, generationsLeft, limit };
 };
@@ -46,7 +49,7 @@ const checkAiLimit = async (userId) => {
 const incrementAiLimit = async (user) => {
   user.aiGenerationCount += 1;
   await user.save();
-  const limit = getAiDailyLimit();
+  const limit = getAiDailyLimit(user);
   return Math.max(0, limit - user.aiGenerationCount);
 };
 
@@ -124,55 +127,64 @@ exports.generateDailySummary = async (req, res) => {
 
     const completionRate = Math.round((completedTasks / totalTasks) * 100);
 
-    // Fetch distraction app limits and actual screen times
-    const appLimits = await AppLimit.findOne({ userId });
+    const hasScreenTime = day.screenTimeStats && typeof day.screenTimeStats === 'object' && 
+      (Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0);
+
     let distractionStatsStr = '';
-    if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
-      distractionStatsStr += `\nDistraction Limits Configuration (no matter enabled/disabled toggle status):\n`;
-      appLimits.apps.forEach(app => {
-        let actualMinutes = 0;
+    if (!hasScreenTime) {
+      distractionStatsStr = '\nScreen Time & Distraction App Usage Data: NOT YET SYNCED/NOT AVAILABLE (Do NOT mention, praise, or critique screen time or app usage/limits at all in your response. Ignore it completely!).\n';
+    } else {
+      // Fetch distraction app limits and actual screen times
+      const appLimits = await AppLimit.findOne({ userId });
+      if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
+        distractionStatsStr += `\nDistraction Limits Configuration (no matter enabled/disabled toggle status):\n`;
+        appLimits.apps.forEach(app => {
+          let actualMinutes = 0;
+          if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
+            if (Array.isArray(day.screenTimeStats)) {
+              const found = day.screenTimeStats.find(a => a.packageName === app.packageName);
+              if (found) actualMinutes = found.actualMinutes || 0;
+            } else {
+              actualMinutes = day.screenTimeStats[app.packageName] !== undefined ? day.screenTimeStats[app.packageName] : 0;
+            }
+          }
+          const exceeded = actualMinutes > app.limitMinutes;
+          distractionStatsStr += `- ${app.appName}: used ${actualMinutes} minutes (configured limit: ${app.limitMinutes} minutes) ${exceeded ? '[LIMIT EXCEEDED!]' : '[COMPLIANT/WITHIN LIMIT]'}\n`;
+        });
+
+        // Calculate total screen time foreground sum
+        let totalMinutes = 0;
         if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
           if (Array.isArray(day.screenTimeStats)) {
-            const found = day.screenTimeStats.find(a => a.packageName === app.packageName);
-            if (found) actualMinutes = found.actualMinutes || 0;
+            day.screenTimeStats.forEach(app => {
+              totalMinutes += app.actualMinutes || 0;
+            });
           } else {
-            actualMinutes = day.screenTimeStats[app.packageName] !== undefined ? day.screenTimeStats[app.packageName] : 0;
+            for (const pkg in day.screenTimeStats) {
+              totalMinutes += day.screenTimeStats[pkg] || 0;
+            }
           }
         }
-        const exceeded = actualMinutes > app.limitMinutes;
-        distractionStatsStr += `- ${app.appName}: used ${actualMinutes} minutes (configured limit: ${app.limitMinutes} minutes) ${exceeded ? '[LIMIT EXCEEDED!]' : '[COMPLIANT/WITHIN LIMIT]'}\n`;
-      });
-
-      // Calculate total screen time foreground sum
-      let totalMinutes = 0;
-      if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
-        if (Array.isArray(day.screenTimeStats)) {
-          day.screenTimeStats.forEach(app => {
-            totalMinutes += app.actualMinutes || 0;
-          });
-        } else {
-          for (const pkg in day.screenTimeStats) {
-            totalMinutes += day.screenTimeStats[pkg] || 0;
-          }
-        }
+        distractionStatsStr += `Total Mobile Screen Time Today: ${totalMinutes} minutes\n`;
+      } else {
+        distractionStatsStr += `\nNo distracting app limits configured for today.\n`;
       }
-      distractionStatsStr += `Total Mobile Screen Time Today: ${totalMinutes} minutes\n`;
-    } else {
-      distractionStatsStr += `\nNo distracting app limits configured for today.\n`;
     }
 
     // Formulate Groq/LLM prompts
     const systemPrompt = 
       "You are a highly analytical, realistic, and candid productivity coach. " +
       "Analyze the user's daily task completion data, achievements, and distraction screen time statistics for the date provided, and write a candid, honest, and highly concise daily summary. " +
-      "Your response MUST start with a productivity score line on the first line in the exact format: '🏆 Productivity Rating: X/5' (where X is a score between 1 and 5). " +
+      "Your response MUST start with a productivity score line on the first line in the exact format: '🏆 Productivity Rating: X/5' (where X is a score between 0 and 5). " +
       "Rate the day realistically: 5/5 means outstanding task completion rate, high achievements, and perfect distraction limit compliance (little or no distraction time). " +
       "Penalize the score heavily if task completion is low, if there are slacking behaviors, if total mobile screen time is excessive, or if any distraction app limits were exceeded. " +
+      "CRITICAL: If the user has completed 0 productive tasks, or only low-effort rubbish/meaningless/filler tasks (such as 'Streak Maintainer', 'tick tick babayyy', 'streak', 'maintain', 'tick', 'ok', 't', 'asdf', 'hahajana'), the score MUST be 0/5. Under no circumstances should a user get a score above 0 if no real work was completed. " +
       "Immediately following the productivity rating line, write exactly 3 to 4 short, punchy bullet points of maximum 1 to 2 sentences each analyzing the day. " +
       "Do NOT write in paragraph format. " +
       "Every single bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Do NOT bundle multiple bullet points together or write them in a continuous paragraph. " +
-      "The first 1 to 2 bullet points MUST showcase actual good accomplishments (completed productive tasks, high-quality focus hours). Do NOT count low-effort tasks like 'streak', 'maintain', 'tick', 'ok', 't' as achievements or good things; treat them strictly as empty filler tasks. " +
+      "The first 1 to 2 bullet points MUST showcase actual good accomplishments (completed productive tasks, high-quality focus hours). Do NOT count low-effort tasks like 'Streak Maintainer', 'tick tick babayyy', 'streak', 'maintain', 'tick', 'ok', 't', 'asdf', 'hahajana' as achievements or good things; treat them strictly as empty filler tasks. " +
       "The last 1 to 2 bullet points MUST showcase realistic, direct, and slightly brutal critique/slacking warnings. Call out uncompleted important tasks, cheat streak-maintaining box-ticking behavior, excessive screen time, or blown distraction limits as a clear negative. " +
+      "IMPORTANT: If the user's Screen Time & Distraction App Usage Data is 'NOT YET SYNCED/NOT AVAILABLE', do NOT mention, praise, or critique screen time or app usage/limits at all in your response. Ignore it completely! Do not congratulate them for using 0 minutes when stats are not available. " +
       "IMPORTANT: If there are no achievements logged for the day, DO NOT criticize or mention the lack of achievements in the critique/bad points. Treat achievements as purely optional bonuses: if logged, praise them; if missing, completely ignore them and skip any mention of achievements, focusing instead on other productive work completed or pending. " +
       "Maintain a premium, direct, and candid tone. Do NOT use introductory filler. Start directly with the '🏆 Productivity Rating: X/5' line.";
 
@@ -442,13 +454,29 @@ exports.generateWeeklySummary = async (req, res) => {
 
     const completionRate = Math.round((completedTasks / totalTasks) * 100);
 
+    let hasAnyScreenTime = false;
+    consolidatedDays.forEach(day => {
+      if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && 
+        (Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0)) {
+        hasAnyScreenTime = true;
+      }
+    });
+
     // Fetch distraction app limits and compile screen times across these 7 days (regardless of active toggle status)
     const appLimits = await AppLimit.findOne({ userId });
     let distractionStatsStr = '';
 
-    if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
+    if (!hasAnyScreenTime) {
+      distractionStatsStr = '\nScreen Time & Distraction App Usage Data: NOT YET SYNCED/NOT AVAILABLE (Do NOT mention, praise, or critique screen time or app usage/limits at all in your response. Ignore it completely!).\n';
+    } else if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
       distractionStatsStr += `\nDistraction Limits & Screen Time Compliance across the 7-day period (evaluated regardless of tracking toggle status):\n`;
       consolidatedDays.forEach(day => {
+        const dayHasStats = day.screenTimeStats && typeof day.screenTimeStats === 'object' && 
+          (Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0);
+        if (!dayHasStats) {
+          distractionStatsStr += `Date: ${day.date} | Screen Time & Distraction App Usage Data: NOT YET SYNCED/NOT AVAILABLE for this day.\n`;
+          return;
+        }
         let totalMinutes = 0;
         if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
           if (Array.isArray(day.screenTimeStats)) {
@@ -483,14 +511,16 @@ exports.generateWeeklySummary = async (req, res) => {
     const systemPrompt = 
       "You are an elite, modern productivity analyst. Your job is to analyze the user's completed and pending " +
       "tasks, achievements, and daily distraction screen time compliance across a 7-day period and write a highly concise, direct, and candid weekly wrap-up summary in a bulleted point format (exactly 3 to 4 short, punchy bullet points of maximum 1 to 2 sentences each). " +
-      "Your response MUST start with a productivity score line on the first line in the exact format: '📊 Productivity Rating: X/10' (where X is a score between 1 and 10). " +
+      "Your response MUST start with a productivity score line on the first line in the exact format: '📊 Productivity Rating: X/10' (where X is a score between 0 and 10). " +
       "Rate the week realistically: 10/10 means outstanding task completion rate across the week, high achievements, and perfect distraction limit compliance (little or no distraction time, zero limits exceeded). " +
       "Penalize the rating out of 10 heavily if there are slacking behaviors, low task completions, high screen times, or exceeded distraction limits on any days. " +
+      "CRITICAL: If the user has completed 0 productive tasks across the week, or only low-effort rubbish/meaningless/filler tasks (such as 'Streak Maintainer', 'tick tick babayyy', 'streak', 'maintain', 'tick', 'ok', 't', 'asdf', 'hahajana'), the score MUST be 0/10. Under no circumstances should a user get a score above 0 if no real work was completed. " +
       "Immediately following the productivity rating line, write exactly 3 to 4 short, punchy bullet points of maximum 1 to 2 sentences each analyzing the week. " +
       "Do NOT write in paragraph format. " +
       "Every single bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Do NOT bundle multiple bullet points together or write them in a continuous paragraph. " +
-      "The first 1 to 2 bullet points MUST showcase true accomplishments and highlight focus areas (completed high-impact categories, excellent consistency). Do NOT count empty, low-effort tasks (e.g. 'streak', 'maintain', 'tick', 'ok', 't') as positive consistency; ignore them. " +
+      "The first 1 to 2 bullet points MUST showcase true accomplishments and highlight focus areas (completed high-impact categories, excellent consistency). Do NOT count empty, low-effort tasks (e.g. 'Streak Maintainer', 'tick tick babayyy', 'streak', 'maintain', 'tick', 'ok', 't', 'asdf', 'hahajana') as positive consistency; ignore them. " +
       "The last 1 to 2 bullet points MUST showcase realistic and slightly brutal critique on slacking patterns, empty streak-maintaining behaviors (avoiding real, productive tasks while logging meaningless tasks just to keep a streak alive), excessive screen time, or blown distraction limits across the week. " +
+      "IMPORTANT: If the user's Screen Time & Distraction App Usage Data is 'NOT YET SYNCED/NOT AVAILABLE', do NOT mention, praise, or critique screen time or app usage/limits at all in your response. Ignore it completely! Do not congratulate them for using 0 minutes when stats are not available. " +
       "IMPORTANT: If there are no achievements or major milestones completed, DO NOT write a negative point about the lack of achievements. Simply ignore any mention of achievements and focus on analyzing other completed work or actionable insights for the upcoming week. " +
       "Do NOT use conversational prefaces or title headings. Start directly with the '📊 Productivity Rating: X/10' line.";
 
@@ -683,13 +713,29 @@ exports.generateMonthlySummary = async (req, res) => {
 
     const completionRate = Math.round((completedTasks / totalTasks) * 100);
 
+    let hasAnyScreenTime = false;
+    consolidatedDays.forEach(day => {
+      if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && 
+        (Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0)) {
+        hasAnyScreenTime = true;
+      }
+    });
+
     // Fetch distraction app limits and compile screen times across these 30 days (regardless of active toggle status)
     const appLimits = await AppLimit.findOne({ userId });
     let distractionStatsStr = '';
 
-    if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
+    if (!hasAnyScreenTime) {
+      distractionStatsStr = '\nScreen Time & Distraction App Usage Data: NOT YET SYNCED/NOT AVAILABLE (Do NOT mention, praise, or critique screen time or app usage/limits at all in your response. Ignore it completely!).\n';
+    } else if (appLimits && appLimits.apps && appLimits.apps.length > 0) {
       distractionStatsStr += `\nDistraction Limits & Screen Time Compliance across the 30-day period (evaluated regardless of tracking toggle status):\n`;
       consolidatedDays.forEach(day => {
+        const dayHasStats = day.screenTimeStats && typeof day.screenTimeStats === 'object' && 
+          (Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0);
+        if (!dayHasStats) {
+          distractionStatsStr += `Date: ${day.date} | Screen Time & Distraction App Usage Data: NOT YET SYNCED/NOT AVAILABLE for this day.\n`;
+          return;
+        }
         let totalMinutes = 0;
         if (day.screenTimeStats && typeof day.screenTimeStats === 'object') {
           if (Array.isArray(day.screenTimeStats)) {
@@ -724,16 +770,17 @@ exports.generateMonthlySummary = async (req, res) => {
     // Formulate a premium system prompt for detailed monthly summaries with exactly three sections
     const systemPrompt = 
       "You are an elite, modern productivity analyst and senior lifestyle coach. Your job is to analyze the user's completed/pending tasks, achievements, and daily distraction screen time compliance across a 30-day period and write a detailed, highly professional, and slightly brutal monthly review. " +
-      "Your response MUST start with a productivity score line on the very first line in the exact format: '📊 Productivity Rating: X/10' (where X is a score between 1 and 10). " +
+      "Your response MUST start with a productivity score line on the very first line in the exact format: '📊 Productivity Rating: X/10' (where X is a score between 0 and 10). " +
       "Rate the 30-day period realistically: 10/10 means outstanding task completion rate across the month, high achievements, and perfect distraction limit compliance (little or no distraction time, zero limits exceeded). " +
       "Penalize the rating out of 10 heavily if there are slacking behaviors, low task completions, high screen times, or exceeded distraction limits across the month. " +
+      "CRITICAL: If the user has completed 0 productive tasks across the month, or only low-effort rubbish/meaningless/filler tasks (such as 'Streak Maintainer', 'tick tick babayyy', 'streak', 'maintain', 'tick', 'ok', 't', 'asdf', 'hahajana'), the score MUST be 0/10. Under no circumstances should a user get a score above 0 if no real work was completed. " +
       "Immediately following the productivity rating line, you MUST structure your response into exactly three distinct sections separated by empty lines. Do NOT use markdown code blocks for the sections. Use exactly these section headers:\n\n" +
       "🏆 THE GOOD\n" +
       "Write 2 to 3 detailed bullet points celebrating wins, high-priority accomplishments, and highlights. Mention and praise any logged achievements beautifully. If no achievements are logged, ignore achievements entirely and focus on other positive task completions and categories (do NOT write negative critiques about a lack of achievements).\n\n" +
       "📈 AREAS FOR IMPROVEMENT / UP-THE-BAT\n" +
-      "Write 2 to 3 bullet points analyzing low-effort routine filler tasks (like 'streak', 'maintain', 'ok', 'tick') and warning the user about slacking habits, avoidance behaviors, or minor performance drops.\n\n" +
+      "Write 2 to 3 bullet points analyzing low-effort routine filler tasks (like 'Streak Maintainer', 'tick tick babayyy', 'streak', 'maintain', 'tick', 'ok', 't', 'asdf', 'hahajana') and warning the user about slacking habits, avoidance behaviors, or minor performance drops.\n\n" +
       "🚨 CRITICAL RED ALERTS\n" +
-      "Write 1 to 2 powerful, direct bullet points calling out critical regressions, incomplete high-impact tasks, excessive screen time, or blown distraction limits across the month.\n\n" +
+      "Write 1 to 2 powerful, direct bullet points calling out critical regressions, incomplete high-impact tasks, excessive screen time, or blown distraction limits across the month. If the screen time & distraction data is 'NOT YET SYNCED/NOT AVAILABLE' or not present, do NOT write any bullet points about screen time or app limits in this section or anywhere else in your review; ignore screen time/app limits completely.\n\n" +
       "Every bullet point MUST occupy its own separate line starting with a standard hyphen and a space (e.g. '- Your point here'). Maintain a premium, executive, and candid tone. Do NOT include introductory filler or conversational prefaces. Start directly with the '📊 Productivity Rating: X/10' line.";
 
     const userPrompt = 
@@ -1039,12 +1086,15 @@ exports.commitDailySummary = async (req, res) => {
   }
 };
 
-/**
- * Gets the daily photo upload limit configured in the environment variables, defaulting to 5.
- */
-const getAiPhotoLimit = () => {
-  const limitVal = parseInt(process.env.AI_PHOTO_LIMIT, 10);
-  return isNaN(limitVal) ? 5 : limitVal;
+const getAiPhotoLimit = (user) => {
+  let limit = parseInt(process.env.AI_PHOTO_LIMIT, 10);
+  if (isNaN(limit)) limit = 5;
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  if (isPremium) {
+    const additional = parseInt(process.env.PREMIUM_ADDITIONAL_PHOTO_LIMIT, 10);
+    limit += isNaN(additional) ? 10 : additional;
+  }
+  return limit;
 };
 
 /**
@@ -1068,7 +1118,7 @@ const checkAiPhotoLimit = async (userId) => {
     await user.save();
   }
 
-  const limit = getAiPhotoLimit();
+  const limit = getAiPhotoLimit(user);
   const generationsLeft = Math.max(0, limit - user.aiPhotoExtractionCount);
   return { user, generationsLeft, limit };
 };
@@ -1079,7 +1129,7 @@ const checkAiPhotoLimit = async (userId) => {
 const incrementAiPhotoLimit = async (user) => {
   user.aiPhotoExtractionCount += 1;
   await user.save();
-  const limit = getAiPhotoLimit();
+  const limit = getAiPhotoLimit(user);
   return Math.max(0, limit - user.aiPhotoExtractionCount);
 };
 

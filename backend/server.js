@@ -22,6 +22,7 @@ const syncRoutes        = require('./routes/syncRoutes');
 const fcmRoutes         = require('./routes/fcmRoutes');
 const aiRoutes          = require('./routes/aiRoutes');
 const appLimitRoutes    = require('./routes/appLimitRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -76,7 +77,7 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Disable browser features the app doesn't use, but allow microphone/camera for voice/video
-  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be" "https://meet.jit.si"), microphone=(self "https://jitsi.belnet.be" "https://meet.jit.si"), display-capture=(self "https://jitsi.belnet.be" "https://meet.jit.si"), geolocation=(), payment=()');
+  res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be" "https://meet.jit.si"), microphone=(self "https://jitsi.belnet.be" "https://meet.jit.si"), display-capture=(self "https://jitsi.belnet.be" "https://meet.jit.si"), geolocation=(), payment=(self "https://api.razorpay.com" "https://checkout.razorpay.com")');
 
   // Content Security Policy — robust for production
   const isDev = process.env.NODE_ENV === 'development';
@@ -111,7 +112,11 @@ app.use((req, res, next) => {
     "wss://meet.jit.si",
     "https://*.clarity.ms",
     "https://c.bing.com",
-    "https://*.onrender.com"
+    "https://*.onrender.com",
+    "https://api.razorpay.com",
+    "https://checkout.razorpay.com",
+    "https://lumberjack.razorpay.com",
+    "https://*.razorpay.com"
   ];
 
   if (process.env.AI_SERVICE_URL) {
@@ -133,14 +138,14 @@ app.use((req, res, next) => {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms",
-      "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://jitsi.belnet.be https://meet.jit.si",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms https://checkout.razorpay.com https://cdn.razorpay.com",
+      "script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms https://checkout.razorpay.com https://cdn.razorpay.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com  https://unpkg.com https://jitsi.belnet.be https://meet.jit.si",
       "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://jitsi.belnet.be https://meet.jit.si",
-      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms https://c.bing.com",
+      "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms https://c.bing.com https://checkout.razorpay.com https://*.razorpay.com https://cdn.razorpay.com",
       "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       `connect-src ${connectSrc.join(' ')}`,
-      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be https://meet.jit.si",
+      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
@@ -162,6 +167,15 @@ app.use((req, res, next) => {
 // ── API Routes ─────────────────────────────────────────────
 // Apply general rate limiting to all API routes
 app.use('/api', generalLimiter);
+
+// Disable caching globally for all API endpoints to prevent stale data display in browsers and apps
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
 
 // Public routes (no authentication required) with stricter rate limiting
 app.use('/api/auth/register', authLimiter, authRoutes);
@@ -185,6 +199,7 @@ app.use('/api/sync', syncRoutes);
 app.use('/api/fcm',          authenticateToken, dataModificationLimiter, fcmRoutes);
 app.use('/api/ai',           authenticateToken, dataModificationLimiter, aiRoutes);
 app.use('/api/applimits',    authenticateToken, dataModificationLimiter, appLimitRoutes);
+app.use('/api/subscriptions', authenticateToken, dataModificationLimiter, subscriptionRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

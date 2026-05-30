@@ -6080,25 +6080,23 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 /* Android Native Status Bar Notch Padding Overrides */
 body.native-android .navbar {
-  padding-top: 24px !important;
-  height: 82px !important; /* 58px mobile height + 24px status bar padding */
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  height: calc(58px + env(safe-area-inset-top, 0px)) !important; /* Mobile height + status bar padding */
 }
 
 body.native-android #modal-group-chat .modal-header {
-  padding-top: 28px !important; /* Pushes the chat header content below the camera notch/status bar */
-  min-height: 68px !important;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important; /* Pushes the chat header content below the camera notch/status bar */
+  min-height: calc(48px + env(safe-area-inset-top, 0px)) !important;
 }
 
 body.native-android #video-call-header {
-  padding-top: 28px !important; /* Pushes the video call header content below the camera notch/status bar */
-  min-height: 78px !important; /* 50px normal height + 28px padding */
+  padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important; /* Pushes the video call header content below the camera notch/status bar */
+  min-height: calc(58px + env(safe-area-inset-top, 0px)) !important;
 }
 
 body.native-android .push-notif-banner.show {
-  top: 90px !important; /* Clears the taller 82px native-android navbar */
+  top: calc(66px + env(safe-area-inset-top, 0px)) !important; /* Clears the taller native-android navbar */
 }
-
-
 /* ============================================================
    AI INSIGHTS & WEEKLY WRAP-UP CARDS — NEOBRUTALIST STYLING
    ============================================================ */
@@ -6137,4 +6135,100 @@ body.is-offline [data-requires-network="true"] {
   pointer-events: none !important;
   filter: grayscale(0.3) !important;
   user-select: none !important;
+}
+
+/* ============================================================
+   PREMIUM BRUTALIST DESIGN SYSTEM STYLES
+   ============================================================ */
+@keyframes premium-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.6), inset 0 0 5px rgba(251, 191, 36, 0.4), 4px 4px 0 var(--black);
+    border-color: #fbbf24;
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.9), inset 0 0 10px rgba(251, 191, 36, 0.6), 4px 4px 0 var(--black);
+    border-color: #f59e0b;
+  }
+}
+
+.premium-avatar-ring {
+  border: 3.5px solid #fbbf24 !important;
+  animation: premium-glow-pulse 2s infinite ease-in-out !important;
+  position: relative !important;
+}
+
+.premium-avatar-ring::after {
+  content: '👑';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 16px;
+  z-index: 5;
+  filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.8));
+}
+
+@keyframes premium-nav-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(251, 191, 36, 0.7);
+    border-color: #fbbf24;
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.9);
+    border-color: #f59e0b;
+  }
+}
+
+.premium-nav-ring {
+  border: 2px solid #fbbf24 !important;
+  animation: premium-nav-pulse 2s infinite ease-in-out !important;
+  position: relative !important;
+}
+
+.premium-nav-ring::after {
+  content: '👑';
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 10px;
+  z-index: 5;
+  filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.8));
+}
+
+.premium-profile-card {
+  background: linear-gradient(135deg, var(--bg-card), rgba(168, 85, 247, 0.08)) !important;
+  border: 3.5px solid #fbbf24 !important;
+  box-shadow: 8px 8px 0px var(--black) !important;
+}
+
+.premium-profile-name {
+  background: linear-gradient(45deg, #fbbf24, #f59e0b, #ec4899, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900 !important;
+}
+
+.premium-profile-banner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b);
+  color: var(--black) !important;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 2.5px solid var(--black);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--black);
+  margin: 12px auto 16px auto;
+  width: fit-content;
+  letter-spacing: 0.5px;
+  animation: pulse-grow-badge 2s infinite;
+}
+
+@keyframes pulse-grow-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }

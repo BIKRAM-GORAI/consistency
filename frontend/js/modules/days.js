@@ -1654,11 +1654,6 @@ async function evaluateDaysDistractions() {
     console.error('Error fetching app limits for cards:', e);
   }
 
-  if (!limits || !limits.enabled || !limits.apps || limits.apps.length === 0) {
-    document.querySelectorAll('.app-distraction-block').forEach(el => el.remove());
-    return;
-  }
-
   // Determine if we can query native stats (must be native Android and permission must be granted)
   const isNative = !!(window.isAndroidNative && window.Capacitor && window.Capacitor.Plugins.UsageStatsPlugin);
   let permissionGranted = false;
@@ -1693,46 +1688,76 @@ async function evaluateDaysDistractions() {
     const day = window.allDays.find(d => (d.date || '').split('T')[0] === cardDate);
     if (!day) return;
 
-    const cardTime = new Date(cardDate).getTime();
-    const todayTime = new Date(today).getTime();
-    const diffDays = Math.round((todayTime - cardTime) / (24 * 60 * 60 * 1000));
-
     let top5 = [];
     let totalMinutes = 0;
     let showStats = false;
     let rawStats = null;
 
+    // Retrieve last 7 available Day cards (excluding today's card)
+    const sortedPastDays = [...window.allDays]
+      .filter(d => d.date !== today)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const last7Days = sortedPastDays.slice(0, 7);
+    const isOneOfLast7 = last7Days.some(d => d.date === day.date);
+
     if (cardDate === today) {
       // Exclude today's card from showing screen time stats (only display from yesterday onwards)
       showStats = false;
-    } else if (diffDays >= 1 && diffDays <= 7) {
-      // Last 7 days: display pre-saved stats if they exist to avoid redundant DB/network hits
-      if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && !Array.isArray(day.screenTimeStats) && Object.keys(day.screenTimeStats).length > 0) {
-        rawStats = day.screenTimeStats;
-        showStats = true;
-      } else if (isNative && permissionGranted && usageStats) {
-        // Otherwise, query dynamically for the first time and persist/sync
-        rawStats = usageStats[cardDate] || {};
-        const currentSavedStr = JSON.stringify(day.screenTimeStats || {});
-        const newStatsStr = JSON.stringify(rawStats);
-        if (Object.keys(rawStats).length > 0 && currentSavedStr !== newStatsStr) {
-          day.screenTimeStats = rawStats;
-          window.localDb.days.put(day).catch(err => console.error("Error saving raw stats:", err));
-          window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: rawStats });
+    } else if (isOneOfLast7) {
+      // One of the last 7 available cards: display pre-saved stats or query dynamically (if limits are enabled)
+      if (limits && limits.enabled && limits.apps && limits.apps.length > 0) {
+        if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && !Array.isArray(day.screenTimeStats) && Object.keys(day.screenTimeStats).length > 0) {
+          rawStats = day.screenTimeStats;
+          showStats = true;
+        } else if (isNative && permissionGranted && usageStats) {
+          // Otherwise, query dynamically for the first time and persist/sync
+          rawStats = usageStats[cardDate] || {};
+          const currentSavedStr = JSON.stringify(day.screenTimeStats || {});
+          const newStatsStr = JSON.stringify(rawStats);
+          if (Object.keys(rawStats).length > 0 && currentSavedStr !== newStatsStr) {
+            day.screenTimeStats = rawStats;
+            window.localDb.days.put(day).catch(err => console.error("Error saving raw stats:", err));
+            window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: rawStats });
+          }
+          showStats = true;
         }
-        showStats = true;
+      } else {
+        showStats = false;
       }
-    } else if (diffDays >= 8) {
-      // 8th day and older: display frozen stats if they exist
+    } else {
+      // 8th card and older: display frozen stats permanently from IndexedDB if they exist
       if (day.screenTimeStats) {
-        showStats = true;
         if (Array.isArray(day.screenTimeStats)) {
           top5 = day.screenTimeStats;
           top5.forEach(app => {
             totalMinutes += app.actualMinutes || 0;
           });
-        } else if (typeof day.screenTimeStats === 'object') {
-          rawStats = day.screenTimeStats;
+          showStats = true;
+        } else if (typeof day.screenTimeStats === 'object' && Object.keys(day.screenTimeStats).length > 0) {
+          // Convert raw stats object to a frozen snapshot array using limits app configuration
+          const appLimitsApps = limits && limits.apps ? limits.apps : [];
+          const appStats = appLimitsApps.map(app => {
+            const actualMinutes = day.screenTimeStats[app.packageName] !== undefined ? day.screenTimeStats[app.packageName] : 0;
+            return {
+              packageName: app.packageName,
+              appName: app.appName,
+              limitMinutes: app.limitMinutes,
+              iconBase64: app.iconBase64,
+              actualMinutes,
+              completed: actualMinutes <= app.limitMinutes
+            };
+          });
+
+          // Save the frozen array back to IndexedDB and sync to MongoDB
+          day.screenTimeStats = appStats;
+          window.localDb.days.put(day).catch(err => console.error("Error freezing old day stats:", err));
+          window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: appStats });
+
+          top5 = appStats;
+          top5.forEach(app => {
+            totalMinutes += app.actualMinutes || 0;
+          });
+          showStats = true;
         }
       }
     }
@@ -1910,142 +1935,199 @@ async function triggerTaskImageScan() {
     const file = event.target.files[0];
     if (!file) return;
 
-    const scanBtn = document.getElementById('scan-list-btn');
-    if (!scanBtn) return;
-
-    // Lock the modal so the user cannot close it during the scan
-    window.isScanInProgress = true;
-    const lockBanner = document.getElementById('scan-lock-banner');
-    if (lockBanner) lockBanner.style.display = 'flex';
-
-    // Disable the modal's X close button visually
-    const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
-    if (modalCloseBtn) {
-      modalCloseBtn.disabled = true;
-      modalCloseBtn.style.opacity = '0.35';
-      modalCloseBtn.style.cursor = 'not-allowed';
-      modalCloseBtn.title = 'Cannot close while scan is in progress';
+    // Check size limit of 10MB in frontend
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Photo is too large (exceeds 10MB limit). Please select a compressed image.', 'error');
+      event.target.value = '';
+      return;
     }
 
-    const originalHTML = scanBtn.innerHTML;
-    scanBtn.disabled = true;
-    scanBtn.innerHTML = `
-      <span style="display:flex;align-items:center;gap:8px;">
-        <span class="spinner-ring" style="width:13px;height:13px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
-        <span style="font-weight:800;">Scanning image...</span>
-      </span>
-    `;
-    scanBtn.style.flexDirection = 'column';
-    scanBtn.style.gap = '4px';
+    const scanBtn = document.getElementById('scan-list-btn');
+    const previewContainer = document.getElementById('scan-preview-container');
+    const imgPreview = document.getElementById('scan-img-preview');
+    const sizeText = document.getElementById('scan-file-size');
 
-    try {
-      // Step 1: Request token and AI service URL from Vercel backend
-      const authRes = await window.apiFetch(`${window.API}/api/ai/authorize-task-extraction`, {
-        method: 'POST'
-      });
-
-      if (!authRes || !authRes.generationToken) {
-        throw new Error('Failed to obtain scan authorization from server.');
+    if (scanBtn && previewContainer && imgPreview) {
+      // Calculate file size string
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      const sizeKB = (file.size / 1024).toFixed(0);
+      if (sizeText) {
+        sizeText.textContent = file.size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
       }
 
-      if (authRes && typeof authRes.generationsLeft !== 'undefined') {
-        window.photoGenerationsLeft = authRes.generationsLeft;
+      // Read image as Data URL and show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imgPreview.src = e.target.result;
+        scanBtn.style.display = 'none'; // Hide main upload button
+        previewContainer.style.display = 'block'; // Show preview area
+      };
+      reader.readAsDataURL(file);
+
+      // Setup Cancel Button
+      const cancelBtn = document.getElementById('scan-cancel-btn');
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          previewContainer.style.display = 'none';
+          imgPreview.src = '';
+          scanBtn.style.display = 'flex';
+          event.target.value = '';
+        };
       }
 
-      const { generationToken, aiServiceUrl } = authRes;
-
-      // Step 2: Upload photo directly to Render AI service
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const aiResponse = await fetch(`${aiServiceUrl}/api/ai/extract-tasks`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${generationToken}`
-        },
-        body: formData
-      });
-
-      if (!aiResponse.ok) {
-        const errorBody = await aiResponse.json().catch(() => ({}));
-        const errorMsg = errorBody.details || errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`;
-        throw new Error(errorMsg);
+      // Setup Confirm & Scan Button
+      const confirmBtn = document.getElementById('scan-confirm-btn');
+      if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+          const originalHTML = scanBtn.innerHTML;
+          // Hide preview and restore scanBtn to show loading spinner
+          previewContainer.style.display = 'none';
+          scanBtn.style.display = 'flex';
+          
+          await startActualScan(file, scanBtn, originalHTML, event);
+        };
       }
-
-      const extractedData = await aiResponse.json();
-
-      if (!extractedData || !extractedData.categories || !Array.isArray(extractedData.categories)) {
-        throw new Error('Malformed categories data returned from AI service.');
-      }
-
-      // Step 3: Populate modal UI
-      const builder = document.getElementById('categories-builder');
-      if (builder) {
-        builder.innerHTML = '';
-        window.categoryCount = 0;
-
-        extractedData.categories.forEach(cat => {
-          const idx = window.categoryCount++;
-          const item = document.createElement('div');
-          item.className = 'category-builder-item';
-          item.id = `cat-build-${idx}`;
-          item.innerHTML = `
-            <div class="cat-top-row">
-              <input type="text" class="form-control" placeholder="Category name (e.g. Work, Fitness...)" id="cat-name-${idx}" value="${window.escHtml ? window.escHtml(cat.name) : cat.name}" />
-              <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
-            </div>
-            <div class="tasks-builder" id="tasks-build-${idx}"></div>
-            <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
-          `;
-          builder.appendChild(item);
-          if (window.lucide) lucide.createIcons({ root: item });
-
-          const tasksBuilder = document.getElementById(`tasks-build-${idx}`);
-          if (cat.tasks && cat.tasks.length > 0) {
-            cat.tasks.forEach(taskTitle => {
-              const row = document.createElement('div');
-              row.className = 'task-input-row';
-              row.innerHTML = `
-                <input type="text" class="form-control" placeholder="Task title..." value="${window.escHtml ? window.escHtml(taskTitle) : taskTitle}" />
-                <button class="btn-remove" onclick="this.parentElement.remove(); if (window.validateAddDayForm) window.validateAddDayForm();" title="Remove"><i data-lucide="trash-2"></i></button>
-              `;
-              tasksBuilder.appendChild(row);
-              if (window.lucide) lucide.createIcons({ root: row });
-            });
-          } else {
-            addTaskField(idx);
-          }
-        });
-
-        if (typeof validateAddDayForm === 'function') {
-          validateAddDayForm();
-        }
-        showToast('List scanned and populated successfully!', 'success');
-      }
-    } catch (err) {
-      console.error('Failed to scan tasks image:', err);
-      showToast(err.message || 'Failed to scan image.', 'error');
-    } finally {
-      // Unlock the modal
-      window.isScanInProgress = false;
-      const lockBanner = document.getElementById('scan-lock-banner');
-      if (lockBanner) lockBanner.style.display = 'none';
-
-      // Re-enable the X close button
-      const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
-      if (modalCloseBtn) {
-        modalCloseBtn.disabled = false;
-        modalCloseBtn.style.opacity = '';
-        modalCloseBtn.style.cursor = '';
-        modalCloseBtn.title = '';
-      }
-
-      scanBtn.disabled = false;
-      updateScanButtonText();
     }
   };
 
   fileInput.click();
+}
+
+async function startActualScan(file, scanBtn, originalHTML, event) {
+  // Lock the modal so the user cannot close it during the scan
+  window.isScanInProgress = true;
+  const lockBanner = document.getElementById('scan-lock-banner');
+  if (lockBanner) lockBanner.style.display = 'flex';
+
+  // Disable the modal's X close button visually
+  const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
+  if (modalCloseBtn) {
+    modalCloseBtn.disabled = true;
+    modalCloseBtn.style.opacity = '0.35';
+    modalCloseBtn.style.cursor = 'not-allowed';
+    modalCloseBtn.title = 'Cannot close while scan is in progress';
+  }
+
+  scanBtn.disabled = true;
+  scanBtn.innerHTML = `
+    <span style="display:flex;align-items:center;gap:8px;">
+      <span class="spinner-ring" style="width:13px;height:13px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
+      <span style="font-weight:800;">Scanning image...</span>
+    </span>
+  `;
+  scanBtn.style.flexDirection = 'column';
+  scanBtn.style.gap = '4px';
+
+  try {
+    // Step 1: Request token and AI service URL from Vercel backend
+    const authRes = await window.apiFetch(`${window.API}/api/ai/authorize-task-extraction`, {
+      method: 'POST'
+    });
+
+    if (!authRes || !authRes.generationToken) {
+      throw new Error('Failed to obtain scan authorization from server.');
+    }
+
+    if (authRes && typeof authRes.generationsLeft !== 'undefined') {
+      window.photoGenerationsLeft = authRes.generationsLeft;
+    }
+
+    const { generationToken, aiServiceUrl } = authRes;
+
+    // Step 2: Upload photo directly to Render AI service
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const aiResponse = await fetch(`${aiServiceUrl}/api/ai/extract-tasks`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${generationToken}`
+      },
+      body: formData
+    });
+
+    if (!aiResponse.ok) {
+      const errorBody = await aiResponse.json().catch(() => ({}));
+      const errorMsg = errorBody.details || errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`;
+      throw new Error(errorMsg);
+    }
+
+    const extractedData = await aiResponse.json();
+
+    // Verify extractedData is not empty/null and has actual task items
+    if (!extractedData || !extractedData.categories || !Array.isArray(extractedData.categories) || extractedData.categories.length === 0 || extractedData.categories.every(c => !c.tasks || c.tasks.length === 0)) {
+      throw new Error('No readable text or task lists were detected in this photo. Please ensure the image is clear and contains readable text.');
+    }
+
+    // Step 3: Populate modal UI
+    const builder = document.getElementById('categories-builder');
+    if (builder) {
+      builder.innerHTML = '';
+      window.categoryCount = 0;
+
+      extractedData.categories.forEach(cat => {
+        const idx = window.categoryCount++;
+        const item = document.createElement('div');
+        item.className = 'category-builder-item';
+        item.id = `cat-build-${idx}`;
+        item.innerHTML = `
+          <div class="cat-top-row">
+            <input type="text" class="form-control" placeholder="Category name (e.g. Work, Fitness...)" id="cat-name-${idx}" value="${window.escHtml ? window.escHtml(cat.name) : cat.name}" />
+            <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
+          </div>
+          <div class="tasks-builder" id="tasks-build-${idx}"></div>
+          <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
+        `;
+        builder.appendChild(item);
+        if (window.lucide) lucide.createIcons({ root: item });
+
+        const tasksBuilder = document.getElementById(`tasks-build-${idx}`);
+        if (cat.tasks && cat.tasks.length > 0) {
+          cat.tasks.forEach(taskTitle => {
+            const row = document.createElement('div');
+            row.className = 'task-input-row';
+            row.innerHTML = `
+              <input type="text" class="form-control" placeholder="Task title..." value="${window.escHtml ? window.escHtml(taskTitle) : taskTitle}" />
+              <button class="btn-remove" onclick="this.parentElement.remove(); if (window.validateAddDayForm) window.validateAddDayForm();" title="Remove"><i data-lucide="trash-2"></i></button>
+            `;
+            tasksBuilder.appendChild(row);
+            if (window.lucide) lucide.createIcons({ root: row });
+          });
+        } else {
+          addTaskField(idx);
+        }
+      });
+
+      if (typeof validateAddDayForm === 'function') {
+        validateAddDayForm();
+      }
+      showToast('List scanned and populated successfully!', 'success');
+    }
+  } catch (err) {
+    console.error('Failed to scan tasks image:', err);
+    showToast(err.message || 'Failed to scan image.', 'error');
+  } finally {
+    // Clear file selection
+    if (event && event.target) event.target.value = '';
+
+    // Unlock the modal
+    window.isScanInProgress = false;
+    const lockBanner = document.getElementById('scan-lock-banner');
+    if (lockBanner) lockBanner.style.display = 'none';
+
+    // Re-enable the X close button
+    const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
+    if (modalCloseBtn) {
+      modalCloseBtn.disabled = false;
+      modalCloseBtn.style.opacity = '';
+      modalCloseBtn.style.cursor = '';
+      modalCloseBtn.title = '';
+    }
+
+    scanBtn.disabled = false;
+    scanBtn.innerHTML = originalHTML;
+    updateScanButtonText();
+  }
 }
 
 function updateScanButtonText() {

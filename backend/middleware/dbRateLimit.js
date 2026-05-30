@@ -24,9 +24,21 @@ const dbMediaRateLimiter = async (req, res, next) => {
     }
 
     // Get limits from ENV (Defaults if not set)
-    const MAX_IMAGE_LIMIT = parseInt(process.env.CHAT_IMAGE_LIMIT) || 20;
-    const MAX_AUDIO_LIMIT = parseInt(process.env.CHAT_AUDIO_LIMIT) || 20; // For recordings
-    const MAX_AUDIO_FILE_LIMIT = parseInt(process.env.CHAT_AUDIO_FILE_LIMIT) || 5; // For manual uploads
+    let MAX_IMAGE_LIMIT = parseInt(process.env.CHAT_IMAGE_LIMIT) || 20;
+    let MAX_AUDIO_LIMIT = parseInt(process.env.CHAT_AUDIO_LIMIT) || 20; // For recordings
+    let MAX_AUDIO_FILE_LIMIT = parseInt(process.env.CHAT_AUDIO_FILE_LIMIT) || 5; // For manual uploads
+
+    const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+    if (isPremium) {
+      const extraImage = parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_IMAGE_LIMIT, 10);
+      MAX_IMAGE_LIMIT += isNaN(extraImage) ? 10 : extraImage;
+
+      const extraAudio = parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_AUDIO_LIMIT, 10);
+      MAX_AUDIO_LIMIT += isNaN(extraAudio) ? 10 : extraAudio;
+
+      const extraAudioFile = parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_AUDIO_FILE_LIMIT, 10);
+      MAX_AUDIO_FILE_LIMIT += isNaN(extraAudioFile) ? 5 : extraAudioFile;
+    }
 
     // Detect media type and source from headers
     const mediaType = req.headers['x-media-type'] || 'image';

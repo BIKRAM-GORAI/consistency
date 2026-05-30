@@ -466,6 +466,7 @@
         <button class="nav-link" id="nav-users" onclick="showSection('users')">Users</button>
         <button class="nav-link" id="nav-groups" onclick="showSection('groups')">Groups</button>
         <button class="nav-link" id="nav-badges" onclick="showSection('badges')">Badges</button>
+        <button class="nav-link" id="nav-coupons" onclick="showSection('coupons')">Promo Coupons</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -541,6 +542,37 @@
       </div>
       <div id="badges-grid" class="review-grid">
         <!-- Loaded via JS -->
+      </div>
+    </div>
+
+    <!-- Coupons Section -->
+    <div id="section-coupons" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <h2>Promo Coupons Management</h2>
+        <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+          <select id="coupon-duration-select" class="btn-control" style="width: 160px; height: 42px; background: white; border: var(--border);">
+            <option value="1_month">1 Month Premium</option>
+            <option value="1_year">1 Year Premium</option>
+          </select>
+          <button class="btn-control" style="background: var(--pink); color: var(--black);" onclick="generateCoupon()"><i data-lucide="ticket"></i> Generate Coupon</button>
+        </div>
+      </div>
+      <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+          <thead style="background: #f0f0f0; border-bottom: var(--border);">
+            <tr>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Promo Code</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Duration</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Status</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Redeemed By</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Redeemed At</th>
+              <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="coupons-table-body">
+            <!-- Loaded via JS -->
+          </tbody>
+        </table>
       </div>
     </div>
 

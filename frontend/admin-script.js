@@ -62,6 +62,7 @@ function showSection(section) {
   if (section === 'users') loadUsers();
   if (section === 'groups') loadGroups();
   if (section === 'badges') loadBadges();
+  if (section === 'coupons') loadCoupons();
 }
 
 /**
@@ -1436,6 +1437,119 @@ async function deleteBadge(id) {
     }
   } catch (err) {
     console.error('Delete error:', err);
+  }
+}
+
+async function loadCoupons() {
+  const tbody = document.getElementById('coupons-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:16px; text-align:center; font-weight:800;">Loading coupons...</td></tr>';
+
+  try {
+    const res = await fetch(`${API}/api/admin/coupons`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      logout();
+      return;
+    }
+
+    const coupons = await res.json();
+    tbody.innerHTML = '';
+
+    if (!coupons || coupons.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:16px; text-align:center; font-weight:800; color:#666;">No coupons generated yet.</td></tr>';
+      return;
+    }
+
+    coupons.forEach((c) => {
+      const redeemedBy = c.isUsed && c.usedBy 
+        ? `<div style="font-weight:800;">${c.usedBy.name}</div><div style="font-size:11px; color:#666;">@${c.usedBy.username || ''}</div>`
+        : '<span style="color:#888;">—</span>';
+      
+      const redeemedAt = c.isUsed && c.usedAt 
+        ? new Date(c.usedAt).toLocaleString()
+        : '<span style="color:#888;">—</span>';
+
+      const statusHtml = c.isUsed 
+        ? '<span class="badge" style="background:#ef4444; color:white;">REDEEMED</span>'
+        : '<span class="badge" style="background:#22c55e; color:white;">UNUSED</span>';
+
+      const durationLabel = c.duration === '1_month' ? '1 Month Premium' : '1 Year Premium';
+
+      const row = document.createElement('tr');
+      row.style.borderBottom = '1px solid #eee';
+      row.innerHTML = `
+        <td style="padding:12px; font-weight:900; font-family:monospace; font-size:14px; letter-spacing:0.5px;">
+          ${c.code}
+          <button onclick="navigator.clipboard.writeText('${c.code}'); alert('Coupon copied to clipboard!');" style="margin-left:8px; padding:2px 6px; font-size:10px; font-weight:800; background:#eee; border:1px solid #000; cursor:pointer; text-transform:uppercase;">Copy</button>
+        </td>
+        <td style="padding:12px; font-weight:800; font-size:13px;">${durationLabel}</td>
+        <td style="padding:12px; text-align:center;">${statusHtml}</td>
+        <td style="padding:12px; font-size:13px;">${redeemedBy}</td>
+        <td style="padding:12px; font-size:13px; color:#555;">${redeemedAt}</td>
+        <td style="padding:12px; text-align:right;">
+          <button class="btn-action btn-delete" style="flex:none; padding:6px 12px; border:2px solid #000; box-shadow:2px 2px 0 #000;" onclick="deleteCoupon('${c._id}')">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    if (window.lucide) {
+      lucide.createIcons({ root: tbody });
+    }
+  } catch (err) {
+    console.error('Error loading coupons:', err);
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:16px; text-align:center; font-weight:800; color:red;">Failed to load coupons.</td></tr>';
+  }
+}
+
+async function generateCoupon() {
+  const durationSelect = document.getElementById('coupon-duration-select');
+  if (!durationSelect) return;
+  const duration = durationSelect.value;
+
+  try {
+    const res = await fetch(`${API}/api/admin/coupons`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ duration })
+    });
+
+    if (res.ok) {
+      const coupon = await res.json();
+      alert(`Success! Generated coupon: ${coupon.code}`);
+      loadCoupons();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to generate coupon.');
+    }
+  } catch (err) {
+    console.error('Error generating coupon:', err);
+    alert('Failed to generate coupon due to network error.');
+  }
+}
+
+async function deleteCoupon(id) {
+  if (!confirm('Are you sure you want to delete/revoke this coupon?')) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/coupons/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      loadCoupons();
+    } else {
+      alert('Failed to delete coupon.');
+    }
+  } catch (err) {
+    console.error('Error deleting coupon:', err);
   }
 }
 

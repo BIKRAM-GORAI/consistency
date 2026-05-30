@@ -5,7 +5,17 @@ const axios = require('axios');
 // Configuration
 const LEETCODE_API_BASE_URL = process.env.LEETCODE_API_BASE_URL || 'https://alfa-leetcode-api.onrender.com';
 const VERIFICATION_CODE_EXPIRY_HOURS = parseInt(process.env.VERIFICATION_CODE_EXPIRY_HOURS) || 1;
-const MAX_USERNAME_CHANGES = parseInt(process.env.MAX_USERNAME_CHANGES) || 3;
+
+const getMaxUsernameChanges = (user) => {
+  let baseLimit = parseInt(process.env.MAX_USERNAME_CHANGES, 10);
+  if (isNaN(baseLimit)) baseLimit = 3;
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  if (isPremium) {
+    const additional = parseInt(process.env.PREMIUM_ADDITIONAL_LEETCODE_LIMIT, 10);
+    baseLimit += isNaN(additional) ? 3 : additional;
+  }
+  return baseLimit;
+};
 
 /**
  * Generate verification code for user
@@ -26,9 +36,10 @@ const generateVerificationCode = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.leetcodeUsernameChangeCount >= MAX_USERNAME_CHANGES) {
+    const maxChanges = getMaxUsernameChanges(user);
+    if (user.leetcodeUsernameChangeCount >= maxChanges) {
       return res.status(400).json({
-        message: `You have reached the maximum limit of ${MAX_USERNAME_CHANGES} username changes.`,
+        message: `You have reached the maximum limit of ${maxChanges} username changes.`,
         remainingChanges: 0
       });
     }
@@ -66,7 +77,7 @@ const generateVerificationCode = async (req, res) => {
       verificationCode: code,
       expiry: expiry.toISOString(),
       message: 'Add this code to your LeetCode profile bio',
-      remainingChanges: MAX_USERNAME_CHANGES - user.leetcodeUsernameChangeCount
+      remainingChanges: getMaxUsernameChanges(user) - user.leetcodeUsernameChangeCount
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -176,7 +187,7 @@ const verifyLeetCodeProfile = async (req, res) => {
         leetcodeUsername: user.leetcodeUsername,
         profilePicture: user.leetcodeProfilePicture,
         message: 'Profile verified successfully',
-        remainingChanges: MAX_USERNAME_CHANGES - user.leetcodeUsernameChangeCount
+        remainingChanges: getMaxUsernameChanges(user) - user.leetcodeUsernameChangeCount
       });
     } catch (apiError) {
       console.error('LeetCode API error:', apiError);

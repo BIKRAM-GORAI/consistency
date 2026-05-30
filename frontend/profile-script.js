@@ -136,7 +136,8 @@ async function loadOwnProfileOffline() {
     achievements: localAch,
     claimedBadges: localBadges,
     contributionData,
-    showPrivateDetails: true
+    showPrivateDetails: true,
+    isPremium: localStorage.getItem('isPremium') === 'true' || profile.isPremium === true
   };
 }
 
@@ -260,8 +261,39 @@ function renderProfile(data) {
   totalDays = data.totalDays;
 
   // Sidebar
-  document.getElementById('prof-name').textContent = data.name;
-  document.getElementById('prof-username').textContent = `@${data.username}`;
+  const nameEl = document.getElementById('prof-name');
+  if (nameEl) nameEl.textContent = data.name;
+  
+  const usernameEl = document.getElementById('prof-username');
+  if (usernameEl) usernameEl.textContent = `@${data.username}`;
+
+  // Premium Custom Styles dynamically toggled
+  const profCard = document.getElementById('prof-sidebar-card');
+  const profContainer = document.getElementById('prof-avatar-container');
+  
+  let premiumBanner = document.getElementById('prof-premium-banner');
+  if (!premiumBanner) {
+    premiumBanner = document.createElement('div');
+    premiumBanner.id = 'prof-premium-banner';
+    premiumBanner.className = 'premium-profile-banner';
+    premiumBanner.textContent = '👑 Premium Builder';
+    if (usernameEl) {
+      usernameEl.parentNode.insertBefore(premiumBanner, usernameEl.nextSibling);
+    }
+  }
+
+  if (data.isPremium) {
+    if (profCard) profCard.classList.add('premium-profile-card');
+    if (profContainer) profContainer.classList.add('premium-profile-ring');
+    if (nameEl) nameEl.classList.add('premium-profile-name');
+    premiumBanner.style.display = 'inline-flex';
+  } else {
+    if (profCard) profCard.classList.remove('premium-profile-card');
+    if (profContainer) profContainer.classList.remove('premium-profile-ring');
+    if (nameEl) nameEl.classList.remove('premium-profile-name');
+    premiumBanner.style.display = 'none';
+  }
+
   document.getElementById('stat-current-streak').textContent = data.currentStreak;
   document.getElementById('stat-highest-streak').textContent = data.highestStreak;
   document.getElementById('stat-groups').textContent = data.groupCount || 0;
