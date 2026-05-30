@@ -39,6 +39,9 @@ public class MainActivity extends BridgeActivity {
         // Forces all popups/window.open calls (like bank OTP pages) to open directly inside this app's WebView
         this.bridge.getWebView().getSettings().setSupportMultipleWindows(false);
 
+        // Explicitly enable secure third-party cookies so Razorpay session cookies are accepted inside WebView
+        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this.bridge.getWebView(), true);
+
         // Register custom back press dispatcher to cleanly cancel OAuth redirects at Jetpack level
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
