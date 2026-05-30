@@ -18,7 +18,8 @@
       "*.razorpay.in",
       "*.rzp.io",
       "*.cardsecure.com",
-      "*"
+      "https://*",
+      "http://*"
     ],
     "cleartext": true
   }
