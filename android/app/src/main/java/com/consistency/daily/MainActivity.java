@@ -48,14 +48,18 @@ public class MainActivity extends BridgeActivity {
         // Accept third-party cookies so Razorpay session cookies work cross-origin
         android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this.bridge.getWebView(), true);
 
-        // ─── SOLID STATUS BAR STYLING ───
+        // ─── SOLID STATUS BAR STYLING & FIT SYSTEM WINDOWS ───
         // We set the system status bar to be solid and color it purple (#a855f7) to match the brand.
-        // This natively offsets the WebView below the status bar, preventing any headers
-        // (including Razorpay checkout / external pages) from ever overlapping.
+        // By setting fitsSystemWindows to true on the WebView, the Android OS natively offsets
+        // the WebView below the status bar, preventing any headers (including Razorpay) from ever overlapping.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             getWindow().setStatusBarColor(android.graphics.Color.parseColor("#a855f7")); // Match premium purple theme
+            
+            if (this.bridge != null && this.bridge.getWebView() != null) {
+                this.bridge.getWebView().setFitsSystemWindows(true);
+            }
         }
 
         // When Razorpay redirects to the bank's 3D-Secure page via window.open(),
