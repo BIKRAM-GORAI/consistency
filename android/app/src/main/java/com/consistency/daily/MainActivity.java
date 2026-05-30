@@ -1,7 +1,11 @@
 package com.consistency.daily;
 
 import android.os.Bundle;
+import android.os.Message;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 
@@ -36,11 +40,40 @@ public class MainActivity extends BridgeActivity {
             "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 CapacitorNative/Android/" + versionName
         );
 
-        // Forces all popups/window.open calls (like bank OTP pages) to open directly inside this app's WebView
-        this.bridge.getWebView().getSettings().setSupportMultipleWindows(false);
+        // Must be true so that onCreateWindow fires — we intercept it below instead of blocking it
+        this.bridge.getWebView().getSettings().setSupportMultipleWindows(true);
+        this.bridge.getWebView().getSettings().setJavaScriptEnabled(true);
+        this.bridge.getWebView().getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
 
-        // Explicitly enable secure third-party cookies so Razorpay session cookies are accepted inside WebView
+        // Accept third-party cookies so Razorpay session cookies work cross-origin
         android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this.bridge.getWebView(), true);
+
+        // ─── CORE FIX: Override WebChromeClient to intercept window.open() popups ───
+        // When Razorpay redirects to the bank's 3D-Secure page via window.open(),
+        // Android fires a system Intent → "Open with" browser picker appears.
+        // We override onCreateWindow here, extract the target URL from the popup
+        // WebView transport, and load it directly in the main WebView instead.
+        this.bridge.getWebView().setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                // Temporary WebView used only to receive the popup URL via the transport
+                WebView popupWebView = new WebView(MainActivity.this);
+                popupWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView popupView, WebResourceRequest request) {
+                        // Redirect the URL into the main app WebView
+                        String url = request.getUrl().toString();
+                        android.util.Log.d("PaymentPopup", "Intercepted popup → loading in main WebView: " + url);
+                        MainActivity.this.bridge.getWebView().loadUrl(url);
+                        return true;
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popupWebView);
+                resultMsg.sendToTarget();
+                return true;
+            }
+        });
 
         // Register custom back press dispatcher to cleanly cancel OAuth redirects at Jetpack level
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -104,7 +137,6 @@ public class MainActivity extends BridgeActivity {
         if (intent != null && intent.getExtras() != null) {
             String groupId = intent.getExtras().getString("groupId");
             if (groupId != null && !groupId.isEmpty()) {
-                // If running, load index.html directly to bypass splash screen and open chat instantly
                 if (this.bridge != null && this.bridge.getWebView() != null) {
                     String localServerUrl = getLocalServerUrl();
                     String launchUrl = localServerUrl + "/index.html?openChat=" + groupId + "&t=" + System.currentTimeMillis();
