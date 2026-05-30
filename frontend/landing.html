@@ -2181,6 +2181,22 @@
         <h3>Shareable Profile</h3>
         <p>Flex your streaks and badges with a <b>public profile link</b>. Share your consistency journey with friends or post it on social media. Your progress, your proof.</p>
       </div>
+
+      <!-- AI Handwriting Scanner -->
+      <div class="feature-card reveal" style="background: var(--blue);">
+        <span class="feature-tag" style="background: var(--black); color: #fff;">New Feature ✨</span>
+        <i data-lucide="scan"></i>
+        <h3>Photo List Scanner</h3>
+        <p>Go from paper to digital instantly. Snap a photo of your handwritten to-do list, and our AI will automatically parse, structure, and populate all your tasks and categories straight into your daily card.</p>
+      </div>
+
+      <!-- Premium Subscription & Limits -->
+      <div class="feature-card reveal" style="background: var(--purple); color: #fff;">
+        <span class="feature-tag" style="background: var(--yellow); color: var(--black);">Elevated usage</span>
+        <i data-lucide="crown" style="color: var(--yellow); fill: var(--yellow);"></i>
+        <h3>Upgraded Limits</h3>
+        <p>Unlock your full potential when you are ready. Experience the core tracker for free, and elevate your limits dynamically for increased AI photo scans, saved templates, media attachments, and voice chats.</p>
+      </div>
     </div>
   </section>
 
@@ -2298,6 +2314,46 @@
         </div>
       </div>
 
+      <!-- Screenshot 10 -->
+      <div class="screenshot-card" onclick="openLightbox(9)">
+        <img src="/about10.png" loading="lazy" alt="List Scanner" class="screenshot-img" 
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about10.png</text></svg>'">
+        <div class="screenshot-overlay">
+          <h4>Photo List Scanner</h4>
+          <p>Scan handwritten lists straight to digital tasks</p>
+        </div>
+      </div>
+
+      <!-- Screenshot 11 -->
+      <div class="screenshot-card" onclick="openLightbox(10)">
+        <img src="/about11.png" loading="lazy" alt="AI Insights" class="screenshot-img" 
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about11.png</text></svg>'">
+        <div class="screenshot-overlay">
+          <h4>AI Productivity Insights</h4>
+          <p>7-day and monthly analytics to optimize consistency</p>
+        </div>
+      </div>
+
+      <!-- Screenshot 12 -->
+      <div class="screenshot-card" onclick="openLightbox(11)">
+        <img src="/about12.png" loading="lazy" alt="Admin Portal" class="screenshot-img" 
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about12.png</text></svg>'">
+        <div class="screenshot-overlay">
+          <h4>Admin Transactions</h4>
+          <p>Dynamic life-cycle logs with secure filtering</p>
+        </div>
+      </div>
+
+      <!-- Screenshot 13 -->
+      <div class="screenshot-card" onclick="openLightbox(12)">
+        <img src="/about13.png" loading="lazy" alt="Subscriptions" class="screenshot-img" 
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about13.png</text></svg>'">
+        <div class="screenshot-overlay">
+          <h4>Premium Subscriptions</h4>
+          <p>Elevated limits for scans, templates, and chats</p>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -2326,6 +2382,9 @@
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="sparkles"></i></span> <span class="upcoming-text">AI Summaries</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="bell"></i></span> <span class="upcoming-text">Push Notifications</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="pen-line"></i></span> <span class="upcoming-text">Scratchpad Canvas</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="scan"></i></span> <span class="upcoming-text">AI Handwriting Photo Scan</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="trending-up"></i></span> <span class="upcoming-text">AI Productivity Analytics</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="crown"></i></span> <span class="upcoming-text">Dynamic Premium Tiers</span></div>
     </div>
   </section>
 
@@ -2471,6 +2530,28 @@
         </div>
         <div class="faq-content">
           <p class="faq-answer">No — generating a summary requires an internet connection since it's AI-powered. However, all your task data is stored locally and always available offline. The moment you reconnect, you can generate your report instantly.</p>
+        </div>
+      </div>
+
+      <!-- FAQ 8 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">How does the Handwriting Scan feature work?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">Simply click on the 'Scan List from Photo' button inside the Daily Card modal on your phone. Snap a photo of your handwritten to-do list from your gallery, and our AI will automatically parse, structure, and populate all your tasks and categories in seconds!</p>
+        </div>
+      </div>
+
+      <!-- FAQ 9 -->
+      <div class="faq-card">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <h3 class="faq-question">What are AI Productivity Insights and how do I get them?</h3>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-content">
+          <p class="faq-answer">AI Insights analyze your streaks, category completions, and overall habit patterns to give you tailored recommendations for improving your productivity. You can experience the core tracker for free, and unlock elevated limits, voice chat media upgrades, and these advanced AI-powered insights through our premium subscription!</p>
         </div>
       </div>
     </div>
@@ -2736,7 +2817,11 @@
       { src: '/about6.jpg', title: 'Share profile View', desc: 'Share your profile with friends' },
       { src: '/about8.jpg', title: 'Public Profile', desc: "View Otherr's Profile" },
       { src: '/about7.jpg', title: 'Top Global Rankings', desc: 'View top global rankings' },
-      { src: '/about9.png', title: 'Live Group Chat', desc: 'Chat with your group members' }
+      { src: '/about9.png', title: 'Live Group Chat', desc: 'Chat with your group members' },
+      { src: '/about10.png', title: 'Photo List Scanner', desc: 'Scan handwritten tasks from photo to digital instantly' },
+      { src: '/about11.png', title: 'AI Productivity Insights', desc: 'Detailed 7-day and monthly analytics to optimize consistency' },
+      { src: '/about12.png', title: 'Admin Transactions', desc: 'Exclusively whitelisted lifetime transactions with secure filtering' },
+      { src: '/about13.png', title: 'Premium Subscription & Limits', desc: 'Upgrade limits dynamically to unlock boosted tasks, templates, and chats' }
     ];
 
     let currentScreenshotIndex = 0;
