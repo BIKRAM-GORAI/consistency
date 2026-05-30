@@ -1,6 +1,9 @@
 // ── LeetCode Module ────────────────────────────────────────
 console.log("[Module] leetcode.js initializing...");
 
+// Local toast reference delegation to bypass strict module scope reference errors
+const showToast = (...args) => window.showToast(...args);
+
 // Reset LeetCode modal state
 function resetLeetCodeModalState() {
   // Don't clear window.currentLeetCodeDayId here - it should persist for the current session

@@ -1,6 +1,9 @@
 // ── Profile Module ───────────────────────────────────────────
 console.log("[Module] profile.js initializing...");
 
+// Local toast reference delegation to bypass strict module scope reference errors
+const showToast = (...args) => window.showToast(...args);
+
 // ── Profile & Settings ─────────────────────────────────────
 async function openProfileModal() {
   document.getElementById('profile-pic-dataurl').value = '';

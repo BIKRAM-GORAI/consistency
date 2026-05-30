@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.1",
+  "latestVersion": "2.2",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.1:\n• 💎 Real-Time Payments & Billing: View lifetime Razorpay platform checkouts natively inside your dashboard\n• 📱 Full Mobile Responsiveness: The entire Admin Dashboard now transforms fluidly into stackable card components and touch modals on smaller screens\n• 📷 Safe spacing notch layout collisions resolved natively on Capacitor WebView builds\n• 🔒 Secure Shared API Key transaction filtering dynamically active\n• 🐛 Major database pagination enhancements & stability improvements"
+  "releaseNotes": "✨ What's new in v2.2:\n• 🐛 Native WebView Fixes: Restored programmatic file chooser, gallery scanner, and native microphone/media permission prompts in WebView\n• 🔒 Strict-mode script scope & toast reference runtime optimizations"
 }

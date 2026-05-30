@@ -1,6 +1,9 @@
 // ── Groups Module ─────────────────────────────────────────
 console.log("[Module] groups.js initializing...");
 
+// Local toast reference delegation to bypass strict module scope reference errors
+const showToast = (...args) => window.showToast(...args);
+
 let allGroups = [];
 
 let allJoinedGroups = []; window.allJoinedGroups = allJoinedGroups;

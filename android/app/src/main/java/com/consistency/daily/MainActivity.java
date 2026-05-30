@@ -66,7 +66,9 @@ public class MainActivity extends BridgeActivity {
         // Android fires a system Intent → "Open with" browser picker appears.
         // We override onCreateWindow here, extract the target URL from the popup
         // WebView transport, and load it directly in the main WebView instead.
-        this.bridge.getWebView().setWebChromeClient(new WebChromeClient() {
+        // By extending BridgeWebChromeClient instead of standard WebChromeClient, we preserve
+        // all native file chooser, gallery picker, and permission request hooks.
+        this.bridge.getWebView().setWebChromeClient(new com.getcapacitor.BridgeWebChromeClient(this.bridge) {
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
                 // Temporary WebView used only to receive the popup URL via the transport

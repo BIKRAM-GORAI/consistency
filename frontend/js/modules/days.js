@@ -1866,7 +1866,7 @@ window.addEventListener('focus', () => {
 
 async function deleteDailySummary(dayId) {
   if (!navigator.onLine) {
-    showToast('Offline: Cannot delete AI recap.', 'warn');
+    window.showToast('Offline: Cannot delete AI recap.', 'warn');
     return;
   }
   if (!confirm("Are you sure you want to delete this AI Daily Insight?")) return;
@@ -1878,7 +1878,7 @@ async function deleteDailySummary(dayId) {
       await window.localDb.days.put(day);
       // 2. Queue Sync
       window.syncManager.addToQueue('PUT', 'days', dayId, { aiSummary: "" });
-      showToast('AI Daily Insights deleted successfully!', 'success');
+      window.showToast('AI Daily Insights deleted successfully!', 'success');
       
       // Re-render only this Day card smoothly
       const cardEl = document.getElementById(`day-card-${dayId}`);
@@ -1916,14 +1916,14 @@ async function triggerTaskImageScan() {
   const dateInput = document.getElementById('day-date-input');
   const selectedDate = dateInput ? dateInput.value : '';
   if (!selectedDate) {
-    showToast('Please select a date first before scanning.', 'warn');
+    window.showToast('Please select a date first before scanning.', 'warn');
     return;
   }
 
   // Check if a card already exists for this date in local cache / memory
   const exists = window.allDays && window.allDays.some(d => d.date === selectedDate);
   if (exists) {
-    showToast(`A daily card for ${selectedDate} already exists! Please select a different date.`, 'error');
+    window.showToast(`A daily card for ${selectedDate} already exists! Please select a different date.`, 'error');
     return;
   }
 
@@ -1937,7 +1937,7 @@ async function triggerTaskImageScan() {
 
     // Check size limit of 10MB in frontend
     if (file.size > 10 * 1024 * 1024) {
-      showToast('Photo is too large (exceeds 10MB limit). Please select a compressed image.', 'error');
+      window.showToast('Photo is too large (exceeds 10MB limit). Please select a compressed image.', 'error');
       event.target.value = '';
       return;
     }
@@ -2101,11 +2101,11 @@ async function startActualScan(file, scanBtn, originalHTML, event) {
       if (typeof validateAddDayForm === 'function') {
         validateAddDayForm();
       }
-      showToast('List scanned and populated successfully!', 'success');
+      window.showToast('List scanned and populated successfully!', 'success');
     }
   } catch (err) {
     console.error('Failed to scan tasks image:', err);
-    showToast(err.message || 'Failed to scan image.', 'error');
+    window.showToast(err.message || 'Failed to scan image.', 'error');
   } finally {
     // Clear file selection
     if (event && event.target) event.target.value = '';

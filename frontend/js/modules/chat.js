@@ -1,6 +1,9 @@
 // ── Chat Module ───────────────────────────────────────────
 console.log("[Module] chat.js initializing...");
 
+// Local toast reference delegation to bypass strict module scope reference errors
+const showToast = (...args) => window.showToast(...args);
+
 // ── GROUP CHAT LOGIC ────────────────────────────────────────
 
 let activeChatGroupId = null;

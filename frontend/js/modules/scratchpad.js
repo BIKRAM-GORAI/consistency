@@ -1,6 +1,9 @@
 // ── Scratchpad Module ───────────────────────────────────────
 console.log("[Module] scratchpad.js initializing...");
 
+// Local toast reference delegation to bypass strict module scope reference errors
+const showToast = (...args) => window.showToast(...args);
+
 // ── DAILY SCRATCHPAD INTEGRATION ────────────────────────────
 let scratchpadDayId = null;
 let scratchpadStrokes = [];

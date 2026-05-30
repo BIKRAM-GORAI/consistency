@@ -1,6 +1,9 @@
 // ── Achievements Module ────────────────────────────────────
 console.log("[Module] achievements.js initializing...");
 
+// Local toast reference delegation to bypass strict module scope reference errors
+const showToast = (...args) => window.showToast(...args);
+
 // ══════════════════════════════════════════════════════════
 //  ACHIEVEMENTS
 // ══════════════════════════════════════════════════════════
