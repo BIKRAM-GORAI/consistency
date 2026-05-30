@@ -952,7 +952,7 @@ function showUpdateModal(latestVersion, apkUrl, forceUpdate, releaseNotes) {
           Install Update
         </button>
         ${!forceUpdate ? `
-          <button class="btn-ghost ripple" style="border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 14px; padding: 12px; text-transform: uppercase; font-weight: 800; box-shadow: 3px 3px 0 #0a0a0a; cursor: pointer;" onclick="document.getElementById('native-update-modal').remove()">
+          <button class="btn-ghost ripple" style="border: 2px solid #0a0a0a; background: #ffffff; color: #0a0a0a; font-size: 14px; padding: 12px; text-transform: uppercase; font-weight: 800; box-shadow: 3px 3px 0 #0a0a0a; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center;" onclick="document.getElementById('native-update-modal').remove()">
             Maybe Later
           </button>
         ` : `
