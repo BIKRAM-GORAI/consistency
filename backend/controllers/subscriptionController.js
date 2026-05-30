@@ -479,3 +479,28 @@ exports.checkPendingSubscription = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error checking pending transaction status.' });
   }
 };
+
+/**
+ * POST /api/subscriptions/razorpay/verify-dev-password
+ * Verifies a developer password given in the environment variable.
+ */
+exports.verifyDevPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const devPassword = process.env.DEV_SUBSCRIPTION_PASSWORD;
+
+    if (!devPassword) {
+      console.error('DEV_SUBSCRIPTION_PASSWORD is missing in .env Configuration');
+      return res.status(500).json({ message: 'Developer subscription access password not configured.' });
+    }
+
+    if (password === devPassword) {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(401).json({ success: false, message: 'Invalid developer password.' });
+    }
+  } catch (error) {
+    console.error('verifyDevPassword error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error verifying password.' });
+  }
+};

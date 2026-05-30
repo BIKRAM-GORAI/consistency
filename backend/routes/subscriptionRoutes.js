@@ -11,5 +11,6 @@ router.post('/apply-coupon', authenticateToken, subscriptionController.applyCoup
 router.post('/razorpay/create-order', authenticateToken, subscriptionController.createRazorpayOrder);
 router.post('/razorpay/verify-payment', authenticateToken, subscriptionController.verifyRazorpayPayment);
 router.post('/razorpay/check-pending', authenticateToken, subscriptionController.checkPendingSubscription);
+router.post('/razorpay/verify-dev-password', authenticateToken, subscriptionController.verifyDevPassword);
 
 module.exports = router;
