@@ -126,10 +126,27 @@ async function adminLogin(req, res) {
 async function getAdminReviews(req, res) {
   try {
     const { sort } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
     const sortOrder = sort === 'asc' ? 1 : -1;
     
-    const reviews = await Review.find().sort({ createdAt: sortOrder });
-    res.json(reviews);
+    const totalCount = await Review.countDocuments();
+    const totalPages = Math.ceil(totalCount / limit);
+
+    const reviews = await Review.find()
+      .sort({ createdAt: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      items: reviews,
+      page,
+      limit,
+      totalCount,
+      totalPages
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -209,6 +226,10 @@ async function deleteReview(req, res) {
 async function getAdminUsers(req, res) {
   try {
     const { sort, query } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
     const sortOrder = sort === 'asc' ? 1 : -1;
     
     let filter = {};
@@ -222,11 +243,16 @@ async function getAdminUsers(req, res) {
       };
     }
 
+    const totalCount = await User.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / limit);
+
     const users = await User.find(filter)
       .sort({ createdAt: sortOrder })
+      .skip(skip)
+      .limit(limit)
       .select('name email username profilePicture isBlacklisted blacklistedUntil createdAt');
 
-    // Enhance users with summary stats
+    // Enhance ONLY the 10 users inside the paginated slice (super fast!)
     const enhancedUsers = await Promise.all(users.map(async (u) => {
       const reviewCount = await Review.countDocuments({ email: u.email });
       const groupCount = await Group.countDocuments({ members: u._id });
@@ -237,7 +263,13 @@ async function getAdminUsers(req, res) {
       };
     }));
 
-    res.json(enhancedUsers);
+    res.json({
+      items: enhancedUsers,
+      page,
+      limit,
+      totalCount,
+      totalPages
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -388,11 +420,27 @@ async function updateAdminGoal(req, res) {
  */
 async function getAdminGroups(req, res) {
   try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalCount = await Group.countDocuments();
+    const totalPages = Math.ceil(totalCount / limit);
+
     const groups = await Group.find()
       .populate('owner', 'name username profilePicture')
       .populate('members', 'name username profilePicture')
-      .sort({ createdAt: -1 });
-    res.json(groups);
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      items: groups,
+      page,
+      limit,
+      totalCount,
+      totalPages
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -797,14 +845,32 @@ module.exports = {
         return res.status(500).json({ message: 'Razorpay API keys not configured.' });
       }
 
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 10;
+      const skip = (page - 1) * limit;
+
       const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
       
-      const razorpayRes = await axios.get('https://api.razorpay.com/v1/payments?count=100', {
+      // Fetch paginated transactions from Razorpay
+      const razorpayRes = await axios.get(`https://api.razorpay.com/v1/payments?count=${limit}&skip=${skip}`, {
         headers: { 'Authorization': `Basic ${authHeader}` }
       });
 
       const payments = razorpayRes.data.items || [];
-      const users = await User.find({}, 'name email profilePicture razorpayPaymentId subscriptionId');
+      const totalCount = razorpayRes.data.count || 1000;
+
+      // Selective optimization: Extract only matching IDs/emails from this slice
+      const paymentEmails = payments.map(p => p.email).filter(Boolean);
+      const paymentIds = payments.map(p => p.id).filter(Boolean);
+      const orderIds = payments.map(p => p.order_id).filter(Boolean);
+
+      const users = await User.find({
+        $or: [
+          { email: { $in: paymentEmails } },
+          { razorpayPaymentId: { $in: paymentIds } },
+          { subscriptionId: { $in: orderIds } }
+        ]
+      }, 'name email profilePicture razorpayPaymentId subscriptionId');
       
       const userMap = new Map();
       users.forEach(u => {
@@ -829,7 +895,12 @@ module.exports = {
         };
       });
 
-      res.json(enrichedPayments);
+      res.json({
+        items: enrichedPayments,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit) + (payments.length === limit ? 1 : 0)
+      });
     } catch (err) {
       console.error('getAdminPayments error:', err.message);
       res.status(500).json({ message: 'Failed to retrieve payments from Razorpay API.', error: err.message });

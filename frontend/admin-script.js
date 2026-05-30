@@ -1,6 +1,12 @@
 const API = '';
 const token = localStorage.getItem('adminToken');
 let allReviews = []; // Global store to avoid JSON-in-attribute issues
+let currentPages = {
+  reviews: 1,
+  users: 1,
+  groups: 1,
+  payments: 1
+};
 
 // Redirect if not logged in
 if (!token && !window.location.pathname.includes('admin-login.html')) {
@@ -77,7 +83,8 @@ async function loadReviews(sort = 'desc') {
   }
 
   try {
-    const res = await fetch(`${API}/api/admin/reviews?sort=${sort}`, {
+    const page = currentPages.reviews;
+    const res = await fetch(`${API}/api/admin/reviews?sort=${sort}&page=${page}&limit=10`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -86,8 +93,10 @@ async function loadReviews(sort = 'desc') {
       return;
     }
 
-    allReviews = await res.json();
+    const data = await res.json();
+    allReviews = data.items || [];
     renderReviews(allReviews);
+    renderPaginationControls(data, 'reviews-pagination', 'reviews', () => loadReviews(sort));
   } catch (err) {
     console.error('Error loading reviews:', err);
   }
@@ -270,11 +279,13 @@ async function loadGroups() {
   const grid = document.getElementById('groups-grid');
   grid.innerHTML = '<p>Loading groups...</p>';
   try {
-    const res = await fetch(`${API}/api/admin/groups`, {
+    const page = currentPages.groups;
+    const res = await fetch(`${API}/api/admin/groups?page=${page}&limit=10`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      allGroups = await res.json();
+      const data = await res.json();
+      allGroups = data.items || [];
       grid.innerHTML = allGroups.length ? allGroups.map(g => `
         <div style="padding:24px; border:3px solid #000; background:#fff; border-radius:12px; box-shadow: 6px 6px 0 #000; position: relative; display: flex; flex-direction: column; gap: 20px;">
           
@@ -351,6 +362,8 @@ async function loadGroups() {
           </button>
         </div>
       `).join('') : '<p>No groups found on the platform.</p>';
+      
+      renderPaginationControls(data, 'groups-pagination', 'groups', loadGroups);
     }
   } catch (err) {
     console.error(err);
@@ -466,7 +479,10 @@ function debounce(func, timeout = 500) {
   };
 }
 
-const debouncedSearch = debounce(() => loadUsers());
+const debouncedSearch = debounce(() => {
+  currentPages.users = 1; // Reset to page 1 on search
+  loadUsers();
+});
 
 async function loadUsers(sort = 'desc') {
   const query = document.getElementById('user-search').value;
@@ -479,19 +495,22 @@ async function loadUsers(sort = 'desc') {
   }
 
   try {
-    const res = await fetch(`${API}/api/admin/users?sort=${sort}&query=${query}`, {
+    const page = currentPages.users;
+    const res = await fetch(`${API}/api/admin/users?sort=${sort}&query=${query}&page=${page}&limit=10`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      allUsers = await res.json();
-      renderUsers(allUsers);
+      const data = await res.json();
+      allUsers = data.items || [];
+      renderUsers(allUsers, page, data.limit);
+      renderPaginationControls(data, 'users-pagination', 'users', () => loadUsers(sort));
     }
   } catch (err) {
     console.error('Error loading users:', err);
   }
 }
 
-function renderUsers(users) {
+function renderUsers(users, page = 1, limit = 10) {
   const tbody = document.getElementById('user-table-body');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -501,8 +520,9 @@ function renderUsers(users) {
     const row = document.createElement('tr');
     row.style.borderBottom = '1px solid #eee';
     
+    const serialNumber = (page - 1) * limit + index + 1;
     row.innerHTML = `
-      <td style="padding: 12px; font-weight: 800;">${index + 1}</td>
+      <td style="padding: 12px; font-weight: 800;">${serialNumber}</td>
       <td style="padding: 12px;">
         ${getAvatarHtml(u.profilePicture, u.name, 40, '8px')}
       </td>
@@ -1594,13 +1614,16 @@ async function loadPayments() {
   grid.innerHTML = '<p style="font-weight:800; color:#666;">Querying real-time payment portal...</p>';
 
   try {
-    const res = await fetch(`${API}/api/admin/payments`, {
+    const page = currentPages.payments;
+    const res = await fetch(`${API}/api/admin/payments?page=${page}&limit=10`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (res.ok) {
-      const payments = await res.json();
+      const data = await res.json();
+      const payments = data.items || [];
       renderPayments(payments, 'payments-grid');
+      renderPaginationControls(data, 'payments-pagination', 'payments', loadPayments);
     } else {
       grid.innerHTML = '<p style="font-weight:800; color:red;">Failed to retrieve transaction records.</p>';
     }
@@ -1747,6 +1770,51 @@ async function loadUserPayments(userId) {
     console.error('loadUserPayments error:', err);
     container.innerHTML = '<p style="font-weight:800; color:red; text-align:center; padding:10px;">Connection error loading transactions.</p>';
   }
+}
+
+function renderPaginationControls(data, containerId, tabKey, fetchFunc) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (data.totalPages <= 1) return;
+
+  // Prev Button
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'btn-control';
+  prevBtn.innerHTML = '← Prev';
+  prevBtn.disabled = data.page <= 1;
+  prevBtn.style.boxShadow = data.page <= 1 ? 'none' : '2px 2px 0 #000';
+  prevBtn.style.opacity = data.page <= 1 ? '0.5' : '1';
+  prevBtn.style.cursor = data.page <= 1 ? 'not-allowed' : 'pointer';
+  prevBtn.onclick = () => {
+    currentPages[tabKey] = data.page - 1;
+    fetchFunc();
+  };
+
+  // Indicator
+  const indicator = document.createElement('span');
+  indicator.style.fontWeight = '800';
+  indicator.style.fontSize = '13px';
+  indicator.style.textTransform = 'uppercase';
+  indicator.textContent = `Page ${data.page} of ${data.totalPages}`;
+
+  // Next Button
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn-control';
+  nextBtn.innerHTML = 'Next →';
+  nextBtn.disabled = data.page >= data.totalPages;
+  nextBtn.style.boxShadow = data.page >= data.totalPages ? 'none' : '2px 2px 0 #000';
+  nextBtn.style.opacity = data.page >= data.totalPages ? '0.5' : '1';
+  nextBtn.style.cursor = data.page >= data.totalPages ? 'not-allowed' : 'pointer';
+  nextBtn.onclick = () => {
+    currentPages[tabKey] = data.page + 1;
+    fetchFunc();
+  };
+
+  container.appendChild(prevBtn);
+  container.appendChild(indicator);
+  container.appendChild(nextBtn);
 }
 
 
