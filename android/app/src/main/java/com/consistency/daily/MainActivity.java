@@ -47,6 +47,20 @@ public class MainActivity extends BridgeActivity {
         // Accept third-party cookies so Razorpay session cookies work cross-origin
         android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this.bridge.getWebView(), true);
 
+        // Enable database and DOM storage cache
+        this.bridge.getWebView().getSettings().setDomStorageEnabled(true);
+        this.bridge.getWebView().getSettings().setDatabaseEnabled(true);
+
+        // Dynamically adjust cache mode based on internet connectivity to allow offline launches of remote URL
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
+        android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        if (isConnected) {
+            this.bridge.getWebView().getSettings().setCacheMode(android.webkit.WebSettings.LOAD_DEFAULT);
+        } else {
+            this.bridge.getWebView().getSettings().setCacheMode(android.webkit.WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        }
+
         // ─── SOLID STATUS BAR STYLING & FIT SYSTEM WINDOWS ───
         // We set the system status bar to be solid and color it purple (#a855f7) to match the brand.
         // By setting fitsSystemWindows to true on the WebView, the Android OS natively offsets
@@ -114,9 +128,8 @@ public class MainActivity extends BridgeActivity {
                     || currentUrl.startsWith("file://");
                     
                 if (!isInternalAppPage && !currentUrl.isEmpty()) {
-                    // Cancel external OAuth flow → go back to local auth page cleanly
-                    String localServerUrl = getLocalServerUrl();
-                    webView.loadUrl(localServerUrl + "/auth.html");
+                    // Cancel external OAuth flow → go back to Vercel remote auth page cleanly
+                    webView.loadUrl("https://consistency-daily.vercel.app/auth.html");
                 } else if (webView.canGoBack()) {
                     webView.goBack();
                 } else {
@@ -165,8 +178,7 @@ public class MainActivity extends BridgeActivity {
             String groupId = intent.getExtras().getString("groupId");
             if (groupId != null && !groupId.isEmpty()) {
                 if (this.bridge != null && this.bridge.getWebView() != null) {
-                    String localServerUrl = getLocalServerUrl();
-                    String launchUrl = localServerUrl + "/index.html?openChat=" + groupId + "&t=" + System.currentTimeMillis();
+                    String launchUrl = "https://consistency-daily.vercel.app/index.html?openChat=" + groupId + "&t=" + System.currentTimeMillis();
                     this.bridge.getWebView().loadUrl(launchUrl);
                 }
             }
