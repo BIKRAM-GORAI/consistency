@@ -340,7 +340,7 @@ function renderProfile(data) {
   }
 
   // Graph
-  renderContributionGraph(data.contributionData);
+  renderContributionGraph(data.contributionData, data.isPremium);
 
   // Achievements
   if (data.achievements && data.achievements.length > 0) {
@@ -385,7 +385,7 @@ function renderProfile(data) {
   if (window.lucide) lucide.createIcons();
 }
 
-function renderContributionGraph(data) {
+function renderContributionGraph(data, isPremium = false) {
   const container = document.getElementById('prof-contribution-graph');
   const dateMap = {};
   if (data) {
@@ -427,15 +427,38 @@ function renderContributionGraph(data) {
       const x = col * (cellSize + gap) + extraX;
       const y = row * (cellSize + gap) + topPadding;
       maxX = Math.max(maxX, x + cellSize);
-      const fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
-      rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="rgba(0,0,0,0.05)" stroke-width="1"><title>${dateStr}: ${completed} tasks</title></rect>`;
+      
+      let fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
+      let rectStyle = '';
+      if (isPremium && completed > 0) {
+        fill = 'url(#premiumGlowGradient)';
+        rectStyle = 'filter: drop-shadow(0px 0px 3px rgba(255, 214, 10, 0.85)); cursor:pointer;';
+      }
+      const stroke = isPremium && completed > 0 ? 'rgba(255, 214, 10, 0.4)' : 'rgba(0,0,0,0.05)';
+      rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="1" style="${rectStyle}"><title>${dateStr}: ${completed} tasks</title></rect>`;
       curr.setDate(curr.getDate() + 1);
     }
   }
 
   const width = maxX;
   const height = rows * (cellSize + gap) - gap + topPadding + 10; // Added height buffer
-  container.innerHTML = `<div class="graph-wrapper"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${monthLabels}${rectsHtml}</svg></div>`;
+  
+  let svg = `<div class="graph-wrapper"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;">`;
+  
+  // Dynamic gradient definition for premium glowing effect
+  svg += `
+    <defs>
+      <linearGradient id="premiumGlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFD60A" />
+        <stop offset="100%" stop-color="#FF3EA5" />
+      </linearGradient>
+    </defs>
+  `;
+  
+  svg += monthLabels;
+  svg += rectsHtml;
+  svg += '</svg></div>';
+  container.innerHTML = svg;
 }
 
 function escHtml(str) {

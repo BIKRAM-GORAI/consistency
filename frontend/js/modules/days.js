@@ -732,6 +732,15 @@ async function toggleTask(dayId, catId, taskId, checked) {
 
   task.completed = checked;
 
+  // Haptic feedback for Capacitor mobile when completing tasks
+  try {
+    if (window.Capacitor && window.Capacitor.isPluginAvailable('Haptics')) {
+      window.Capacitor.Plugins.Haptics.impact({ style: 'LIGHT' });
+    }
+  } catch (hapticErr) {
+    // Ignore haptic errors silently
+  }
+
   // Use the ID that actually corresponds to elements currently in the DOM
   const targetDomId = document.getElementById(`pct-fill-${dayId}`) ? dayId : day._id;
   updateProgressBar(targetDomId, day.categories);

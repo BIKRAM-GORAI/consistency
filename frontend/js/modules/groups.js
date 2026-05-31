@@ -838,7 +838,7 @@ async function openMemberTasks(memberId, memberName, username = null) {
               <svg id="quick-profile-graph" width="800" height="150"></svg>
             </div>
           `;
-          renderContributionGraph(res.user.contributionData, 'quick-profile-graph');
+          renderContributionGraph(res.user.contributionData, 'quick-profile-graph', res.user.isPremium);
         }
       } catch (e) { console.error('Insights load fail', e); }
     })();

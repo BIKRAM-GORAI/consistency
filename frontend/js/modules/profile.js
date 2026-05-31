@@ -852,7 +852,7 @@ async function openQuickView(username) {
           acc + (cat.tasks || []).filter(t => t.completed).length, 0);
         if (completed > 0) graphData.push({ date: d.date, completedCount: completed });
       });
-      renderContributionGraph(graphData, 'qp-graph-container');
+      renderContributionGraph(graphData, 'qp-graph-container', localStorage.getItem('isPremium') === 'true');
 
       // Activity Feed (from local window.allDays)
       const activityList = document.getElementById('qp-activity-list');
@@ -980,7 +980,7 @@ async function openQuickView(username) {
     }
 
     // 3. Graph
-    renderContributionGraph(u.contributionData, 'qp-graph-container');
+    renderContributionGraph(u.contributionData, 'qp-graph-container', u.isPremium);
 
     // 4. Feed (Mixed Days & Achievements)
     const activityList = document.getElementById('qp-activity-list');
@@ -1101,7 +1101,7 @@ function previewMinimalProfile() {
 
 
 
-function renderContributionGraph(data, targetId = 'public-profile-graph') {
+function renderContributionGraph(data, targetId = 'public-profile-graph', isPremium = false) {
   const container = document.getElementById(targetId);
   
   // Create a map of date -> completedCount
@@ -1159,12 +1159,18 @@ function renderContributionGraph(data, targetId = 'public-profile-graph') {
       
       maxX = Math.max(maxX, x + cellSize);
       
-      const fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
-      const stroke = 'rgba(0,0,0,0.1)';
+      let fill = completed > 0 ? '#22c55e' : 'var(--graph-empty)';
+      let rectStyle = 'cursor:pointer;';
+      if (isPremium && completed > 0) {
+        fill = 'url(#premiumGlowGradient)';
+        rectStyle += 'filter: drop-shadow(0px 0px 3px rgba(255, 214, 10, 0.85));';
+      }
+      
+      const stroke = isPremium && completed > 0 ? 'rgba(255, 214, 10, 0.4)' : 'rgba(0,0,0,0.1)';
       const toastMsg = `${dateStr}\\n${completed} task${completed === 1 ? '' : 's'} completed`;
       const titleHover = `${dateStr}: ${completed} task${completed === 1 ? '' : 's'} completed`;
       
-      rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="1" onclick="showToast('${toastMsg}', 'graph')" style="cursor:pointer;"><title>${titleHover}</title></rect>`;
+      rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="1" onclick="showToast('${toastMsg}', 'graph')" style="${rectStyle}"><title>${titleHover}</title></rect>`;
       
       curr.setDate(curr.getDate() + 1);
     }
@@ -1174,6 +1180,17 @@ function renderContributionGraph(data, targetId = 'public-profile-graph') {
   const height = rows * (cellSize + gap) - gap + topPadding;
   
   let svg = `<div style="width: ${width}px; height: ${height}px; flex-shrink: 0; padding-bottom: 16px;"><svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;">`;
+  
+  // Dynamic gradient definition for premium glowing effect
+  svg += `
+    <defs>
+      <linearGradient id="premiumGlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFD60A" />
+        <stop offset="100%" stop-color="#FF3EA5" />
+      </linearGradient>
+    </defs>
+  `;
+  
   svg += monthLabels;
   svg += rectsHtml;
   svg += '</svg></div>';
