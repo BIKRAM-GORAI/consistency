@@ -28,8 +28,7 @@ public class MainActivity extends BridgeActivity {
             
             // If cold start came from a notification click, load it directly in the WebView
             if (coldStartGroupId != null && !coldStartGroupId.isEmpty()) {
-                String localServerUrl = getLocalServerUrl();
-                String launchUrl = localServerUrl + "/index.html?openChat=" + coldStartGroupId + "&t=" + System.currentTimeMillis();
+                String launchUrl = "https://consistency-daily.vercel.app/index.html?openChat=" + coldStartGroupId + "&t=" + System.currentTimeMillis();
                 this.bridge.getWebView().loadUrl(launchUrl);
             }
         }

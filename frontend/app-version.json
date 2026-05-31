@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.3",
+  "latestVersion": "2.4",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
-  "forceUpdate": false,
-  "releaseNotes": "✨ What's new in v2.3:\n• 🎨 UI Symmetry Upgrades: Aligned feature grid layout to 15 symmetrical cards, optimized typography & color readability on Premium highlights\n• 📱 Screen Time & App Usage Limits split highlights for easier device focus tracking"
+  "forceUpdate": true,
+  "releaseNotes": "✨ What's new in v2.4:\n• 🚀 Remote Engine Shell Upgrade: Restructured WebView to load remotely from Vercel. This enables seamless, instantaneous, over-the-air (OTA) updates for all future UI additions without requiring manual APK updates!\n• 🛠 Minor performance tweaks and stability improvements."
 }
