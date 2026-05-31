@@ -14,6 +14,10 @@ router.post('/commit-daily-summary', authenticateToken, aiController.commitDaily
 router.post('/authorize-task-extraction', authenticateToken, aiController.authorizeTaskExtraction);
 router.get('/photo-limits', authenticateToken, aiController.getPhotoLimits);
 
+// Routes for direct client-to-Render voice-to-task parsing
+router.post('/authorize-voice-to-task', authenticateToken, aiController.authorizeVoiceToTask);
+router.get('/voice-limits', authenticateToken, aiController.getVoiceLimits);
+
 // Route to generate or refresh the public profile productivity biography
 router.post('/productivity-bio', authenticateToken, aiController.generateProductivityBio);
 

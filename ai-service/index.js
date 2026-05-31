@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -336,10 +337,162 @@ app.post('/api/ai/extract-tasks', upload.single('image'), async (req, res) => {
   }
 });
 
+/**
+ * POST /api/ai/voice-to-task
+ * Accepts an audio file (max 10MB), validates single-use JWT voice parse token,
+ * transcribes via Groq Whisper, then parses transcript via LLM into structured JSON checklist categories.
+ */
+app.post('/api/ai/voice-to-task', upload.single('audio'), async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[AI-Service] JWT_SECRET is not set in environment.');
+      return res.status(500).json({ error: 'Internal Server Error: Shared secret missing.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (verifyError) {
+      console.warn(`[AI-Service] JWT Verification failed: ${verifyError.message}`);
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired generation token' });
+    }
+
+    if (decoded.action !== 'parse-voice-to-task') {
+      return res.status(403).json({ error: 'Forbidden: Invalid action for this token' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Bad Request: Audio file is required under field name "audio"' });
+    }
+
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      console.error('[AI-Service] Configuration Error: GROQ_API_KEY is not set in environment.');
+      return res.status(500).json({ error: 'Internal Server Error: AI provider configuration missing.' });
+    }
+
+    console.log(`[AI-Service] [Auth-Token Verified] Transcribing audio via Groq Whisper... size: ${req.file.size} bytes`);
+
+    // Create form data using native Node FormData
+    const formData = new FormData();
+    const audioBlob = new Blob([req.file.buffer], { type: req.file.mimetype || 'audio/wav' });
+    formData.append('file', audioBlob, req.file.originalname || 'audio.wav');
+    formData.append('model', 'whisper-large-v3');
+    formData.append('temperature', '0.0');
+
+    const whisperResponse = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: formData
+    });
+
+    if (!whisperResponse.ok) {
+      const errorText = await whisperResponse.text();
+      console.error(`[AI-Service] Groq Whisper API returned status ${whisperResponse.status}:`, errorText);
+      return res.status(whisperResponse.status).json({
+        error: 'Groq Whisper API error',
+        details: errorText
+      });
+    }
+
+    const whisperData = await whisperResponse.json();
+    const transcript = whisperData.text;
+    console.log(`[AI-Service] Transcription success: "${transcript}"`);
+
+    if (!transcript || transcript.trim() === '') {
+      return res.status(200).json({ categories: [] });
+    }
+
+    // Now, send the transcript to the LLM to structure into `{ categories: [ { name: "", tasks: [] } ] }`
+    const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    console.log(`[AI-Service] Prompting LLM (${modelName}) to structure tasks JSON...`);
+
+    const systemPrompt = 
+      "You are an expert personal productivity assistant.\n" +
+      "Analyze the user's spoken voice transcript describing their habits, daily tasks, or goals for the day.\n" +
+      "Extract and group these tasks logically into short, recognizable categories (e.g., Fitness, Work, Mindset, Learning).\n" +
+      "You MUST output a single valid JSON object following this EXACT schema:\n" +
+      "{\n" +
+      "  \"categories\": [\n" +
+      "    {\n" +
+      "      \"name\": \"Category Name\",\n" +
+      "      \"tasks\": [\n" +
+      "        {\n" +
+      "          \"title\": \"Clean, actionable task description starting with a verb (e.g., Drink 3L water, Reply to emails)\",\n" +
+      "          \"completed\": false\n" +
+      "        }\n" +
+      "      ]\n" +
+      "    }\n" +
+      "  ]\n" +
+      "}\n\n" +
+      "Strict Rules:\n" +
+      "1. Every task must have a 'title' string and a 'completed' boolean set to false.\n" +
+      "2. Do not include any explanation, conversational filler, markdown codeblocks (e.g. ```json), or wrapping. Output only the raw valid JSON.\n" +
+      "3. If no clear tasks are found or if the text is irrelevant, return {\"categories\": []}.";
+
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analyze this voice transcription: "${transcript}"` }
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    if (!groqResponse.ok) {
+      const errorText = await groqResponse.text();
+      console.error(`[AI-Service] Groq Chat API returned status ${groqResponse.status}:`, errorText);
+      return res.status(groqResponse.status).json({
+        error: 'Groq Chat API error during parsing',
+        details: errorText
+      });
+    }
+
+    const chatData = await groqResponse.json();
+    const resultText = chatData.choices && chatData.choices[0] && chatData.choices[0].message && chatData.choices[0].message.content;
+
+    if (!resultText) {
+      console.error('[AI-Service] Malformed Groq Chat response:', JSON.stringify(chatData));
+      return res.status(502).json({ error: 'Bad Gateway: Empty response from AI parsing provider' });
+    }
+
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(resultText.trim());
+    } catch (parseError) {
+      console.warn(`[AI-Service] Raw response text is not valid JSON:`, resultText);
+      return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: resultText });
+    }
+
+    res.status(200).json(parsedResult);
+  } catch (error) {
+    console.error('[AI-Service] Execution error in voice-to-task extraction:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
 // Start listening
 app.listen(PORT, () => {
   console.log(`🤖 Standalone AI Microservice running on port ${PORT}`);
   console.log(`👉 Health check active at GET http://localhost:${PORT}/health`);
   console.log(`👉 Generation endpoint active at POST http://localhost:${PORT}/api/ai/generate`);
   console.log(`👉 JWT Summary generation endpoint active at POST http://localhost:${PORT}/api/ai/generate-summary`);
+  console.log(`👉 Voice parsing endpoint active at POST http://localhost:${PORT}/api/ai/voice-to-task`);
 });

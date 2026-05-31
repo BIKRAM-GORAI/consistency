@@ -1154,7 +1154,7 @@ function openAddDayModal() {
   }
   validateAddDayForm();
 
-  // Fetch photo limit credits remaining and update button text
+  // Fetch photo and voice limit credits remaining and update button texts
   (async () => {
     try {
       const scanBtn = document.getElementById('scan-list-btn');
@@ -1170,18 +1170,46 @@ function openAddDayModal() {
           scanBtn.style.flexDirection = 'column';
           scanBtn.style.gap = '4px';
           scanBtn.disabled = true;
-          return;
-        }
-        scanBtn.disabled = false;
-        const res = await window.apiFetch(`${window.API}/api/ai/photo-limits`);
-        if (res && typeof res.generationsLeft !== 'undefined') {
-          window.photoGenerationsLeft = res.generationsLeft;
-          window.photoLimit = res.limit;
-          updateScanButtonText();
+        } else {
+          scanBtn.disabled = false;
+          const res = await window.apiFetch(`${window.API}/api/ai/photo-limits`);
+          if (res && typeof res.generationsLeft !== 'undefined') {
+            window.photoGenerationsLeft = res.generationsLeft;
+            window.photoLimit = res.limit;
+            updateScanButtonText();
+          }
         }
       }
     } catch (err) {
       console.warn('Failed to fetch photo limit credits:', err);
+    }
+
+    try {
+      const voiceBtn = document.getElementById('voice-record-btn');
+      if (voiceBtn) {
+        if (!navigator.onLine) {
+          voiceBtn.innerHTML = `
+            <span style="display:flex;align-items:center;gap:7px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+              <span style="font-weight:800;">Voice-to-Daily-Task</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;font-size:10px;font-weight:900;background:var(--black);color:#ff6b6b;padding:2px 10px;border-radius:3px;letter-spacing:0.5px;white-space:nowrap;text-transform:uppercase;">Offline</span>
+          `;
+          voiceBtn.style.flexDirection = 'column';
+          voiceBtn.style.gap = '4px';
+          voiceBtn.disabled = true;
+        } else {
+          voiceBtn.disabled = false;
+          const vRes = await window.apiFetch(`${window.API}/api/ai/voice-limits`);
+          if (vRes && typeof vRes.generationsLeft !== 'undefined') {
+            window.voiceGenerationsLeft = vRes.generationsLeft;
+            window.voiceLimit = vRes.limit;
+            updateVoiceButtonText();
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch voice limit credits:', err);
     }
   })();
 }
@@ -2149,10 +2177,479 @@ function updateScanButtonText() {
   }
 }
 
+// ==========================================
+// VOICE-TO-DAILY-TASK MODULE LOGIC
+// ==========================================
+
+function updateVoiceButtonText() {
+  const voiceBtn = document.getElementById('voice-record-btn');
+  if (voiceBtn) {
+    const left = typeof window.voiceGenerationsLeft !== 'undefined' ? window.voiceGenerationsLeft : '?';
+    const limit = typeof window.voiceLimit !== 'undefined' ? window.voiceLimit : '?';
+    const isEmpty = left === 0;
+    const badgeColor = isEmpty ? '#ff6b6b' : '#c3ffb3';
+    voiceBtn.innerHTML = `
+      <span style="display:flex;align-items:center;gap:7px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <span style="font-weight:800;">Voice-to-Daily-Task</span>
+      </span>
+      <span id="voice-credits-badge" style="display:inline-flex;align-items:center;font-size:10px;font-weight:900;background:var(--black);color:${badgeColor};padding:2px 10px;border-radius:3px;letter-spacing:0.5px;white-space:nowrap;text-transform:uppercase;">${left}/${limit} credits left today</span>
+    `;
+    voiceBtn.style.flexDirection = 'column';
+    voiceBtn.style.gap = '4px';
+  }
+}
+
+function triggerVoiceToTask() {
+  const dateInput = document.getElementById('day-date-input');
+  const selectedDate = dateInput ? dateInput.value : '';
+  if (!selectedDate) {
+    window.showToast('Please select a date first.', 'warn');
+    return;
+  }
+
+  // Check if a card already exists for this date in local cache / memory
+  const exists = window.allDays && window.allDays.some(d => d.date === selectedDate);
+  if (exists) {
+    window.showToast(`A daily card for ${selectedDate} already exists! Please select a different date.`, 'error');
+    return;
+  }
+
+  const container = document.getElementById('voice-record-container');
+  const recordBtn = document.getElementById('voice-record-btn');
+  if (!container || !recordBtn) return;
+
+  // Toggle container visibility
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    recordBtn.style.display = 'none';
+    resetVoiceUI();
+    
+    // Bind buttons
+    setupVoiceEventListeners();
+  } else {
+    container.style.display = 'none';
+    recordBtn.style.display = 'flex';
+    resetVoiceUI();
+  }
+}
+
+function setupVoiceEventListeners() {
+  const actionBtn = document.getElementById('voice-action-btn');
+  const sendBtn = document.getElementById('voice-send-btn');
+  const cancelBtn = document.getElementById('voice-cancel-btn');
+
+  if (actionBtn) {
+    actionBtn.onclick = () => {
+      if (!window.mediaRecorder || window.mediaRecorder.state === 'inactive') {
+        startVoiceRecording();
+      } else if (window.mediaRecorder.state === 'recording') {
+        stopVoiceRecording();
+      }
+    };
+  }
+
+  if (sendBtn) {
+    sendBtn.onclick = async () => {
+      await sendVoiceToAI();
+    };
+  }
+
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      resetVoiceUI();
+      document.getElementById('voice-record-container').style.display = 'none';
+      document.getElementById('voice-record-btn').style.display = 'flex';
+    };
+  }
+}
+
+async function startVoiceRecording() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Your browser or device does not support audio recording.');
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    window.audioChunks = [];
+    
+    let options = { mimeType: 'audio/webm; codecs=opus' };
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      options = { mimeType: 'audio/webm' };
+    }
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      options = { mimeType: 'audio/mp4' };
+    }
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      options = {};
+    }
+
+    const recorder = new MediaRecorder(stream, options);
+    window.mediaRecorder = recorder;
+
+    recorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        window.audioChunks.push(event.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      stream.getTracks().forEach(track => track.stop());
+      
+      const mimeType = recorder.mimeType || 'audio/webm';
+      window.voiceAudioBlob = new Blob(window.audioChunks, { type: mimeType });
+      
+      const sendBtn = document.getElementById('voice-send-btn');
+      if (sendBtn) {
+        sendBtn.style.display = 'flex';
+      }
+      
+      const actionBtn = document.getElementById('voice-action-btn');
+      if (actionBtn) {
+        actionBtn.className = 'btn-primary ripple';
+        actionBtn.style.background = '#00bcd4';
+        actionBtn.style.color = 'black';
+        actionBtn.innerHTML = `🎙️ Re-Record`;
+      }
+      
+      const statusText = document.getElementById('voice-status-text');
+      if (statusText) {
+        statusText.textContent = 'RECORDING COMPLETE - READY TO SEND';
+        statusText.style.color = '#00bcd4';
+      }
+      
+      stopRecordingTimer();
+      stopVisualizerAnimation();
+    };
+
+    recorder.start(100);
+    window.recordingStartTime = Date.now();
+    
+    const actionBtn = document.getElementById('voice-action-btn');
+    if (actionBtn) {
+      actionBtn.className = 'btn-primary ripple';
+      actionBtn.style.background = '#ff0000';
+      actionBtn.style.color = 'white';
+      actionBtn.innerHTML = `⏹️ Stop Recording`;
+    }
+
+    const statusText = document.getElementById('voice-status-text');
+    if (statusText) {
+      statusText.textContent = 'RECORDING LIVE... SPEAK NOW';
+      statusText.style.color = '#ff4a4a';
+    }
+
+    const sendBtn = document.getElementById('voice-send-btn');
+    if (sendBtn) sendBtn.style.display = 'none';
+
+    startRecordingTimer();
+    startVisualizerAnimation();
+
+  } catch (err) {
+    console.error('Failed to start voice recording:', err);
+    window.showToast(err.message || 'Microphone access denied or not supported.', 'error');
+    resetVoiceUI();
+  }
+}
+
+function stopVoiceRecording() {
+  if (window.mediaRecorder && window.mediaRecorder.state === 'recording') {
+    window.mediaRecorder.stop();
+  }
+}
+
+function startRecordingTimer() {
+  stopRecordingTimer();
+  const timerText = document.getElementById('voice-timer');
+  const maxDuration = 60;
+
+  window.voiceTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - window.recordingStartTime) / 1000);
+    const remaining = maxDuration - elapsed;
+
+    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const secs = String(elapsed % 60).padStart(2, '0');
+    
+    if (timerText) {
+      timerText.textContent = `${mins}:${secs}`;
+      if (remaining <= 10) {
+        timerText.style.color = '#ff0000';
+        timerText.style.fontWeight = '900';
+      } else {
+        timerText.style.color = '#ff4a4a';
+      }
+    }
+
+    if (elapsed >= maxDuration) {
+      console.log('[Voice] Reached 60s limit. Auto-stopping...');
+      stopVoiceRecording();
+    }
+  }, 200);
+}
+
+function stopRecordingTimer() {
+  if (window.voiceTimerInterval) {
+    clearInterval(window.voiceTimerInterval);
+    window.voiceTimerInterval = null;
+  }
+}
+
+let visualizerInterval = null;
+
+function startVisualizerAnimation() {
+  stopVisualizerAnimation();
+  const vizBars = document.getElementById('voice-visualizer-bars');
+  if (!vizBars) return;
+  
+  vizBars.innerHTML = '';
+  const numBars = 18;
+  for (let i = 0; i < numBars; i++) {
+    const bar = document.createElement('div');
+    bar.style.width = '6px';
+    bar.style.height = '10px';
+    bar.style.background = '#ff4a4a';
+    bar.style.borderRadius = '3px';
+    bar.style.transition = 'height 0.08s ease';
+    vizBars.appendChild(bar);
+  }
+  
+  visualizerInterval = setInterval(() => {
+    const bars = vizBars.querySelectorAll('div');
+    bars.forEach(bar => {
+      const heightPercent = Math.floor(Math.random() * 80) + 10;
+      bar.style.height = `${heightPercent}%`;
+      if (heightPercent > 70) {
+        bar.style.background = '#ff0000';
+      } else if (heightPercent > 40) {
+        bar.style.background = '#ff7b00';
+      } else {
+        bar.style.background = '#ff4a4a';
+      }
+    });
+  }, 100);
+}
+
+function stopVisualizerAnimation() {
+  if (visualizerInterval) {
+    clearInterval(visualizerInterval);
+    visualizerInterval = null;
+  }
+  const vizBars = document.getElementById('voice-visualizer-bars');
+  if (vizBars) {
+    vizBars.innerHTML = '';
+  }
+}
+
+async function sendVoiceToAI() {
+  const dateInput = document.getElementById('day-date-input');
+  const selectedDate = dateInput ? dateInput.value : '';
+  const exists = window.allDays && window.allDays.some(d => d.date === selectedDate);
+  if (exists) {
+    window.showToast(`A daily card for ${selectedDate} already exists! Cannot parse audio.`, 'error');
+    return;
+  }
+
+  if (!window.voiceAudioBlob) {
+    window.showToast('Please record audio first.', 'error');
+    return;
+  }
+
+  // Lock the modal so user cannot close during processing
+  window.isScanInProgress = true;
+  const lockBanner = document.getElementById('scan-lock-banner');
+  if (lockBanner) {
+    const textSpan = lockBanner.querySelector('span');
+    if (textSpan) textSpan.innerHTML = `Voice parsing in progress — <strong>do not close</strong> or your credit will be lost.`;
+    lockBanner.style.display = 'flex';
+  }
+
+  const modalCloseBtn = document.querySelector('#modal-add-day .modal-close');
+  if (modalCloseBtn) {
+    modalCloseBtn.disabled = true;
+    modalCloseBtn.style.opacity = '0.35';
+    modalCloseBtn.style.cursor = 'not-allowed';
+  }
+
+  const actionBtn = document.getElementById('voice-action-btn');
+  const sendBtn = document.getElementById('voice-send-btn');
+  const cancelBtn = document.getElementById('voice-cancel-btn');
+  const statusText = document.getElementById('voice-status-text');
+
+  if (actionBtn) actionBtn.disabled = true;
+  if (cancelBtn) cancelBtn.disabled = true;
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = `
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="spinner-ring" style="width:13px;height:13px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
+        <span style="font-weight:800;">Parsing Speech...</span>
+      </span>
+    `;
+  }
+  if (statusText) {
+    statusText.textContent = 'TRANSCRIBING & STRUCTURING CHECKLIST...';
+    statusText.style.color = '#ffea00';
+  }
+
+  try {
+    // Step 1: Request token and AI service URL from Vercel backend
+    const authRes = await window.apiFetch(`${window.API}/api/ai/authorize-voice-to-task`, {
+      method: 'POST'
+    });
+
+    if (!authRes || !authRes.generationToken) {
+      throw new Error('Failed to obtain voice parse authorization from server.');
+    }
+
+    if (authRes && typeof authRes.generationsLeft !== 'undefined') {
+      window.voiceGenerationsLeft = authRes.generationsLeft;
+      window.voiceLimit = authRes.limit;
+      updateVoiceButtonText();
+    }
+
+    const { generationToken, aiServiceUrl } = authRes;
+
+    // Step 2: Upload audio directly to Render AI service
+    const formData = new FormData();
+    formData.append('audio', window.voiceAudioBlob, 'voice-recording.webm');
+
+    const aiResponse = await fetch(`${aiServiceUrl}/api/ai/voice-to-task`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${generationToken}`
+      },
+      body: formData
+    });
+
+    if (!aiResponse.ok) {
+      const errorBody = await aiResponse.json().catch(() => ({}));
+      const errorMsg = errorBody.details || errorBody.error || errorBody.message || `Render AI Service returned status ${aiResponse.status}`;
+      throw new Error(errorMsg);
+    }
+
+    const parsedData = await aiResponse.json();
+
+    if (!parsedData || !parsedData.categories || !Array.isArray(parsedData.categories) || parsedData.categories.length === 0 || parsedData.categories.every(c => !c.tasks || c.tasks.length === 0)) {
+      throw new Error('No readable tasks or categories were detected in your voice recording. Please speak clearly and describe your tasks.');
+    }
+
+    // Step 3: Populate modal UI
+    const builder = document.getElementById('categories-builder');
+    if (builder) {
+      builder.innerHTML = '';
+      window.categoryCount = 0;
+
+      parsedData.categories.forEach(cat => {
+        const idx = window.categoryCount++;
+        const item = document.createElement('div');
+        item.className = 'category-builder-item';
+        item.id = `cat-build-${idx}`;
+        item.innerHTML = `
+          <div class="cat-top-row">
+            <input type="text" class="form-control" placeholder="Category name (e.g. Work, Fitness...)" id="cat-name-${idx}" value="${window.escHtml ? window.escHtml(cat.name) : cat.name}" />
+            <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
+          </div>
+          <div class="tasks-builder" id="tasks-build-${idx}"></div>
+          <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
+        `;
+        builder.appendChild(item);
+        if (window.lucide) lucide.createIcons({ root: item });
+
+        const tasksBuilder = document.getElementById(`tasks-build-${idx}`);
+        if (cat.tasks && cat.tasks.length > 0) {
+          cat.tasks.forEach(task => {
+            const taskTitle = typeof task === 'object' ? task.title : task;
+            const row = document.createElement('div');
+            row.className = 'task-input-row';
+            row.innerHTML = `
+              <input type="text" class="form-control" placeholder="Task title..." value="${window.escHtml ? window.escHtml(taskTitle) : taskTitle}" />
+              <button class="btn-remove" onclick="this.parentElement.remove(); if (window.validateAddDayForm) window.validateAddDayForm();" title="Remove"><i data-lucide="trash-2"></i></button>
+            `;
+            tasksBuilder.appendChild(row);
+            if (window.lucide) lucide.createIcons({ root: row });
+          });
+        } else {
+          addTaskField(idx);
+        }
+      });
+
+      if (typeof validateAddDayForm === 'function') {
+        validateAddDayForm();
+      }
+      window.showToast('Voice parsed and checklist populated!', 'success');
+      
+      document.getElementById('voice-record-container').style.display = 'none';
+      document.getElementById('voice-record-btn').style.display = 'flex';
+      resetVoiceUI();
+    }
+  } catch (err) {
+    console.error('Failed to parse voice to tasks:', err);
+    window.showToast(err.message || 'Failed to process audio.', 'error');
+    if (statusText) {
+      statusText.textContent = 'ERROR ENCOUNTERED';
+      statusText.style.color = '#ff4a4a';
+    }
+  } finally {
+    window.isScanInProgress = false;
+    if (lockBanner) lockBanner.style.display = 'none';
+
+    if (modalCloseBtn) {
+      modalCloseBtn.disabled = false;
+      modalCloseBtn.style.opacity = '';
+      modalCloseBtn.style.cursor = '';
+    }
+
+    if (actionBtn) actionBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = `🚀 Send to AI`;
+    }
+  }
+}
+
+function resetVoiceUI() {
+  const actionBtn = document.getElementById('voice-action-btn');
+  const sendBtn = document.getElementById('voice-send-btn');
+  const statusText = document.getElementById('voice-status-text');
+  const timerText = document.getElementById('voice-timer');
+  const vizBars = document.getElementById('voice-visualizer-bars');
+
+  if (actionBtn) {
+    actionBtn.className = 'btn-primary ripple';
+    actionBtn.style.background = '#ff4a4a';
+    actionBtn.style.color = 'white';
+    actionBtn.innerHTML = `🔴 Start Recording`;
+    actionBtn.disabled = false;
+  }
+  if (sendBtn) sendBtn.style.display = 'none';
+  if (statusText) {
+    statusText.textContent = 'READY TO RECORD';
+    statusText.style.color = '#0f0';
+  }
+  if (timerText) {
+    timerText.textContent = '00:00';
+    timerText.style.color = 'var(--text)';
+  }
+  if (vizBars) vizBars.innerHTML = '';
+  
+  stopRecordingTimer();
+  if (window.mediaRecorder && window.mediaRecorder.state !== 'inactive') {
+    try {
+      window.mediaRecorder.stop();
+    } catch(e){}
+  }
+  window.mediaRecorder = null;
+  window.audioChunks = [];
+  window.voiceAudioBlob = null;
+}
+
 // Bind to window
 window.evaluateDaysDistractions = evaluateDaysDistractions;
 window.deleteDailySummary = deleteDailySummary;
 window.toggleAiRecapExpansion = toggleAiRecapExpansion;
 window.triggerTaskImageScan = triggerTaskImageScan;
+window.triggerVoiceToTask = triggerVoiceToTask;
+window.updateVoiceButtonText = updateVoiceButtonText;
 
 console.log("[Module] days.js loaded and Days functions bound to window");

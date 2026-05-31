@@ -1195,3 +1195,115 @@ exports.getPhotoLimits = async (req, res) => {
   }
 };
 
+const getAiVoiceLimit = (user) => {
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  let limit;
+  if (isPremium) {
+    limit = parseInt(process.env.PREMIUM_DAILY_VOICE_LIMIT, 10);
+    if (isNaN(limit)) limit = 5;
+  } else {
+    limit = parseInt(process.env.FREE_DAILY_VOICE_LIMIT, 10);
+    if (isNaN(limit)) limit = 2;
+  }
+  return limit;
+};
+
+/**
+ * Checks the user's daily AI voice parse count, resetting it if a calendar day has passed.
+ */
+const checkAiVoiceLimit = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.voiceParseResetTime ? new Date(user.voiceParseResetTime) : new Date(0);
+
+  // Compare calendar days
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.voiceParseCount = 0;
+    user.voiceParseResetTime = now;
+    await user.save();
+  }
+
+  const limit = getAiVoiceLimit(user);
+  const generationsLeft = Math.max(0, limit - user.voiceParseCount);
+  return { user, generationsLeft, limit };
+};
+
+/**
+ * Increments the user's daily AI voice parse count.
+ */
+const incrementAiVoiceLimit = async (user) => {
+  user.voiceParseCount += 1;
+  await user.save();
+  const limit = getAiVoiceLimit(user);
+  return Math.max(0, limit - user.voiceParseCount);
+};
+
+/**
+ * POST /api/ai/authorize-voice-to-task
+ * Validates user daily voice parsing limits and issues a 5-minute signed JWT generation token
+ */
+exports.authorizeVoiceToTask = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Enforce Daily AI Voice rate limiting
+    const { user, generationsLeft, limit } = await checkAiVoiceLimit(userId);
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI voice parsing limit reached. You can parse up to ${limit} audio clips per day.`
+      });
+    }
+
+    // Increment (deduct credit immediately on authorization ticket issue)
+    const remaining = await incrementAiVoiceLimit(user);
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Vercel-Backend] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    // Sign the 5-minute single-use generation token
+    const generationToken = jwt.sign(
+      {
+        userId,
+        action: 'parse-voice-to-task'
+      },
+      jwtSecret,
+      { expiresIn: '5m' }
+    );
+
+    res.status(200).json({
+      generationToken,
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002',
+      generationsLeft: remaining
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] authorizeVoiceToTask error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error while authorizing task voice parse.' });
+  }
+};
+
+/**
+ * GET /api/ai/voice-limits
+ * Fetches remaining daily voice parse limit for the user
+ */
+exports.getVoiceLimits = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { generationsLeft, limit } = await checkAiVoiceLimit(userId);
+    res.status(200).json({ generationsLeft, limit });
+  } catch (error) {
+    console.error('[Vercel-Backend] getVoiceLimits error:', error.message);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+

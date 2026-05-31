@@ -573,6 +573,42 @@
             <span id="scan-credits-badge" style="display: inline-flex; align-items: center; font-size: 10px; font-weight: 900; background: #1a0008; color: #ffb3d9; padding: 2px 10px; border-radius: 3px; letter-spacing: 0.5px; white-space: nowrap; text-transform: uppercase;">checking credits...</span>
           </button>
 
+          <button class="btn-primary ripple" onclick="triggerVoiceToTask()" id="voice-record-btn" style="width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 14px; background: #c3ffb3; border: 2px solid var(--black); box-shadow: 3px 3px 0 var(--black); display: flex; box-sizing: border-box; color: var(--black); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 800; margin-top: 8px;" title="Record voice description to extract tasks">
+            <span style="display:flex;align-items:center;gap:7px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+              <span style="font-weight: 800;" id="voice-btn-text">Voice-to-Daily-Task</span>
+            </span>
+            <span id="voice-credits-badge" style="display: inline-flex; align-items: center; font-size: 10px; font-weight: 900; background: var(--black); color: #c3ffb3; padding: 2px 10px; border-radius: 3px; letter-spacing: 0.5px; white-space: nowrap; text-transform: uppercase;">checking credits...</span>
+          </button>
+
+          <!-- Voice Recording & Confirm Area -->
+          <div id="voice-record-container" style="display: none; margin-top: 12px; padding: 12px; border: 2px solid var(--black); border-radius: 8px; background: var(--bg-muted); box-shadow: 3px 3px 0 var(--black); box-sizing: border-box;">
+            <div style="font-size: 11px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; color: var(--text);">
+              <span>🎙️ Voice Recorder</span>
+              <span id="voice-timer" style="color: #ff3b30; font-weight: 900; font-size: 11px;">00:00</span>
+            </div>
+            
+            <!-- Voice UI Visualizer and State Description -->
+            <div id="voice-visualizer-container" style="height: 60px; border: 2px solid var(--black); border-radius: 6px; background: #111; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+              <div id="voice-status-text" style="color: #0f0; font-family: monospace; font-size: 11px; font-weight: bold; z-index: 2; text-shadow: 0 0 4px #000;">READY TO RECORD</div>
+              <div id="voice-visualizer-bars" style="display: flex; gap: 3px; align-items: center; justify-content: center; height: 100%; width: 100%; position: absolute; top: 0; left: 0; opacity: 0.4;">
+                <!-- Animated bars injected dynamically -->
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-primary ripple" id="voice-action-btn" style="flex: 1; padding: 8px 12px; background: #ff4a4a; border-color: var(--black); color: white; font-size: 11px; font-weight: 900; box-shadow: 2px 2px 0 var(--black); text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                🔴 Start Recording
+              </button>
+              <button class="btn-primary ripple" id="voice-send-btn" style="flex: 1; padding: 8px 12px; background: #4caf50; border-color: var(--black); color: black; font-size: 11px; font-weight: 900; box-shadow: 2px 2px 0 var(--black); text-transform: uppercase; display: none; align-items: center; justify-content: center; gap: 6px;">
+                🚀 Send to AI
+              </button>
+              <button class="btn-ghost ripple" id="voice-cancel-btn" style="flex: 1; padding: 8px 12px; border-color: var(--black); color: var(--text); font-size: 11px; font-weight: 900; border-width: 2px; box-shadow: 2px 2px 0 var(--black); text-transform: uppercase;">
+                ❌ Cancel
+              </button>
+            </div>
+          </div>
+
           <!-- Image Scan Preview & Confirm Area -->
           <div id="scan-preview-container" style="display: none; margin-top: 12px; padding: 10px; border: 2px solid var(--black); border-radius: 8px; background: var(--bg-muted); box-shadow: 3px 3px 0 var(--black); box-sizing: border-box;">
             <div style="font-size: 11px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; color: var(--text);">

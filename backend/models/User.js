@@ -220,6 +220,14 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    voiceParseCount: {
+      type: Number,
+      default: 0,
+    },
+    voiceParseResetTime: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );
