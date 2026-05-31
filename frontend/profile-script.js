@@ -432,9 +432,9 @@ function renderContributionGraph(data, isPremium = false) {
       let rectStyle = '';
       if (isPremium && completed > 0) {
         fill = 'url(#premiumGlowGradient)';
-        rectStyle = 'filter: drop-shadow(0px 0px 3px rgba(255, 214, 10, 0.85)); cursor:pointer;';
+        rectStyle = 'filter: drop-shadow(0px 0px 4px rgba(255, 214, 10, 0.95)) drop-shadow(0px 0px 8px rgba(255, 46, 147, 0.7)); cursor:pointer;';
       }
-      const stroke = isPremium && completed > 0 ? 'rgba(255, 214, 10, 0.4)' : 'rgba(0,0,0,0.05)';
+      const stroke = isPremium && completed > 0 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0,0,0,0.05)';
       rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="1" style="${rectStyle}"><title>${dateStr}: ${completed} tasks</title></rect>`;
       curr.setDate(curr.getDate() + 1);
     }
@@ -445,12 +445,13 @@ function renderContributionGraph(data, isPremium = false) {
   
   let svg = `<div class="graph-wrapper"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;">`;
   
-  // Dynamic gradient definition for premium glowing effect
+  // Dynamic gradient definition for premium glowing effect (holographic sunset)
   svg += `
     <defs>
       <linearGradient id="premiumGlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stop-color="#FFD60A" />
-        <stop offset="100%" stop-color="#FF3EA5" />
+        <stop offset="50%" stop-color="#FF2E93" />
+        <stop offset="100%" stop-color="#8A2BE2" />
       </linearGradient>
     </defs>
   `;
