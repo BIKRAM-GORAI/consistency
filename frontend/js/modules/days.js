@@ -732,13 +732,15 @@ async function toggleTask(dayId, catId, taskId, checked) {
 
   task.completed = checked;
 
-  // Haptic feedback for Capacitor mobile when completing tasks
+  // Satisfying tactile vibration feedback (natively supported on Android WebViews via navigator.vibrate)
   try {
-    if (window.Capacitor && window.Capacitor.isPluginAvailable('Haptics')) {
+    if (navigator.vibrate) {
+      navigator.vibrate(15); // Crisp 15ms haptic vibration tick
+    } else if (window.Capacitor && window.Capacitor.isPluginAvailable('Haptics')) {
       window.Capacitor.Plugins.Haptics.impact({ style: 'LIGHT' });
     }
-  } catch (hapticErr) {
-    // Ignore haptic errors silently
+  } catch (vibrateErr) {
+    // Ignore vibration errors silently
   }
 
   // Use the ID that actually corresponds to elements currently in the DOM

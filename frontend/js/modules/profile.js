@@ -1163,10 +1163,9 @@ function renderContributionGraph(data, targetId = 'public-profile-graph', isPrem
       let rectStyle = 'cursor:pointer;';
       if (isPremium && completed > 0) {
         fill = 'url(#premiumGlowGradient)';
-        rectStyle += 'filter: drop-shadow(0px 0px 4px rgba(255, 214, 10, 0.95)) drop-shadow(0px 0px 8px rgba(255, 46, 147, 0.7));';
       }
       
-      const stroke = isPremium && completed > 0 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0,0,0,0.1)';
+      const stroke = 'rgba(0,0,0,0.1)';
       const toastMsg = `${dateStr}\\n${completed} task${completed === 1 ? '' : 's'} completed`;
       const titleHover = `${dateStr}: ${completed} task${completed === 1 ? '' : 's'} completed`;
       

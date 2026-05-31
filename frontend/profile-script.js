@@ -432,9 +432,9 @@ function renderContributionGraph(data, isPremium = false) {
       let rectStyle = '';
       if (isPremium && completed > 0) {
         fill = 'url(#premiumGlowGradient)';
-        rectStyle = 'filter: drop-shadow(0px 0px 4px rgba(255, 214, 10, 0.95)) drop-shadow(0px 0px 8px rgba(255, 46, 147, 0.7)); cursor:pointer;';
+        rectStyle = 'cursor:pointer;';
       }
-      const stroke = isPremium && completed > 0 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0,0,0,0.05)';
+      const stroke = 'rgba(0,0,0,0.05)';
       rectsHtml += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" ry="2" fill="${fill}" stroke="${stroke}" stroke-width="1" style="${rectStyle}"><title>${dateStr}: ${completed} tasks</title></rect>`;
       curr.setDate(curr.getDate() + 1);
     }
