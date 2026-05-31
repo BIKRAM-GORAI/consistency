@@ -8,7 +8,7 @@ if (isAndroidNative) {
 window.isAndroidNative = isAndroidNative;
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "2.5";
+let runningAppVersion = "2.6";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {

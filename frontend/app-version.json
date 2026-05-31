@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.5",
+  "latestVersion": "2.6",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.5:\n• 📶 Critical Offline WebView Launch Fix: Integrated a native connection checker and dynamic cache fallback (LOAD_CACHE_ELSE_NETWORK) so the app loads seamlessly and completely offline without ERR_INTERNET_DISCONNECTED errors!\n• 🚀 Remote Engine Shell Upgrade: Fully redirects deep links and back actions to the live remote site origin."
+  "releaseNotes": "✨ What's new in v2.6:\n• 💳 Seamless Native UPI Payments: Added complete native deep-link delegation for PhonePe, Paytm, GPay, and other UPI apps to eliminate WebView crashes and make checkouts lightning-fast!\n• 🛠️ Razorpay Checkout & Refund Improvements: Seamlessly integrated standard live payment and refund APIs, optimizing transaction security and reliability."
 }

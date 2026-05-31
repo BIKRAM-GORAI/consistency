@@ -103,6 +103,52 @@ public class MainActivity extends BridgeActivity {
                             return true;
                         }
                         
+                        // Handle native deep-link schemes (e.g. phonepe://, upi://, gpay://, paytm://, intent://)
+                        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:") && !url.startsWith("javascript:")) {
+                            android.util.Log.d("PaymentPopup", "Intercepted native deep-link: " + url);
+                            
+                            // Special handling for intent:// schemes
+                            if (url.startsWith("intent://")) {
+                                try {
+                                    android.content.Intent intent = android.content.Intent.parseUri(url, android.content.Intent.URI_INTENT_SCHEME);
+                                    if (intent != null) {
+                                        try {
+                                            MainActivity.this.startActivity(intent);
+                                        } catch (android.content.ActivityNotFoundException e) {
+                                            // Fallback handling if target app is not installed
+                                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                                            if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
+                                                android.util.Log.d("PaymentPopup", "Target app not installed. Loading fallback URL in main WebView: " + fallbackUrl);
+                                                MainActivity.this.bridge.getWebView().loadUrl(fallbackUrl);
+                                            } else {
+                                                String packageName = intent.getPackage();
+                                                if (packageName != null) {
+                                                    android.util.Log.d("PaymentPopup", "Target app not installed. Opening Play Store for: " + packageName);
+                                                    android.content.Intent marketIntent = new android.content.Intent(
+                                                        android.content.Intent.ACTION_VIEW,
+                                                        android.net.Uri.parse("market://details?id=" + packageName)
+                                                    );
+                                                    MainActivity.this.startActivity(marketIntent);
+                                                }
+                                            }
+                                        }
+                                        return true;
+                                    }
+                                } catch (Exception e) {
+                                    android.util.Log.e("PaymentPopup", "Failed to parse/handle intent URI: " + url, e);
+                                }
+                            } else {
+                                // Direct deep link scheme (phonepe://, upi://, etc.)
+                                try {
+                                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                                    MainActivity.this.startActivity(intent);
+                                    return true;
+                                } catch (Exception e) {
+                                    android.util.Log.e("PaymentPopup", "Failed to start activity for deep-link: " + url, e);
+                                }
+                            }
+                        }
+                        
                         // Redirect the URL into the main app WebView (for Razorpay popup redirects)
                         android.util.Log.d("PaymentPopup", "Intercepted popup → loading in main WebView: " + url);
                         MainActivity.this.bridge.getWebView().loadUrl(url);

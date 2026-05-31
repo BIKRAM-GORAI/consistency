@@ -1031,6 +1031,12 @@ module.exports = {
       let refundAmountPaise = undefined;
       if (payment && payment.amount) {
         refundAmountPaise = Math.floor(payment.amount * 0.97 * 100);
+        
+        // Razorpay API strictly requires the refund amount to be at least INR 1.00 (100 paise)
+        if (refundAmountPaise < 100) {
+          refundAmountPaise = Math.floor(payment.amount * 100);
+        }
+        
         finalRefundRupees = (refundAmountPaise / 100).toFixed(2);
       }
 
