@@ -290,8 +290,10 @@ async function submitProfileSettings() {
       const userId = localStorage.getItem('window.userId');
       await window.localDb.userProfile.put({ ...payload, userId: window.userId });
       
-      // 2. Queue for Sync
-      window.syncManager.addToQueue('PATCH', 'auth/settings', null, payload);
+      // 2. Queue for Sync ONLY if offline to avoid duplicate concurrent uploads online
+      if (!navigator.onLine) {
+        window.syncManager.addToQueue('PATCH', 'auth/settings', null, payload);
+      }
     }
     localStorage.setItem('showOnLeaderboard', showOnLeaderboard.toString());
 
@@ -322,34 +324,36 @@ async function submitProfileSettings() {
     
     closeModal('modal-profile');
 
-    // 4. Background Sync (Don't await it for the UI)
-    apiFetch(`${window.API}/api/auth/settings`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload)
-    }).then(async res => {
-      // Pre-cache new profile image as base64 to prevent broken images offline
-      await cacheProfileImagesOffline(res);
-      if (window.localDb) {
-        const cached = await window.localDb.userProfile.get(window.userId) || {};
-        await window.localDb.userProfile.put({ ...cached, ...res, userId: window.userId });
-      }
-      // Update local storage and UI if pic/username changed (Server confirmation)
-      if (res.profilePicture) {
-        window.userProfilePicture = res.profilePicture;
-        localStorage.setItem('window.userProfilePicture', window.userProfilePicture);
-        updateNavAvatar();
-      }
-      if (res.username) {
-        localStorage.setItem('userUsername', res.username);
-      }
-      // Reload leaderboard to reflect visibility settings changes instantly in-place!
-      const activePage = document.querySelector('.page.active');
-      if (activePage && activePage.id === 'page-leaderboard') {
-        loadLeaderboard(true);
-      }
-    }).catch(err => {
-      console.warn('Background profile sync failed (expected if offline):', err);
-    });
+    // 4. Background Sync (Don't await it for the UI) ONLY if online
+    if (navigator.onLine) {
+      apiFetch(`${window.API}/api/auth/settings`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      }).then(async res => {
+        // Pre-cache new profile image as base64 to prevent broken images offline
+        await cacheProfileImagesOffline(res);
+        if (window.localDb) {
+          const cached = await window.localDb.userProfile.get(window.userId) || {};
+          await window.localDb.userProfile.put({ ...cached, ...res, userId: window.userId });
+        }
+        // Update local storage and UI if pic/username changed (Server confirmation)
+        if (res.profilePicture) {
+          window.userProfilePicture = res.profilePicture;
+          localStorage.setItem('window.userProfilePicture', window.userProfilePicture);
+          updateNavAvatar();
+        }
+        if (res.username) {
+          localStorage.setItem('userUsername', res.username);
+        }
+        // Reload leaderboard to reflect visibility settings changes instantly in-place!
+        const activePage = document.querySelector('.page.active');
+        if (activePage && activePage.id === 'page-leaderboard') {
+          loadLeaderboard(true);
+        }
+      }).catch(err => {
+        console.warn('Background profile sync failed:', err);
+      });
+    }
 
   } catch (err) {
     console.error('Profile save error:', err);
