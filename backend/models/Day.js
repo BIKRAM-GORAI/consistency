@@ -59,6 +59,10 @@ const DaySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+    graceApplied: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

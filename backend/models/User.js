@@ -228,6 +228,14 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    graceCount: {
+      type: Number,
+      default: 0,
+    },
+    graceResetTime: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

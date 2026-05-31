@@ -438,6 +438,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
   const cardDateNormalized = (day.date || '').split('T')[0];
   const isToday = cardDateNormalized === today;
   const isFuture = cardDateNormalized > today;
+  const isEditable = isToday || !!day.graceApplied;
   const pct     = window.calcProgress(day.categories);
 
   const card = document.createElement('div');
@@ -450,7 +451,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
   for (const cat of day.categories) {
     let tasksHTML = '';
     for (const task of cat.tasks) {
-      if (isToday) {
+      if (isEditable) {
         tasksHTML += `
           <div class="task-item">
             <input type="checkbox" class="task-checkbox"
@@ -471,10 +472,10 @@ function buildDayCard(day, preLoadedAchievements = null) {
     }
 
     const completedCount = cat.tasks.filter(t => t.completed).length;
-    const editCatBtn = isToday
+    const editCatBtn = isEditable
       ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category"><i data-lucide="edit-3"></i></button>`
       : '';
-    const delCatBtn = isToday
+    const delCatBtn = isEditable
       ? `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category"><i data-lucide="trash-2"></i></button>`
       : '';
     categoriesHTML += `
@@ -492,13 +493,13 @@ function buildDayCard(day, preLoadedAchievements = null) {
   }
 
   // Summary
-  const summaryInner = isToday
+  const summaryInner = isEditable
     ? `<textarea class="summary-edit" id="summary-edit-${day._id}" rows="3">${window.escHtml(day.summary || '')}</textarea>
        <button class="summary-save-btn ripple" onclick="saveSummary('${day._id}')"><i data-lucide="save"></i> Save Note</button>`
     : `<p class="summary-text">${window.escHtml(day.summary || '(no notes for this day)')}</p>`;
 
-  // Add category button (today only)
-  const addCatBtn = isToday
+  // Add category button (today/graced only)
+  const addCatBtn = isEditable
     ? `<div class="add-category-row"><button class="btn-add-cat ripple" onclick="openAddCategoryModal('${day._id}')"><i data-lucide="plus-circle"></i> Add Category</button></div>`
     : '';
 
@@ -510,7 +511,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
         <i data-lucide="palette"></i>
       </button>
     `;
-  } else if (isToday) {
+  } else if (isEditable) {
     scratchpadHeaderBtnHTML = `
       <button class="card-scratchpad-btn card-scratchpad-create ripple" onclick="openScratchpad('${day._id}')" title="Add Scratchpad">
         <i data-lucide="paintbrush"></i>
@@ -540,6 +541,19 @@ function buildDayCard(day, preLoadedAchievements = null) {
     `;
   }
 
+  // Grace streak-protection control display
+  let graceBadgeHTML = '';
+  if (day.graceApplied) {
+    graceBadgeHTML = `<span class="card-badge" style="background:#c3ffb3;color:#000;border:2px solid #000;box-shadow:1.5px 1.5px 0 #000;padding:2px 8px;font-size:10px;font-weight:900;text-transform:uppercase;border-radius:4px;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;"><i data-lucide="shield-check" style="width:12px;height:12px;"></i> GRACED</span>`;
+  } else if (!isToday && !isFuture) {
+    graceBadgeHTML = `
+      <button class="btn-primary ripple" data-requires-network="true" onclick="applyGrace('${day._id}')" style="background:#ffb3d9;color:#000;border:2px solid #000;box-shadow:2px 2px 0 #000;padding:4px 10px;font-size:10px;font-weight:900;text-transform:uppercase;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;" title="Protect your streak with a Grace Day"><i data-lucide="shield-alert" style="width:12px;height:12px;"></i> Apply Grace</button>
+      <span class="card-badge badge-past">Past</span>
+    `;
+  } else {
+    graceBadgeHTML = `<span class="card-badge ${isToday ? 'badge-today' : 'badge-future'}">${isToday ? '<i data-lucide="sparkles"></i> Today' : '<i data-lucide="clock"></i> Future'}</span>`;
+  }
+
   card.innerHTML = `
     <div class="card-header">
       <div class="card-date-wrap">
@@ -548,7 +562,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
       </div>
       <div class="card-header-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
         ${scratchpadHeaderBtnHTML}
-        <span class="card-badge ${isToday ? 'badge-today' : (isFuture ? 'badge-future' : 'badge-past')}">${isToday ? '<i data-lucide="sparkles"></i> Today' : (isFuture ? '<i data-lucide="clock"></i> Future' : 'Past')}</span>
+        ${graceBadgeHTML}
       </div>
     </div>
 
@@ -2644,6 +2658,121 @@ function resetVoiceUI() {
   window.voiceAudioBlob = null;
 }
 
+// ==========================================
+// GRACE STREAK-PROTECTION SYSTEM LOGIC
+// ==========================================
+
+async function applyGrace(dayId) {
+  const modal = document.getElementById('modal-confirm-grace');
+  const quotaBadge = document.getElementById('grace-modal-quota-badge');
+  const confirmBtn = document.getElementById('confirm-grace-submit-btn');
+  
+  if (!modal || !quotaBadge || !confirmBtn) return;
+
+  // Set the confirm button's onclick to point to the resolved dayId
+  confirmBtn.onclick = async () => {
+    await confirmApplyGrace(dayId);
+  };
+
+  quotaBadge.textContent = 'checking...';
+  quotaBadge.style.color = '#c3ffb3';
+  confirmBtn.disabled = true;
+
+  // Open the neobrutalist modal
+  window.openModal('modal-confirm-grace');
+
+  try {
+    // Fetch fresh Grace limits from Vercel backend
+    const res = await window.apiFetch(`${window.API}/api/days/grace-limits`);
+    if (res && typeof res.graceLeft !== 'undefined') {
+      window.graceLeft = res.graceLeft;
+      window.graceLimit = res.limit;
+      quotaBadge.textContent = `${res.graceLeft}/${res.limit} left`;
+      
+      if (res.graceLeft > 0) {
+        confirmBtn.disabled = false;
+        quotaBadge.style.color = '#c3ffb3';
+      } else {
+        confirmBtn.disabled = true;
+        quotaBadge.style.color = '#ff6b6b';
+        window.showToast('You have used all your monthly grace credits!', 'error');
+      }
+    } else {
+      quotaBadge.textContent = 'Error fetching';
+      quotaBadge.style.color = '#ff6b6b';
+    }
+  } catch (err) {
+    console.error('Failed to fetch monthly grace limits:', err);
+    quotaBadge.textContent = 'Offline';
+    quotaBadge.style.color = '#ff6b6b';
+  }
+}
+
+async function confirmApplyGrace(dayId) {
+  const confirmBtn = document.getElementById('confirm-grace-submit-btn');
+  const originalText = confirmBtn.innerHTML;
+  
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = `
+    <span style="display:flex;align-items:center;gap:6px;">
+      <span class="spinner-ring" style="width:12px;height:12px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
+      <span>Applying...</span>
+    </span>
+  `;
+
+  try {
+    // Post to the Vercel backend to apply Grace
+    const res = await window.apiFetch(`${window.API}/api/days/${dayId}/apply-grace`, {
+      method: 'POST'
+    });
+
+    if (!res || !res.day) {
+      throw new Error(res.message || 'Failed to apply Grace streak protection.');
+    }
+
+    // Success! Update in-memory allDays list
+    const dayIndex = window.allDays.findIndex(d => d._id === dayId);
+    if (dayIndex !== -1) {
+      window.allDays[dayIndex].graceApplied = true;
+    }
+
+    // Save in local database for offline persistence
+    const localDay = window.allDays.find(d => d._id === dayId);
+    if (localDay) {
+      await window.localDb.days.put(localDay);
+    }
+
+    // Update global limits state
+    if (typeof res.graceLeft !== 'undefined') {
+      window.graceLeft = res.graceLeft;
+      window.graceLimit = res.limit;
+    }
+
+    // Update streak on UI
+    if (typeof res.streak !== 'undefined') {
+      const streakVal = document.getElementById('current-streak-val');
+      if (streakVal) {
+        streakVal.textContent = res.streak;
+      }
+    }
+
+    window.closeModal('modal-confirm-grace');
+    window.showToast('Grace Day applied! Past card unlocked permanently.', 'success');
+
+    // Trigger full rerender of the card list to immediately show "GRACED" status and make it editable!
+    if (typeof renderDays === 'function') {
+      renderDays();
+    }
+
+  } catch (err) {
+    console.error('Failed to apply grace day:', err);
+    window.showToast(err.message || 'Failed to apply Grace Day.', 'error');
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = originalText;
+  }
+}
+
 // Bind to window
 window.evaluateDaysDistractions = evaluateDaysDistractions;
 window.deleteDailySummary = deleteDailySummary;
@@ -2651,5 +2780,6 @@ window.toggleAiRecapExpansion = toggleAiRecapExpansion;
 window.triggerTaskImageScan = triggerTaskImageScan;
 window.triggerVoiceToTask = triggerVoiceToTask;
 window.updateVoiceButtonText = updateVoiceButtonText;
+window.applyGrace = applyGrace;
 
 console.log("[Module] days.js loaded and Days functions bound to window");

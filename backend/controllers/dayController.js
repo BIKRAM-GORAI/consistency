@@ -468,6 +468,119 @@ const saveScratchpad = async (req, res) => {
   }
 };
 
+const getAiGraceLimit = (user) => {
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  let limit;
+  if (isPremium) {
+    limit = parseInt(process.env.PREMIUM_MONTHLY_GRACE_LIMIT, 10);
+    if (isNaN(limit)) limit = 6;
+  } else {
+    limit = parseInt(process.env.FREE_MONTHLY_GRACE_LIMIT, 10);
+    if (isNaN(limit)) limit = 2;
+  }
+  return limit;
+};
+
+/**
+ * Checks the user's monthly Grace count, resetting it if a calendar month has changed.
+ */
+const checkGraceLimit = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.graceResetTime ? new Date(user.graceResetTime) : new Date(0);
+
+  // Compare calendar months
+  if (now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+    user.graceCount = 0;
+    user.graceResetTime = now;
+    await user.save();
+  }
+
+  const limit = getAiGraceLimit(user);
+  const graceLeft = Math.max(0, limit - user.graceCount);
+  return { user, graceLeft, limit };
+};
+
+/**
+ * GET /api/days/grace-limits
+ * Fetches remaining monthly grace activations for the user
+ */
+const getGraceLimits = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { graceLeft, limit } = await checkGraceLimit(userId);
+    res.status(200).json({ graceLeft, limit });
+  } catch (error) {
+    console.error('[Vercel-Backend] getGraceLimits error:', error.message);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+/**
+ * POST /api/days/:id/apply-grace
+ * Applies a monthly streak protection Grace point to unlock a past day sheet card permanently.
+ */
+const applyGrace = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const dayId = req.params.id;
+
+    // Retrieve the target day sheet
+    const day = await Day.findOne({ _id: dayId, userId });
+    if (!day) {
+      return res.status(404).json({ message: 'Day sheet card not found.' });
+    }
+
+    // Verify it is indeed a past day card (not today, not future)
+    const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    if (day.date >= todayStr) {
+      return res.status(400).json({ message: 'Grace days can only be applied to past cards.' });
+    }
+
+    if (day.graceApplied) {
+      return res.status(400).json({ message: 'Grace has already been applied to this day card!' });
+    }
+
+    // Validate and enforce monthly Grace quota limits
+    const { user, graceLeft, limit } = await checkGraceLimit(userId);
+    if (graceLeft <= 0) {
+      return res.status(400).json({
+        message: `Insufficient Grace Quota. You have used your monthly limit of ${limit} grace days.`
+      });
+    }
+
+    // Deduct 1 Grace quota point
+    user.graceCount += 1;
+    await user.save();
+
+    // Mark Grace as applied on target card
+    day.graceApplied = true;
+    const savedDay = await day.save();
+
+    // Re-verify/Update user streak
+    const clientDate = req.headers['x-client-date'];
+    const currentStreak = await updateUserStreakAndActivity(userId, clientDate);
+
+    res.status(200).json({
+      message: 'Grace Day applied successfully!',
+      day: savedDay,
+      graceLeft: Math.max(0, limit - user.graceCount),
+      limit,
+      streak: currentStreak
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] applyGrace error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error while applying Grace streak protection.' });
+  }
+};
+
 module.exports = { 
   getAllDays, 
   getDayByDate, 
@@ -477,6 +590,8 @@ module.exports = {
   deleteDay, 
   getScratchpad, 
   saveScratchpad,
+  getGraceLimits,
+  applyGrace,
   calculateCurrentStreak,
   calculateHighestStreak
 };
