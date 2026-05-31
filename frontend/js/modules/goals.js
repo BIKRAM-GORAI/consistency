@@ -61,7 +61,8 @@ async function loadGoals() {
         .map(g => g._id);
       
       await localDb.goals.bulkDelete(toDelete);
-      await localDb.goals.bulkPut(safeToUpdate);
+      const validGoals = (safeToUpdate || []).filter(g => g && typeof g === 'object' && g._id);
+      await localDb.goals.bulkPut(validGoals);
 
       // Reconstruct final window.allGoals in memory: server data + locally modified goals
       const localPendingGoals = await Promise.all(

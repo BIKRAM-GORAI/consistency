@@ -154,7 +154,7 @@ app.use((req, res, next) => {
       "img-src 'self' data: blob: https: https://res.cloudinary.com https://*.cloudinary.com https://placehold.co https://via.placeholder.com https://www.google.com https://jitsi.belnet.be https://meet.jit.si https://*.clarity.ms https://c.bing.com https://checkout.razorpay.com https://*.razorpay.com https://cdn.razorpay.com",
       "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       `connect-src ${connectSrc.join(' ')}`,
-      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com",
+      "frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.firebasedatabase.app https://vercel.live https://jitsi.belnet.be https://meet.jit.si https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com https://*.youtube.com https://*.youtube-nocookie.com https://*.spotify.com",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",

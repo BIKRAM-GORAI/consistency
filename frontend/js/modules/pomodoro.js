@@ -1,0 +1,503 @@
+console.log("[Module] pomodoro.js initializing...");
+
+// ── localStorage key ──────────────────────────────────────────────────────────
+const POMO_KEY = 'consistency_pomo_state';
+
+function savePomoState() {
+  try {
+    const state = {
+      mode:            pomoMode,
+      secondsLeft:     pomoSecondsRemaining,
+      totalDuration:   pomoTotalDuration,
+      isRunning:       pomoIsRunning,
+      savedAt:         Date.now(),
+      // Custom cycling session
+      customTotalMin,
+      customWorkMin,
+      customBreakMin,
+      customSessionRemaining,
+      customPhase,
+      customPhaseRemaining,
+      isCustomSession,
+    };
+    localStorage.setItem(POMO_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function clearPomoState() {
+  try { localStorage.removeItem(POMO_KEY); } catch (e) {}
+}
+
+// ── Chime ─────────────────────────────────────────────────────────────────────
+function playTimerFinishedChime() {
+  try {
+    const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.65);
+  } catch (e) { console.warn('Chime failed:', e); }
+}
+
+// ── Regular timer state ───────────────────────────────────────────────────────
+let pomoInterval         = null;
+let pomoSecondsRemaining = 25 * 60;
+let pomoTotalDuration    = 25 * 60;
+let pomoIsRunning        = false;
+let pomoMode             = 'work'; // 'work'|'break'|'long'|'custom'
+
+// ── Custom cycling session state ──────────────────────────────────────────────
+let customTotalMin         = 60;  // total session budget (minutes)
+let customWorkMin          = 25;  // each work interval
+let customBreakMin         = 5;   // each break interval
+let customSessionRemaining = 0;   // total seconds left in session
+let customPhase            = 'work'; // 'work' | 'break'
+let customPhaseRemaining   = 0;   // seconds left in current phase
+let isCustomSession        = false;
+
+// ── Phase badge helpers ───────────────────────────────────────────────────────
+function showPhaseBadge(phase) {
+  const badge = document.getElementById('pomo-phase-badge');
+  const icon  = document.getElementById('pomo-phase-icon');
+  const label = document.getElementById('pomo-phase-label');
+  if (!badge) return;
+  badge.style.display = 'flex';
+  badge.className = phase; // 'work' or 'break' — drives CSS color
+  if (icon)  icon.textContent  = phase === 'work' ? '🎯' : '☕';
+  if (label) label.textContent = phase === 'work' ? 'Work Session' : 'Break Time';
+}
+
+function hidePhaseBadge() {
+  const badge = document.getElementById('pomo-phase-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function showTotalRemaining(seconds) {
+  const el = document.getElementById('pomo-total-remaining');
+  if (!el) return;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  el.style.display = 'block';
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} total remaining`;
+}
+
+function hideTotalRemaining() {
+  const el = document.getElementById('pomo-total-remaining');
+  if (el) el.style.display = 'none';
+}
+
+// ── Mode management ───────────────────────────────────────────────────────────
+function setPomoMode(mode, skipSave = false) {
+  const panel = document.getElementById('pomo-custom-panel');
+
+  // Clicking Custom while Custom is already active → close & revert to work
+  if (mode === 'custom' && pomoMode === 'custom') {
+    panel?.classList.remove('open');
+    setPomoMode('work');
+    return;
+  }
+
+  pomoMode = mode;
+  isCustomSession = false;
+  stopPomodoroTimer();
+
+  hidePhaseBadge();
+  hideTotalRemaining();
+
+  if (panel) panel.classList.toggle('open', mode === 'custom');
+
+  if      (mode === 'work')   pomoSecondsRemaining = 25 * 60;
+  else if (mode === 'break')  pomoSecondsRemaining = 5 * 60;
+  else if (mode === 'long')   pomoSecondsRemaining = 15 * 60;
+  else if (mode === 'custom') pomoSecondsRemaining = customWorkMin * 60;
+
+  pomoTotalDuration = pomoSecondsRemaining;
+
+  document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById(`pomo-mode-${mode}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  updatePomoDisplay();
+  if (!skipSave) savePomoState();
+}
+
+// ── Display ───────────────────────────────────────────────────────────────────
+function updatePomoDisplay() {
+  const display = document.getElementById('pomo-display');
+  if (!display) return;
+  const m = Math.floor(pomoSecondsRemaining / 60);
+  const s = pomoSecondsRemaining % 60;
+  display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  const modeText = (pomoMode === 'work' || isCustomSession) ? 'Focus' : 'Break';
+  document.title = pomoIsRunning
+    ? `(${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}) ${modeText} | Consistency Daily`
+    : 'Consistency Daily | Dashboard';
+}
+
+// ── Regular timer controls ────────────────────────────────────────────────────
+function togglePomodoroTimer() {
+  if (isCustomSession) {
+    pomoIsRunning ? stopCustomSession() : resumeCustomSession();
+  } else {
+    pomoIsRunning ? stopPomodoroTimer() : startPomodoroTimer();
+  }
+}
+
+function startPomodoroTimer() {
+  if (pomoIsRunning) return;
+  pomoIsRunning = true;
+  setBtnPaused(true);
+
+  pomoInterval = setInterval(() => {
+    if (pomoSecondsRemaining > 0) {
+      pomoSecondsRemaining--;
+      updatePomoDisplay();
+      savePomoState();
+    } else {
+      clearPomoState();
+      playTimerFinishedChime();
+      alert(pomoMode === 'work'
+        ? '⏰ Focus session complete! Time for a break.'
+        : '⏰ Break over! Back to work.');
+      setPomoMode(pomoMode === 'work' ? 'break' : 'work');
+    }
+  }, 1000);
+}
+
+function stopPomodoroTimer() {
+  if (pomoInterval) { clearInterval(pomoInterval); pomoInterval = null; }
+  pomoIsRunning = false;
+  setBtnPaused(false);
+  updatePomoDisplay();
+  savePomoState();
+}
+
+function resetPomodoroTimer() {
+  if (isCustomSession) {
+    stopCustomSession();
+    isCustomSession = false;
+    hidePhaseBadge();
+    hideTotalRemaining();
+  } else {
+    stopPomodoroTimer();
+  }
+  clearPomoState();
+  setPomoMode(pomoMode);
+}
+
+// ── Start/Pause button state ──────────────────────────────────────────────────
+function setBtnPaused(paused) {
+  const btn = document.getElementById('pomo-start-btn');
+  if (!btn) return;
+  if (paused) {
+    btn.innerHTML = '<i data-lucide="pause" style="width:18px;height:18px;"></i> Pause';
+    btn.classList.add('paused');
+  } else {
+    btn.innerHTML = '<i data-lucide="play" style="width:18px;height:18px;"></i> Start';
+    btn.classList.remove('paused');
+  }
+  if (window.lucide) lucide.createIcons({ root: btn });
+}
+
+// ── Custom cycling session engine ─────────────────────────────────────────────
+function applyCustomPomoMode() {
+  const totalInput = document.getElementById('custom-total-min');
+  const workInput  = document.getElementById('custom-work-min');
+  const breakInput = document.getElementById('custom-break-min');
+
+  const t = Math.max(5,  Math.min(480, parseInt(totalInput?.value) || 60));
+  const w = Math.max(1,  Math.min(120, parseInt(workInput?.value)  || 25));
+  const b = Math.max(1,  Math.min(60,  parseInt(breakInput?.value) || 5));
+
+  // Validate: work + break must be <= total
+  if (w + b > t) {
+    if (window.showToast) window.showToast('⚠️ Work + Break time must be less than Total time!', 'error');
+    return;
+  }
+
+  if (totalInput)  totalInput.value  = t;
+  if (workInput)   workInput.value   = w;
+  if (breakInput)  breakInput.value  = b;
+
+  customTotalMin = t;
+  customWorkMin  = w;
+  customBreakMin = b;
+
+  // Init cycling session
+  customSessionRemaining = t * 60;
+  customPhase            = 'work';
+  customPhaseRemaining   = Math.min(w * 60, customSessionRemaining);
+  isCustomSession        = true;
+  pomoMode               = 'custom';
+
+  // Activate custom button
+  document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pomo-mode-custom')?.classList.add('active');
+
+  // Update display
+  pomoSecondsRemaining = customPhaseRemaining;
+  updatePomoDisplay();
+  showPhaseBadge('work');
+  showTotalRemaining(customSessionRemaining);
+
+  // Close the config panel and start
+  document.getElementById('pomo-custom-panel')?.classList.remove('open');
+  stopCustomSession(); // clear any previous interval
+  startCustomCycle();
+}
+
+function startCustomCycle() {
+  if (pomoIsRunning) return;
+  pomoIsRunning = true;
+  setBtnPaused(true);
+
+  pomoInterval = setInterval(() => {
+    customPhaseRemaining--;
+    customSessionRemaining--;
+
+    // Total session exhausted
+    if (customSessionRemaining <= 0) {
+      customPhaseRemaining   = 0;
+      customSessionRemaining = 0;
+      pomoSecondsRemaining   = 0;
+      updatePomoDisplay();
+      showTotalRemaining(0);
+      stopCustomSession();
+      clearPomoState();
+      isCustomSession = false;
+      hidePhaseBadge();
+      hideTotalRemaining();
+      playTimerFinishedChime();
+      // Reset mode UI back to work
+      document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('pomo-mode-work')?.classList.add('active');
+      pomoMode = 'work';
+      pomoSecondsRemaining = 25 * 60;
+      updatePomoDisplay();
+      alert('🎉 Session complete! Great work!');
+      return;
+    }
+
+    // Current phase finished → switch phase
+    if (customPhaseRemaining <= 0) {
+      playTimerFinishedChime();
+      customPhase = customPhase === 'work' ? 'break' : 'work';
+      const nextSecs = (customPhase === 'work' ? customWorkMin : customBreakMin) * 60;
+      customPhaseRemaining = Math.min(nextSecs, customSessionRemaining);
+      showPhaseBadge(customPhase);
+    }
+
+    pomoSecondsRemaining = customPhaseRemaining;
+    updatePomoDisplay();
+    showTotalRemaining(customSessionRemaining);
+    savePomoState();
+  }, 1000);
+}
+
+function stopCustomSession() {
+  if (pomoInterval) { clearInterval(pomoInterval); pomoInterval = null; }
+  pomoIsRunning = false;
+  setBtnPaused(false);
+  savePomoState();
+}
+
+function resumeCustomSession() {
+  startCustomCycle();
+}
+
+// ── Simulate elapsed time for custom session restore ─────────────────────────
+function simulateCustomElapsed(elapsed, sessionRem, phase, phaseRem, workSecs, breakSecs) {
+  while (elapsed > 0 && sessionRem > 0) {
+    if (elapsed <= phaseRem) {
+      phaseRem   -= elapsed;
+      sessionRem -= elapsed;
+      elapsed     = 0;
+    } else {
+      elapsed    -= phaseRem;
+      sessionRem -= phaseRem;
+      phaseRem    = 0;
+      if (sessionRem <= 0) break;
+      phase    = phase === 'work' ? 'break' : 'work';
+      phaseRem = Math.min(phase === 'work' ? workSecs : breakSecs, sessionRem);
+    }
+  }
+  return { sessionRem, phase, phaseRem };
+}
+
+// ── Stopwatch ─────────────────────────────────────────────────────────────────
+let swInterval  = null;
+let swStartTime = 0;
+let swElapsedMs = 0;
+let swIsRunning = false;
+
+function toggleStopwatch() { swIsRunning ? stopStopwatch() : startStopwatch(); }
+
+function startStopwatch() {
+  if (swIsRunning) return;
+  swIsRunning = true;
+  swStartTime = Date.now() - swElapsedMs;
+  const btn = document.getElementById('sw-start-btn');
+  if (btn) {
+    btn.innerHTML = '<i data-lucide="pause" style="width:18px;height:18px;"></i> Pause';
+    btn.classList.add('paused');
+    if (window.lucide) lucide.createIcons({ root: btn });
+  }
+  swInterval = setInterval(() => {
+    swElapsedMs = Date.now() - swStartTime;
+    updateStopwatchDisplay();
+  }, 50);
+}
+
+function stopStopwatch() {
+  if (swInterval) { clearInterval(swInterval); swInterval = null; }
+  swIsRunning = false;
+  const btn = document.getElementById('sw-start-btn');
+  if (btn) {
+    btn.innerHTML = '<i data-lucide="play" style="width:18px;height:18px;"></i> Start';
+    btn.classList.remove('paused');
+    if (window.lucide) lucide.createIcons({ root: btn });
+  }
+}
+
+function resetStopwatch() { stopStopwatch(); swElapsedMs = 0; updateStopwatchDisplay(); }
+
+function updateStopwatchDisplay() {
+  const display = document.getElementById('sw-display');
+  if (!display) return;
+  const t  = swElapsedMs / 1000;
+  const m  = Math.floor(t / 60);
+  const s  = Math.floor(t % 60);
+  const ms = Math.floor((swElapsedMs % 1000) / 100);
+  display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms}`;
+}
+
+// ── Sub-tab toggle ────────────────────────────────────────────────────────────
+let activePomoSubTab = 'timer';
+
+function switchPomoSubTab(tab) {
+  activePomoSubTab = tab;
+  const timerBlock     = document.getElementById('pomo-timer-block');
+  const stopwatchBlock = document.getElementById('pomo-stopwatch-block');
+  const btnTimer       = document.getElementById('pomo-subtab-timer');
+  const btnStopwatch   = document.getElementById('pomo-subtab-stopwatch');
+  if (tab === 'timer') {
+    if (timerBlock)     timerBlock.style.display = 'block';
+    if (stopwatchBlock) stopwatchBlock.style.display = 'none';
+    if (btnTimer)       btnTimer.classList.add('active');
+    if (btnStopwatch)   btnStopwatch.classList.remove('active');
+  } else {
+    if (timerBlock)     timerBlock.style.display = 'none';
+    if (stopwatchBlock) stopwatchBlock.style.display = 'block';
+    if (btnTimer)       btnTimer.classList.remove('active');
+    if (btnStopwatch)   btnStopwatch.classList.add('active');
+  }
+}
+
+// ── Restore persisted state ───────────────────────────────────────────────────
+function restorePomoState() {
+  let saved;
+  try {
+    const raw = localStorage.getItem(POMO_KEY);
+    if (!raw) return false;
+    saved = JSON.parse(raw);
+  } catch (e) { return false; }
+
+  if (!saved?.mode) return false;
+
+  // Restore custom settings
+  if (saved.customTotalMin)  customTotalMin  = saved.customTotalMin;
+  if (saved.customWorkMin)   customWorkMin   = saved.customWorkMin;
+  if (saved.customBreakMin)  customBreakMin  = saved.customBreakMin;
+
+  // Update input fields
+  const ti = document.getElementById('custom-total-min');
+  const wi = document.getElementById('custom-work-min');
+  const bi = document.getElementById('custom-break-min');
+  if (ti) ti.value = customTotalMin;
+  if (wi) wi.value = customWorkMin;
+  if (bi) bi.value = customBreakMin;
+
+  const elapsed = saved.savedAt ? Math.floor((Date.now() - saved.savedAt) / 1000) : 0;
+
+  // ── Restore custom cycling session ──
+  if (saved.isCustomSession && saved.mode === 'custom') {
+    let { sessionRem, phase, phaseRem } = simulateCustomElapsed(
+      saved.isRunning ? elapsed : 0,
+      saved.customSessionRemaining || 0,
+      saved.customPhase || 'work',
+      saved.customPhaseRemaining || 0,
+      customWorkMin * 60,
+      customBreakMin * 60,
+    );
+
+    if (sessionRem <= 0) { clearPomoState(); return false; }
+
+    isCustomSession        = true;
+    pomoMode               = 'custom';
+    customSessionRemaining = sessionRem;
+    customPhase            = phase;
+    customPhaseRemaining   = phaseRem;
+    pomoSecondsRemaining   = phaseRem;
+
+    document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('pomo-mode-custom')?.classList.add('active');
+
+    updatePomoDisplay();
+    showPhaseBadge(phase);
+    showTotalRemaining(sessionRem);
+
+    if (saved.isRunning) {
+      startCustomCycle();
+      const m = Math.floor(sessionRem / 60), s = sessionRem % 60;
+      if (window.showToast) window.showToast(`▶ Session resumed — ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} total left`, 'success');
+    }
+    return true;
+  }
+
+  // ── Restore regular timer ──
+  let secondsLeft = saved.secondsLeft || 0;
+  if (saved.isRunning && saved.savedAt) secondsLeft -= elapsed;
+  if (secondsLeft <= 0) { clearPomoState(); return false; }
+
+  pomoMode             = saved.mode;
+  pomoSecondsRemaining = secondsLeft;
+  pomoTotalDuration    = saved.totalDuration || secondsLeft;
+
+  document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`pomo-mode-${pomoMode}`)?.classList.add('active');
+  updatePomoDisplay();
+
+  if (saved.isRunning) {
+    startPomodoroTimer();
+    const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60;
+    if (window.showToast) window.showToast(`▶ Resumed — ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} left`, 'success');
+  }
+  return true;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const restored = restorePomoState();
+if (!restored) setPomoMode('work', true);
+
+window.addEventListener('beforeunload', () => {
+  if (pomoIsRunning || isCustomSession) savePomoState();
+});
+
+// ── Window bindings ───────────────────────────────────────────────────────────
+window.setPomoMode         = setPomoMode;
+window.togglePomodoroTimer = togglePomodoroTimer;
+window.resetPomodoroTimer  = resetPomodoroTimer;
+window.toggleStopwatch     = toggleStopwatch;
+window.resetStopwatch      = resetStopwatch;
+window.switchPomoSubTab    = switchPomoSubTab;
+window.applyCustomPomoMode = applyCustomPomoMode;
+
+console.log("[Module] pomodoro.js loaded. State restored:", restored);

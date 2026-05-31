@@ -90,7 +90,8 @@ async function loadDays(page = 1) {
           window.allWeeklySummaries = freshSummaries;
           if (window.localDb) {
             await window.localDb.weeklySummaries.clear();
-            await window.localDb.weeklySummaries.bulkPut(freshSummaries);
+            const validSummaries = (freshSummaries || []).filter(s => s && typeof s === 'object' && s._id);
+            await window.localDb.weeklySummaries.bulkPut(validSummaries);
           }
         }
       } catch (err) {
@@ -110,7 +111,8 @@ async function loadDays(page = 1) {
         // Merge: use server data for synced days, keep local data for pending days
         const serverDays = data.days;
         const safeToUpdate = serverDays.filter(d => !pendingIds.has(d._id));
-        await localDb.days.bulkPut(safeToUpdate);
+        const validDaysToUpdate = safeToUpdate.filter(d => d && typeof d === 'object' && d._id);
+        await localDb.days.bulkPut(validDaysToUpdate);
 
         // Build final allDays: server data + locally modified days
         const localPendingDays = await Promise.all(
@@ -128,7 +130,8 @@ async function loadDays(page = 1) {
         }
       } else {
         window.allDays.push(...data.days);
-        await localDb.days.bulkPut(data.days);
+        const validDays = (data.days || []).filter(d => d && typeof d === 'object' && d._id);
+        await localDb.days.bulkPut(validDays);
       }
       
       window.backendStreak = data.streak || 0;
@@ -139,10 +142,12 @@ async function loadDays(page = 1) {
       if (page === 1) {
         window.allDays = data;
         await localDb.days.clear();
-         await localDb.days.bulkAdd(data);
+        const validDays = (data || []).filter(d => d && typeof d === 'object' && d._id);
+        await localDb.days.bulkPut(validDays);
       } else {
         window.allDays.push(...data);
-        await localDb.days.bulkPut(data);
+        const validDays = (data || []).filter(d => d && typeof d === 'object' && d._id);
+        await localDb.days.bulkPut(validDays);
       }
       window.hasMoreDays = false;
     }
@@ -982,9 +987,9 @@ async function loadClaimedBadges() {
     const badges = await window.apiFetch(`${window.API}/api/users/badges/claimed`);
     if (badges) {
       userClaimedBadges = badges;
-      // Cache for next time
       await window.localDb.badges.clear();
-      await window.localDb.badges.bulkAdd(badges);
+      const validBadges = (badges || []).filter(b => b && typeof b === 'object' && b._id);
+      await window.localDb.badges.bulkPut(validBadges);
       renderClaimedBadges();
     }
   } catch (err) {

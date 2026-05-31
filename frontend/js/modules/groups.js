@@ -70,7 +70,8 @@ async function loadGroups() {
 
       // Sync Local Cache
       await localDb.groups.clear();
-      await localDb.groups.bulkAdd(allJoinedGroups);
+      const validGroups = (allJoinedGroups || []).filter(g => g && typeof g === 'object' && g._id);
+      await localDb.groups.bulkPut(validGroups);
 
       renderGroups();
     }

@@ -333,6 +333,9 @@
       <button class="nav-btn" id="btn-leaderboard" onclick="showPage('leaderboard')">
         <span><i data-lucide="crown"></i></span><span class="btn-text"> Rankings</span>
       </button>
+      <button class="nav-btn" id="btn-pomodoro" onclick="showPage('pomodoro')">
+        <span><i data-lucide="clock"></i></span><span class="btn-text"> Pomodoro</span>
+      </button>
     </div>
 
     <div class="nav-user-area" style="display:flex; align-items:center; gap: 16px;">
@@ -537,6 +540,383 @@
     <!-- My Rank Spotlight -->
     <div id="lb-my-rank-area"></div>
   </main>
+
+  <!-- ===== FOCUS & POMODORO PAGE ===== -->
+  <main class="page" id="page-pomodoro">
+    <style>
+      /* ── Pomodoro Page Layout ── */
+      #page-pomodoro {
+        padding: 20px;
+        box-sizing: border-box;
+        width: 100%;
+      }
+
+      #page-pomodoro .pomo-card {
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        background: var(--bg-card);
+        color: var(--text);
+        border: 3px solid var(--black);
+        border-radius: 16px;
+        padding: 28px 24px 32px;
+        box-shadow: 6px 6px 0 var(--black);
+        box-sizing: border-box;
+        text-align: center;
+      }
+
+      /* ── Tab switcher (Timer / Stopwatch) ── */
+      #page-pomodoro .pomo-tabs {
+        display: flex;
+        border: 2px solid var(--black);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 28px;
+        background: var(--bg-muted);
+      }
+      #page-pomodoro .pomo-tab-btn {
+        flex: 1;
+        padding: 11px 8px;
+        border: none;
+        border-radius: 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 800;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        background: var(--bg-muted);
+        color: var(--text-muted);
+      }
+      #page-pomodoro .pomo-tab-btn + .pomo-tab-btn {
+        border-left: 2px solid var(--black);
+      }
+      #page-pomodoro .pomo-tab-btn.active {
+        background: var(--teal);
+        color: var(--black);
+      }
+
+      /* ── Big time display ── */
+      #page-pomodoro .pomo-time {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: clamp(56px, 18vw, 88px);
+        font-weight: 900;
+        line-height: 1;
+        margin: 0 0 28px;
+        color: var(--text);
+        letter-spacing: -2px;
+      }
+
+      /* ── Action buttons (Start/Pause & Reset) ── */
+      #page-pomodoro .pomo-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+      #page-pomodoro .pomo-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 12px 28px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 2px solid var(--black);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.1s;
+        box-shadow: 3px 3px 0 var(--black);
+        box-sizing: border-box;
+        min-width: 110px;
+      }
+      #page-pomodoro .pomo-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--black);
+      }
+      #page-pomodoro .pomo-btn-start {
+        background: var(--teal);
+        color: var(--black);
+      }
+      #page-pomodoro .pomo-btn-start.paused {
+        background: var(--coral);
+        color: #fff;
+      }
+      #page-pomodoro .pomo-btn-reset {
+        background: var(--bg-muted);
+        color: var(--text);
+      }
+      #page-pomodoro .pomo-btn-reset:hover {
+        background: var(--bg-card);
+      }
+
+      /* ── Mode pills ── */
+      #page-pomodoro .pomo-modes {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      #page-pomodoro .pomo-mode-btn {
+        padding: 8px 16px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 2px solid var(--black);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+        box-shadow: 2px 2px 0 var(--black);
+        /* Inactive: slightly desaturated to show it's not selected */
+        filter: saturate(0.7) brightness(0.85);
+      }
+      #page-pomodoro .pomo-mode-btn.active {
+        filter: saturate(1) brightness(1);
+        transform: translate(-1px, -2px);
+        box-shadow: 3px 4px 0 var(--black);
+        border-width: 2px;
+      }
+      #page-pomodoro .pomo-mode-btn:hover {
+        filter: saturate(1) brightness(1);
+      }
+      #page-pomodoro #pomo-mode-work   { background: var(--yellow); color: var(--black); }
+      #page-pomodoro #pomo-mode-break  { background: var(--lime);   color: var(--black); }
+      #page-pomodoro #pomo-mode-long   { background: var(--purple); color: #fff; }
+      #page-pomodoro #pomo-mode-custom { background: var(--pink);   color: var(--black); }
+
+      /* ── Custom duration panel ── */
+      #pomo-custom-panel {
+        display: none;
+        margin-top: 20px;
+        padding: 18px 16px;
+        background: var(--bg-muted);
+        border: 2px solid var(--black);
+        border-radius: 10px;
+        box-shadow: 3px 3px 0 var(--black);
+        text-align: left;
+      }
+      #pomo-custom-panel.open { display: block; }
+      #pomo-custom-panel .custom-panel-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+        text-align: center;
+      }
+      #pomo-custom-panel .custom-fields {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 14px;
+      }
+      #pomo-custom-panel .custom-field {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex: 1;
+        min-width: 80px;
+      }
+      #pomo-custom-panel .custom-field label {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+      }
+      #pomo-custom-panel .custom-field input {
+        width: 100%;
+        padding: 8px 10px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900;
+        font-size: 18px;
+        text-align: center;
+        background: var(--bg-card);
+        color: var(--text);
+        border: 2px solid var(--black);
+        border-radius: 6px;
+        box-shadow: 2px 2px 0 var(--black);
+        box-sizing: border-box;
+        outline: none;
+        -moz-appearance: textfield;
+      }
+      #pomo-custom-panel .custom-field input::-webkit-outer-spin-button,
+      #pomo-custom-panel .custom-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+      #pomo-custom-panel .custom-field input:focus {
+        border-color: var(--pink);
+        box-shadow: 2px 2px 0 var(--pink);
+      }
+      #pomo-custom-panel .custom-field .field-unit {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      #pomo-custom-panel .custom-apply-btn {
+        width: 100%;
+        padding: 10px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: var(--pink);
+        color: var(--black);
+        border: 2px solid var(--black);
+        border-radius: 7px;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--black);
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      #pomo-custom-panel .custom-apply-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--black);
+      }
+
+      /* ── Phase badge (shown during custom cycling sessions) ── */
+      #pomo-phase-badge {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 7px 18px;
+        border-radius: 20px;
+        border: 2px solid var(--black);
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 900;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 12px;
+        box-shadow: 2px 2px 0 var(--black);
+        transition: background 0.3s, color 0.3s;
+      }
+      #pomo-phase-badge.work  { background: var(--teal);  color: var(--black); }
+      #pomo-phase-badge.break { background: var(--coral); color: #fff; }
+
+      /* ── Total remaining (shown during custom sessions) ── */
+      #pomo-total-remaining {
+        display: none;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: -16px;
+        margin-bottom: 20px;
+        letter-spacing: 0.3px;
+      }
+
+      /* ── Mobile ── */
+      @media (max-width: 480px) {
+        #page-pomodoro { padding: 16px 12px; }
+        #page-pomodoro .pomo-card { padding: 20px 16px 24px; border-radius: 12px; }
+        #page-pomodoro .pomo-btn  { padding: 11px 20px; font-size: 14px; min-width: 90px; }
+        #page-pomodoro .pomo-mode-btn { padding: 6px 11px; font-size: 11px; }
+      }
+    </style>
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i data-lucide="clock"></i> Focus &amp; Pomodoro</h1>
+        <p class="page-subtitle">Zero-distraction study and work sessions</p>
+      </div>
+    </div>
+
+    <div class="pomo-card">
+
+      <!-- Tab row -->
+      <div class="pomo-tabs">
+        <button class="pomo-tab-btn active" id="pomo-subtab-timer"     onclick="switchPomoSubTab('timer')">Timer</button>
+        <button class="pomo-tab-btn"        id="pomo-subtab-stopwatch" onclick="switchPomoSubTab('stopwatch')">Stopwatch</button>
+      </div>
+
+      <!-- ── TIMER BLOCK ── -->
+      <div id="pomo-timer-block">
+
+        <!-- Phase badge: only visible during custom cycling sessions -->
+        <div id="pomo-phase-badge" class="work">
+          <span id="pomo-phase-icon">🎯</span>
+          <span id="pomo-phase-label">Work Session</span>
+        </div>
+
+        <!-- Main countdown -->
+        <div class="pomo-time" id="pomo-display">25:00</div>
+
+        <!-- Total remaining: only visible during custom sessions -->
+        <div id="pomo-total-remaining">60:00 total remaining</div>
+
+        <div class="pomo-actions">
+          <button class="pomo-btn pomo-btn-start" id="pomo-start-btn" onclick="togglePomodoroTimer()">
+            <i data-lucide="play" style="width:18px;height:18px;"></i> Start
+          </button>
+          <button class="pomo-btn pomo-btn-reset" onclick="resetPomodoroTimer()">
+            <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i> Reset
+          </button>
+        </div>
+
+        <div class="pomo-modes">
+          <button class="pomo-mode-btn active" id="pomo-mode-work"   onclick="setPomoMode('work')">Work (25m)</button>
+          <button class="pomo-mode-btn"        id="pomo-mode-break"  onclick="setPomoMode('break')">Break (5m)</button>
+          <button class="pomo-mode-btn"        id="pomo-mode-long"   onclick="setPomoMode('long')">Long Break (15m)</button>
+          <button class="pomo-mode-btn"        id="pomo-mode-custom" onclick="setPomoMode('custom')">✏️ Custom</button>
+        </div>
+
+        <!-- Custom cycling session panel -->
+        <div id="pomo-custom-panel">
+          <div class="custom-panel-title">Custom Cycling Session</div>
+          <div class="custom-fields">
+            <div class="custom-field">
+              <label for="custom-total-min">Total</label>
+              <input type="number" id="custom-total-min" min="5" max="480" value="60" />
+              <span class="field-unit">min</span>
+            </div>
+            <div class="custom-field">
+              <label for="custom-work-min">Work</label>
+              <input type="number" id="custom-work-min" min="1" max="120" value="25" />
+              <span class="field-unit">min</span>
+            </div>
+            <div class="custom-field">
+              <label for="custom-break-min">Break</label>
+              <input type="number" id="custom-break-min" min="1" max="60" value="5" />
+              <span class="field-unit">min</span>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); font-weight:600; text-align:center; margin-bottom:12px; line-height:1.5;">
+            Cycles Work → Break until Total time is up
+          </div>
+          <button class="custom-apply-btn" onclick="applyCustomPomoMode()">▶ Start Session</button>
+        </div>
+      </div>
+
+      <!-- ── STOPWATCH BLOCK ── -->
+      <div id="pomo-stopwatch-block" style="display:none;">
+        <div class="pomo-time" id="sw-display">00:00.0</div>
+
+        <div class="pomo-actions">
+          <button class="pomo-btn pomo-btn-start" id="sw-start-btn" onclick="toggleStopwatch()">
+            <i data-lucide="play" style="width:18px;height:18px;"></i> Start
+          </button>
+          <button class="pomo-btn pomo-btn-reset" onclick="resetStopwatch()">
+            <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i> Reset
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
 
   <!-- ===== MODAL: Add New Day ===== -->
   <div class="modal-overlay" id="modal-add-day" onclick="closeModalOnOverlay(event, 'modal-add-day')">
@@ -1021,6 +1401,10 @@
         <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none; top:-3px; right:-3px; border-color:#fff;"></span>
       </span>
       <span>Groups</span>
+    </button>
+    <button class="bottom-nav-btn" id="bnav-pomodoro" onclick="showPage('pomodoro')">
+      <span class="bnav-icon"><i data-lucide="clock"></i></span>
+      <span>Focus</span>
     </button>
     <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
       <span class="bnav-icon"><i data-lucide="trophy"></i></span>
@@ -2043,6 +2427,7 @@
   <script type="module" src="js/modules/achievements.js"></script>
   <script type="module" src="js/modules/scratchpad.js"></script>
   <script type="module" src="js/modules/profile.js"></script>
+  <script type="module" src="js/modules/pomodoro.js"></script>
   <script type="module" src="js/modules/app.js"></script>
 
   <script src="script.js?v=59"></script>
