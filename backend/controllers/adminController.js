@@ -1004,6 +1004,7 @@ module.exports = {
     }
   },
   approveRefund: async (req, res) => {
+    let finalRefundRupees = 'the subscription value';
     try {
       const { id } = req.params; // User ID
       const user = await User.findById(id);
@@ -1024,12 +1025,21 @@ module.exports = {
         return res.status(500).json({ message: 'Razorpay API keys not configured.' });
       }
 
-      console.log(`[Admin Payout] Triggering Razorpay refund for payment: ${paymentId} (User: ${user.username})`);
+      // Calculate 3% processing fee deduction dynamically from original paid amount
+      // If original price is payment.amount (in rupees), the refund amount in paise is:
+      // payment.amount * 0.97 * 100
+      let refundAmountPaise = undefined;
+      if (payment && payment.amount) {
+        refundAmountPaise = Math.floor(payment.amount * 0.97 * 100);
+        finalRefundRupees = (refundAmountPaise / 100).toFixed(2);
+      }
+
+      console.log(`[Admin Payout] Triggering 3% deducted Razorpay refund for payment: ${paymentId} (User: ${user.username}, Original: ₹${payment ? payment.amount : 'N/A'}, Refund: ₹${finalRefundRupees})`);
 
       const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
       const response = await axios.post(
         `https://api.razorpay.com/v1/payments/${paymentId}/refund`,
-        { amount: payment ? payment.amount * 100 : undefined }, // Full refund in paise if payment is present
+        { amount: refundAmountPaise },
         {
           headers: {
             'Authorization': `Basic ${authHeader}`,
@@ -1096,7 +1106,7 @@ module.exports = {
               <h2 style="text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 10px; color: #22c55e;">Refund Processed Successfully</h2>
               <p>Hi ${user.name},</p>
               <p>Your refund request for the Premium Pass has been **approved and processed**.</p>
-              <p>A transfer of <b>₹${payment ? payment.amount : 'the subscription value'}</b> has been initiated back to your original payment method (Bank, GPay, or Card). Depending on bank guidelines, the money should reflect in your account within 5 to 7 business days.</p>
+              <p>A transfer of <b>₹${finalRefundRupees}</b> (representing your original payment of ₹${payment ? payment.amount : 'N/A'} minus a nominal 3% payment gateway processing fee) has been initiated back to your original payment method (Bank, GPay, or Card). Depending on bank guidelines, the money should reflect in your account within 5 to 7 business days.</p>
               <p>As the subscription is refunded, your account limits have returned to the Free baseline limits.</p>
               <p>Thank you for trying Consistency Tracker, and we hope to welcome you back to Premium in the future!</p>
               <br>

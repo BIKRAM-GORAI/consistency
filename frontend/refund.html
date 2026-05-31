@@ -508,6 +508,7 @@
         <li><strong>Subscription Cancellations:</strong> You can cancel future renewals at any time directly through billing. Your premium quota benefits will remain active until the end of your current cycle.</li>
         <li><strong>48-Hour Refund Request Window:</strong> Digital purchases are eligible for a refund request <span style="color: var(--white); font-weight: 700;">ONLY within 48 hours</span> from the exact payment verification timestamp.</li>
         <li><strong>System Zero-Utilization Rule:</strong> Because active premium resource access generates immediate computational API costs, refunds are only issued if <span style="color: var(--white); font-weight: 700;">zero premium features</span> (e.g. AI checklist dictations, grace protections) have been utilized during the transaction period.</li>
+        <li><strong>Gateway Processing Deductions:</strong> Approved refunds are subject to a nominal <span style="color: var(--white); font-weight: 700;">3% payment gateway processing fee deduction</span> from the original amount paid.</li>
       </ul>
       <div class="highlight-rule">
         ⚠️ IMPORTANT: Submitting a request locks the Premium features of that card pending review. If approved, limits instantly fall back to the Free baseline. Rejections keep your Premium tier active until standard expiry.
@@ -538,7 +539,7 @@
     <div class="modal-box">
       <h3 class="modal-h3">Confirm Refund Request</h3>
       <p class="modal-p">
-        Are you sure you want to request a refund for this transaction? This will temporarily hold your Premium features pending admin review. If approved, ₹<span id="modal-amount-span">0</span> will be transferred back to your original source of payment within 5-7 business days, and your account limits will fall back to the Free Tier.
+        Are you sure you want to request a refund for this transaction? This will temporarily hold your Premium features pending admin review. If approved, ₹<span id="modal-amount-span">0</span> (minus a 3% gateway processing fee) will be transferred back to your original source of payment within 5-7 business days, and your account limits will fall back to the Free Tier.
       </p>
       <div class="modal-footer">
         <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancel</button>
