@@ -70,6 +70,7 @@ function showSection(section) {
   if (section === 'badges') loadBadges();
   if (section === 'coupons') loadCoupons();
   if (section === 'payments') loadPayments();
+  if (section === 'refunds') loadRefunds();
 }
 
 /**
@@ -1817,5 +1818,300 @@ function renderPaginationControls(data, containerId, tabKey, fetchFunc) {
   container.appendChild(nextBtn);
 }
 
+/* ============================================================
+   REFUNDS MANAGER
+   ============================================================ */
 
+// In-memory store for currently viewed refund requests
+let _refundRequests = [];
+
+async function loadRefunds() {
+  const tbody = document.getElementById('refunds-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; font-weight:800; color:#666;">Loading refund requests...</td></tr>';
+
+  try {
+    const res = await fetch(`${API}/api/admin/refunds`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401 || res.status === 403) { logout(); return; }
+
+    const data = await res.json();
+    _refundRequests = data.refunds || data || [];
+    renderRefunds(_refundRequests);
+  } catch (err) {
+    console.error('loadRefunds error:', err);
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; font-weight:800; color:red;">Connection error loading refunds.</td></tr>';
+  }
+}
+
+function renderRefunds(requests) {
+  const tbody = document.getElementById('refunds-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  // ── Metrics ──────────────────────────────────────────────
+  const pending = requests.filter(r => r.refundStatus === 'requested').length;
+  const approved = requests.filter(r => r.refundStatus === 'approved').length;
+  const rejected = requests.filter(r => r.refundStatus === 'rejected').length;
+  const totalAmt = requests.filter(r => r.refundStatus === 'approved').reduce((sum, r) => sum + (r.payment ? r.payment.amount : 0), 0);
+
+  const setPEl = id => { const el = document.getElementById(id); if (el) el.textContent = id === 'metric-total-amt' ? `₹${totalAmt}` : (id === 'metric-pending' ? pending : id === 'metric-approved' ? approved : rejected); };
+  setPEl('metric-pending'); setPEl('metric-approved'); setPEl('metric-rejected');
+  const amtEl = document.getElementById('metric-total-amt'); if (amtEl) amtEl.textContent = `₹${totalAmt}`;
+
+  if (!requests.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:28px; font-weight:800; color:#666;">🎉 No pending refund requests found.</td></tr>';
+    return;
+  }
+
+  requests.forEach(r => {
+    const p = r.payment || {};
+    const purchasedAt = p.purchasedAt ? new Date(p.purchasedAt) : null;
+    const requestedAt = r.refundRequestedAt ? new Date(r.refundRequestedAt) : null;
+
+    const purchasedStr = purchasedAt ? purchasedAt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    const requestedStr = requestedAt ? requestedAt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+    // Elapsed time since purchase
+    let elapsedStr = '—';
+    let elapsedColor = 'var(--green)';
+    if (purchasedAt) {
+      const elapsedMs = Date.now() - purchasedAt.getTime();
+      const elapsedHrs = Math.floor(elapsedMs / (1000 * 60 * 60));
+      const elapsedMins = Math.floor((elapsedMs % (1000 * 60 * 60)) / (1000 * 60));
+      elapsedStr = `${elapsedHrs}h ${elapsedMins}m`;
+      if (elapsedHrs >= 36) elapsedColor = '#ef4444';
+      else if (elapsedHrs >= 24) elapsedColor = 'var(--orange)';
+    }
+
+    // Abuse utilization summary
+    const logs = r.premiumUsageLogs || [];
+    const voiceParseLogs = logs.filter(l => l.actionType === 'voice_parse' && l.razorpayPaymentId === p.paymentId);
+    const graceLogs = logs.filter(l => l.actionType === 'grace_apply' && l.razorpayPaymentId === p.paymentId);
+    const photoLogs = logs.filter(l => l.actionType === 'photo_extract' && l.razorpayPaymentId === p.paymentId);
+    const totalAbuseFlags = voiceParseLogs.length + graceLogs.length + photoLogs.length;
+
+    let abuseBadgesHtml = '';
+    if (voiceParseLogs.length) abuseBadgesHtml += `<span class="refund-abuse-pill" style="background:#fef9c3; color:#a16207;">🎤 Voice x${voiceParseLogs.length}</span> `;
+    if (graceLogs.length) abuseBadgesHtml += `<span class="refund-abuse-pill" style="background:#fce7f3; color:#be185d;">🛡️ Grace x${graceLogs.length}</span> `;
+    if (photoLogs.length) abuseBadgesHtml += `<span class="refund-abuse-pill" style="background:#e0f2fe; color:#0369a1;">📸 Photo x${photoLogs.length}</span> `;
+    if (!abuseBadgesHtml) abuseBadgesHtml = '<span class="refund-abuse-pill" style="background:#dcfce7; color:#15803d;">✅ Clean</span>';
+
+    // Status pill color
+    let statusPill = '';
+    if (r.refundStatus === 'requested') statusPill = `<span style="background: var(--orange); color:#000; font-size:10px; font-weight:900; padding:2px 8px; border:2px solid #000; border-radius:4px;">PENDING</span>`;
+    else if (r.refundStatus === 'approved') statusPill = `<span style="background: var(--green); color:#000; font-size:10px; font-weight:900; padding:2px 8px; border:2px solid #000; border-radius:4px;">APPROVED</span>`;
+    else if (r.refundStatus === 'rejected') statusPill = `<span style="background: #ef4444; color:#fff; font-size:10px; font-weight:900; padding:2px 8px; border:2px solid #000; border-radius:4px;">REJECTED</span>`;
+
+    // Plan label
+    const planLabel = p.duration === '1_month' ? 'Monthly Pass' : p.duration === '1_year' ? 'Annual Pass' : p.duration || 'Premium';
+    const avatarSrc = r.profilePicture;
+    const avatarHtml = avatarSrc
+      ? `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; border:2px solid #000; object-fit:cover;" onerror="this.outerHTML='<div class=\'avatar-initial\' style=\'width:32px;height:32px;font-size:12px;border-radius:50%;font-weight:900;\'>${(r.name||'?')[0].toUpperCase()}</div>'">`
+      : `<div class="avatar-initial" style="width:32px; height:32px; font-size:13px; border-radius:50%; font-weight:900;">${(r.name||'?')[0].toUpperCase()}</div>`;
+
+    // Action buttons — only show approve/reject if status is 'requested'
+    let actionHtml = '';
+    if (r.refundStatus === 'requested') {
+      const safeId = String(r._id).replace(/'/g, '');
+      const safePayId = String(p.paymentId || '').replace(/'/g, '');
+      const safeName = String(r.name || r.username || '').replace(/'/g, '').replace(/"/g, '');
+      actionHtml = `
+        <div style="display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn-action btn-edit" style="background:var(--green);" title="Approve & trigger Razorpay payout" onclick="adminApproveRefund('${safeId}', '${safeName}')">
+            ✓ Approve
+          </button>
+          <button class="btn-action btn-delete" title="Reject with reason" onclick="openRejectModal('${safeId}', '${safeName}', '${safePayId}')">
+            ✗ Reject
+          </button>
+        </div>`;
+    } else {
+      actionHtml = `<span style="font-size:11px; font-weight:800; color:#999; text-transform:uppercase;">${r.refundStatus}</span>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #eee';
+    tr.innerHTML = `
+      <td data-label="User" style="padding:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${avatarHtml}
+          <div>
+            <div style="font-weight:900; font-size:13px;">${r.name || r.username || 'Unknown'}</div>
+            <div style="font-size:11px; color:#666;">${r.email || ''}</div>
+            <div style="margin-top:2px;">${statusPill}</div>
+          </div>
+        </div>
+      </td>
+      <td data-label="Plan / Amount" style="padding:12px;">
+        <div style="font-weight:900; font-size:13px;">${planLabel}</div>
+        <div style="font-weight:900; color:var(--purple); font-size:16px;">₹${p.amount || '—'}</div>
+      </td>
+      <td data-label="Payment ID" style="padding:12px;">
+        <span style="font-family:monospace; font-size:11px; color:#555; word-break:break-all;">${p.paymentId || '—'}</span>
+      </td>
+      <td data-label="Purchased At" style="padding:12px; text-align:center; font-size:12px; font-weight:700;">${purchasedStr}</td>
+      <td data-label="Elapsed" style="padding:12px; text-align:center; font-weight:900; color:${elapsedColor};">${elapsedStr}</td>
+      <td data-label="Requested At" style="padding:12px; text-align:center; font-size:12px; font-weight:700;">${requestedStr}</td>
+      <td data-label="Abuse Flags" style="padding:12px; text-align:center;">
+        <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center;">${abuseBadgesHtml}</div>
+        ${totalAbuseFlags > 0 ? `<div style="font-size:10px; color:#ef4444; font-weight:900; margin-top:4px;">⚠️ ${totalAbuseFlags} ACTION(S) FLAGGED</div>` : ''}
+        <button class="btn-action" style="background:#e2e8f0; color:#000; font-size:10px; padding:4px 8px; margin-top:6px; font-weight:900; cursor:pointer;" onclick="toggleLogDrawer('${r._id}')">
+          👁 View Logs
+        </button>
+      </td>
+      <td data-label="Actions" style="padding:12px; text-align:right;">${actionHtml}</td>
+    `;
+
+    // Activity logs list or sub-table for the drawer
+    let logsHtml = '';
+    if (logs.length > 0) {
+      logsHtml = `
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background: #fff; font-size: 12px; text-align: left; box-shadow: 2px 2px 0 #000; margin-top: 5px;">
+          <thead>
+            <tr style="background: #f3f4f6; border-bottom: 2px solid #000;">
+              <th style="padding: 6px 8px; border-right: 1px solid #000; font-weight: 900;">Timestamp</th>
+              <th style="padding: 6px 8px; border-right: 1px solid #000; font-weight: 900;">Action Type</th>
+              <th style="padding: 6px 8px; font-weight: 900;">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logs.map(log => {
+              let badgeBg = '#fef9c3';
+              let badgeColor = '#a16207';
+              let actionName = '🎤 Voice AI';
+              if (log.actionType === 'grace_apply') {
+                badgeBg = '#fce7f3';
+                badgeColor = '#be185d';
+                actionName = '🛡️ Grace Protect';
+              } else if (log.actionType === 'photo_extract') {
+                badgeBg = '#e0f2fe';
+                badgeColor = '#0369a1';
+                actionName = '📸 Photo Extract';
+              }
+              return `
+                <tr style="border-bottom: 1px solid #000;">
+                  <td style="padding: 6px 8px; border-right: 1px solid #000; font-family: monospace; white-space: nowrap;">
+                    ${new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                  </td>
+                  <td style="padding: 6px 8px; border-right: 1px solid #000;">
+                    <span style="display: inline-block; padding: 2px 6px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid #000; border-radius: 4px; font-weight: 900; font-size: 10px;">
+                      ${actionName}
+                    </span>
+                  </td>
+                  <td style="padding: 6px 8px; font-weight: 700; color: #111;">${log.details || ''}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    } else {
+      logsHtml = `
+        <div style="padding: 12px; background: #f0fdf4; border: 2px dashed #16a34a; color: #16a34a; font-weight: 900; border-radius: 4px; text-align: center;">
+          ✅ Clean Request: No premium features utilized since activation.
+        </div>
+      `;
+    }
+
+    const drawerTr = document.createElement('tr');
+    drawerTr.id = `log-drawer-${r._id}`;
+    drawerTr.style.display = 'none';
+    drawerTr.style.background = '#f9fafb';
+    drawerTr.innerHTML = `
+      <td colspan="8" style="padding: 16px; border-bottom: 2px solid #000; border-top: 1px solid #ddd;">
+        <div style="font-weight: 900; font-size: 13px; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; color: #374151; display: flex; align-items: center; gap: 6px;">
+          📋 Premium Utilization Activity Logs for Payment <span style="font-family: monospace; background: #e5e7eb; padding: 2px 6px; border: 1px solid #000; border-radius: 4px; font-size: 11px;">${p.paymentId || '—'}</span>
+        </div>
+        ${logsHtml}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+    tbody.appendChild(drawerTr);
+  });
+}
+
+async function adminApproveRefund(userId, userName) {
+  if (!confirm(`Approve refund for ${userName}? This will trigger an immediate Razorpay payout and downgrade their account to Free tier.`)) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/refunds/${userId}/approve`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(`✅ Refund approved! Razorpay payout initiated for ${userName}. User has been downgraded to Free tier.`);
+      loadRefunds();
+    } else {
+      alert(`❌ Failed to approve refund: ${data.message || res.status}`);
+    }
+  } catch (err) {
+    console.error('adminApproveRefund error:', err);
+    alert('Connection error while approving refund.');
+  }
+}
+
+function openRejectModal(userId, userName, paymentId) {
+  document.getElementById('reject-user-id').value = userId;
+  document.getElementById('reject-user-name').textContent = userName;
+  document.getElementById('reject-payment-id').textContent = paymentId;
+  document.getElementById('reject-reason-input').value = '';
+  const modal = document.getElementById('refund-reject-modal');
+  if (modal) modal.classList.add('open');
+}
+
+function closeRejectModal() {
+  const modal = document.getElementById('refund-reject-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function submitRejectRefund() {
+  const userId = document.getElementById('reject-user-id').value;
+  const reason = document.getElementById('reject-reason-input').value.trim();
+  const userName = document.getElementById('reject-user-name').textContent;
+
+  if (!reason) {
+    alert('Please provide a rejection reason before submitting.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit-reject');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  try {
+    const res = await fetch(`${API}/api/admin/refunds/${userId}/reject`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      closeRejectModal();
+      alert(`✅ Rejection sent to ${userName}. Their Premium tier remains active until standard expiry.`);
+      loadRefunds();
+    } else {
+      alert(`❌ Failed to reject refund: ${data.message || res.status}`);
+    }
+  } catch (err) {
+    console.error('submitRejectRefund error:', err);
+    alert('Connection error while submitting rejection.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Rejection';
+  }
+}
+
+function toggleLogDrawer(userId) {
+  const drawer = document.getElementById(`log-drawer-${userId}`);
+  if (!drawer) return;
+  const isHidden = drawer.style.display === 'none';
+  drawer.style.display = isHidden ? 'table-row' : 'none';
+}
+window.toggleLogDrawer = toggleLogDrawer;
 

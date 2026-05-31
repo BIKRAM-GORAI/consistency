@@ -79,9 +79,10 @@ const UserSchema = new mongoose.Schema(
     },
     subscriptionTier: {
       type: String,
-      enum: ['free', 'premium'],
+      enum: ['free', 'premium', 'refund_pending'],
       default: 'free',
     },
+
     subscriptionExpiresAt: {
       type: Date,
       default: null,
@@ -236,6 +237,42 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Refunds & Abuse tracking
+    refundStatus: {
+      type: String,
+      enum: ['none', 'requested', 'approved', 'rejected'],
+      default: 'none',
+    },
+    refundRequestedAt: {
+      type: Date,
+      default: null,
+    },
+    refundReason: {
+      type: String,
+      default: '',
+    },
+    premiumActivatedAt: {
+      type: Date,
+      default: null,
+    },
+    premiumUsageLogs: [{
+      actionType: { type: String, enum: ['voice_parse', 'grace_apply', 'photo_extract'] },
+      timestamp: { type: Date, default: Date.now },
+      details: String,
+      razorpayPaymentId: String,
+    }],
+    paymentHistory: [{
+      orderId: String,
+      paymentId: String,
+      amount: Number,
+      duration: String,
+      purchasedAt: { type: Date, default: Date.now },
+      refundStatus: {
+        type: String,
+        enum: ['none', 'requested', 'approved', 'rejected'],
+        default: 'none',
+      },
+    }],
   },
   { timestamps: true }
 );

@@ -17,6 +17,10 @@ exports.getSubscriptionStatus = async (req, res) => {
     const isPremium = user.subscriptionTier === 'premium' && 
       (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
 
+    // refund_pending = temporarily withheld while admin reviews the refund request
+    const isRefundPending = user.subscriptionTier === 'refund_pending';
+
+
     // Calculate actual limits dynamically for UI display
     let aiLimit = parseInt(process.env.AI_DAILY_LIMIT, 10) || 15;
     let photoLimit = parseInt(process.env.AI_PHOTO_LIMIT, 10) || 15;
@@ -56,7 +60,11 @@ exports.getSubscriptionStatus = async (req, res) => {
       tier: user.subscriptionTier,
       expiresAt: user.subscriptionExpiresAt,
       isPremium,
+      isRefundPending,
+      refundStatus: user.refundStatus,
       hasPendingTransaction: !!user.pendingSubscriptionId,
+      paymentHistory: user.paymentHistory || [],
+
       prices: {
         monthly: priceMonthly,
         annual: priceAnnual
@@ -283,6 +291,24 @@ exports.verifyRazorpayPayment = async (req, res) => {
     user.subscriptionExpiresAt = currentExpiry;
     user.subscriptionId = razorpay_order_id;
     user.razorpayPaymentId = razorpay_payment_id;
+    user.premiumActivatedAt = new Date();
+    user.refundStatus = 'none';
+
+    // Push the transaction into the user's paymentHistory
+    let price = duration === '1_month'
+      ? parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10)
+      : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+    if (isNaN(price)) price = duration === '1_month' ? 299 : 1999;
+    
+    user.paymentHistory.push({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      amount: price,
+      duration: duration,
+      purchasedAt: new Date(),
+      refundStatus: 'none'
+    });
+
     user.pendingSubscriptionId = null;
     user.pendingSubscriptionDuration = null;
     await user.save();
@@ -373,6 +399,22 @@ exports.checkPendingSubscription = async (req, res) => {
       user.subscriptionExpiresAt = currentExpiry;
       user.subscriptionId = orderId;
       user.razorpayPaymentId = successfulPayment.id;
+      user.premiumActivatedAt = new Date();
+      user.refundStatus = 'none';
+
+      let price = duration === '1_month'
+        ? parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10)
+        : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+      if (isNaN(price)) price = duration === '1_month' ? 299 : 1999;
+      
+      user.paymentHistory.push({
+        orderId: orderId,
+        paymentId: successfulPayment.id,
+        amount: price,
+        duration: duration,
+        purchasedAt: new Date(),
+        refundStatus: 'none'
+      });
       
       // Clear pending fields once reconciled
       user.pendingSubscriptionId = null;
@@ -502,5 +544,123 @@ exports.verifyDevPassword = async (req, res) => {
   } catch (error) {
     console.error('verifyDevPassword error:', error.message);
     res.status(500).json({ message: 'Internal Server Error verifying password.' });
+  }
+};
+
+/**
+ * POST /api/subscriptions/razorpay/request-refund
+ * Authenticates user, checks 48-hour window for target transaction ID, and marks refund as requested.
+ */
+exports.requestRefund = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { paymentId } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({ message: 'Payment ID is required.' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    // Find the target payment inside paymentHistory
+    const payment = user.paymentHistory.find(p => p.paymentId === paymentId);
+    if (!payment) {
+      return res.status(404).json({ message: 'Subscription transaction not found in your purchase history.' });
+    }
+
+    if (payment.refundStatus !== 'none') {
+      return res.status(400).json({ message: `Refund has already been ${payment.refundStatus} for this transaction.` });
+    }
+
+    // Verify 48-hour window limit
+    const purchaseTime = new Date(payment.purchasedAt).getTime();
+    const elapsed = Date.now() - purchaseTime;
+    const fortyEightHoursMs = 48 * 60 * 60 * 1000;
+
+    if (elapsed > fortyEightHoursMs) {
+      return res.status(400).json({ message: 'Refund window expired. Requests must be made within 48 hours of purchase.' });
+    }
+
+    // Check if any other non-refunded, still-active payment covers premium
+    const durationDays = { '1_month': 30, '1_year': 365 };
+    const now = new Date();
+    const otherActiveCoverage = user.paymentHistory.some(p => {
+      if (p.paymentId === paymentId) return false; // skip the one being refunded
+      if (p.refundStatus !== 'none') return false;  // skip refunded/requested ones
+      const days = durationDays[p.duration] || 30;
+      const expiry = new Date(p.purchasedAt);
+      expiry.setDate(expiry.getDate() + days);
+      return expiry > now; // still covers now
+    });
+
+    // Update statuses — also withhold premium unless other active coverage covers user
+    payment.refundStatus = 'requested';
+    user.refundStatus = 'requested';
+    user.refundRequestedAt = now;
+    user.subscriptionTier = otherActiveCoverage ? 'premium' : 'refund_pending';
+    await user.save();
+
+
+    // Compile utilization info for owner email
+    const usageLogs = user.premiumUsageLogs.filter(log => log.razorpayPaymentId === paymentId);
+    let usageHTML = '';
+    if (usageLogs.length === 0) {
+      usageHTML = '<p style="color: green; font-weight: bold;">🟢 Zero premium features utilized so far (Clean Request).</p>';
+    } else {
+      usageHTML = `
+        <p style="color: red; font-weight: bold;">⚠️ Warning: Features utilized since purchase:</p>
+        <ul>
+          ${usageLogs.map(log => `<li>[${new Date(log.timestamp).toLocaleString()}] <b>${log.actionType}</b>: ${log.details}</li>`).join('')}
+        </ul>
+      `;
+    }
+
+    // Send SMTP Nodemailer alert to owner
+    const ownerEmail = process.env.OWNER_EMAIL || process.env.GMAIL_EMAIL;
+    if (ownerEmail) {
+      const { sendEmail } = require('../utils/email');
+      try {
+        await sendEmail({
+          to: ownerEmail,
+          subject: `🚨 New Refund Request from @${user.username}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; border: 3px solid #111; padding: 20px; border-radius: 8px;">
+              <h2 style="text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 10px; color: #d97706;">Refund Request Alert</h2>
+              <p>A new subscription refund request has been initiated by a customer.</p>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <tr><td style="padding: 6px 0; font-weight: bold;">User:</td><td>${user.name} (@${user.username})</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Email:</td><td>${user.email}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Order ID:</td><td>${payment.orderId}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Payment ID:</td><td>${paymentId}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Plan:</td><td>${payment.duration === '1_month' ? 'Monthly Pass' : 'Annual Pass'} (₹${payment.amount})</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Purchased At:</td><td>${new Date(payment.purchasedAt).toLocaleString()}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Requested At:</td><td>${new Date().toLocaleString()}</td></tr>
+              </table>
+              <div style="margin-top: 20px; padding: 12px; background: #f3f4f6; border-radius: 6px; border: 2px dashed #9ca3af;">
+                ${usageHTML}
+              </div>
+              <p style="margin-top: 25px; text-align: center;">
+                <a href="${process.env.APP_URL || 'http://localhost:5001'}/admin-dashboard.html?tab=refunds" 
+                   style="background: #111; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">
+                   Open Refunds Manager Tab
+                </a>
+              </p>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error('Failed to send refund notification email to owner:', emailErr);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Refund request submitted successfully! Your request is pending admin review.'
+    });
+
+  } catch (error) {
+    console.error('requestRefund error:', error);
+    res.status(500).json({ message: 'Internal Server Error submitting refund request.' });
   }
 };

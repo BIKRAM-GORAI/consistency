@@ -11,6 +11,7 @@ const ProfileShare = require('../models/ProfileShare');
 const { cloudinary } = require('../config/cloudinary');
 const mongoose = require('mongoose');
 const { sendEmail } = require('../utils/email');
+const axios = require('axios');
 
 // In-memory store for admin OTP (expires in 5 minutes)
 let currentAdminOtp = null;
@@ -950,6 +951,279 @@ module.exports = {
     } catch (err) {
       console.error('getAdminUserPayments error:', err.message);
       res.status(500).json({ message: 'Failed to retrieve user payment details.', error: err.message });
+    }
+  },
+  getRefundRequests: async (req, res) => {
+    try {
+      // Find all users who have at least one refund request in their history
+      const users = await User.find(
+        { paymentHistory: { $elemMatch: { refundStatus: { $ne: 'none' } } } },
+        'name email username profilePicture refundStatus refundRequestedAt premiumActivatedAt premiumUsageLogs paymentHistory'
+      );
+      
+      const requests = [];
+      users.forEach(u => {
+        // Find all payments with any refund activity
+        u.paymentHistory.forEach(payment => {
+          if (payment.refundStatus && payment.refundStatus !== 'none') {
+            const logs = u.premiumUsageLogs.filter(log => log.razorpayPaymentId === payment.paymentId);
+            // Return request details with this specific payment's refund status
+            requests.push({
+              _id: u._id,
+              name: u.name,
+              username: u.username,
+              email: u.email,
+              profilePicture: u.profilePicture,
+              refundStatus: payment.refundStatus,
+              refundRequestedAt: u.refundRequestedAt || payment.purchasedAt, // fallback
+              premiumActivatedAt: u.premiumActivatedAt,
+              premiumUsageLogs: logs,
+              payment: {
+                orderId: payment.orderId,
+                paymentId: payment.paymentId,
+                amount: payment.amount,
+                duration: payment.duration,
+                purchasedAt: payment.purchasedAt,
+              }
+            });
+          }
+        });
+      });
+
+      // Sort requests: pending ('requested') at the top, others sorted by purchase date desc
+      requests.sort((a, b) => {
+        if (a.refundStatus === 'requested' && b.refundStatus !== 'requested') return -1;
+        if (a.refundStatus !== 'requested' && b.refundStatus === 'requested') return 1;
+        return new Date(b.payment.purchasedAt) - new Date(a.payment.purchasedAt);
+      });
+
+      res.json({ refunds: requests });
+    } catch (err) {
+      console.error('getRefundRequests error:', err.message);
+      res.status(500).json({ message: 'Failed to retrieve refund requests.', error: err.message });
+    }
+  },
+  approveRefund: async (req, res) => {
+    try {
+      const { id } = req.params; // User ID
+      const user = await User.findById(id);
+      if (!user) return res.status(404).json({ message: 'User not found.' });
+
+      // Find the requested payment in paymentHistory
+      const payment = user.paymentHistory.find(p => p.refundStatus === 'requested');
+      const paymentId = payment ? payment.paymentId : user.razorpayPaymentId;
+
+      if (!paymentId) {
+        return res.status(400).json({ message: 'No active payment ID found for this refund.' });
+      }
+
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+      if (!keyId || !keySecret) {
+        return res.status(500).json({ message: 'Razorpay API keys not configured.' });
+      }
+
+      console.log(`[Admin Payout] Triggering Razorpay refund for payment: ${paymentId} (User: ${user.username})`);
+
+      const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+      const response = await axios.post(
+        `https://api.razorpay.com/v1/payments/${paymentId}/refund`,
+        { amount: payment ? payment.amount * 100 : undefined }, // Full refund in paise if payment is present
+        {
+          headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Success: mark the transaction as approved in payment history
+      user.refundStatus = 'approved';
+      if (payment) {
+        payment.refundStatus = 'approved';
+      }
+
+      // Check if any OTHER valid subscription still covers the user
+      const durationDays = { '1_month': 30, '1_year': 365 };
+      const now = new Date();
+      const otherStillActive = user.paymentHistory.some(p => {
+        if (p.paymentId === paymentId) return false;
+        if (p.refundStatus !== 'none') return false;
+        const days = durationDays[p.duration] || 30;
+        const expiry = new Date(p.purchasedAt);
+        expiry.setDate(expiry.getDate() + days);
+        return expiry > now;
+      });
+
+      if (otherStillActive) {
+        user.subscriptionTier = 'premium';
+        // Recalculate max expiry among other active payments
+        let maxExpiry = now;
+        let activePaymentId = null;
+        user.paymentHistory.forEach(p => {
+          if (p.paymentId !== paymentId && p.refundStatus === 'none') {
+            const days = durationDays[p.duration] || 30;
+            const expiry = new Date(p.purchasedAt);
+            expiry.setDate(expiry.getDate() + days);
+            if (expiry > maxExpiry) {
+              maxExpiry = expiry;
+              activePaymentId = p.paymentId;
+            }
+          }
+        });
+        user.subscriptionExpiresAt = maxExpiry;
+        if (activePaymentId) {
+          user.razorpayPaymentId = activePaymentId;
+        }
+      } else {
+        user.subscriptionTier = 'free';
+        user.subscriptionExpiresAt = null;
+        user.razorpayPaymentId = null;
+        user.subscriptionId = null;
+      }
+
+      await user.save();
+
+      // Trigger approval Nodemailer email to user
+      const { sendEmail } = require('../utils/email');
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Premium Pass Refund Approved & Processed',
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; border: 3px solid #111; padding: 20px; border-radius: 8px;">
+              <h2 style="text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 10px; color: #22c55e;">Refund Processed Successfully</h2>
+              <p>Hi ${user.name},</p>
+              <p>Your refund request for the Premium Pass has been **approved and processed**.</p>
+              <p>A transfer of <b>₹${payment ? payment.amount : 'the subscription value'}</b> has been initiated back to your original payment method (Bank, GPay, or Card). Depending on bank guidelines, the money should reflect in your account within 5 to 7 business days.</p>
+              <p>As the subscription is refunded, your account limits have returned to the Free baseline limits.</p>
+              <p>Thank you for trying Consistency Tracker, and we hope to welcome you back to Premium in the future!</p>
+              <br>
+              <p>Best regards,<br>The Consistency Team</p>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error('Failed to send refund approval email:', emailErr);
+      }
+
+      res.json({ success: true, message: 'Refund successfully processed and premium cancelled!' });
+
+    } catch (err) {
+      console.error('approveRefund error:', err.message);
+      if (err.response) {
+        console.error('Razorpay Refund API error response:', err.response.data);
+        return res.status(502).json({
+          message: 'Razorpay Refund API failed',
+          details: err.response.data.error || err.response.data
+        });
+      }
+      res.status(500).json({ message: 'Internal Server Error processing payout.', error: err.message });
+    }
+  },
+  rejectRefund: async (req, res) => {
+    try {
+      const { id } = req.params; // User ID
+      const { reason } = req.body; // Custom rejection text
+
+      if (!reason) {
+        return res.status(400).json({ message: 'Rejection reason is required.' });
+      }
+
+      const user = await User.findById(id);
+      if (!user) return res.status(404).json({ message: 'User not found.' });
+
+      // Find the active requested payment in paymentHistory
+      const payment = user.paymentHistory.find(p => p.refundStatus === 'requested');
+
+      // Clear pending refund request status and update payment history
+      user.refundStatus = 'none';
+      user.refundReason = reason;
+
+      if (payment) {
+        payment.refundStatus = 'rejected';
+      }
+
+      // Check if any non-refunded subscription covers premium (including the one just rejected)
+      const durationDays = { '1_month': 30, '1_year': 365 };
+      const now = new Date();
+      const stillActive = user.paymentHistory.some(p => {
+        if (p.refundStatus !== 'none' && p.refundStatus !== 'rejected') return false;
+        const days = durationDays[p.duration] || 30;
+        const expiry = new Date(p.purchasedAt);
+        expiry.setDate(expiry.getDate() + days);
+        return expiry > now;
+      });
+
+      if (stillActive) {
+        user.subscriptionTier = 'premium';
+        // Recalculate max expiry among active payments
+        let maxExpiry = now;
+        user.paymentHistory.forEach(p => {
+          if (p.refundStatus === 'none' || p.refundStatus === 'rejected') {
+            const days = durationDays[p.duration] || 30;
+            const expiry = new Date(p.purchasedAt);
+            expiry.setDate(expiry.getDate() + days);
+            if (expiry > maxExpiry) {
+              maxExpiry = expiry;
+            }
+          }
+        });
+        user.subscriptionExpiresAt = maxExpiry;
+      } else {
+        user.subscriptionTier = 'free';
+      }
+
+      await user.save();
+
+      // Retrieve proof details
+      const paymentId = payment ? payment.paymentId : '';
+      const usageLogs = user.premiumUsageLogs.filter(log => log.razorpayPaymentId === paymentId);
+      let proofHTML = '';
+      if (usageLogs.length > 0) {
+        proofHTML = `
+          <div style="margin-top: 15px; padding: 12px; background: #fee2e2; border-radius: 6px; border: 2px dashed #f87171;">
+            <p style="color: #991b1b; font-weight: bold; margin-top: 0;">Feature Utilization Proof:</p>
+            <ul style="color: #991b1b; padding-left: 20px; font-size: 13px;">
+              ${usageLogs.map(log => `<li>[${new Date(log.timestamp).toLocaleString()}] <b>${log.actionType}</b>: ${log.details}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      // Send rejection Nodemailer email with the reason
+      const { sendEmail } = require('../utils/email');
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Update on your Premium Pass Refund Request',
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; border: 3px solid #111; padding: 20px; border-radius: 8px;">
+              <h2 style="text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 10px; color: #ef4444;">Refund Request Declined</h2>
+              <p>Hi ${user.name},</p>
+              <p>We are writing to provide an update on the refund request you submitted for your Premium Pass subscription.</p>
+              <p>We have carefully reviewed your request, but unfortunately, we are <b>unable to process your refund</b> because our policy requires zero-utilization of premium services. Below are the details of your feature usage:</p>
+              <div style="background: #f3f4f6; border-left: 4px solid #111; padding: 10px 15px; margin: 15px 0;">
+                <i>${reason}</i>
+              </div>
+              ${proofHTML}
+              <p>Because your refund has been declined, <b>your Premium Pass will remain fully active and unlocked</b> until the end of your billing cycle (expires on: ${user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toLocaleDateString() : 'N/A'}).</p>
+              <p>If you have any further questions, please do not hesitate to reply to this email.</p>
+              <br>
+              <p>Best regards,<br>The Consistency Team</p>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error('Failed to send refund rejection email:', emailErr);
+      }
+
+      res.json({ success: true, message: 'Refund request successfully declined and premium maintained!' });
+
+    } catch (err) {
+      console.error('rejectRefund error:', err.message);
+      res.status(500).json({ message: 'Internal Server Error declining request.', error: err.message });
     }
   }
 };

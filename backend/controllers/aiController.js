@@ -1128,6 +1128,15 @@ const checkAiPhotoLimit = async (userId) => {
  */
 const incrementAiPhotoLimit = async (user) => {
   user.aiPhotoExtractionCount += 1;
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  if (isPremium) {
+    user.premiumUsageLogs.push({
+      actionType: 'photo_extract',
+      timestamp: new Date(),
+      details: 'Utilized AI photo checklist scan',
+      razorpayPaymentId: user.razorpayPaymentId
+    });
+  }
   await user.save();
   const limit = getAiPhotoLimit(user);
   return Math.max(0, limit - user.aiPhotoExtractionCount);
@@ -1239,6 +1248,15 @@ const checkAiVoiceLimit = async (userId) => {
  */
 const incrementAiVoiceLimit = async (user) => {
   user.voiceParseCount += 1;
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  if (isPremium) {
+    user.premiumUsageLogs.push({
+      actionType: 'voice_parse',
+      timestamp: new Date(),
+      details: 'Utilized AI voice-to-task parse',
+      razorpayPaymentId: user.razorpayPaymentId
+    });
+  }
   await user.save();
   const limit = getAiVoiceLimit(user);
   return Math.max(0, limit - user.voiceParseCount);

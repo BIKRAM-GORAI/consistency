@@ -2525,7 +2525,19 @@ async function sendVoiceToAI() {
 
     // Step 2: Upload audio directly to Render AI service
     const formData = new FormData();
-    formData.append('audio', window.voiceAudioBlob, 'voice-recording.webm');
+    // Dynamically determine the correct extension based on the actual Blob MIME type
+    let voiceExt = 'webm';
+    if (window.voiceAudioBlob && window.voiceAudioBlob.type) {
+      const mime = window.voiceAudioBlob.type.toLowerCase();
+      if (mime.includes('mp4') || mime.includes('m4a')) {
+        voiceExt = 'mp4';
+      } else if (mime.includes('ogg')) {
+        voiceExt = 'ogg';
+      } else if (mime.includes('wav')) {
+        voiceExt = 'wav';
+      }
+    }
+    formData.append('audio', window.voiceAudioBlob, `voice-recording.${voiceExt}`);
 
     const aiResponse = await fetch(`${aiServiceUrl}/api/ai/voice-to-task`, {
       method: 'POST',

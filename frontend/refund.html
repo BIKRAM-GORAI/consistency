@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>Manage Billing & Refunds | Consistency Daily</title>
+  
+  <script>
+    if (navigator.userAgent.includes("CapacitorNative/Android")) {
+      document.documentElement.classList.add('native-android');
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('native-android');
+      });
+    }
+  </script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --yellow: #facc15;
+      --orange: #f97316;
+      --pink: #ec4899;
+      --purple: #a855f7;
+      --teal: #14b8a6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --black: #0a0a0a;
+      --white: #ffffff;
+      --bg: #121214;
+      --bg-card: #1c1c1f;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border: 2px solid #0a0a0a;
+      --shadow: 5px 5px 0px #0a0a0a;
+      --r-lg: 12px;
+      --r-md: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 60px;
+      overflow-x: hidden;
+    }
+
+    /* ── Header Navbar ── */
+    .nav-header {
+      background: var(--bg-card);
+      border-bottom: 3px solid var(--black);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--white);
+      color: var(--black);
+      border: var(--border);
+      padding: 8px 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 3px 3px 0 var(--black);
+      border-radius: var(--r-md);
+      transition: all 0.1s;
+    }
+
+    .btn-back:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+      background: var(--yellow);
+    }
+
+    .nav-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    body.native-android .nav-header {
+      padding-top: calc(16px + env(safe-area-inset-top, 24px)) !important;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── Policy Panel ── */
+    .policy-panel {
+      background: var(--bg-card);
+      border: 3px solid var(--black);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .policy-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+      border-left: 5px solid var(--pink);
+      padding-left: 10px;
+    }
+
+    .policy-panel p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .policy-bullets {
+      margin-left: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .policy-bullets li {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .highlight-rule {
+      background: rgba(236, 72, 153, 0.15);
+      border-left: 3px solid var(--pink);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 10px;
+    }
+
+    /* ── Payment Cards ── */
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      border-left: 5px solid var(--yellow);
+      padding-left: 10px;
+      margin-bottom: 14px;
+    }
+
+    .transaction-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .payment-card {
+      background: var(--bg-card);
+      border: 3px solid var(--black);
+      border-radius: var(--r-lg);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      transition: all 0.15s;
+    }
+
+    .payment-card:hover {
+      transform: translate(-2px, -2px);
+    }
+
+    .payment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: 1px dashed #3f3f46;
+      padding-bottom: 12px;
+    }
+
+    .payment-plan {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .payment-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--yellow);
+    }
+
+    .payment-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .payment-details {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .detail-val {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--text);
+    }
+
+    .badge-eligible {
+      background: rgba(34, 197, 94, 0.15);
+      border: 2px solid var(--green);
+      color: var(--green);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      border-radius: var(--r-md);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    .badge-ineligible {
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid var(--red);
+      color: var(--red);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      border-radius: var(--r-md);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    .badge-status {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      border-radius: var(--r-md);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 2px 2px 0 var(--black);
+      border: 2px solid var(--black);
+    }
+
+    .badge-requested { background: var(--orange); color: var(--black); }
+    .badge-approved { background: var(--green); color: var(--black); }
+    .badge-rejected { background: var(--red); color: var(--white); }
+
+    .btn-refund {
+      width: 100%;
+      padding: 10px;
+      border: var(--border);
+      border-radius: var(--r-md);
+      font-family: inherit;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 3px 3px 0 var(--black);
+    }
+
+    .btn-refund-active {
+      background: var(--yellow);
+      color: var(--black);
+    }
+
+    .btn-refund-active:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+    }
+
+    .btn-refund-disabled {
+      background: #4b5563;
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .empty-state {
+      background: var(--bg-card);
+      border: 3px solid var(--black);
+      border-radius: var(--r-lg);
+      padding: 40px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Modal popup ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 10, 10, 0.85);
+      z-index: 9999;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-box {
+      background: var(--bg-card);
+      border: 4px solid var(--black);
+      border-radius: var(--r-lg);
+      max-width: 480px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 8px 8px 0 var(--black);
+      position: relative;
+    }
+
+    .modal-h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+      color: var(--white);
+    }
+
+    .modal-p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border: var(--border);
+      border-radius: var(--r-md);
+      font-family: inherit;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.1s;
+      box-shadow: 3px 3px 0 var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .modal-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+
+    .modal-btn-confirm { background: var(--red); color: var(--white); }
+    .modal-btn-cancel { background: var(--white); color: var(--black); }
+
+    /* ── Load More button ── */
+    .btn-load-more {
+      margin: 10px auto;
+      padding: 10px 24px;
+      background: var(--white);
+      color: var(--black);
+      border: var(--border);
+      border-radius: var(--r-md);
+      font-family: inherit;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--black);
+      transition: all 0.1s;
+      display: block;
+    }
+
+    .btn-load-more:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+      background: var(--teal);
+    }
+
+    /* ── Toasts system ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 350px;
+      padding: 0 16px;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      color: var(--text);
+      border: var(--border);
+      border-radius: var(--r-md);
+      padding: 14px 18px;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 4px 4px 0 var(--black);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast-info { border-color: var(--purple); box-shadow: 4px 4px 0 var(--purple); }
+    .toast-success { border-color: var(--green); box-shadow: 4px 4px 0 var(--green); }
+    .toast-error { border-color: var(--red); box-shadow: 4px 4px 0 var(--red); }
+    .toast-warn { border-color: var(--orange); box-shadow: 4px 4px 0 var(--orange); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="nav-header">
+    <a href="subscription.html" class="btn-back"><i data-lucide="arrow-left"></i> <span class="back-text-desktop">Back to Billing</span><span class="back-text-mobile">Back</span></a>
+    <h2 class="nav-title"><i data-lucide="credit-card" style="color: var(--pink);"></i> Billing &amp; Refunds</h2>
+    <div style="width: 120px; display: none;" class="native-spacer"></div>
+  </header>
+
+  <div class="container">
+    <!-- Policy Panel -->
+    <div class="policy-panel">
+      <h3 class="policy-title">Cancellation &amp; Refund Policy</h3>
+      <p>Thank you for subscribing to <strong>Consistency Daily Premium</strong>! We aim to provide an Elite habit building routine. Please review our compliant payment cancellation guidelines below:</p>
+      <ul class="policy-bullets">
+        <li><strong>Subscription Cancellations:</strong> You can cancel future renewals at any time directly through billing. Your premium quota benefits will remain active until the end of your current cycle.</li>
+        <li><strong>48-Hour Refund Request Window:</strong> Digital purchases are eligible for a refund request <span style="color: var(--white); font-weight: 700;">ONLY within 48 hours</span> from the exact payment verification timestamp.</li>
+        <li><strong>System Zero-Utilization Rule:</strong> Because active premium resource access generates immediate computational API costs, refunds are only issued if <span style="color: var(--white); font-weight: 700;">zero premium features</span> (e.g. AI checklist dictations, grace protections) have been utilized during the transaction period.</li>
+      </ul>
+      <div class="highlight-rule">
+        ⚠️ IMPORTANT: Submitting a request locks the Premium features of that card pending review. If approved, limits instantly fall back to the Free baseline. Rejections keep your Premium tier active until standard expiry.
+      </div>
+    </div>
+
+    <!-- Active Passes Grid -->
+    <div>
+      <h3 class="section-title">Purchase History &amp; Refunds</h3>
+      <div id="no-payments-view" class="empty-state" style="display: none;">
+        <span style="font-size: 40px; display: block; margin-bottom: 12px;">🏜️</span>
+        <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 900; text-transform: uppercase;">No purchase history found</h4>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">You are currently running on the Free Tier and have no active premium subscriptions.</p>
+      </div>
+
+      <div class="transaction-list" id="transaction-list-container">
+        <!-- Transaction Cards populated dynamically -->
+      </div>
+      
+      <button class="btn-load-more" id="btn-load-more-payments" style="display: none;" onclick="loadMorePayments()">
+        Load More Transactions
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirm Refund Modal -->
+  <div class="modal-overlay" id="refund-confirm-modal">
+    <div class="modal-box">
+      <h3 class="modal-h3">Confirm Refund Request</h3>
+      <p class="modal-p">
+        Are you sure you want to request a refund for this transaction? This will temporarily hold your Premium features pending admin review. If approved, ₹<span id="modal-amount-span">0</span> will be transferred back to your original source of payment within 5-7 business days, and your account limits will fall back to the Free Tier.
+      </p>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-modal-confirm-submit" onclick="submitRefundRequest()">Confirm Request</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sleek Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- scripts -->
+  <script src="libs/lucide.min.js"></script>
+  <script>
+    // Guard
+    if (!localStorage.getItem('userId') || !localStorage.getItem('token')) {
+      window.location.replace('landing.html');
+    }
+
+    const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
+    const API = isAndroidNative ? 'https://consistency-daily.vercel.app' : '';
+
+    let paymentsArray = [];
+    let visiblePaymentsCount = 3;
+    let targetPaymentId = null;
+
+    // Toast Helper
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let iconName = 'info';
+      if (type === 'success') iconName = 'check-circle';
+      if (type === 'error') iconName = 'alert-triangle';
+      if (type === 'warn') iconName = 'alert-circle';
+      
+      toast.innerHTML = `<i data-lucide="${iconName}"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons({ root: toast });
+      
+      setTimeout(() => {
+        toast.style.animation = 'toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards';
+        setTimeout(() => toast.remove(), 200);
+      }, 3500);
+    }
+
+    // API Helper
+    async function apiRequest(endpoint, options = {}) {
+      const token = localStorage.getItem('token');
+      const headers = { ...(options.headers || {}) };
+      headers['Content-Type'] = 'application/json';
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      try {
+        const res = await fetch(`${API}${endpoint}`, { 
+          cache: 'no-store',
+          ...options, 
+          headers 
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message || `HTTP ${res.status}`);
+        }
+        return await res.json();
+      } catch (err) {
+        console.error(`API Error on ${endpoint}:`, err);
+        throw err;
+      }
+    }
+
+    // Load User payments
+    async function loadPaymentsHistory() {
+      try {
+        const data = await apiRequest('/api/subscriptions/status');
+        paymentsArray = data.paymentHistory || [];
+        
+        // Sort from newest to oldest
+        paymentsArray.sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
+        renderPaymentsUI();
+      } catch (err) {
+        showToast('Failed to retrieve payment history.', 'error');
+      }
+    }
+
+    // Render payment cards
+    function renderPaymentsUI() {
+      const container = document.getElementById('transaction-list-container');
+      const emptyState = document.getElementById('no-payments-view');
+      const loadMoreBtn = document.getElementById('btn-load-more-payments');
+      
+      container.innerHTML = '';
+      
+      if (paymentsArray.length === 0) {
+        emptyState.style.display = 'block';
+        loadMoreBtn.style.display = 'none';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      
+      const sliced = paymentsArray.slice(0, visiblePaymentsCount);
+      sliced.forEach(p => {
+        container.appendChild(buildPaymentCard(p));
+      });
+      
+      if (paymentsArray.length > visiblePaymentsCount) {
+        loadMoreBtn.style.display = 'block';
+      } else {
+        loadMoreBtn.style.display = 'none';
+      }
+      
+      lucide.createIcons({ root: container });
+    }
+
+    // Build neobrutalist card
+    function buildPaymentCard(p) {
+      const card = document.createElement('div');
+      card.className = 'payment-card';
+      
+      const elapsed = Date.now() - new Date(p.purchasedAt).getTime();
+      const fortyEightHoursMs = 48 * 60 * 60 * 1000;
+      const isUnder48h = elapsed <= fortyEightHoursMs;
+      const isEligible = isUnder48h && p.refundStatus === 'none';
+      
+      let badgeHTML = '';
+      let btnHTML = '';
+      
+      if (p.refundStatus === 'none') {
+        if (isEligible) {
+          const remainingHrs = Math.max(0, Math.ceil((fortyEightHoursMs - elapsed) / (1000 * 60 * 60)));
+          badgeHTML = `<span class="badge-eligible"><i data-lucide="check-circle"></i> Eligible (${remainingHrs}h left)</span>`;
+          btnHTML = `<button class="btn-refund btn-refund-active" onclick="openConfirmModal('${p.paymentId}', ${p.amount})"><i data-lucide="refresh-ccw"></i> Request Refund</button>`;
+        } else {
+          badgeHTML = `<span class="badge-ineligible"><i data-lucide="clock"></i> Window Expired</span>`;
+          btnHTML = `<button class="btn-refund btn-refund-disabled" disabled>Refund window expired</button>`;
+        }
+      } else {
+        let text = 'Requested';
+        let cls = 'badge-requested';
+        let iconName = 'help-circle';
+        
+        if (p.refundStatus === 'approved') {
+          text = 'Refunded';
+          cls = 'badge-approved';
+          iconName = 'check-circle';
+        } else if (p.refundStatus === 'rejected') {
+          text = 'Declined';
+          cls = 'badge-rejected';
+          iconName = 'alert-triangle';
+        }
+        
+        badgeHTML = `<span class="badge-status ${cls}"><i data-lucide="${iconName}"></i> ${text}</span>`;
+        btnHTML = `<button class="btn-refund btn-refund-disabled" disabled>Refund ${p.refundStatus}</button>`;
+      }
+      
+      const displayDate = new Date(p.purchasedAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      card.innerHTML = `
+        <div class="payment-header">
+          <div>
+            <span class="payment-plan">${p.duration === '1_month' ? 'Monthly Pass' : 'Annual Pass'}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${badgeHTML}
+            <span class="payment-amount">₹${p.amount}</span>
+          </div>
+        </div>
+        <div class="payment-details">
+          <div class="detail-item">
+            <span class="detail-label">Payment ID</span>
+            <span class="detail-val">${p.paymentId}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Order ID</span>
+            <span class="detail-val">${p.orderId}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Purchase Date</span>
+            <span class="detail-val">${displayDate}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Plan Duration</span>
+            <span class="detail-val">${p.duration === '1_month' ? '30 Days Pass' : '365 Days Pass'}</span>
+          </div>
+        </div>
+        <div style="margin-top: 8px;">
+          ${btnHTML}
+        </div>
+      `;
+      
+      return card;
+    }
+
+    function loadMorePayments() {
+      visiblePaymentsCount += 3;
+      renderPaymentsUI();
+    }
+
+    // Modal helpers
+    function openConfirmModal(paymentId, amount) {
+      targetPaymentId = paymentId;
+      document.getElementById('modal-amount-span').textContent = amount;
+      document.getElementById('refund-confirm-modal').style.display = 'flex';
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('refund-confirm-modal').style.display = 'none';
+      targetPaymentId = null;
+    }
+
+    // Trigger API request
+    async function submitRefundRequest() {
+      if (!targetPaymentId) return;
+      
+      const btn = document.getElementById('btn-modal-confirm-submit');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      
+      try {
+        const res = await apiRequest('/api/subscriptions/razorpay/request-refund', {
+          method: 'POST',
+          body: JSON.stringify({ paymentId: targetPaymentId })
+        });
+        
+        if (res.success) {
+          showToast(res.message || 'Refund request successfully submitted!', 'success');
+          closeConfirmModal();
+          
+          // Re-load to update UI
+          await loadPaymentsHistory();
+        } else {
+          showToast(res.message || 'Failed to submit refund request.', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Confirm Request';
+        }
+      } catch (err) {
+        showToast(err.message || 'Error occurred while requesting refund.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Confirm Request';
+      }
+    }
+
+    window.onload = function() {
+      lucide.createIcons();
+      loadPaymentsHistory();
+    };
+  </script>
+</body>
+</html>

@@ -557,6 +557,14 @@ const applyGrace = async (req, res) => {
 
     // Deduct 1 Grace quota point
     user.graceCount += 1;
+    if (user.subscriptionTier === 'premium') {
+      user.premiumUsageLogs.push({
+        actionType: 'grace_apply',
+        timestamp: new Date(),
+        details: `Restored past daily card for date: ${day.date}`,
+        razorpayPaymentId: user.razorpayPaymentId
+      });
+    }
     await user.save();
 
     // Mark Grace as applied on target card

@@ -437,6 +437,53 @@
     .admin-section h2 { margin-bottom: 16px; }
     .admin-section p  { color: #555; }
 
+    /* ── Refunds Manager ── */
+    .refunds-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .refund-metric-card {
+      background: var(--white);
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-left-width: 6px;
+    }
+    .refund-metric-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--black);
+    }
+    .refund-metric-label {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #666;
+      letter-spacing: 0.5px;
+    }
+    .refund-abuse-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 2px solid var(--black);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .refund-log-row {
+      font-size: 11px;
+      color: #555;
+      padding: 3px 0;
+      border-bottom: 1px dashed #ddd;
+    }
+
     /* ── Neo-Brutalist Layout Classes ── */
     .user-subscription-box {
       background: var(--white);
@@ -724,6 +771,7 @@
         <button class="nav-link" id="nav-badges" onclick="showSection('badges')">Badges</button>
         <button class="nav-link" id="nav-coupons" onclick="showSection('coupons')">Promo Coupons</button>
         <button class="nav-link" id="nav-payments" onclick="showSection('payments')">Payments</button>
+        <button class="nav-link" id="nav-refunds" onclick="showSection('refunds')">💸 Refunds</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -849,6 +897,60 @@
       <div id="payments-pagination" style="margin-top: 28px; display: flex; justify-content: center; align-items: center; gap: 12px;"></div>
     </div>
 
+    <!-- ── Refunds Manager Section ── -->
+    <div id="section-refunds" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>💸 Refunds Manager</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Review &amp; process subscription refund requests</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-control" onclick="loadRefunds()" style="background: var(--black); color: var(--white);">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="refunds-metrics" id="refunds-metrics">
+        <div class="refund-metric-card" style="border-color: var(--orange);">
+          <span class="refund-metric-val" id="metric-pending">—</span>
+          <span class="refund-metric-label">Pending Requests</span>
+        </div>
+        <div class="refund-metric-card" style="border-color: var(--green);">
+          <span class="refund-metric-val" id="metric-approved">—</span>
+          <span class="refund-metric-label">Approved &amp; Paid</span>
+        </div>
+        <div class="refund-metric-card" style="border-color: #ef4444;">
+          <span class="refund-metric-val" id="metric-rejected">—</span>
+          <span class="refund-metric-label">Rejected</span>
+        </div>
+        <div class="refund-metric-card" style="border-color: var(--purple);">
+          <span class="refund-metric-val" id="metric-total-amt">—</span>
+          <span class="refund-metric-label">Total Refunded (₹)</span>
+        </div>
+      </div>
+
+      <!-- Requests Table -->
+      <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); overflow-x: auto; margin-top: 20px;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+          <thead style="background: #f0f0f0; border-bottom: var(--border);">
+            <tr>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">User</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Plan / Amount</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Payment ID</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Purchased At</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Elapsed</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Requested At</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase;">Abuse Flags</th>
+              <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="refunds-table-body">
+            <tr><td colspan="8" style="text-align:center; padding:20px; font-weight:800; color:#666;">Loading refund requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
 
 
   </div>
@@ -964,7 +1066,31 @@
     </div>
   </div>
 
+  <!-- Refund Reject Reason Modal -->
+  <div id="refund-reject-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 520px;">
+      <h3 style="margin-bottom: 16px; border-bottom: 2px dashed #ddd; padding-bottom: 12px;">✗ Reject Refund Request</h3>
+      <p style="font-size: 13px; color: #555; margin-bottom: 16px; font-weight: 700;">Provide a rejection reason. This will be emailed directly to the user. Their Premium tier will remain active.</p>
+      <input type="hidden" id="reject-user-id">
+      <div class="form-group">
+        <label>User: <span id="reject-user-name" style="color: #000; text-transform: none;"></span></label>
+      </div>
+      <div class="form-group">
+        <label>Payment ID: <span id="reject-payment-id" style="font-family:monospace; color:#555; text-transform: none; font-size: 12px;"></span></label>
+      </div>
+      <div class="form-group">
+        <label>Rejection Reason / Proof Details *</label>
+        <textarea id="reject-reason-input" rows="5" placeholder="e.g. Detected 3 AI voice parses and 1 grace streak protection applied after subscription activated on [date]..." required></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-save" style="background: #ef4444; border-color: #ef4444;" id="btn-submit-reject" onclick="submitRejectRefund()">Send Rejection</button>
+        <button type="button" class="btn-cancel" onclick="closeRejectModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="admin-script.js"></script>
+
   <script>
     lucide.createIcons();
   </script>
