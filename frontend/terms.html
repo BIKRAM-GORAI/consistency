@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms & Conditions - Consistency Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f1b;
+      --bg-card: #18182c;
+      --black: #111;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --yellow: #FFD60A;
+      --purple: #a855f7;
+      --border: 3px solid #111;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 720px;
+      width: 100%;
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 8px 8px 0 var(--black);
+    }
+
+    .header {
+      text-align: center;
+      border-bottom: var(--border);
+      padding-bottom: 30px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--yellow);
+      color: var(--black);
+      font-weight: 900;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 10px 20px;
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--black);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      margin-bottom: 24px;
+    }
+
+    .back-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+    }
+
+    .back-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 32px;
+      text-transform: uppercase;
+      color: var(--yellow);
+      letter-spacing: -0.5px;
+      margin-top: 10px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin: 35px 0 15px;
+      border-left: 5px solid var(--yellow);
+      padding-left: 12px;
+    }
+
+    p, li {
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 15px;
+    }
+
+    ul {
+      list-style-type: none;
+      margin-bottom: 20px;
+    }
+
+    li {
+      position: relative;
+      padding-left: 24px;
+      margin-bottom: 12px;
+    }
+
+    li::before {
+      content: "⚡";
+      position: absolute;
+      left: 0;
+      top: 1px;
+      color: var(--yellow);
+    }
+
+    .alert {
+      background: rgba(255, 214, 10, 0.08);
+      border: 2px solid var(--yellow);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 25px 0;
+    }
+
+    .alert-title {
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--yellow);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .alert p {
+      margin-bottom: 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 25px;
+      border-top: var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px 10px;
+      }
+      .container {
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-btn" onclick="window.history.back() || window.close()">⬅ Back</a>
+    
+    <div class="header">
+      <h1>Terms & Conditions</h1>
+      <div class="meta">Last Updated: May 31, 2026</div>
+    </div>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By registering for, downloading, installing, or utilizing the Consistency Tracker application ("the App") or our web services, you explicitly agree to be bound by this legal framework. If you do not accept these Terms, you are prohibited from utilizing our product.</p>
+
+    <h2>2. User Accounts & Registration</h2>
+    <p>To use our productivity tracking and streak features, you must register an account using a valid email address. You are fully responsible for maintaining the confidentiality of your credentials and for all actions that take place under your account.</p>
+
+    <h2>3. Subscription Plans & Billing Tiers</h2>
+    <p>Consistency Tracker offers a Free Baseline Tier and a Premium Pass upgrade (Monthly and Annual Passes). Payments are handled securely using live transaction gateways powered by our partner, <strong>Razorpay</strong>. Subscriptions and quotas are governed strictly by active purchase verification.</p>
+
+    <div class="alert">
+      <div class="alert-title">⚠️ Strict Refund Policy & Abuse Protection</div>
+      <p>Consistency Tracker implements a zero-exploitation billing policy:</p>
+      <ul>
+        <li><strong>Processing Fee:</strong> Every approved refund is subject to a <strong>nominal 3% transaction processing fee deduction</strong> to offset non-refundable payment gateway merchant charges.</li>
+        <li><strong>Zero-Utilization Rule:</strong> Refund requests are strictly declined if you have already utilized any Premium quota (such as Voice-to-Task conversions, Photo AI generations, or premium group slots) during the active billing period.</li>
+        <li><strong>No Multi-Claim Abuse:</strong> Users are permitted a maximum of one refund request per purchase. All feature utilization is safely logged to serve as evidence in dispute resolutions.</li>
+      </ul>
+    </div>
+
+    <h2>4. Code of Conduct</h2>
+    <p>Users must use the platform responsibly. You agree NOT to:</p>
+    <ul>
+      <li>Transmit or share abusive, illegal, offensive, or copyrighted materials in Group Chats.</li>
+      <li>Manipulate daily cards or streak values to artificially climb the public Leaderboard.</li>
+      <li>Exploit any system bugs, security vulnerabilities, or API rates.</li>
+    </ul>
+
+    <h2>5. Disclaimer of Warranties</h2>
+    <p>Consistency Tracker is provided "as is" and "as available" without warranties of any kind. We do not guarantee uninterrupted, secure, or bug-free operation of our cloud sync or AI services.</p>
+
+    <h2>6. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by applicable law, we shall not be liable for any direct, indirect, incidental, or consequential damages resulting from your use of the application, data sync failures, or subscription tier adjustments.</p>
+
+    <div class="footer">
+      &copy; 2026 Consistency Tracker. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Consistency Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f1b;
+      --bg-card: #18182c;
+      --black: #111;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --yellow: #FFD60A;
+      --purple: #a855f7;
+      --border: 3px solid #111;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 720px;
+      width: 100%;
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 8px 8px 0 var(--black);
+    }
+
+    .header {
+      text-align: center;
+      border-bottom: var(--border);
+      padding-bottom: 30px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--yellow);
+      color: var(--black);
+      font-weight: 900;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 10px 20px;
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--black);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      margin-bottom: 24px;
+    }
+
+    .back-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+    }
+
+    .back-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 32px;
+      text-transform: uppercase;
+      color: var(--yellow);
+      letter-spacing: -0.5px;
+      margin-top: 10px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin: 35px 0 15px;
+      border-left: 5px solid var(--yellow);
+      padding-left: 12px;
+    }
+
+    p, li {
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 15px;
+    }
+
+    ul {
+      list-style-type: none;
+      margin-bottom: 20px;
+    }
+
+    li {
+      position: relative;
+      padding-left: 24px;
+      margin-bottom: 12px;
+    }
+
+    li::before {
+      content: "🛡️";
+      position: absolute;
+      left: 0;
+      top: 1px;
+    }
+
+    .alert {
+      background: rgba(168, 85, 247, 0.08);
+      border: 2px solid var(--purple);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 25px 0;
+    }
+
+    .alert-title {
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--purple);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .alert p {
+      margin-bottom: 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 25px;
+      border-top: var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px 10px;
+      }
+      .container {
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-btn" onclick="window.history.back() || window.close()">⬅ Back</a>
+    
+    <div class="header">
+      <h1>Privacy Policy</h1>
+      <div class="meta">Last Updated: May 31, 2026</div>
+    </div>
+
+    <h2>1. Introduction</h2>
+    <p>Consistency Tracker respects your privacy and is fully committed to protecting the personal data you share with us. This Privacy Policy details precisely how we collect, process, secure, and share your data when you interact with our productivity and habit dashboard.</p>
+
+    <h2>2. Data We Collect</h2>
+    <ul>
+      <li><strong>Profile Information:</strong> Name, username, email address, and profile pictures supplied during sign-up or retrieved via Google OAuth login.</li>
+      <li><strong>Activity Data:</strong> Habit lists, streaks, task summaries, milestones, and achievements recorded on your timeline.</li>
+      <li><strong>Microphone Permission:</strong> Used exclusively to record and capture voice prompts for our **Voice-to-Task** AI converter. We never record in the background or use audio for other purposes.</li>
+      <li><strong>Camera/Photo Permissions:</strong> Used only when you capture or upload photos for profile customization, group icons, or **Photo AI** integrations.</li>
+    </ul>
+
+    <div class="alert">
+      <div class="alert-title">🔒 Group Chat & Messaging Privacy Rules</div>
+      <p>Consistency Tracker strictly isolates and secures your messaging privacy:</p>
+      <ul>
+        <li><strong>Public Group Restriction:</strong> All chat logs, images, and audio messages sent inside a public group are visible <strong>only to the joined members of that specific public group chat</strong>.</li>
+        <li><strong>Absolute Isolation:</strong> No other person, external viewer, third party, or unjoined user can access, view, or search these messages under any circumstances.</li>
+        <li><strong>Zero Data Mining:</strong> We do not scan, index, analyze, or sell your messaging data. It is kept strictly safe and restricted to your chat window.</li>
+      </ul>
+    </div>
+
+    <h2>3. Payment Security & Processing</h2>
+    <p>All subscription billing is handled directly and securely through our payment provider partner, <strong>Razorpay</strong>. Consistency Tracker never accesses, sees, or stores your credit cards, banking credentials, or UPI credentials. Razorpay processes payments in 100% compliance with strict PCI-DSS standards.</p>
+
+    <h2>4. How We Use & Share Information</h2>
+    <p>We never sell your data. We only share information with reliable infrastructure partners required to make the app work:</p>
+    <ul>
+      <li><strong>Cloud Providers:</strong> Secure database sync and hosting (Vercel & cloud database clusters).</li>
+      <li><strong>Cloudinary:</strong> Safe storage of profile pictures and uploaded group media.</li>
+      <li><strong>Firebase Services:</strong> Triggering real-time notifications for chat alerts and habit reminders.</li>
+    </ul>
+
+    <h2>5. Absolute Deletion Right</h2>
+    <p>We respect your right to be forgotten. Clicking <strong>Delete Account</strong> in your settings will trigger a complete cascade deletion: our database will instantly and permanently wipe your email, username, habit logs, voice logs, and all historical records from our servers with zero delay.</p>
+
+    <div class="footer">
+      &copy; 2026 Consistency Tracker. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
