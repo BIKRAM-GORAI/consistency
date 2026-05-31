@@ -28,6 +28,15 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const app = express();
 app.set("trust proxy", 1); // Trust first reverse proxy (required for accurate client IP rate limiting on Vercel)
 
+// ── Lightweight Health Check Route (Bypasses Database & Rate Limiters for Uptime Robot) ──
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 
 // Ensure database is connected for every request
 app.use(async (req, res, next) => {
