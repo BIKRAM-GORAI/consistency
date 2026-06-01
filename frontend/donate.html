@@ -114,6 +114,32 @@
       gap: 8px;
     }
 
+    /* Responsive Back button & Header */
+    .back-text-mobile {
+      display: none;
+    }
+
+    @media (max-width: 480px) {
+      .nav-header {
+        padding: 12px 14px;
+        gap: 8px;
+      }
+      .nav-title {
+        font-size: 15px;
+        gap: 4px;
+      }
+      .btn-back {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+      .back-text-desktop {
+        display: none;
+      }
+      .back-text-mobile {
+        display: inline;
+      }
+    }
+
     /* Android Native safe area / notch support */
     body.native-android .nav-header,
     html.native-android .nav-header {
