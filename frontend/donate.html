@@ -179,9 +179,9 @@
       background: #ffffff;
       border: 3px solid var(--black);
       border-radius: var(--r-lg);
-      padding: 16px;
+      padding: 8px;
       box-shadow: var(--shadow);
-      max-width: 250px;
+      max-width: 300px;
       width: 100%;
       display: flex;
       justify-content: center;
@@ -191,8 +191,10 @@
     .qr-image {
       width: 100%;
       height: auto;
-      max-height: 218px;
+      max-height: 284px;
       object-fit: contain;
+      display: block;
+      border-radius: calc(var(--r-lg) - 6px);
     }
 
     .qr-caption {
@@ -337,7 +339,7 @@
       <!-- UPI QR Code Scanner -->
       <div class="qr-section">
         <div class="qr-frame">
-          <img src="qr.png" alt="UPI Payment QR Code" class="qr-image" onerror="this.src='https://placehold.co/250x250?text=Scan+QR+to+Pay'" />
+          <img src="qr.png" alt="UPI Payment QR Code" class="qr-image" onerror="this.src='https://placehold.co/300x300?text=Scan+QR+to+Pay'" />
         </div>
         <div class="qr-caption">
           <i data-lucide="scan" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
