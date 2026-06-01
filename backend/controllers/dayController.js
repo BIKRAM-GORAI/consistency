@@ -537,10 +537,21 @@ const applyGrace = async (req, res) => {
       return res.status(404).json({ message: 'Day sheet card not found.' });
     }
 
+    const clientDate = req.headers['x-client-date'];
+    const d = new Date();
+    const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayStr = clientDate || serverToday;
+
     // Verify it is indeed a past day card (not today, not future)
-    const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
     if (day.date >= todayStr) {
       return res.status(400).json({ message: 'Grace days can only be applied to past cards.' });
+    }
+
+    // Verify it is in the current calendar month
+    const currentMonthPrefix = todayStr.substring(0, 7); // e.g. "2026-06"
+    const cardMonthPrefix = day.date.substring(0, 7); // e.g. "2026-05"
+    if (cardMonthPrefix !== currentMonthPrefix) {
+      return res.status(400).json({ message: 'Grace days can only be applied to cards in the current month.' });
     }
 
     if (day.graceApplied) {
@@ -572,7 +583,6 @@ const applyGrace = async (req, res) => {
     const savedDay = await day.save();
 
     // Re-verify/Update user streak
-    const clientDate = req.headers['x-client-date'];
     const currentStreak = await updateUserStreakAndActivity(userId, clientDate);
 
     res.status(200).json({
