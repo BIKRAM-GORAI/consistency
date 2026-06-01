@@ -12,10 +12,6 @@
         document.body.classList.add('native-android');
       });
     }
-    // Block unauthorized direct navigation
-    if (sessionStorage.getItem('devSubscriptionUnlocked') !== 'true') {
-      window.location.replace('index.html');
-    }
   </script>
   
   <!-- We intentionally DO NOT load Microsoft Clarity here to satisfy tracking exclusion requirements -->
