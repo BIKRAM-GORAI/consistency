@@ -1935,6 +1935,10 @@ async function redeemPromoCoupon() {
 // ── My Usage Limits Modal ──────────────────────────────────
 async function openMyLimitsModal() {
   openModal('modal-my-limits');
+  // Initialise Lucide icons in the static modal header (gauge + X close button)
+  const modal = document.getElementById('modal-my-limits');
+  if (modal && window.lucide) lucide.createIcons({ root: modal });
+
   const body = document.getElementById('my-limits-body');
   if (!body) return;
 
