@@ -713,13 +713,22 @@
                 15 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+10)</span>
               </td>
             </tr>
-            <tr>
+            <tr style="border-bottom: 2px solid var(--black);">
               <td style="padding: 14px; font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
                 <i data-lucide="target" style="color: var(--orange); width: 16px; height: 16px; flex-shrink:0;"></i> LeetCode Name Changes
               </td>
               <td id="limit-leetcode-base" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 800; text-align: center; border-left: 2px solid var(--black); border-right: 2px solid var(--black); color: var(--text-muted); background: rgba(255,255,255,0.01);">3</td>
               <td id="limit-leetcode-premium" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 900; text-align: right; color: var(--yellow); background: rgba(251, 204, 21, 0.02);">
                 6 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+3)</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 14px; font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="shield" style="color: var(--purple); width: 16px; height: 16px; flex-shrink:0;"></i> Monthly Grace Days
+              </td>
+              <td id="limit-grace-base" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 800; text-align: center; border-left: 2px solid var(--black); border-right: 2px solid var(--black); color: var(--text-muted); background: rgba(255,255,255,0.01);">2</td>
+              <td id="limit-grace-premium" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 900; text-align: right; color: var(--yellow); background: rgba(251, 204, 21, 0.02);">
+                6 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+4)</span>
               </td>
             </tr>
           </tbody>
@@ -975,6 +984,16 @@
 
         document.getElementById('limit-leetcode-base').textContent = lc.leetcode.base;
         document.getElementById('limit-leetcode-premium').innerHTML = `${lc.leetcode.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostLeetcode})</span>`;
+
+        if (lc.grace) {
+          const boostGrace = lc.grace.premium - lc.grace.base;
+          const limitGraceBaseEl = document.getElementById('limit-grace-base');
+          const limitGracePremiumEl = document.getElementById('limit-grace-premium');
+          if (limitGraceBaseEl) limitGraceBaseEl.textContent = lc.grace.base;
+          if (limitGracePremiumEl) {
+            limitGracePremiumEl.innerHTML = `${lc.grace.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostGrace})</span>`;
+          }
+        }
       }
       lucide.createIcons();
     }
