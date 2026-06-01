@@ -442,39 +442,9 @@ function setLcStatus(el, state, text) {
 }
 window.setLcStatus = setLcStatus;
 
-async function handleManageSubscription(event) {
+function handleManageSubscription(event) {
   if (event) event.preventDefault();
-  
-  // If already unlocked in this session, go directly
-  if (sessionStorage.getItem('devSubscriptionUnlocked') === 'true') {
-    window.location.href = 'subscription.html';
-    return;
-  }
-
-  const pwd = prompt("Enter developer password to manage subscription details:");
-  if (pwd === null) return; // User cancelled
-  
-  try {
-    const res = await fetch(`${window.API || ''}/api/subscriptions/razorpay/verify-dev-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ password: pwd })
-    });
-    
-    const data = await res.json();
-    if (res.ok && data.success) {
-      sessionStorage.setItem('devSubscriptionUnlocked', 'true');
-      window.location.href = 'subscription.html';
-    } else {
-      alert(data.message || "Incorrect password. Subscription management locked.");
-    }
-  } catch (err) {
-    console.error("Password verification error:", err);
-    alert("Error communicating with verification service.");
-  }
+  window.location.href = 'subscription.html';
 }
 window.handleManageSubscription = handleManageSubscription;
 

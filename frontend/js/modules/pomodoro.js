@@ -213,15 +213,59 @@ function applyCustomPomoMode() {
   const workInput  = document.getElementById('custom-work-min');
   const breakInput = document.getElementById('custom-break-min');
 
-  const t = Math.max(5,  Math.min(480, parseInt(totalInput?.value) || 60));
-  const w = Math.max(1,  Math.min(120, parseInt(workInput?.value)  || 25));
-  const b = Math.max(1,  Math.min(60,  parseInt(breakInput?.value) || 5));
+  const rawT = parseInt(totalInput?.value);
+  const rawW = parseInt(workInput?.value);
+  const rawB = parseInt(breakInput?.value);
 
-  // Validate: work + break must be <= total
-  if (w + b > t) {
-    if (window.showToast) window.showToast('⚠️ Work + Break time must be less than Total time!', 'error');
+  // 1. Check for empty or NaN values
+  if (isNaN(rawT) || isNaN(rawW) || isNaN(rawB)) {
+    if (window.showToast) window.showToast('⚠️ Please enter valid numbers for all fields!', 'error');
     return;
   }
+
+  // 2. Validate total session time limits
+  if (rawT < 1) {
+    if (window.showToast) window.showToast('⚠️ Total session time must be at least 1 minute!', 'error');
+    return;
+  }
+  if (rawT > 480) {
+    if (window.showToast) window.showToast('⚠️ Total session time cannot exceed 480 minutes!', 'error');
+    return;
+  }
+
+  // 3. Validate work time limits
+  if (rawW < 1) {
+    if (window.showToast) window.showToast('⚠️ Work time must be at least 1 minute!', 'error');
+    return;
+  }
+  if (rawW > 120) {
+    if (window.showToast) window.showToast('⚠️ Work time cannot exceed 120 minutes!', 'error');
+    return;
+  }
+
+  // 4. Validate break time limits
+  if (rawB < 0) {
+    if (window.showToast) window.showToast('⚠️ Break time cannot be negative!', 'error');
+    return;
+  }
+  if (rawB === 0) {
+    if (window.showToast) window.showToast('⚠️ Break time cannot be 0 minutes!', 'error');
+    return;
+  }
+  if (rawB > 60) {
+    if (window.showToast) window.showToast('⚠️ Break time cannot exceed 60 minutes!', 'error');
+    return;
+  }
+
+  // 5. Validate that work + break fits in total session
+  if (rawW + rawB > rawT) {
+    if (window.showToast) window.showToast('⚠️ Work + Break time must be less than or equal to Total time!', 'error');
+    return;
+  }
+
+  const t = rawT;
+  const w = rawW;
+  const b = rawB;
 
   if (totalInput)  totalInput.value  = t;
   if (workInput)   workInput.value   = w;

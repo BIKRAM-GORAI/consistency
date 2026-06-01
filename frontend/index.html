@@ -546,7 +546,7 @@
     <style>
       /* ── Pomodoro Page Layout ── */
       #page-pomodoro {
-        padding: 20px;
+        padding: 20px 20px 120px;
         box-sizing: border-box;
         width: 100%;
       }
@@ -820,7 +820,7 @@
 
       /* ── Mobile ── */
       @media (max-width: 480px) {
-        #page-pomodoro { padding: 16px 12px; }
+        #page-pomodoro { padding: 16px 12px 120px; }
         #page-pomodoro .pomo-card { padding: 20px 16px 24px; border-radius: 12px; }
         #page-pomodoro .pomo-btn  { padding: 11px 20px; font-size: 14px; min-width: 90px; }
         #page-pomodoro .pomo-mode-btn { padding: 6px 11px; font-size: 11px; }
@@ -879,7 +879,7 @@
           <div class="custom-fields">
             <div class="custom-field">
               <label for="custom-total-min">Total</label>
-              <input type="number" id="custom-total-min" min="5" max="480" value="60" />
+              <input type="number" id="custom-total-min" min="1" max="480" value="60" />
               <span class="field-unit">min</span>
             </div>
             <div class="custom-field">
@@ -889,7 +889,7 @@
             </div>
             <div class="custom-field">
               <label for="custom-break-min">Break</label>
-              <input type="number" id="custom-break-min" min="1" max="60" value="5" />
+              <input type="number" id="custom-break-min" min="0" max="60" value="5" />
               <span class="field-unit">min</span>
             </div>
           </div>
