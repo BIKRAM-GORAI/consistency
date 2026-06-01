@@ -95,6 +95,107 @@ exports.getSubscriptionStatus = async (req, res) => {
 };
 
 /**
+ * GET /api/subscriptions/my-limits
+ * Returns all current per-user usage counters, limits, and reset times in one call.
+ */
+exports.getMyLimits = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const now = new Date();
+    const isPremium = user.subscriptionTier === 'premium' &&
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+    // ── AI Daily Insights ──────────────────────────────────────
+    const aiLimit = parseInt(process.env.AI_DAILY_LIMIT, 10) || 5;
+    const aiPremiumBoost = parseInt(process.env.PREMIUM_ADDITIONAL_AI_LIMIT, 10) || 10;
+    const aiTotal = isPremium ? aiLimit + aiPremiumBoost : aiLimit;
+    // Auto-reset if day changed
+    let aiCount = user.aiGenerationCount || 0;
+    const aiLastReset = user.aiGenerationResetTime ? new Date(user.aiGenerationResetTime) : new Date(0);
+    if (now.toDateString() !== aiLastReset.toDateString()) aiCount = 0;
+    const aiLeft = Math.max(0, aiTotal - aiCount);
+
+    // ── Handwriting / Photo Scan ───────────────────────────────
+    const photoLimit = parseInt(process.env.AI_PHOTO_LIMIT, 10) || 3;
+    const photoPremiumBoost = parseInt(process.env.PREMIUM_ADDITIONAL_PHOTO_LIMIT, 10) || 4;
+    const photoTotal = isPremium ? photoLimit + photoPremiumBoost : photoLimit;
+    let photoCount = user.aiPhotoExtractionCount || 0;
+    const photoLastReset = user.aiPhotoExtractionResetTime ? new Date(user.aiPhotoExtractionResetTime) : new Date(0);
+    if (now.toDateString() !== photoLastReset.toDateString()) photoCount = 0;
+    const photoLeft = Math.max(0, photoTotal - photoCount);
+
+    // ── Voice to Task ──────────────────────────────────────────
+    const voiceLimit = isPremium
+      ? (parseInt(process.env.PREMIUM_DAILY_VOICE_LIMIT, 10) || 5)
+      : (parseInt(process.env.FREE_DAILY_VOICE_LIMIT, 10) || 2);
+    let voiceCount = user.voiceParseCount || 0;
+    const voiceLastReset = user.voiceParseResetTime ? new Date(user.voiceParseResetTime) : new Date(0);
+    if (now.toDateString() !== voiceLastReset.toDateString()) voiceCount = 0;
+    const voiceLeft = Math.max(0, voiceLimit - voiceCount);
+
+    // ── Monthly Grace Days ─────────────────────────────────────
+    const graceLimit = isPremium
+      ? (parseInt(process.env.PREMIUM_MONTHLY_GRACE_LIMIT, 10) || 6)
+      : (parseInt(process.env.FREE_MONTHLY_GRACE_LIMIT, 10) || 2);
+    let graceCount = user.graceCount || 0;
+    const graceLastReset = user.graceResetTime ? new Date(user.graceResetTime) : new Date(0);
+    // Auto-reset if calendar month changed
+    if (now.getMonth() !== graceLastReset.getMonth() || now.getFullYear() !== graceLastReset.getFullYear()) graceCount = 0;
+    const graceLeft = Math.max(0, graceLimit - graceCount);
+
+    // ── LeetCode Username Changes ──────────────────────────────
+    const leetcodeLimit = isPremium
+      ? (parseInt(process.env.MAX_USERNAME_CHANGES, 10) || 3) + (parseInt(process.env.PREMIUM_ADDITIONAL_LEETCODE_LIMIT, 10) || 3)
+      : (parseInt(process.env.MAX_USERNAME_CHANGES, 10) || 3);
+    const leetcodeUsed = user.leetcodeUsernameChangeCount || 0;
+    const leetcodeLeft = Math.max(0, leetcodeLimit - leetcodeUsed);
+
+    // ── Chat Media / Hour ──────────────────────────────────────
+    const chatLimit = parseInt(process.env.CHAT_IMAGE_LIMIT, 10) || 20;
+    const chatPremiumBoost = parseInt(process.env.PREMIUM_ADDITIONAL_CHAT_IMAGE_LIMIT, 10) || 10;
+    const chatTotal = isPremium ? chatLimit + chatPremiumBoost : chatLimit;
+    let chatCount = user.imageUploadCount || 0;
+    const chatLastReset = user.mediaResetTime ? new Date(user.mediaResetTime) : new Date(0);
+    // Chat resets hourly
+    const chatResetHour = new Date(chatLastReset);
+    chatResetHour.setMinutes(0, 0, 0);
+    const nowHour = new Date(now);
+    nowHour.setMinutes(0, 0, 0);
+    if (nowHour > chatResetHour) chatCount = 0;
+    const chatLeft = Math.max(0, chatTotal - chatCount);
+
+    // Compute "resets at" labels
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const nextHour = new Date(now);
+    nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+
+    res.status(200).json({
+      isPremium,
+      tier: user.subscriptionTier,
+      limits: {
+        aiInsights:   { used: aiCount,      total: aiTotal,     left: aiLeft,       resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        photoScan:    { used: photoCount,   total: photoTotal,  left: photoLeft,    resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        voiceToTask:  { used: voiceCount,   total: voiceLimit,  left: voiceLeft,    resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        graceDays:    { used: graceCount,   total: graceLimit,  left: graceLeft,    resetsAt: nextMonth.toISOString(),  resetPeriod: 'monthly' },
+        leetcode:     { used: leetcodeUsed, total: leetcodeLimit, left: leetcodeLeft, resetsAt: null,                   resetPeriod: 'permanent' },
+        chatMedia:    { used: chatCount,    total: chatTotal,   left: chatLeft,     resetsAt: nextHour.toISOString(),   resetPeriod: 'hourly' },
+      }
+    });
+  } catch (error) {
+    console.error('getMyLimits error:', error);
+    res.status(500).json({ message: 'Error fetching user limits.' });
+  }
+};
+
+/**
  * POST /api/subscriptions/apply-coupon
  * Redeems a one-time admin-generated promo coupon code to unlock premium.
  */

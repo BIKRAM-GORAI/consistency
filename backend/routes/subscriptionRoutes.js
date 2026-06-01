@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 // Protected User Subscription Details
 router.get('/status', authenticateToken, subscriptionController.getSubscriptionStatus);
+router.get('/my-limits', authenticateToken, subscriptionController.getMyLimits);
 router.post('/apply-coupon', authenticateToken, subscriptionController.applyCoupon);
 
 // Razorpay Payment Actions

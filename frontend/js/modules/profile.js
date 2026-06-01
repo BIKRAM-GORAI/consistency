@@ -1932,4 +1932,155 @@ async function redeemPromoCoupon() {
   }
 }
 
+// ── My Usage Limits Modal ──────────────────────────────────
+async function openMyLimitsModal() {
+  openModal('modal-my-limits');
+  const body = document.getElementById('my-limits-body');
+  if (!body) return;
+
+  // Show spinner
+  body.innerHTML = `
+    <div style="text-align:center; padding: 40px; color: var(--text-muted); font-size: 13px; font-weight: 600;">
+      <div class="spinner-ring" style="width:28px;height:28px;border-width:3px;margin:0 auto 12px;border-color:#a855f7 #0000 #0000 #0000;"></div>
+      Loading your limits...
+    </div>
+  `;
+
+  try {
+    const data = await apiFetch(`${window.API}/api/subscriptions/my-limits`);
+    if (!data || !data.limits) throw new Error('No data returned');
+    renderMyLimits(body, data);
+  } catch (err) {
+    body.innerHTML = `
+      <div style="text-align:center; padding:32px; color:var(--red); font-size:13px; font-weight:700;">
+        <i data-lucide="alert-circle" style="width:32px;height:32px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;"></i>
+        Failed to load limits. Please try again.
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: body });
+    console.error('openMyLimitsModal error:', err);
+  }
+}
+
+function renderMyLimits(container, data) {
+  const { isPremium, limits } = data;
+
+  const tierBadge = isPremium
+    ? `<span style="display:inline-block;padding:3px 10px;background:linear-gradient(45deg,#fbbf24,#f59e0b);color:#000;font-size:11px;font-weight:900;text-transform:uppercase;border:2px solid var(--black);border-radius:4px;box-shadow:2px 2px 0 var(--black);">Premium</span>`
+    : `<span style="display:inline-block;padding:3px 10px;background:#94a3b8;color:#1e293b;font-size:11px;font-weight:900;text-transform:uppercase;border:2px solid var(--black);border-radius:4px;box-shadow:2px 2px 0 var(--black);">Free Tier</span>`;
+
+  const items = [
+    {
+      key: 'aiInsights',
+      label: 'AI Daily Insights',
+      icon: 'sparkles',
+      color: 'var(--purple)',
+      bg: 'rgba(168,85,247,0.08)',
+      border: '#a855f7',
+    },
+    {
+      key: 'photoScan',
+      label: 'Handwriting / Photo Scan',
+      icon: 'camera',
+      color: 'var(--teal)',
+      bg: 'rgba(20,184,166,0.08)',
+      border: '#14b8a6',
+    },
+    {
+      key: 'voiceToTask',
+      label: 'Voice to Task',
+      icon: 'mic',
+      color: 'var(--pink)',
+      bg: 'rgba(236,72,153,0.08)',
+      border: '#ec4899',
+    },
+    {
+      key: 'graceDays',
+      label: 'Monthly Grace Days',
+      icon: 'shield',
+      color: 'var(--blue)',
+      bg: 'rgba(59,130,246,0.08)',
+      border: '#3b82f6',
+    },
+    {
+      key: 'leetcode',
+      label: 'LeetCode Name Changes',
+      icon: 'target',
+      color: 'var(--orange)',
+      bg: 'rgba(249,115,22,0.08)',
+      border: '#f97316',
+    },
+    {
+      key: 'chatMedia',
+      label: 'Chat Media / Hour',
+      icon: 'message-square',
+      color: 'var(--green)',
+      bg: 'rgba(34,197,94,0.08)',
+      border: '#22c55e',
+    },
+  ];
+
+  function formatReset(item) {
+    if (item.resetPeriod === 'permanent') return 'Lifetime limit (no reset)';
+    if (!item.resetsAt) return '—';
+    const d = new Date(item.resetsAt);
+    const now = new Date();
+    const diffMs = d - now;
+    if (diffMs <= 0) return 'Resets now';
+    const diffH = Math.floor(diffMs / 3600000);
+    const diffM = Math.floor((diffMs % 3600000) / 60000);
+    if (item.resetPeriod === 'hourly') return `Resets in ${diffM}m`;
+    if (item.resetPeriod === 'daily') return diffH > 0 ? `Resets in ${diffH}h ${diffM}m` : `Resets in ${diffM}m`;
+    if (item.resetPeriod === 'monthly') {
+      const diffD = Math.ceil(diffMs / 86400000);
+      return `Resets in ${diffD} day${diffD !== 1 ? 's' : ''}`;
+    }
+    return d.toLocaleDateString();
+  }
+
+  const cards = items.map(cfg => {
+    const lim = limits[cfg.key];
+    if (!lim) return '';
+    const pct = lim.total > 0 ? Math.round(((lim.total - lim.left) / lim.total) * 100) : 0;
+    const barColor = lim.left === 0 ? '#ef4444' : lim.left <= Math.ceil(lim.total * 0.25) ? '#f97316' : cfg.border;
+    return `
+      <div style="background:${cfg.bg};border:2px solid ${cfg.border};border-radius:10px;padding:14px 16px;box-shadow:2px 2px 0 var(--black);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--text);text-transform:uppercase;">
+            <i data-lucide="${cfg.icon}" style="width:15px;height:15px;color:${cfg.color};flex-shrink:0;"></i>
+            ${cfg.label}
+          </div>
+          <div style="font-family:monospace;font-size:18px;font-weight:900;color:${lim.left === 0 ? '#ef4444' : 'var(--text)'};">
+            ${lim.left}<span style="font-size:12px;font-weight:600;color:var(--text-muted);">/${lim.total}</span>
+          </div>
+        </div>
+        <div style="background:var(--bg-muted);border-radius:4px;height:6px;overflow:hidden;border:1px solid var(--black);margin-bottom:6px;">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.4s ease;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--text-muted);">
+          <span>${lim.used} used</span>
+          <span>⏱ ${formatReset(lim)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Your Tier</span>
+      ${tierBadge}
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);font-weight:600;margin:0 0 8px;">Limits reset automatically. Upgrade to Premium for higher quotas.</p>
+    <hr style="border:none;border-top:2px solid var(--black);margin-bottom:4px;">
+    ${cards}
+    <a href="subscription.html" style="display:block;margin-top:4px;text-align:center;font-size:12px;font-weight:800;color:var(--purple);text-decoration:underline;text-transform:uppercase;letter-spacing:0.5px;">
+      🚀 View Plans & Upgrade
+    </a>
+  `;
+
+  if (window.lucide) lucide.createIcons({ root: container });
+}
+
+window.openMyLimitsModal = openMyLimitsModal;
+
 console.log("[Module] profile.js loaded and Profile bound to window");
