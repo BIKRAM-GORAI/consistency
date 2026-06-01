@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>Support Indie Development | Consistency Daily</title>
+  
+  <script>
+    if (navigator.userAgent.includes("CapacitorNative/Android")) {
+      document.documentElement.classList.add('native-android');
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('native-android');
+      });
+    }
+    // Respect Dark Theme Preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --yellow: #facc15;
+      --orange: #f97316;
+      --pink: #ec4899;
+      --purple: #a855f7;
+      --teal: #14b8a6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --black: #0a0a0a;
+      --white: #ffffff;
+      --bg: #121214;
+      --bg-card: #1c1c1f;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border: 3px solid #0a0a0a;
+      --shadow: 5px 5px 0px #0a0a0a;
+      --r-lg: 12px;
+      --r-md: 8px;
+    }
+
+    [data-theme="light"] {
+      --bg: #ebe4e4;
+      --bg-card: #ffffff;
+      --text: #0a0a0a;
+      --text-muted: #4a4a4a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 60px;
+      overflow-x: hidden;
+    }
+
+    /* ── Header Navbar ── */
+    .nav-header {
+      background: var(--bg-card);
+      border-bottom: 3px solid var(--black);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--white);
+      color: #0a0a0a;
+      border: var(--border);
+      padding: 8px 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 3px 3px 0 var(--black);
+      border-radius: var(--r-md);
+      transition: all 0.1s;
+    }
+
+    .btn-back:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+      background: var(--yellow);
+    }
+
+    .nav-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Android Native safe area / notch support */
+    body.native-android .nav-header,
+    html.native-android .nav-header {
+      padding-top: calc(16px + env(safe-area-inset-top, 24px)) !important;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── Donation Card ── */
+    .donate-panel {
+      background: var(--bg-card);
+      border: 3px solid var(--black);
+      border-radius: var(--r-lg);
+      padding: 28px 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .honest-story {
+      border-bottom: 2px dashed var(--black);
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+
+    .story-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .story-text {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    /* ── QR Section ── */
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .qr-frame {
+      background: #ffffff;
+      border: 3px solid var(--black);
+      border-radius: var(--r-lg);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      max-width: 250px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .qr-image {
+      width: 100%;
+      height: auto;
+      max-height: 218px;
+      object-fit: contain;
+    }
+
+    .qr-caption {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* ── UPI Code Block ── */
+    .upi-block {
+      background: var(--bg);
+      border: var(--border);
+      border-radius: var(--r-md);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+      box-shadow: 3px 3px 0 var(--black);
+    }
+
+    .upi-label {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .upi-value {
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      user-select: all;
+    }
+
+    .btn-copy {
+      background: var(--yellow);
+      color: var(--black);
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--black);
+      transition: all 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-copy:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+
+    .btn-copy:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    .btn-copy.success {
+      background: var(--green);
+      color: #fff;
+    }
+
+    /* ── Toasts ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 350px;
+      padding: 0 16px;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      color: var(--text);
+      border: var(--border);
+      border-radius: var(--r-md);
+      padding: 14px 18px;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 4px 4px 0 var(--black);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast-success { border-color: var(--green); box-shadow: 4px 4px 0 var(--green); }
+    .toast-error { border-color: var(--red); box-shadow: 4px 4px 0 var(--red); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="nav-header">
+    <a href="subscription.html" class="btn-back"><i data-lucide="arrow-left"></i> <span class="back-text-desktop">Back to Passes</span><span class="back-text-mobile">Back</span></a>
+    <h2 class="nav-title"><i data-lucide="heart" style="color: var(--pink); fill: var(--pink);"></i> Custom Donation</h2>
+    <div style="width: 120px; display: none;" class="native-spacer"></div> <!-- Spacer to align center on native -->
+  </header>
+
+  <div class="container">
+    <div class="donate-panel">
+      <!-- Creator Story Section -->
+      <div class="honest-story">
+        <h3 class="story-title"><span style="font-size:22px;">💖</span> Support Indie Development</h3>
+        <p class="story-text">
+          Consistency Daily is created entirely by an independent developer who believes in building clean, ad-free utilities for the community. We do not sell your private information, track your behavior, or display commercial banners.
+        </p>
+        <p class="story-text">
+          To pay for <strong>high-performance servers</strong>, <strong>secure database hosting</strong>, and <strong>cutting-edge AI processing (Gemini scans & insights)</strong>, we incur real direct costs for every single request.
+        </p>
+        <p class="story-text" style="margin-bottom: 0;">
+          If this app has helped you maintain streaks, build unbreakable habits, and boost your daily discipline, consider making a custom donation of any amount! Every single rupee directly keeps the lights on and supports active new upgrades. Thank you for your support! 🙏
+        </p>
+      </div>
+
+      <!-- UPI QR Code Scanner -->
+      <div class="qr-section">
+        <div class="qr-frame">
+          <img src="qr.png" alt="UPI Payment QR Code" class="qr-image" onerror="this.src='https://placehold.co/250x250?text=Scan+QR+to+Pay'" />
+        </div>
+        <div class="qr-caption">
+          <i data-lucide="scan" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
+          Scan using any UPI App (GPay, PhonePe, Paytm, BHIM, etc.)
+        </div>
+      </div>
+
+      <!-- UPI ID Copy Section -->
+      <div style="margin-top: 24px;">
+        <div class="upi-label">Or Copy UPI ID</div>
+        <div class="upi-block">
+          <span class="upi-value" id="upi-id-string">7762058095@ybl</span>
+          <button class="btn-copy" id="btn-copy-upi" onclick="copyUpiId()">
+            <i data-lucide="copy" style="width:13px; height:13px;"></i> Copy UPI
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="libs/lucide.min.js"></script>
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Custom Toast Helper
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let iconName = type === 'success' ? 'check-circle' : 'alert-triangle';
+      
+      toast.innerHTML = `<i data-lucide="${iconName}"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons({ root: toast });
+      
+      setTimeout(() => {
+        toast.style.animation = 'toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards';
+        setTimeout(() => toast.remove(), 200);
+      }, 3000);
+    }
+
+    // Copy to Clipboard Action
+    function copyUpiId() {
+      const upiText = document.getElementById('upi-id-string').textContent;
+      const btn = document.getElementById('btn-copy-upi');
+      
+      navigator.clipboard.writeText(upiText).then(() => {
+        showToast('UPI ID copied! Paste it in your UPI app to pay. ✅', 'success');
+        
+        // Dynamic success state on button
+        btn.classList.add('success');
+        btn.innerHTML = `<i data-lucide="check" style="width:13px; height:13px;"></i> Copied!`;
+        lucide.createIcons({ root: btn });
+        
+        setTimeout(() => {
+          btn.classList.remove('success');
+          btn.innerHTML = `<i data-lucide="copy" style="width:13px; height:13px;"></i> Copy UPI`;
+          lucide.createIcons({ root: btn });
+        }, 3000);
+      }).catch(err => {
+        console.error('Clipboard copy failed:', err);
+        showToast('Failed to copy. Please copy the text manually.', 'error');
+      });
+    }
+  </script>
+</body>
+</html>

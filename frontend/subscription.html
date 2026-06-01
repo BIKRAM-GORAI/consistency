@@ -580,10 +580,29 @@
           <i data-lucide="rotate-cw" style="width: 11px; height: 11px;"></i> Force Hard Refresh
         </button>
       </div>
-      <div style="margin-top: 16px; text-align: center; border-top: 1px dashed #3f3f46; padding-top: 12px;">
-        <a href="refund.html" style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-decoration: underline; cursor: pointer; transition: color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--text-muted)'">
-          <i data-lucide="credit-card" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i> Manage Billing & Refund Policy
-        </a>
+      </div>
+    </div>
+
+    <!-- Honest Creator's Story Section -->
+    <div class="status-panel" style="border-color: var(--purple); box-shadow: 5px 5px 0 var(--purple); background: var(--bg-card); position: relative; overflow: hidden; padding: 24px;">
+      <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--text);">
+        <i data-lucide="heart" style="color: var(--pink); fill: var(--pink); width: 18px; height: 18px;"></i> Why go Premium? An Honest Creator's Note
+      </h3>
+      <p style="font-size: 13px; font-weight: 600; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px;">
+        Consistency Daily is a completely independent, ad-free productivity platform. We do not sell your personal data, track your behavior, or serve annoying commercial popups.
+      </p>
+      <p style="font-size: 13px; font-weight: 600; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px;">
+        To provide advanced, zero-distraction utilities like <strong>AI handwritten task scans</strong>, <strong>Daily AI productivity insights</strong>, <strong>Voice-to-Task transcriptions</strong>, and <strong>real-time group chat syncing</strong>, the app pays direct API and database hosting costs for every request.
+      </p>
+      <p style="font-size: 13px; font-weight: 600; color: var(--text-muted); line-height: 1.6; margin-bottom: 18px;">
+        Instead of corporate subscription pricing, we set our launch price to just <strong>₹49 / month</strong> (about ₹1.63 per day) and <strong>₹400 / year</strong> (only ₹1.10 per day). This minimum contribution helps us cover server costs, pay API bills, and continue active indie development. Thank you for building unbreakable habits with us!
+      </p>
+      
+      <div style="background: rgba(168, 85, 247, 0.1); border: 2px dashed var(--purple); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;">
+        <span style="font-size: 20px;">💖</span>
+        <p style="margin: 0; font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.4;">
+          Your support directly enables early active development and guarantees that the platform remains entirely clean and ad-free!
+        </p>
       </div>
     </div>
 
@@ -596,7 +615,8 @@
           <div>
             <div class="pass-type">Light Plan</div>
             <h4 class="pass-title">Monthly Pass</h4>
-            <div class="pass-price" id="price-display-monthly">₹299 <span>/ 30 Days</span></div>
+            <div class="pass-price" id="price-display-monthly">₹49 <span>/ 30 Days</span></div>
+            <div class="daily-breakdown" id="daily-breakdown-monthly" style="font-size: 13px; font-weight: 800; color: var(--green); margin-top: -4px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Just ₹1.63 / Day!</div>
             <p class="pass-validity">Perfect for deep sprint routines.</p>
           </div>
           <button class="btn-buy btn-buy-monthly" onclick="triggerPurchase('1_month')">
@@ -606,11 +626,12 @@
 
         <!-- Annual Pass -->
         <div class="price-card price-card-annual">
-          <div class="save-tag" id="save-tag-display">SAVE 45%</div>
+          <div class="save-tag" id="save-tag-display">SAVE 32%</div>
           <div>
             <div class="pass-type">Super Plan</div>
             <h4 class="pass-title">Annual Pass</h4>
-            <div class="pass-price" id="price-display-annual">₹1999 <span>/ 365 Days</span></div>
+            <div class="pass-price" id="price-display-annual">₹400 <span>/ 365 Days</span></div>
+            <div class="daily-breakdown" id="daily-breakdown-annual" style="font-size: 13px; font-weight: 800; color: var(--green); margin-top: -4px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Only ₹1.10 / Day!</div>
             <p class="pass-validity">Best for building unbreakable lifetime habits.</p>
           </div>
           <button class="btn-buy btn-buy-annual" onclick="triggerPurchase('1_year')">
@@ -618,9 +639,22 @@
           </button>
         </div>
       </div>
-      <div style="margin-top: 14px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted);">
+      <div style="margin-top: 14px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 24px;">
         🛡️ Approved refunds are subject to a nominal 3% payment gateway processing fee deduction.
       </div>
+    </div>
+
+    <!-- Donation Call-to-Action Card -->
+    <div style="padding: 20px; background: rgba(34, 197, 94, 0.1); border: 3px solid var(--black); border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow); text-align: center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <h3 style="font-size: 14px; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text); font-family: 'Space Grotesk', sans-serif;">
+        <span style="font-size: 18px;">💖</span> Support Without Subscribing
+      </h3>
+      <p style="font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; max-width: 500px;">
+        If you are already satisfied with the free limits but still want to support the project, consider scanning a UPI QR code or making a custom custom donation to support active indie development!
+      </p>
+      <a href="donate.html" class="btn-primary ripple" style="width: 100%; max-width: 320px; justify-content: center; background: var(--green); border-color: var(--black); box-shadow: 3px 3px 0 var(--black); color: var(--black); font-weight: 900; font-size: 13px; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 42px; line-height: 42px; margin: 0 auto;">
+        <span>Make Custom Donation <i data-lucide="arrow-up-right"></i></span>
+      </a>
     </div>
 
     <!-- Limits Comparison Card -->
@@ -841,9 +875,20 @@
         const priceMonthly = document.getElementById('price-display-monthly');
         const priceAnnual = document.getElementById('price-display-annual');
         const saveTag = document.getElementById('save-tag-display');
+        const dailyMonthly = document.getElementById('daily-breakdown-monthly');
+        const dailyAnnual = document.getElementById('daily-breakdown-annual');
         
         if (priceMonthly) priceMonthly.innerHTML = `₹${data.prices.monthly} <span>/ 30 Days</span>`;
         if (priceAnnual) priceAnnual.innerHTML = `₹${data.prices.annual} <span>/ 365 Days</span>`;
+        
+        if (dailyMonthly && data.prices.monthly) {
+          const rate = (data.prices.monthly / 30).toFixed(2);
+          dailyMonthly.textContent = `Just ₹${rate} / Day!`;
+        }
+        if (dailyAnnual && data.prices.annual) {
+          const rate = (data.prices.annual / 365).toFixed(2);
+          dailyAnnual.textContent = `Only ₹${rate} / Day!`;
+        }
         
         if (saveTag) {
           const monthlyCost = data.prices.monthly * 12;
