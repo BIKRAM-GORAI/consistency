@@ -755,7 +755,25 @@ async function toggleTask(dayId, catId, taskId, checked) {
   // Micro animation on checkbox
   if (window.gsap && checked) {
     const chk = document.getElementById(`chk-${taskId}`);
-    if (chk) gsap.fromTo(chk, { scale: 1.35 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+    if (chk) {
+      // 1. Tactile checkbox snap back bounce
+      gsap.fromTo(chk, { scale: 1.35 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+
+      // 2. Elastic spring row expansion bounce
+      const taskItem = chk.closest('.task-item');
+      if (taskItem) {
+        gsap.fromTo(taskItem, 
+          { scale: 0.96, transformOrigin: 'left center' }, 
+          { scale: 1, duration: 0.45, ease: 'elastic.out(1.2, 0.4)', clearProps: 'transform,transformOrigin' }
+        );
+      }
+
+      // 3. Erupt outlined Neo-Brutalist Confetti
+      const rect = chk.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      triggerNeoConfetti(x, y);
+    }
   }
 
   try {
@@ -2798,6 +2816,65 @@ async function confirmApplyGrace(dayId) {
   } finally {
     confirmBtn.disabled = false;
     confirmBtn.innerHTML = originalText;
+  }
+}
+
+function triggerNeoConfetti(x, y) {
+  if (!window.gsap) return;
+  const container = document.body;
+  const colors = ['#facc15', '#f97316', '#ec4899', '#a855f7', '#14b8a6', '#22c55e', '#ef4444'];
+  const particleCount = 28;
+
+  for (let i = 0; i < particleCount; i++) {
+    const p = document.createElement('div');
+    p.style.position = 'fixed';
+    p.style.left = `${x}px`;
+    p.style.top = `${y}px`;
+    p.style.width = `${gsap.utils.random(8, 14)}px`;
+    p.style.height = `${gsap.utils.random(8, 14)}px`;
+    p.style.backgroundColor = gsap.utils.random(colors);
+    p.style.border = '2px solid #0a0a0a';
+    p.style.boxShadow = '2px 2px 0px #0a0a0a';
+    p.style.borderRadius = gsap.utils.random(['0px', '3px', '50%']);
+    p.style.pointerEvents = 'none';
+    p.style.zIndex = '999999';
+    container.appendChild(p);
+
+    const angle = gsap.utils.random(0, Math.PI * 2);
+    const velocity = gsap.utils.random(60, 160);
+    const destX = Math.cos(angle) * velocity;
+    const destY = Math.sin(angle) * velocity - gsap.utils.random(30, 70);
+
+    gsap.fromTo(p,
+      {
+        scale: 0,
+        rotation: 0,
+        rotationX: 0,
+        rotationY: 0,
+        x: 0,
+        y: 0
+      },
+      {
+        scale: gsap.utils.random(0.7, 1.3),
+        x: destX,
+        y: destY,
+        rotation: gsap.utils.random(180, 540),
+        rotationX: gsap.utils.random(90, 360),
+        rotationY: gsap.utils.random(90, 360),
+        duration: gsap.utils.random(0.5, 0.9),
+        ease: 'power2.out',
+        onComplete: () => {
+          gsap.to(p, {
+            y: destY + gsap.utils.random(100, 180),
+            opacity: 0,
+            scale: 0.2,
+            duration: 0.55,
+            ease: 'power1.in',
+            onComplete: () => p.remove()
+          });
+        }
+      }
+    );
   }
 }
 
