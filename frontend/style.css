@@ -78,6 +78,10 @@
   --bg-distraction-green: rgba(16, 185, 129, 0.1);
   --bg-distraction-red: rgba(255, 59, 48, 0.1);
   --chat-messages-bg: #faf9f6;
+  --day-card-dot-color: rgba(0, 0, 0, 0.04);
+  --weekly-card-stripe-color: rgba(34, 197, 94, 0.05);
+  --weekly-btn-stripe-color: rgba(139, 92, 246, 0.04);
+  --monthly-grid-color: rgba(236, 72, 153, 0.05);
 }
 
 [data-theme="dark"] {
@@ -88,6 +92,10 @@
   --bg-readonly: #262626;
   --graph-empty: #3a3a3a;
   --chat-messages-bg: #1c1c1c;
+  --day-card-dot-color: rgba(255, 255, 255, 0.025);
+  --weekly-card-stripe-color: rgba(34, 197, 94, 0.035);
+  --weekly-btn-stripe-color: rgba(168, 85, 247, 0.03);
+  --monthly-grid-color: rgba(236, 72, 153, 0.03);
 
   --text:      #e0e0e0;
   --text-muted:#b0b0b0;
@@ -520,7 +528,9 @@ body {
 
 .day-card {
   position: relative;
-  background: var(--bg-card);
+  background-color: var(--bg-card);
+  background-image: radial-gradient(var(--day-card-dot-color) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
   border: var(--border);
   border-radius: var(--r-md);
   padding: 22px 20px;
@@ -6113,7 +6123,9 @@ body.native-android .push-notif-banner.show {
    AI INSIGHTS & WEEKLY WRAP-UP CARDS — NEOBRUTALIST STYLING
    ============================================================ */
 .weekly-summary-card {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%), var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
+  background-image: linear-gradient(135deg, var(--weekly-card-stripe-color) 25%, transparent 25%, transparent 50%, var(--weekly-card-stripe-color) 50%, var(--weekly-card-stripe-color) 75%, transparent 75%, transparent) !important;
+  background-size: 32px 32px !important;
   border: 3.5px solid var(--black) !important;
   border-radius: var(--r-lg) !important;
   padding: 24px 28px !important;
@@ -6123,7 +6135,9 @@ body.native-android .push-notif-banner.show {
 }
 
 .weekly-summary-button-card {
-  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.03) 100%) !important;
+  background-color: var(--bg-card) !important;
+  background-image: linear-gradient(135deg, var(--weekly-btn-stripe-color) 25%, transparent 25%, transparent 50%, var(--weekly-btn-stripe-color) 50%, var(--weekly-btn-stripe-color) 75%, transparent 75%, transparent) !important;
+  background-size: 32px 32px !important;
   border: 3px dashed var(--black) !important;
   border-radius: var(--r-lg) !important;
   padding: 28px 24px !important;
@@ -6135,6 +6149,21 @@ body.native-android .push-notif-banner.show {
   text-align: center !important;
   margin-bottom: 20px !important;
   position: relative !important;
+}
+
+/* 30-Day Monthly Milestone Cards (Blueprint Grid Pattern) */
+.monthly-summary-card {
+  background-color: var(--bg-card) !important;
+  background-image: linear-gradient(var(--monthly-grid-color) 1.5px, transparent 1.5px),
+                    linear-gradient(90deg, var(--monthly-grid-color) 1.5px, transparent 1.5px) !important;
+  background-size: 24px 24px !important;
+}
+
+.monthly-summary-button-card {
+  background-color: var(--bg-card) !important;
+  background-image: linear-gradient(var(--monthly-grid-color) 1.5px, transparent 1.5px),
+                    linear-gradient(90deg, var(--monthly-grid-color) 1.5px, transparent 1.5px) !important;
+  background-size: 24px 24px !important;
 }
 
 /* ── Offline Mode: disable all network-dependent buttons instantly ────────────
