@@ -772,6 +772,7 @@
         <button class="nav-link" id="nav-coupons" onclick="showSection('coupons')">Promo Coupons</button>
         <button class="nav-link" id="nav-payments" onclick="showSection('payments')">Payments</button>
         <button class="nav-link" id="nav-refunds" onclick="showSection('refunds')">💸 Refunds</button>
+        <button class="nav-link" id="nav-reports" onclick="showSection('reports')">🐞 Reports</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -946,6 +947,73 @@
           </thead>
           <tbody id="refunds-table-body">
             <tr><td colspan="8" style="text-align:center; padding:20px; font-weight:800; color:#666;">Loading refund requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Reports Manager Section ── -->
+    <div id="section-reports" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>🐞 Reports Manager</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Triage, review, search, filter, and resolve issues filed by users.</p>
+        </div>
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <input type="text" id="report-search" placeholder="Search by user/email/desc..." class="btn-control" style="width: 240px; text-transform: none; text-align: left;" onkeyup="loadReports()">
+          <select id="report-filter-category" class="btn-control" style="width: 150px; background: white; border: var(--border);" onchange="loadReports()">
+            <option value="">All Categories</option>
+            <option value="Bug">Bug</option>
+            <option value="UI">UI</option>
+            <option value="Payment">Payment</option>
+            <option value="Feature">Feature</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="report-filter-status" class="btn-control" style="width: 150px; background: white; border: var(--border);" onchange="loadReports()">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+          <button class="btn-control" onclick="loadReports()" style="background: var(--black); color: var(--white);">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="refunds-metrics" id="reports-metrics" style="margin-bottom: 20px;">
+        <div class="refund-metric-card" style="border-color: var(--yellow); border-left-width: 6px;">
+          <span class="refund-metric-val" id="report-metric-pending">0</span>
+          <span class="refund-metric-label">Pending</span>
+        </div>
+        <div class="refund-metric-card" style="border-color: var(--blue); border-left-width: 6px;">
+          <span class="refund-metric-val" id="report-metric-progress">0</span>
+          <span class="refund-metric-label">In Progress</span>
+        </div>
+        <div class="refund-metric-card" style="border-color: var(--green); border-left-width: 6px;">
+          <span class="refund-metric-val" id="report-metric-resolved">0</span>
+          <span class="refund-metric-label">Resolved</span>
+        </div>
+        <div class="refund-metric-card" style="border-color: var(--black); border-left-width: 6px;">
+          <span class="refund-metric-val" id="report-metric-total">0</span>
+          <span class="refund-metric-label">Total Reports</span>
+        </div>
+      </div>
+
+      <!-- Reports Table -->
+      <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+          <thead style="background: #f0f0f0; border-bottom: var(--border);">
+            <tr>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; width: 120px;">Category</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase; width: 120px;">Status</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; width: 180px;">User Info</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Description</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase; width: 150px;">Created At</th>
+              <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase; width: 220px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reports-table-body">
+            <tr><td colspan="6" style="text-align:center; padding:20px; font-weight:800; color:#666;">Loading user reports...</td></tr>
           </tbody>
         </table>
       </div>

@@ -2153,6 +2153,105 @@ async function loadProfileLimitsInline() {
   }
 }
 
+// ── Report Issue Modal Handlers ────────────────────────────
+function openReportIssueModal() {
+  const modal = document.getElementById('modal-report-issue');
+  if (!modal) return;
+
+  // Reset form fields
+  const form = document.getElementById('report-issue-form');
+  if (form) form.reset();
+
+  const successMsg = document.getElementById('report-issue-success-msg');
+  if (successMsg) successMsg.style.display = 'none';
+
+  const descField = document.getElementById('report-issue-desc');
+  if (descField) descField.value = '';
+
+  updateReportCharCount();
+
+  openModal('modal-report-issue');
+
+  if (window.lucide) {
+    lucide.createIcons({ root: modal });
+  }
+}
+
+function updateReportCharCount() {
+  const descField = document.getElementById('report-issue-desc');
+  const countLabel = document.getElementById('report-issue-char-count');
+  const hintLabel = document.getElementById('report-issue-length-hint');
+  const submitBtn = document.getElementById('btn-submit-report');
+
+  if (!descField || !countLabel || !hintLabel || !submitBtn) return;
+
+  const len = descField.value.trim().length;
+  countLabel.textContent = `${len} / 20 characters minimum`;
+
+  if (len >= 20) {
+    countLabel.style.color = 'var(--green)';
+    hintLabel.textContent = 'Looking good!';
+    hintLabel.style.color = 'var(--green)';
+    submitBtn.disabled = false;
+  } else {
+    countLabel.style.color = 'var(--coral)';
+    hintLabel.textContent = 'Too short';
+    hintLabel.style.color = 'var(--text-muted)';
+    submitBtn.disabled = true;
+  }
+}
+
+async function submitUserIssueReport(event) {
+  if (event) event.preventDefault();
+
+  const category = document.getElementById('report-issue-category').value;
+  const description = document.getElementById('report-issue-desc').value;
+  const submitBtn = document.getElementById('btn-submit-report');
+
+  if (description.trim().length < 20) {
+    showToast('Description must be at least 20 characters long.', 'error');
+    return;
+  }
+
+  const originalHtml = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `
+    <div class="spinner-ring" style="width:20px;height:20px;border-width:2px;margin:0 auto;border-color:var(--black) #0000 #0000 #0000;"></div>
+  `;
+
+  try {
+    const res = await apiFetch(`${window.API}/api/reports`, {
+      method: 'POST',
+      body: JSON.stringify({ category, description })
+    });
+
+    showToast('Report submitted successfully! Thank you.', 'success');
+
+    const successMsg = document.getElementById('report-issue-success-msg');
+    if (successMsg) successMsg.style.display = 'block';
+
+    const descField = document.getElementById('report-issue-desc');
+    if (descField) descField.value = '';
+
+    updateReportCharCount();
+
+    setTimeout(() => {
+      closeModal('modal-report-issue');
+    }, 2000);
+
+  } catch (err) {
+    console.error('submitUserIssueReport error:', err);
+    showToast(err.message || 'Error submitting report.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalHtml;
+  }
+}
+
+window.openReportIssueModal = openReportIssueModal;
+window.updateReportCharCount = updateReportCharCount;
+window.submitUserIssueReport = submitUserIssueReport;
+
 window.toggleProfileCollapse = toggleProfileCollapse;
 window.loadProfileLimitsInline = loadProfileLimitsInline;
 

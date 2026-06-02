@@ -1,6 +1,7 @@
 const Review = require('../models/Review');
 const User = require('../models/User');
 const Day = require('../models/Day');
+const Report = require('../models/Report');
 const Goal = require('../models/Goal');
 const Achievement = require('../models/Achievement');
 const Group = require('../models/Group');
@@ -1240,6 +1241,73 @@ module.exports = {
     } catch (err) {
       console.error('rejectRefund error:', err.message);
       res.status(500).json({ message: 'Internal Server Error declining request.', error: err.message });
+    }
+  },
+  getAdminReports: async (req, res) => {
+    try {
+      const { status, category, search } = req.query;
+      const query = {};
+
+      if (status) {
+        query.status = status;
+      }
+      if (category) {
+        query.category = category;
+      }
+      if (search) {
+        query.$or = [
+          { username: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      const reports = await Report.find(query).sort({ createdAt: -1 });
+      res.json(reports);
+    } catch (err) {
+      console.error('[ADMIN ERROR] getAdminReports:', err);
+      res.status(500).json({ message: 'Server error while fetching reports.', error: err.message });
+    }
+  },
+  updateReportStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const validStatuses = ['Pending', 'In Progress', 'Resolved'];
+      if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({ message: 'Invalid or missing status.' });
+      }
+
+      const report = await Report.findByIdAndUpdate(
+        id,
+        { status },
+        { new: true }
+      );
+
+      if (!report) {
+        return res.status(404).json({ message: 'Report not found.' });
+      }
+
+      res.json({ message: 'Report status updated successfully.', report });
+    } catch (err) {
+      console.error('[ADMIN ERROR] updateReportStatus:', err);
+      res.status(500).json({ message: 'Server error updating report status.', error: err.message });
+    }
+  },
+  deleteReport: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const report = await Report.findByIdAndDelete(id);
+
+      if (!report) {
+        return res.status(404).json({ message: 'Report not found.' });
+      }
+
+      res.json({ message: 'Report deleted successfully.' });
+    } catch (err) {
+      console.error('[ADMIN ERROR] deleteReport:', err);
+      res.status(500).json({ message: 'Server error deleting report.', error: err.message });
     }
   }
 };

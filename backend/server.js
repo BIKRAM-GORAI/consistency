@@ -23,6 +23,7 @@ const fcmRoutes         = require('./routes/fcmRoutes');
 const aiRoutes          = require('./routes/aiRoutes');
 const appLimitRoutes    = require('./routes/appLimitRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const reportRoutes       = require('./routes/reportRoutes');
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -209,6 +210,7 @@ app.use('/api/fcm',          authenticateToken, dataModificationLimiter, fcmRout
 app.use('/api/ai',           authenticateToken, dataModificationLimiter, aiRoutes);
 app.use('/api/applimits',    authenticateToken, dataModificationLimiter, appLimitRoutes);
 app.use('/api/subscriptions', authenticateToken, dataModificationLimiter, subscriptionRoutes);
+app.use('/api/reports',       authenticateToken, dataModificationLimiter, reportRoutes);
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

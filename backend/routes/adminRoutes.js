@@ -85,4 +85,9 @@ router.get('/refunds', authenticateAdmin, adminController.getRefundRequests);
 router.post('/refunds/:id/approve', authenticateAdmin, adminController.approveRefund);
 router.post('/refunds/:id/reject', authenticateAdmin, adminController.rejectRefund);
 
+// Report Management
+router.get('/reports', authenticateAdmin, adminController.getAdminReports);
+router.patch('/reports/:id', authenticateAdmin, adminController.updateReportStatus);
+router.delete('/reports/:id', authenticateAdmin, adminController.deleteReport);
+
 module.exports = router;

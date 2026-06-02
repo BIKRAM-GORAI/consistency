@@ -71,6 +71,7 @@ function showSection(section) {
   if (section === 'coupons') loadCoupons();
   if (section === 'payments') loadPayments();
   if (section === 'refunds') loadRefunds();
+  if (section === 'reports') loadReports();
 }
 
 /**
@@ -2114,4 +2115,162 @@ function toggleLogDrawer(userId) {
   drawer.style.display = isHidden ? 'table-row' : 'none';
 }
 window.toggleLogDrawer = toggleLogDrawer;
+
+// ── Reports Manager Triage Logic ───────────────────────────
+async function loadReports() {
+  const searchInput = document.getElementById('report-search');
+  const catFilter = document.getElementById('report-filter-category');
+  const statusFilter = document.getElementById('report-filter-status');
+  const tbody = document.getElementById('reports-table-body');
+
+  if (!tbody) return;
+
+  const search = searchInput ? searchInput.value.trim() : '';
+  const category = catFilter ? catFilter.value : '';
+  const status = statusFilter ? statusFilter.value : '';
+
+  let queryStr = '';
+  const params = [];
+  if (search) params.push(`search=${encodeURIComponent(search)}`);
+  if (category) params.push(`category=${category}`);
+  if (status) params.push(`status=${status}`);
+  if (params.length) queryStr = '?' + params.join('&');
+
+  try {
+    const res = await fetch(`${API}/api/admin/reports${queryStr}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      logout();
+      return;
+    }
+
+    const reports = await res.json();
+    
+    // Update metrics
+    let pendingCount = 0;
+    let progressCount = 0;
+    let resolvedCount = 0;
+
+    reports.forEach(r => {
+      if (r.status === 'Pending') pendingCount++;
+      else if (r.status === 'In Progress') progressCount++;
+      else if (r.status === 'Resolved') resolvedCount++;
+    });
+
+    document.getElementById('report-metric-pending').textContent = pendingCount;
+    document.getElementById('report-metric-progress').textContent = progressCount;
+    document.getElementById('report-metric-resolved').textContent = resolvedCount;
+    document.getElementById('report-metric-total').textContent = reports.length;
+
+    if (!reports.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:800; color:#666;">No reports found matching criteria.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    reports.forEach(r => {
+      const date = new Date(r.createdAt).toLocaleString();
+      
+      // Status pill
+      let statusStyle = '';
+      if (r.status === 'Pending') statusStyle = 'background: #facc15; border: 2px solid #000; color: #000;';
+      else if (r.status === 'In Progress') statusStyle = 'background: #60a5fa; border: 2px solid #000; color: #fff;';
+      else if (r.status === 'Resolved') statusStyle = 'background: #4ade80; border: 2px solid #000; color: #000;';
+
+      const statusPill = `<span class="badge" style="padding: 4px 8px; font-size: 11px; font-weight: 800; border-radius: 4px; box-shadow: 2px 2px 0 #000; text-transform: uppercase; ${statusStyle}">${r.status}</span>`;
+
+      // Category badge color
+      let catBg = '#eee';
+      if (r.category === 'Bug') catBg = '#fca5a5';
+      else if (r.category === 'UI') catBg = '#fef08a';
+      else if (r.category === 'Payment') catBg = '#86efac';
+      else if (r.category === 'Feature') catBg = '#c084fc';
+      
+      const catBadge = `<span class="badge" style="background: ${catBg}; border: 2px solid #000; color: #000; font-weight: 800; box-shadow: 2px 2px 0 #000;">${r.category}</span>`;
+
+      const row = document.createElement('tr');
+      row.style.borderBottom = '1px solid #eee';
+      row.innerHTML = `
+        <td data-label="Category" style="padding: 12px; vertical-align: middle;">${catBadge}</td>
+        <td data-label="Status" style="padding: 12px; text-align: center; vertical-align: middle;">${statusPill}</td>
+        <td data-label="User Info" style="padding: 12px; vertical-align: middle;">
+          <div style="font-weight: 800;">${r.username}</div>
+          <div style="font-size: 11px; color: var(--blue); font-weight: 700;">${r.email}</div>
+        </td>
+        <td data-label="Description" style="padding: 12px; vertical-align: middle; max-width: 400px; white-space: normal; word-wrap: break-word; font-weight: 600;">
+          ${r.description}
+        </td>
+        <td data-label="Created At" style="padding: 12px; text-align: center; vertical-align: middle; font-size: 12px; font-weight: 700; color: #666;">
+          ${date}
+        </td>
+        <td data-label="Actions" style="padding: 12px; text-align: right; vertical-align: middle;">
+          <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+            ${r.status !== 'In Progress' && r.status !== 'Resolved' ? `
+              <button class="btn-action" style="padding: 4px 8px; font-size: 11px; background: var(--blue); color: white; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font-weight: 800;" onclick="updateReportStatus('${r._id}', 'In Progress')">Work On</button>
+            ` : ''}
+            ${r.status !== 'Resolved' ? `
+              <button class="btn-action" style="padding: 4px 8px; font-size: 11px; background: var(--green); color: black; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font-weight: 800;" onclick="updateReportStatus('${r._id}', 'Resolved')">Resolve</button>
+            ` : ''}
+            <button class="btn-action btn-delete" style="padding: 4px 8px; font-size: 11px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font-weight: 800; background: var(--red); color: white;" onclick="deleteReport('${r._id}')">Delete</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+  } catch (err) {
+    console.error('Error loading reports:', err);
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:800; color:var(--red);">Failed to load reports.</td></tr>`;
+  }
+}
+
+async function updateReportStatus(id, newStatus) {
+  try {
+    const res = await fetch(`${API}/api/admin/reports/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    if (res.ok) {
+      loadReports();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to update report status.');
+    }
+  } catch (err) {
+    console.error('updateReportStatus error:', err);
+    alert('Connection error while updating status.');
+  }
+}
+
+async function deleteReport(id) {
+  if (!confirm('Are you sure you want to permanently delete this report?')) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/reports/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      loadReports();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to delete report.');
+    }
+  } catch (err) {
+    console.error('deleteReport error:', err);
+    alert('Connection error while deleting report.');
+  }
+}
+
+window.loadReports = loadReports;
+window.updateReportStatus = updateReportStatus;
+window.deleteReport = deleteReport;
 

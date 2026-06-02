@@ -1858,6 +1858,15 @@
           </button>
         </div>
 
+        <!-- 8b. REPORT ISSUE (Always Shown Inline) -->
+        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px; box-shadow: 2px 2px 0 rgba(239, 68, 68, 0.2);">
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; color: var(--coral);">🐞 Report an Issue</h3>
+          <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Encountered a bug or an interface issue? Send a direct report to our admins.</p>
+          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:var(--border-2); color:var(--text); text-transform:uppercase; background:var(--bg-card); transition: all 0.2s ease; box-shadow: 4px 4px 0 var(--coral);" onclick="openReportIssueModal()">
+            <span><i data-lucide="alert-circle"></i> File a Report</span>
+          </button>
+        </div>
+
         <!-- 9. DANGER ZONE (Always Shown Collapsible Section) -->
         <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase;"><i data-lucide="alert-triangle"></i> Danger Zone</h3>
@@ -2137,6 +2146,48 @@
   <!-- Local JS Libs -->
   <script src="libs/gsap.min.js"></script>
   <script src="libs/ScrollTrigger.min.js"></script>
+  <!-- ===== MODAL: Report Issue ===== -->
+  <div class="modal-overlay" id="modal-report-issue" onclick="closeModalOnOverlay(event, 'modal-report-issue')">
+    <div class="modal" style="max-width: 500px; border: var(--border-3); box-shadow: 6px 6px 0 var(--black); background: var(--bg-card);">
+      <div class="modal-header" style="background: var(--coral); color: var(--black); border-bottom: var(--border-3);">
+        <h2 style="font-weight: 900; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin: 0;"><i data-lucide="alert-triangle" class="no-theme" style="color: var(--black); width: 20px; height: 20px;"></i> Report an Issue</h2>
+        <button class="modal-close" style="color: var(--black); font-weight: 900;" onclick="closeModal('modal-report-issue')">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div id="report-issue-success-msg" style="display:none; background:var(--green); color:var(--black); padding:12px; border:2px solid var(--black); box-shadow:4px 4px 0 var(--black); margin-bottom:20px; font-weight:800;">
+          <i data-lucide="check-circle" style="color: var(--black); width: 16px; height: 16px;"></i> Report submitted successfully! Our team will review it.
+        </div>
+        <form id="report-issue-form" onsubmit="submitUserIssueReport(event)">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 800; text-transform: uppercase; font-size: 13px;">Category <span style="color:var(--red)">*</span></label>
+            <select id="report-issue-category" class="form-control" style="font-weight: 700; border: var(--border-2); background: var(--bg);" required>
+              <option value="Bug">Bug (App Crash, Error)</option>
+              <option value="UI">UI (Overlap, Layout, Styling)</option>
+              <option value="Payment">Payment (Premium, Transaction)</option>
+              <option value="Feature">Feature (Suggestion, Request)</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 800; text-transform: uppercase; font-size: 13px;">Description <span style="color:var(--red)">*</span></label>
+            <textarea id="report-issue-desc" class="form-control" rows="5" placeholder="Please describe the issue in detail (minimum 20 characters)..." required style="resize: none; border: var(--border-2); background: var(--bg); font-weight: 600;" oninput="updateReportCharCount()"></textarea>
+            <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; font-weight: 700;">
+              <span id="report-issue-char-count" style="color: var(--red);">0 / 20 characters minimum</span>
+              <span id="report-issue-length-hint" style="color: var(--text-muted);">Too short</span>
+            </div>
+          </div>
+          <div style="background: rgba(239, 68, 68, 0.1); border: 2px dashed var(--coral); padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px; color: var(--coral); display: flex;"><i data-lucide="info" style="width: 18px; height: 18px;"></i></span>
+            <span style="font-size: 12px; font-weight: 700; color: var(--text);">Our developers will receive your username and email automatically.</span>
+          </div>
+          <button type="submit" class="btn-primary ripple" style="width: 100%; justify-content: center; font-size: 16px; font-weight: 900; text-transform: uppercase; background: var(--coral); color: var(--black); box-shadow: 4px 4px 0 var(--black); border: var(--border-2);" id="btn-submit-report" disabled>
+            🚀 Submit Report
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: Give Feedback ===== -->
   <div class="modal-overlay" id="modal-feedback" onclick="closeModalOnOverlay(event, 'modal-feedback')">
     <div class="modal" style="max-width: 500px;">
