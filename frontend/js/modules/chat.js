@@ -9,6 +9,7 @@ const showToast = (...args) => window.showToast(...args);
 let activeChatGroupId = null;
 let chatUnsubscribe = null;
 let videoCallUnsubscribe = null;
+let activeCallParticipants = {};
 let jitsiApi = null;
 let chatMessagesLimit = 30;
 let activeReplyTo = null;
@@ -244,7 +245,8 @@ function subscribeToActiveVideoCall(groupId) {
 }
 
 function updateVideoCallUI(participants) {
-  const pList = Object.values(participants);
+  activeCallParticipants = participants || {};
+  const pList = Object.values(activeCallParticipants);
   
   const indicator = document.getElementById('video-call-indicator');
   const banner = document.getElementById('active-video-call-banner');
@@ -586,6 +588,7 @@ function closeChatModal() {
     videoCallUnsubscribe();
     videoCallUnsubscribe = null;
   }
+  activeCallParticipants = {};
 
   activeChatGroupId = null;
   closeModal('modal-group-chat');
@@ -616,6 +619,17 @@ async function startGroupVideoCall() {
     if (!res.roomId) throw new Error('No Room ID received');
     
     const { roomId } = res;
+    
+    // Check if the call is new/empty before we join it
+    const isNewCall = Object.keys(activeCallParticipants).length === 0;
+    if (isNewCall) {
+      apiFetch(`${window.API}/api/fcm/notify-video-call`, {
+        method: 'POST',
+        body: JSON.stringify({ groupId })
+      }).catch(err => {
+        console.warn('Failed to send video call notification:', err);
+      });
+    }
     
     // Show overlay and set title
     const overlay = document.getElementById('modal-video-call');

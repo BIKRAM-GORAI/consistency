@@ -29,7 +29,7 @@ function buildSummaryText(pendingList, pendingCount) {
 }
 
 // Global Multicast Helper supporting Silent Stacks
-async function sendMulticastPush(group, bodyText, tokens, isSilent) {
+async function sendMulticastPush(group, bodyText, tokens, isSilent, customCollapseKey) {
   const payload = {
     notification: {
       title: `${group.name}`,
@@ -52,7 +52,7 @@ async function sendMulticastPush(group, bodyText, tokens, isSilent) {
         link: `/?openChat=${group._id}&t=${Date.now()}`
       }
     },
-    collapseKey: `chat_${group._id}`
+    collapseKey: customCollapseKey || `chat_${group._id}`
   };
 
   if (!isSilent) {
@@ -364,6 +364,71 @@ exports.notifyGroupChat = async (req, res) => {
     }
   } catch (error) {
     console.error('Error sending chat push notifications:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+/**
+ * Send push notifications to other group members when a video call is started
+ * POST /api/fcm/notify-video-call
+ */
+exports.notifyVideoCallStart = async (req, res) => {
+  const { groupId } = req.body;
+
+  if (!groupId) {
+    return res.status(400).json({ message: 'Group ID is required' });
+  }
+
+  try {
+    const senderId = req.user.userId;
+
+    // 1. Fetch user to get name
+    const user = await User.findById(senderId);
+    const senderName = user ? user.name : 'A member';
+
+    // 2. Fetch group to verify existence and membership
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Verify sender is in the group members
+    const isMember = group.members.some(id => String(id) === String(senderId));
+    if (!isMember) {
+      return res.status(403).json({ message: 'Unauthorized access: Not a group member' });
+    }
+
+    // 3. Query all other group members who have NOT muted this group
+    const recipients = await User.find({
+      _id: { $in: group.members, $ne: senderId },
+      mutedGroups: { $ne: groupId }
+    }, 'fcmTokens');
+
+    // 4. Collect active FCM tokens
+    const tokens = [];
+    recipients.forEach(u => {
+      if (u.fcmTokens && u.fcmTokens.length > 0) {
+        tokens.push(...u.fcmTokens);
+      }
+    });
+
+    if (tokens.length === 0) {
+      return res.json({ success: true, message: 'No recipients with registered FCM tokens' });
+    }
+
+    const bodyText = `${senderName} started a video call`;
+    console.log(`[FCM Video Call] Sending call start push to ${tokens.length} tokens in group ${group.name}`);
+
+    const response = await sendMulticastPush(group, bodyText, tokens, false, `videocall_${group._id}`);
+
+    res.json({
+      success: true,
+      sentCount: response.successCount,
+      failedCount: response.failureCount
+    });
+
+  } catch (error) {
+    console.error('Error sending video call push notification:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
