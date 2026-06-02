@@ -968,7 +968,6 @@ module.exports = {
         u.paymentHistory.forEach(payment => {
           if (payment.refundStatus && payment.refundStatus !== 'none') {
             const logs = u.premiumUsageLogs.filter(log => log.razorpayPaymentId === payment.paymentId);
-            // Return request details with this specific payment's refund status
             requests.push({
               _id: u._id,
               name: u.name,
@@ -979,6 +978,7 @@ module.exports = {
               refundRequestedAt: u.refundRequestedAt || payment.purchasedAt, // fallback
               premiumActivatedAt: u.premiumActivatedAt,
               premiumUsageLogs: logs,
+              refundReason: payment.refundReason || u.refundReason || 'No reason provided.',
               payment: {
                 orderId: payment.orderId,
                 paymentId: payment.paymentId,

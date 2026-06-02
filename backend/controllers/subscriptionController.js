@@ -688,10 +688,14 @@ exports.verifyDevPassword = async (req, res) => {
 exports.requestRefund = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { paymentId } = req.body;
+    const { paymentId, reason } = req.body;
 
     if (!paymentId) {
       return res.status(400).json({ message: 'Payment ID is required.' });
+    }
+
+    if (!reason || reason.trim().length < 50) {
+      return res.status(400).json({ message: 'A descriptive refund reason of at least 50 characters is required.' });
     }
 
     const user = await User.findById(userId);
@@ -730,8 +734,10 @@ exports.requestRefund = async (req, res) => {
 
     // Update statuses — also withhold premium unless other active coverage covers user
     payment.refundStatus = 'requested';
+    payment.refundReason = reason.trim();
     user.refundStatus = 'requested';
     user.refundRequestedAt = now;
+    user.refundReason = reason.trim();
     user.subscriptionTier = otherActiveCoverage ? 'premium' : 'refund_pending';
     await user.save();
 
@@ -771,6 +777,10 @@ exports.requestRefund = async (req, res) => {
                 <tr><td style="padding: 6px 0; font-weight: bold;">Purchased At:</td><td>${new Date(payment.purchasedAt).toLocaleString()}</td></tr>
                 <tr><td style="padding: 6px 0; font-weight: bold;">Requested At:</td><td>${new Date().toLocaleString()}</td></tr>
               </table>
+              <div style="margin-top: 20px; padding: 15px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px;">
+                <p style="margin: 0 0 8px 0; font-weight: bold; color: #b45309; text-transform: uppercase; font-size: 12px;">Reason Provided by User:</p>
+                <p style="margin: 0; font-style: italic; color: #1f2937;">"${reason.trim()}"</p>
+              </div>
               <div style="margin-top: 20px; padding: 12px; background: #f3f4f6; border-radius: 6px; border: 2px dashed #9ca3af;">
                 ${usageHTML}
               </div>

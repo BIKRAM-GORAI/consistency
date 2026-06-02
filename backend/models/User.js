@@ -272,6 +272,10 @@ const UserSchema = new mongoose.Schema(
         enum: ['none', 'requested', 'approved', 'rejected'],
         default: 'none',
       },
+      refundReason: {
+        type: String,
+        default: '',
+      },
     }],
   },
   { timestamps: true }

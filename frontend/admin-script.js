@@ -2022,6 +2022,10 @@ function renderRefunds(requests) {
     drawerTr.style.background = '#f9fafb';
     drawerTr.innerHTML = `
       <td colspan="8" style="padding: 16px; border-bottom: 2px solid #000; border-top: 1px solid #ddd;">
+        <div style="margin-bottom: 16px; padding: 14px; background: #fffbeb; border: 2px solid #000; border-radius: 6px; box-shadow: 2px 2px 0 #000; font-family: inherit;">
+          <p style="margin: 0 0 6px 0; font-weight: 900; color: #b45309; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">✍️ Customer Cancellation Reason:</p>
+          <p style="margin: 0; font-size: 13px; font-weight: 700; font-style: italic; color: #1f2937;">"${r.refundReason || 'No reason provided.'}"</p>
+        </div>
         <div style="font-weight: 900; font-size: 13px; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; color: #374151; display: flex; align-items: center; gap: 6px;">
           📋 Premium Utilization Activity Logs for Payment <span style="font-family: monospace; background: #e5e7eb; padding: 2px 6px; border: 1px solid #000; border-radius: 4px; font-size: 11px;">${p.paymentId || '—'}</span>
         </div>

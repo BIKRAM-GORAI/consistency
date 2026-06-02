@@ -700,7 +700,24 @@
         if (isEligible) {
           const remainingHrs = Math.max(0, Math.ceil((fortyEightHoursMs - elapsed) / (1000 * 60 * 60)));
           badgeHTML = `<span class="badge-eligible"><i data-lucide="check-circle"></i> Eligible (${remainingHrs}h left)</span>`;
-          btnHTML = `<button class="btn-refund btn-refund-active" onclick="openConfirmModal('${p.paymentId}', ${p.amount})"><i data-lucide="refresh-ccw"></i> Request Refund</button>`;
+          btnHTML = `
+            <div style="margin-top: 12px; background: rgba(34, 197, 94, 0.05); border: 2px dashed var(--green); border-radius: 8px; padding: 14px; box-shadow: 2px 2px 0 var(--black);">
+              <p style="font-size: 13px; font-weight: 800; color: var(--green); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="check-circle" style="width:16px;height:16px;"></i> You are eligible for refund
+              </p>
+              <p style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; line-height: 1.4;">
+                To request a refund, please describe in detail why you want a cancellation (minimum 50 characters required).
+              </p>
+              <textarea class="refund-reason-input" id="reason-${p.paymentId}" placeholder="Enter your reason description here (minimum 50 characters)..." oninput="validateInlineRefundReason('${p.paymentId}')" style="width: 100%; min-height: 70px; border: var(--border); border-radius: 6px; background: var(--bg); color: var(--text); padding: 8px 10px; font-family: inherit; font-size: 13px; font-weight: 600; resize: none;"></textarea>
+              <div id="reason-count-container-${p.paymentId}" style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--red);">
+                <span id="char-count-${p.paymentId}">0 / 50 characters minimum</span>
+                <span id="char-hint-${p.paymentId}">Too short</span>
+              </div>
+              <button class="btn-refund btn-refund-disabled" id="btn-submit-${p.paymentId}" onclick="triggerInlineRefundSubmit('${p.paymentId}', ${p.amount})" disabled style="margin-top: 10px;">
+                <i data-lucide="refresh-ccw"></i> Ask for Refund
+              </button>
+            </div>
+          `;
         } else {
           badgeHTML = `<span class="badge-ineligible"><i data-lucide="clock"></i> Window Expired</span>`;
           btnHTML = `<button class="btn-refund btn-refund-disabled" disabled>Refund window expired</button>`;
@@ -773,6 +790,41 @@
       renderPaymentsUI();
     }
 
+    let tempRefundReason = '';
+
+    function validateInlineRefundReason(paymentId) {
+      const textarea = document.getElementById(`reason-${paymentId}`);
+      const countSpan = document.getElementById(`char-count-${paymentId}`);
+      const hintSpan = document.getElementById(`char-hint-${paymentId}`);
+      const submitBtn = document.getElementById(`btn-submit-${paymentId}`);
+      const countContainer = document.getElementById(`reason-count-container-${paymentId}`);
+
+      if (!textarea || !countSpan || !hintSpan || !submitBtn) return;
+
+      const len = textarea.value.trim().length;
+      countSpan.textContent = `${len} / 50 characters minimum`;
+
+      if (len >= 50) {
+        countContainer.style.color = 'var(--green)';
+        hintSpan.textContent = 'Looking good!';
+        submitBtn.disabled = false;
+        submitBtn.className = 'btn-refund btn-refund-active';
+      } else {
+        countContainer.style.color = 'var(--red)';
+        hintSpan.textContent = 'Too short';
+        submitBtn.disabled = true;
+        submitBtn.className = 'btn-refund btn-refund-disabled';
+      }
+    }
+
+    function triggerInlineRefundSubmit(paymentId, amount) {
+      const textarea = document.getElementById(`reason-${paymentId}`);
+      if (!textarea || textarea.value.trim().length < 50) return;
+
+      tempRefundReason = textarea.value.trim();
+      openConfirmModal(paymentId, amount);
+    }
+
     // Modal helpers
     function openConfirmModal(paymentId, amount) {
       targetPaymentId = paymentId;
@@ -787,7 +839,7 @@
 
     // Trigger API request
     async function submitRefundRequest() {
-      if (!targetPaymentId) return;
+      if (!targetPaymentId || !tempRefundReason) return;
       
       const btn = document.getElementById('btn-modal-confirm-submit');
       btn.disabled = true;
@@ -796,7 +848,7 @@
       try {
         const res = await apiRequest('/api/subscriptions/razorpay/request-refund', {
           method: 'POST',
-          body: JSON.stringify({ paymentId: targetPaymentId })
+          body: JSON.stringify({ paymentId: targetPaymentId, reason: tempRefundReason })
         });
         
         if (res.success) {
