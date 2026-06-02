@@ -2213,7 +2213,7 @@ async function loadReports() {
             ${r.status !== 'Resolved' ? `
               <button class="btn-action" style="padding: 4px 8px; font-size: 11px; background: var(--green); color: black; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font-weight: 800;" onclick="updateReportStatus('${r._id}', 'Resolved')">Resolve</button>
             ` : ''}
-            <button class="btn-action btn-delete" style="padding: 4px 8px; font-size: 11px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font-weight: 800; background: var(--red); color: white;" onclick="deleteReport('${r._id}')">Delete</button>
+            <button class="btn-action btn-delete" style="padding: 4px 8px; font-size: 11px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font-weight: 800; background: #ef4444; color: white;" onclick="deleteReport('${r._id}')">Delete</button>
           </div>
         </td>
       `;
@@ -2222,7 +2222,7 @@ async function loadReports() {
 
   } catch (err) {
     console.error('Error loading reports:', err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:800; color:var(--red);">Failed to load reports.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:800; color: #ef4444;">Failed to load reports.</td></tr>`;
   }
 }
 
