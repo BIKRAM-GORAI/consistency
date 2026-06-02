@@ -2559,7 +2559,16 @@
         <button onclick="startGroupVideoCall()" class="btn-primary ripple" style="padding: 8px 18px; font-size: 12px; background: var(--purple); border-width: 2px; box-shadow: 3px 3px 0 var(--black); font-weight: 900;">JOIN NOW</button>
       </div>
       
-      <div class="modal-body" id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 24px; background: var(--bg-muted); display: flex; flex-direction: column; gap: 16px;">
+      <div class="modal-body" id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Background decorative shapes -->
+        <div class="chat-bg-decorations">
+          <div class="decor-shape shape-1"></div>
+          <div class="decor-shape shape-2"></div>
+          <div class="decor-shape shape-3"></div>
+          <div class="decor-shape shape-4"></div>
+          <div class="decor-shape shape-5"></div>
+          <div class="decor-shape shape-6"></div>
+        </div>
         <div id="chat-load-more-container" style="text-align: center; margin-bottom: 12px; display: none;">
           <button class="btn-ghost ripple" id="btn-chat-load-more" onclick="loadMoreChatMessages()" style="font-size: 11px; padding: 6px 14px; border-radius: 20px; font-weight: 800; background: var(--bg-card); box-shadow: 2px 2px 0 var(--black);">
             <i data-lucide="arrow-up" style="width: 12px; height: 12px;"></i> Load Older Messages
