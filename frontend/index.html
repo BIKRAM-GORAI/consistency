@@ -1524,350 +1524,387 @@
         <button class="modal-close" onclick="closeModal('modal-profile')"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body" id="profile-modal-body">
-        <div style="padding: 16px; background: rgba(236, 72, 153, 0.15); border: 2px solid #ec4899; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;"><i data-lucide="user"></i> Personal Information</h3>
-          
-          <div class="profile-picture-section" style="text-align:center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed var(--border-color, #ccc);">
-            <div class="profile-avatar-container" onclick="document.getElementById('profile-pic-upload').click()" title="Click to upload profile picture" style="width:100px; height:100px; border-radius:50%; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; cursor:pointer; overflow:hidden; border:2px solid var(--black); position:relative; box-shadow: 4px 4px 0 var(--black); margin: 0 auto;">
-              <span id="profile-avatar-initial">?</span>
-              <img id="profile-avatar-img" src="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
-              <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.6); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
-            </div>
-            <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePictureSelect(event)" />
-            <input type="hidden" id="profile-pic-dataurl" value="" />
-            <p class="form-hint" style="margin-top:12px; font-size: 13px;">Max 5MB. Image will be compressed before upload.</p>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 16px;">
-            <label for="profile-email" style="font-weight: 600;">Email (Read Only)</label>
-            <input type="email" id="profile-email" class="form-control" readonly />
-          </div>
-
-          <div class="form-group" style="margin-bottom: 0;">
-            <label for="profile-username" style="font-weight: 600;">Username</label>
-            <input type="text" id="profile-username" class="form-control" placeholder="Choose a unique username" />
-            <p class="form-hint" id="profile-username-hint" style="margin-top: 6px; font-size: 13px;">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br><i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Username can be set only once.</p>
-          </div>
-
-          <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
-            <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--teal); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="sharePublicProfile()">
-              <span><i data-lucide="share-2" class="no-theme"></i> Share My Profile</span>
-            </button>
-            <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid var(--black); font-size: 14px; text-transform: uppercase; font-weight: 700;" onclick="previewFullProfile()">
-              <span><i data-lucide="eye"></i> Preview Public Link</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Badges Section -->
-        <div class="badge-section-card">
-          <h3 class="badge-section-title"><i data-lucide="award"></i> My Streak Badges</h3>
-          
-          <div id="claimed-badges-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
-            <!-- Claimed badges will be injected here -->
-            <p id="no-badges-msg" style="font-size: 13px; color: var(--text-muted); font-weight: 600;">No badges claimed yet. Start your journey!</p>
-          </div>
-
-          <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: #a855f7; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: #fff;" onclick="openBadgesModal()">
-            <span><i data-lucide="sparkles"></i> Claim Your Badges</span>
+        <!-- Brutalist Tab Header -->
+        <div class="profile-tabs-header" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: var(--border-2); padding-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 0;">
+          <button type="button" class="profile-tab-btn active" onclick="switchProfileTab('profile-tab-account', this)" style="flex: 1; min-width: 90px; padding: 10px 8px; font-size: 12px; font-weight: 800; border: var(--border-2); background: var(--yellow); color: var(--black); cursor: pointer; text-transform: uppercase; text-align: center; transition: all 0.15s ease; box-shadow: 2px 2px 0 var(--black); display: flex; align-items: center; justify-content: center; gap: 4px;">
+            👤 Account
+          </button>
+          <button type="button" class="profile-tab-btn" onclick="switchProfileTab('profile-tab-limits', this)" style="flex: 1; min-width: 90px; padding: 10px 8px; font-size: 12px; font-weight: 800; border: var(--border-2); background: var(--bg-card); color: var(--text); cursor: pointer; text-transform: uppercase; text-align: center; transition: all 0.15s ease; box-shadow: 2px 2px 0 var(--black); display: flex; align-items: center; justify-content: center; gap: 4px;">
+            📊 Limits
+          </button>
+          <button type="button" class="profile-tab-btn" onclick="switchProfileTab('profile-tab-prefs', this)" style="flex: 1; min-width: 90px; padding: 10px 8px; font-size: 12px; font-weight: 800; border: var(--border-2); background: var(--bg-card); color: var(--text); cursor: pointer; text-transform: uppercase; text-align: center; transition: all 0.15s ease; box-shadow: 2px 2px 0 var(--black); display: flex; align-items: center; justify-content: center; gap: 4px;">
+            ⚙️ Prefs
+          </button>
+          <button type="button" class="profile-tab-btn" onclick="switchProfileTab('profile-tab-danger', this)" style="flex: 1; min-width: 90px; padding: 10px 8px; font-size: 12px; font-weight: 800; border: var(--border-2); background: var(--bg-card); color: var(--text); cursor: pointer; text-transform: uppercase; text-align: center; transition: all 0.15s ease; box-shadow: 2px 2px 0 var(--black); display: flex; align-items: center; justify-content: center; gap: 4px;">
+            ⚠️ Help
           </button>
         </div>
 
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="target"></i> LeetCode Integration</h3>
-
-          <div id="leetcode-connect-section">
-            <!-- Status display -->
-            <div id="leetcode-status" class="lc-status-badge lc-status-error"></div>
-
-            <!-- Profile picture display -->
-            <img id="leetcode-profile-pic" style="width:60px; height:60px; border-radius:50%; object-fit:cover; display:none; margin:0 auto 12px; border:2px solid #ddd;" />
-
-            <!-- Username display -->
-            <div style="margin-bottom:12px; font-size:14px; text-align:center;">
-              <span style="color:var(--text-muted);">Username: </span>
-              <strong id="leetcode-username-display" style="color:var(--text);"></strong>
-            </div>
-
-            <!-- Remaining changes display -->
-            <div id="leetcode-remaining-changes" style="margin-bottom:12px; font-size:13px; color:var(--text-muted); text-align:center;"></div>
-
-            <!-- Show if not connected -->
-            <div id="leetcode-not-connected">
-              <div class="form-group">
-                <label for="leetcode-username">LeetCode Username</label>
-                <input type="text" id="leetcode-username" class="form-control" placeholder="Enter your LeetCode username" />
+        <!-- TAB 1: PROFILE & ACCOUNT -->
+        <div id="profile-tab-account" class="profile-tab-content">
+          <div style="padding: 16px; background: rgba(236, 72, 153, 0.15); border: 2px solid #ec4899; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;"><i data-lucide="user"></i> Personal Information</h3>
+            
+            <div class="profile-picture-section" style="text-align:center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed var(--border-color, #ccc);">
+              <div class="profile-avatar-container" onclick="document.getElementById('profile-pic-upload').click()" title="Click to upload profile picture" style="width:100px; height:100px; border-radius:50%; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; cursor:pointer; overflow:hidden; border:2px solid var(--black); position:relative; box-shadow: 4px 4px 0 var(--black); margin: 0 auto;">
+                <span id="profile-avatar-initial">?</span>
+                <img id="profile-avatar-img" src="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
+                <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.6); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
               </div>
-              <button class="btn-primary ripple" style="width:100%; margin-top:12px;" onclick="generateLeetCodeCode()">
-                Generate Verification Code
-              </button>
+              <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePictureSelect(event)" />
+              <input type="hidden" id="profile-pic-dataurl" value="" />
+              <p class="form-hint" style="margin-top:12px; font-size: 13px;">Max 5MB. Image will be compressed before upload.</p>
             </div>
 
-            <!-- Show if code expired -->
-            <div id="leetcode-code-expired" class="lc-panel lc-panel-expired" style="display:none;">
-              <p style="margin:0 0 8px 0; font-weight:600;"><i data-lucide="clock"></i> Your verification code has expired</p>
-              <p style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted);">Please generate a new verification code to continue.</p>
-              <button class="btn-primary ripple" style="width:100%;" onclick="generateLeetCodeCode()">
-                🔄 Generate New Code
-              </button>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="profile-email" style="font-weight: 600;">Email (Read Only)</label>
+              <input type="email" id="profile-email" class="form-control" readonly />
             </div>
 
-            <!-- Show if code generated -->
-            <div id="leetcode-code-generated" class="lc-panel lc-panel-generated" style="display:none;">
-              <p style="margin:0 0 8px 0; font-weight:600;">Add this code to your LeetCode profile bio:</p>
-              <div class="verification-code-display" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                <code id="leetcode-verification-code" style="flex:1; padding:8px 12px; background:#fff; color:#0a0a0a; border:1px solid #ccc; border-radius:4px; font-family:monospace; font-size:16px; font-weight:bold;"></code>
-                <button onclick="copyLeetCodeCode()" style="padding:8px 12px; background:#10b981; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;"><i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy</button>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="profile-username" style="font-weight: 600;">Username</label>
+              <input type="text" id="profile-username" class="form-control" placeholder="Choose a unique username" />
+              <p class="form-hint" id="profile-username-hint" style="margin-top: 6px; font-size: 13px;">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).<br><i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Username can be set only once.</p>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+              <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--teal); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="sharePublicProfile()">
+                <span><i data-lucide="share-2" class="no-theme"></i> Share My Profile</span>
+              </button>
+              <button class="btn-ghost ripple" style="width: 100%; justify-content: center; border: 2px solid var(--black); font-size: 14px; text-transform: uppercase; font-weight: 700;" onclick="previewFullProfile()">
+                <span><i data-lucide="eye"></i> Preview Public Link</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Badges Section -->
+          <div class="badge-section-card" style="margin-bottom: 20px;">
+            <h3 class="badge-section-title"><i data-lucide="award"></i> My Streak Badges</h3>
+            
+            <div id="claimed-badges-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+              <!-- Claimed badges will be injected here -->
+              <p id="no-badges-msg" style="font-size: 13px; color: var(--text-muted); font-weight: 600;">No badges claimed yet. Start your journey!</p>
+            </div>
+
+            <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: #a855f7; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: #fff;" onclick="openBadgesModal()">
+              <span><i data-lucide="sparkles"></i> Claim Your Badges</span>
+            </button>
+          </div>
+
+          <!-- LeetCode Section -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="target"></i> LeetCode Integration</h3>
+
+            <div id="leetcode-connect-section">
+              <!-- Status display -->
+              <div id="leetcode-status" class="lc-status-badge lc-status-error"></div>
+
+              <!-- Profile picture display -->
+              <img id="leetcode-profile-pic" style="width:60px; height:60px; border-radius:50%; object-fit:cover; display:none; margin:0 auto 12px; border:2px solid #ddd;" />
+
+              <!-- Username display -->
+              <div style="margin-bottom:12px; font-size:14px; text-align:center;">
+                <span style="color:var(--text-muted);">Username: </span>
+                <strong id="leetcode-username-display" style="color:var(--text);"></strong>
               </div>
-              <p id="leetcode-code-expiry" style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted); display:none;"></p>
-              <p style="margin:0 0 8px 0; font-size:13px; color:var(--text-muted);"><strong>Where to add:</strong> Go to your LeetCode profile → Click "Edit" → Add the code to your "About" or "Bio" section</p>
-              <p style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted);">After adding the code to your bio, click verify below</p>
-              <button class="btn-primary ripple" style="width:100%; margin-bottom:8px;" onclick="verifyLeetCodeProfile()">
-                <i data-lucide="check-circle"></i> Verify Profile
-              </button>
-            </div>
 
-            <!-- Show if verification retry is pending (first verify failed, cache bypass window) -->
-            <div id="leetcode-pending-retry" class="lc-panel lc-panel-pending-retry" style="display:none;">
-              <p style="margin:0 0 6px 0; font-weight:700; color:#854d0e; font-size:14px;"><i data-lucide="hourglass"></i> Verification Pending</p>
-              <p style="margin:0 0 10px 0; font-size:13px; color:#713f12; line-height:1.5;">
-                Code not found yet — this may be a caching delay. Make sure
-                <strong id="leetcode-pending-code-display" class="lc-pending-code"></strong>
-                is in your LeetCode bio, then click "Check Status" once the timer is ready.
-              </p>
+              <!-- Remaining changes display -->
+              <div id="leetcode-remaining-changes" style="margin-bottom:12px; font-size:13px; color:var(--text-muted); text-align:center;"></div>
 
-              <!-- Phase 1/2 timer display -->
-              <div id="leetcode-retry-timer" class="lc-retry-timer"></div>
-
-              <!-- Check Status button — disabled during 5-min wait, enabled after -->
-              <button id="leetcode-check-status-btn"
-                      class="btn-primary ripple"
-                      style="width:100%; margin-bottom:8px;"
-                      onclick="checkLeetCodeVerificationStatus()"
-                      disabled>
-                🔄 Check Status
-              </button>
-
-              <!-- Window expiry countdown -->
-              <p style="margin:0; font-size:12px; color:#92400e; text-align:center;">
-                Window closes in <strong id="leetcode-window-countdown"></strong> — after that you can generate a new code
-              </p>
-            </div>
-
-            <!-- Show if connected -->
-            <div id="leetcode-connected" class="lc-panel-connected" style="display:none;">
-              <div class="leetcode-connected-info" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:20px;"><i data-lucide="target"></i></span>
-                  <span>Connected to: <strong id="leetcode-connected-username"></strong></span>
+              <!-- Show if not connected -->
+              <div id="leetcode-not-connected">
+                <div class="form-group">
+                  <label for="leetcode-username">LeetCode Username</label>
+                  <input type="text" id="leetcode-username" class="form-control" placeholder="Enter your LeetCode username" />
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:20px;"><i data-lucide="refresh-cw"></i></span>
-                  <span>Changes remaining: <strong id="leetcode-changes-remaining"></strong>/<strong id="leetcode-changes-max">3</strong></span>
+                <button class="btn-primary ripple" style="width:100%; margin-top:12px;" onclick="generateLeetCodeCode()">
+                  Generate Verification Code
+                </button>
+              </div>
+
+              <!-- Show if code expired -->
+              <div id="leetcode-code-expired" class="lc-panel lc-panel-expired" style="display:none;">
+                <p style="margin:0 0 8px 0; font-weight:600;"><i data-lucide="clock"></i> Your verification code has expired</p>
+                <p style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted);">Please generate a new verification code to continue.</p>
+                <button class="btn-primary ripple" style="width:100%;" onclick="generateLeetCodeCode()">
+                  🔄 Generate New Code
+                </button>
+              </div>
+
+              <!-- Show if code generated -->
+              <div id="leetcode-code-generated" class="lc-panel lc-panel-generated" style="display:none;">
+                <p style="margin:0 0 8px 0; font-weight:600;">Add this code to your LeetCode profile bio:</p>
+                <div class="verification-code-display" style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                  <code id="leetcode-verification-code" style="flex:1; padding:8px 12px; background:#fff; color:#0a0a0a; border:1px solid #ccc; border-radius:4px; font-family:monospace; font-size:16px; font-weight:bold;"></code>
+                  <button onclick="copyLeetCodeCode()" style="padding:8px 12px; background:#10b981; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;"><i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy</button>
+                </div>
+                <p id="leetcode-code-expiry" style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted); display:none;"></p>
+                <p style="margin:0 0 8px 0; font-size:13px; color:var(--text-muted);"><strong>Where to add:</strong> Go to your LeetCode profile → Click "Edit" → Add the code to your "About" or "Bio" section</p>
+                <p style="margin:0 0 12px 0; font-size:13px; color:var(--text-muted);">After adding the code to your bio, click verify below</p>
+                <button class="btn-primary ripple" style="width:100%; margin-bottom:8px;" onclick="verifyLeetCodeProfile()">
+                  <i data-lucide="check-circle"></i> Verify Profile
+                </button>
+              </div>
+
+              <!-- Show if verification retry is pending -->
+              <div id="leetcode-pending-retry" class="lc-panel lc-panel-pending-retry" style="display:none;">
+                <p style="margin:0 0 6px 0; font-weight:700; color:#854d0e; font-size:14px;"><i data-lucide="hourglass"></i> Verification Pending</p>
+                <p style="margin:0 0 10px 0; font-size:13px; color:#713f12; line-height:1.5;">
+                  Code not found yet — this may be a caching delay. Make sure
+                  <strong id="leetcode-pending-code-display" class="lc-pending-code"></strong>
+                  is in your LeetCode bio, then click "Check Status" once the timer is ready.
+                </p>
+
+                <!-- Phase 1/2 timer display -->
+                <div id="leetcode-retry-timer" class="lc-retry-timer"></div>
+
+                <!-- Check Status button -->
+                <button id="leetcode-check-status-btn"
+                        class="btn-primary ripple"
+                        style="width:100%; margin-bottom:8px;"
+                        onclick="checkLeetCodeVerificationStatus()"
+                        disabled>
+                  🔄 Check Status
+                </button>
+
+                <!-- Window expiry countdown -->
+                <p style="margin:0; font-size:12px; color:#92400e; text-align:center;">
+                  Window closes in <strong id="leetcode-window-countdown"></strong> — after that you can generate a new code
+                </p>
+              </div>
+
+              <!-- Show if connected -->
+              <div id="leetcode-connected" class="lc-panel-connected" style="display:none;">
+                <div class="leetcode-connected-info" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:20px;"><i data-lucide="target"></i></span>
+                    <span>Connected to: <strong id="leetcode-connected-username"></strong></span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:20px;"><i data-lucide="refresh-cw"></i></span>
+                    <span>Changes remaining: <strong id="leetcode-changes-remaining"></strong>/<strong id="leetcode-changes-max">3</strong></span>
+                  </div>
+                </div>
+                <button class="btn-ghost ripple" style="width:100%; padding:8px 12px; border:2px solid #10b981; color:#10b981; margin-bottom:8px;" onclick="changeLeetCodeUsername()">
+                  Change Username
+                </button>
+                <button class="btn-ghost ripple btn-disconnect" onclick="disconnectLeetCodeProfile()">
+                  Disconnect Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: LIMITS & TEMPLATES -->
+        <div id="profile-tab-limits" class="profile-tab-content" style="display: none;">
+          <!-- Android Screen Time & App Limits Section -->
+          <div id="android-usage-stats-card" class="screentime-section-card" style="display: none; margin-bottom: 20px;">
+            <h3 class="screentime-section-title"><i data-lucide="smartphone"></i> Screen Time &amp; App Limits</h3>
+            
+            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2); margin-bottom: 12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <label style="margin:0; font-weight: 600; color: var(--text);">Enable Limit Tracking</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="distraction-limit-toggle" onchange="handleDistractionLimitToggle(this.checked)" />
+                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+              <p class="form-hint" style="margin: 0; line-height: 1.5;">Track, enforce and display limits for your distracting applications.</p>
+            </div>
+
+            <div id="distraction-apps-configuration" style="display: none;">
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+                <div id="selected-apps-limits-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+                  <!-- Chosen apps with limit inputs/sliders will be injected here -->
+                </div>
+                <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--yellow); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 14px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="openAddDistractingAppModal()">
+                  <i data-lucide="plus" class="no-theme" style="color: var(--black);"></i> Add Distracting App
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Usage Limits Card -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="gauge"></i> My Usage Limits</h3>
+            <button class="btn-ghost ripple" id="open-my-limits-btn" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="openMyLimitsModal()">
+              <span><i data-lucide="bar-chart-2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> View All Limits & Resets</span>
+              <span>▶</span>
+            </button>
+          </div>
+
+          <!-- Manage Templates Card -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📑 Manage Templates</h3>
+            <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="openManageTemplatesModal()" id="manage-templates-btn">
+              <span>Manage Daily Templates</span>
+              <span>▶</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 3: PREFERENCES & SECURITY -->
+        <div id="profile-tab-prefs" class="profile-tab-content" style="display: none;">
+          <!-- Preferences Section -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="settings"></i> Preferences</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                  <label style="margin:0; font-weight: 600; color: var(--text);">Dark Theme</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="dark-theme-toggle" />
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                  </label>
+                </div>
+                <p class="form-hint" style="margin: 0; line-height: 1.5;">Switch to a dark brutalist theme.</p>
+              </div>
+
+              <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                  <label style="margin:0; font-weight: 600; color: var(--text);">Email Reminders</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="email-notif-toggle" />
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                  </label>
+                </div>
+                <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
+              </div>
+
+              <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                  <label style="margin:0; font-weight: 600; color: var(--text);">Public Profile</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="public-profile-toggle" />
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                  </label>
+                </div>
+                <p class="form-hint" style="margin: 0; line-height: 1.5;">Allow others to search for and view your profile, streak, and graph.</p>
+              </div>
+
+              <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                  <label style="margin:0; font-weight: 600; color: var(--text);">Showcase on Leaderboard</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="leaderboard-showcase-settings-toggle" checked disabled />
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                  </label>
+                </div>
+                <p class="form-hint" style="margin: 0; line-height: 1.5;">Showcase your name and streak on the leaderboard. If private, clicking your name hides daily cards.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Block -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="lock"></i> Security & Visibility</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="togglePasswordSection()" id="toggle-pwd-btn">
+                <span>Change Password</span>
+                <span id="toggle-pwd-icon">▼</span>
+              </button>
+              
+              <div id="password-change-section" style="display:none; padding:16px; background:var(--bg); border-radius:8px; border:var(--border-2);">
+                <div class="form-group">
+                  <label for="profile-old-password">Current Password</label>
+                  <div class="password-wrapper">
+                    <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-old-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                  <label for="profile-new-password">New Password</label>
+                  <div class="password-wrapper">
+                    <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-new-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+                  </div>
+                  <p class="form-hint" style="margin-top: 6px; line-height: 1.4;">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                  <label for="profile-confirm-password">Confirm New Password</label>
+                  <div class="password-wrapper">
+                    <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-confirm-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:center; margin-top: 20px;">
+                  <button class="btn-primary ripple" style="padding:8px 24px; font-size:14px;" onclick="submitPasswordChange()" id="submit-pwd-btn">Update Password</button>
                 </div>
               </div>
-              <button class="btn-ghost ripple" style="width:100%; padding:8px 12px; border:2px solid #10b981; color:#10b981; margin-bottom:8px;" onclick="changeLeetCodeUsername()">
-                Change Username
-              </button>
-              <button class="btn-ghost ripple btn-disconnect" onclick="disconnectLeetCodeProfile()">
-                Disconnect Profile
+
+              <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="previewMinimalProfile()" id="preview-minimal-btn">
+                <span><i data-lucide="eye"></i> How others view my profile</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Android Screen Time & App Limits Section -->
-        <div id="android-usage-stats-card" class="screentime-section-card" style="display: none;">
-          <h3 class="screentime-section-title"><i data-lucide="smartphone"></i> Screen Time &amp; App Limits</h3>
-          
-          <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2); margin-bottom: 12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-              <label style="margin:0; font-weight: 600; color: var(--text);">Enable Limit Tracking</label>
-              <label class="toggle-switch">
-                <input type="checkbox" id="distraction-limit-toggle" onchange="handleDistractionLimitToggle(this.checked)" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-            <p class="form-hint" style="margin: 0; line-height: 1.5;">Track, enforce and display limits for your distracting applications.</p>
+        <!-- TAB 4: HELP, BILLING & DANGER -->
+        <div id="profile-tab-danger" class="profile-tab-content" style="display: none;">
+          <!-- Premium Subscription Redirect Button -->
+          <div style="padding: 16px; background: rgba(168, 85, 247, 0.15); border: 2px solid var(--black); border-radius: 8px; margin-bottom: 20px; box-shadow: 4px 4px 0 #a855f7;">
+            <h3 style="font-size: 14px; font-weight: 900; margin-bottom: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; color: var(--text);">
+              <i data-lucide="crown" style="color: #fbbf24; fill: #fbbf24; width: 18px; height: 18px;"></i> Premium Subscription &amp; Limits
+            </h3>
+            <p style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+              Unlock dynamic relative boosts, template expansions, voice/media chat upgrades, and daily AI insights.
+            </p>
+            <a href="#" onclick="handleManageSubscription(event)" class="btn-primary ripple" style="width: 100%; justify-content: center; background: #a855f7; border-color: var(--black); box-shadow: 3px 3px 0 var(--black); color: #fff; font-weight: 800; font-size: 14px; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 42px; line-height: 42px;">
+              <span>Manage Subscription <i data-lucide="arrow-up-right"></i></span>
+            </a>
           </div>
 
-          <div id="distraction-apps-configuration" style="display: none;">
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
-              <div id="selected-apps-limits-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
-                <!-- Chosen apps with limit inputs/sliders will be injected here -->
-              </div>
-              <button class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--yellow); border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 14px; text-transform: uppercase; font-weight: 800; color: var(--black);" onclick="openAddDistractingAppModal()">
-                <i data-lucide="plus" class="no-theme" style="color: var(--black);"></i> Add Distracting App
-              </button>
-            </div>
+          <!-- App Installation Card -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;" id="pwa-install-container">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📱 App Installation</h3>
+            <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Install Consistency Daily on your device for a faster, app-like experience.</p>
+            <button class="btn-primary ripple" style="width: 100%; justify-content: center; text-transform: uppercase; font-size: 14px;" onclick="installPWA()">
+              <span>📥 Install this as an App</span>
+            </button>
           </div>
-        </div>
 
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="lock"></i> Security & Visibility</h3>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="togglePasswordSection()" id="toggle-pwd-btn">
-              <span>Change Password</span>
-              <span id="toggle-pwd-icon">▼</span>
+          <!-- Community Feedback Card -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px; box-shadow: 2px 2px 0 rgba(59, 130, 246, 0.2);">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; color: var(--blue);">💬 Community Feedback</h3>
+            <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Share your thoughts or suggest a feature! Your feedback helps us grow.</p>
+            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:var(--border-2); color:var(--text); text-transform:uppercase; background:var(--bg-card); transition: all 0.2s ease; box-shadow: 4px 4px 0 var(--blue);" onclick="openFeedbackModal()">
+              <span><i data-lucide="edit-3"></i> Give Feedback / Review</span>
+            </button>
+          </div>
+
+          <!-- Danger Zone Section -->
+          <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase;"><i data-lucide="alert-triangle"></i> Danger Zone</h3>
+            
+            <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); color: var(--text); text-transform:uppercase;" onclick="document.getElementById('delete-account-section').style.display = document.getElementById('delete-account-section').style.display === 'none' ? 'block' : 'none';">
+              <span>Want to delete your account?</span>
+              <span>▼</span>
             </button>
             
-            <div id="password-change-section" style="display:none; padding:16px; background:var(--bg); border-radius:8px; border:var(--border-2);">
-              <div class="form-group">
-                <label for="profile-old-password">Current Password</label>
-                <div class="password-wrapper">
-                  <input type="password" id="profile-old-password" class="form-control" placeholder="Enter current password" />
-                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-old-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
-                </div>
-              </div>
-              <div class="form-group" style="margin-top: 16px;">
-                <label for="profile-new-password">New Password</label>
-                <div class="password-wrapper">
-                  <input type="password" id="profile-new-password" class="form-control" placeholder="Enter new password" />
-                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-new-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
-                </div>
-                <p class="form-hint" style="margin-top: 6px; line-height: 1.4;">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
-              </div>
-              <div class="form-group" style="margin-top: 16px;">
-                <label for="profile-confirm-password">Confirm New Password</label>
-                <div class="password-wrapper">
-                  <input type="password" id="profile-confirm-password" class="form-control" placeholder="Confirm new password" />
-                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('profile-confirm-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
-                </div>
-              </div>
-              <div style="display:flex; justify-content:center; margin-top: 20px;">
-                <button class="btn-primary ripple" style="padding:8px 24px; font-size:14px;" onclick="submitPasswordChange()" id="submit-pwd-btn">Update Password</button>
-              </div>
+            <div id="delete-account-section" style="display:none; margin-top:12px; padding: 16px; border: 2px dashed var(--black); background: var(--bg); border-radius: 8px;">
+              <p style="margin:0 0 12px 0; font-size: 13px; color: var(--red); font-weight: 600;">Warning: Once deleted, your account and all data cannot be recovered.</p>
+              <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:#fff; text-transform:uppercase; background:var(--red); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="openDeleteWarning()">
+                <span><i data-lucide="trash-2"></i> Delete Account</span>
+              </button>
             </div>
+          </div>
 
-            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="previewMinimalProfile()" id="preview-minimal-btn">
-              <span><i data-lucide="eye"></i> How others view my profile</span>
+          <!-- Log Out Button -->
+          <div style="display: flex; justify-content: center; margin-top: 10px; margin-bottom: 16px;">
+            <button class="log-out-btn ripple" onclick="logout()">
+              <span>🚪 Log Out</span>
             </button>
           </div>
-        </div>
 
-        <!-- ===== Premium Subscription Redirect Button ===== -->
-        <div style="padding: 16px; background: rgba(168, 85, 247, 0.15); border: 2px solid var(--black); border-radius: 8px; margin-bottom: 20px; flex-shrink: 0; box-shadow: 4px 4px 0 #a855f7;">
-          <h3 style="font-size: 14px; font-weight: 900; margin-bottom: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; color: var(--text);">
-            <i data-lucide="crown" style="color: #fbbf24; fill: #fbbf24; width: 18px; height: 18px;"></i> Premium Subscription &amp; Limits
-          </h3>
-          <p style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-            Unlock dynamic relative boosts, template expansions, voice/media chat upgrades, and daily AI insights.
-          </p>
-          <a href="#" onclick="handleManageSubscription(event)" class="btn-primary ripple" style="width: 100%; justify-content: center; background: #a855f7; border-color: var(--black); box-shadow: 3px 3px 0 var(--black); color: #fff; font-weight: 800; font-size: 14px; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 42px; line-height: 42px;">
-            <span>Manage Subscription <i data-lucide="arrow-up-right"></i></span>
-          </a>
-        </div>
-
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="settings"></i> Preferences</h3>
-          
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
-              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-                <label style="margin:0; font-weight: 600; color: var(--text);">Dark Theme</label>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="dark-theme-toggle" />
-                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                </label>
-              </div>
-              <p class="form-hint" style="margin: 0; line-height: 1.5;">Switch to a dark brutalist theme.</p>
-            </div>
-
-            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
-              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-                <label style="margin:0; font-weight: 600; color: var(--text);">Email Reminders</label>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="email-notif-toggle" />
-                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                </label>
-              </div>
-              <p class="form-hint" style="margin: 0; line-height: 1.5;">Receive an email reminder if your streak is about to expire or if you haven't logged in for a while.</p>
-            </div>
-
-            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
-              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-                <label style="margin:0; font-weight: 600; color: var(--text);">Public Profile</label>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="public-profile-toggle" />
-                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                </label>
-              </div>
-              <p class="form-hint" style="margin: 0; line-height: 1.5;">Allow others to search for and view your profile, streak, and graph.</p>
-            </div>
-
-            <div style="padding: 16px; background: var(--bg); border-radius: 8px; border: var(--border-2);">
-              <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-                <label style="margin:0; font-weight: 600; color: var(--text);">Showcase on Leaderboard</label>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="leaderboard-showcase-settings-toggle" checked disabled />
-                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                </label>
-              </div>
-              <p class="form-hint" style="margin: 0; line-height: 1.5;">Showcase your name and streak on the leaderboard. If private, clicking your name hides daily cards.</p>
+          <!-- App Version Info -->
+          <div id="app-version-info" style="margin-top: 6px; margin-bottom: 2px;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">
+              Version Running: v1.9
             </div>
           </div>
         </div>
-
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="gauge"></i> My Usage Limits</h3>
-          <button class="btn-ghost ripple" id="open-my-limits-btn" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="openMyLimitsModal()">
-            <span><i data-lucide="bar-chart-2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> View All Limits & Resets</span>
-            <span>▶</span>
-          </button>
-        </div>
-
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📑 Manage Templates</h3>
-          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); text-transform:uppercase;" onclick="openManageTemplatesModal()" id="manage-templates-btn">
-            <span>Manage Daily Templates</span>
-            <span>▶</span>
-          </button>
-        </div>
-
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase;"><i data-lucide="alert-triangle"></i> Danger Zone</h3>
-          
-          <button class="btn-ghost ripple" style="width:100%; justify-content:space-between; font-size:14px; font-weight:700; padding:12px; border:var(--border-2); background:var(--bg); color: var(--text); text-transform:uppercase;" onclick="document.getElementById('delete-account-section').style.display = document.getElementById('delete-account-section').style.display === 'none' ? 'block' : 'none';">
-            <span>Want to delete your account?</span>
-            <span>▼</span>
-          </button>
-          
-          <div id="delete-account-section" style="display:none; margin-top:12px; padding: 16px; border: 2px dashed var(--black); background: var(--bg); border-radius: 8px;">
-            <p style="margin:0 0 12px 0; font-size: 13px; color: var(--red); font-weight: 600;">Warning: Once deleted, your account and all data cannot be recovered.</p>
-            <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:2px solid var(--red); color:#fff; text-transform:uppercase; background:var(--red); transition: all 0.2s ease; box-shadow: 2px 2px 0 var(--black);" onclick="openDeleteWarning()">
-              <span><i data-lucide="trash-2"></i> Delete Account</span>
-            </button>
-          </div>
-        </div>
-
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px; box-shadow: 2px 2px 0 rgba(59, 130, 246, 0.2);">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; color: var(--blue);">💬 Community Feedback</h3>
-          <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Share your thoughts or suggest a feature! Your feedback helps us grow.</p>
-          <button class="btn-ghost ripple" style="width:100%; justify-content:center; font-size:14px; font-weight:800; padding:12px; border:var(--border-2); color:var(--text); text-transform:uppercase; background:var(--bg-card); transition: all 0.2s ease; box-shadow: 4px 4px 0 var(--blue);" onclick="openFeedbackModal()">
-            <span><i data-lucide="edit-3"></i> Give Feedback / Review</span>
-          </button>
-        </div>
-
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px; display: block;" id="pwa-install-container">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;">📱 App Installation</h3>
-          <p style="font-size: 13px; margin-bottom: 12px; font-weight: 600;">Install Consistency Daily on your device for a faster, app-like experience.</p>
-          <button class="btn-primary ripple" style="width: 100%; justify-content: center; text-transform: uppercase; font-size: 14px;" onclick="installPWA()">
-            <span>📥 Install this as an App</span>
-          </button>
-        </div>
-
-        <div style="display: flex; justify-content: center; margin-top: 10px;">
-          <button class="log-out-btn ripple" onclick="logout()">
-            <span>🚪 Log Out</span>
-          </button>
-        </div>
-
-        <div id="app-version-info" style="margin-top: 6px; margin-bottom: 2px;">
-          <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;">
-            Version Running: v1.9
-          </div>
-        </div>
-
       </div>
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-profile')">Cancel</button>

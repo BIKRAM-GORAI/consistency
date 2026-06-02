@@ -2087,4 +2087,35 @@ function renderMyLimits(container, data) {
 
 window.openMyLimitsModal = openMyLimitsModal;
 
+// Tab switcher for Profile settings modal
+function switchProfileTab(tabId, btn) {
+  // Hide all tab contents
+  const contents = document.querySelectorAll('.profile-tab-content');
+  contents.forEach(el => el.style.display = 'none');
+  
+  // Show active tab content
+  const activeTab = document.getElementById(tabId);
+  if (activeTab) activeTab.style.display = 'block';
+  
+  // Update button states in tab header
+  const buttons = document.querySelectorAll('.profile-tab-btn');
+  buttons.forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'var(--bg-card)';
+    b.style.color = 'var(--text)';
+  });
+  
+  // Highlight active button
+  btn.classList.add('active');
+  btn.style.background = 'var(--yellow)';
+  btn.style.color = 'var(--black)';
+  
+  // Trigger Lucide icons refreshing for newly shown tab if required
+  if (activeTab && window.lucide) {
+    lucide.createIcons({ root: activeTab });
+  }
+}
+
+window.switchProfileTab = switchProfileTab;
+
 console.log("[Module] profile.js loaded and Profile bound to window");

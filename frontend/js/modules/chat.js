@@ -319,8 +319,10 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
   wrapper.id = `chat-msg-${docId}`;
   wrapper.dataset.ts = timestamp.getTime().toString();
 
+  const isPremiumSender = msg.senderIsPremium === true;
+
   const bubble = document.createElement('div');
-  bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'}`;
+  bubble.className = `chat-bubble ${isSelf ? 'self' : 'other'} ${isPremiumSender ? 'premium' : ''}`;
   
   // Calculate Blue Tick status based on threshold percentage
   let isBlue = false;
@@ -346,14 +348,15 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
     : `onclick="openQuickViewByMemberId('${msg.senderId}', '${escJs(msg.senderName)}'); event.stopPropagation();"`;
   
   const clickableStyle = 'cursor: pointer;'; // Always clickable now
+  const glowClass = isPremiumSender ? 'premium-glow' : '';
 
   if (msg.senderPhoto) {
-    avatarHtml = `<div class="chat-avatar" style="margin-right: 8px; ${clickableStyle}" ${onclickHtml}><img src="${msg.senderPhoto}" alt="${escHtml(msg.senderName)}" /></div>`;
+    avatarHtml = `<div class="chat-avatar ${glowClass}" style="margin-right: 8px; ${clickableStyle}" ${onclickHtml}><img src="${msg.senderPhoto}" alt="${escHtml(msg.senderName)}" /></div>`;
   } else {
     const colors = ['#FFD60A', '#FF3EA5', '#64FFDA', '#FF6B35', '#7B5EA7', '#B5FF4D', '#3B82F6'];
     const colorIdx = (msg.senderName || '?').charCodeAt(0) % colors.length;
     const initial = msg.senderName ? msg.senderName.charAt(0).toUpperCase() : '?';
-    avatarHtml = `<div class="chat-avatar" style="margin-right: 8px; background: ${colors[colorIdx]}; color: #000; ${clickableStyle}" ${onclickHtml}>${initial}</div>`;
+    avatarHtml = `<div class="chat-avatar ${glowClass}" style="margin-right: 8px; background: ${colors[colorIdx]}; color: #000; ${clickableStyle}" ${onclickHtml}>${initial}</div>`;
   }
 
   // Reply Snippet
@@ -959,6 +962,7 @@ async function handleChatSubmit(e) {
       senderName: window.userName || 'User',
       senderUsername: localStorage.getItem('userUsername') || '',
       senderPhoto: userPhoto || null,
+      senderIsPremium: localStorage.getItem('subscriptionTier') === 'premium',
       timestamp: firestore.serverTimestamp()
     };
 
@@ -1955,7 +1959,7 @@ function renderFcmBannerState() {
       iconWrap.innerHTML = '<i data-lucide="bell" style="width: 20px; height: 20px; color: var(--black);"></i>';
       titleEl.textContent = 'Notifications: On';
       if (token) {
-        descEl.textContent = `Active. Token: ${token.substring(0, 12)}...`;
+        descEl.textContent = 'Active. Push notifications are successfully enabled.';
       } else {
         descEl.textContent = 'Permission granted but device token is missing — tap Re-register.';
         iconWrap.style.background = 'var(--yellow)';

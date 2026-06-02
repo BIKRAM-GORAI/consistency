@@ -6232,3 +6232,47 @@ body.is-offline [data-requires-network="true"] {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
 }
+
+/* ── Premium Live Chat Visual Upgrades ── */
+.chat-avatar.premium-glow {
+  border: 2.5px solid transparent !important;
+  background-image: linear-gradient(var(--bg-card), var(--bg-card)), linear-gradient(135deg, #a855f7, #ec4899, #fbbf24) !important;
+  background-origin: border-box !important;
+  background-clip: content-box, border-box !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6), 0 0 15px rgba(236, 72, 153, 0.4), 2px 2px 0px #0a0a0a !important;
+  animation: premium-border-shimmer 4s linear infinite !important;
+  position: relative;
+}
+
+@keyframes premium-border-shimmer {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Premium Gradient Chat Bubble (Self) */
+.chat-bubble.self.premium {
+  background: linear-gradient(135deg, #7c3aed, #db2777) !important;
+  border: var(--border-2) !important;
+  box-shadow: 4px 4px 0px var(--black) !important;
+}
+
+/* Premium Gradient Chat Bubble (Other) */
+.chat-bubble.other.premium {
+  background: linear-gradient(135deg, #1e1b4b, #4c1d95) !important;
+  border: var(--border-2) !important;
+  box-shadow: -4px 4px 0px var(--black) !important;
+}
+
+/* Ensure text is extremely readable and high contrast inside premium bubble */
+.chat-bubble.premium .chat-text,
+.chat-bubble.premium .chat-sender-name,
+.chat-bubble.premium .chat-time,
+.chat-bubble.premium .chat-edited-tag {
+  color: #ffffff !important;
+}
+.chat-bubble.premium .chat-sender-name {
+  text-shadow: 0px 0px 4px rgba(255, 255, 255, 0.2);
+}
+.chat-bubble.premium .chat-tick {
+  color: #64ffda !important; /* Premium teal color for read ticks */
+}
