@@ -1388,10 +1388,10 @@ function renderAppLimitsList(apps) {
           <div style="font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);">${app.appName}</div>
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
             <input type="range" min="5" max="240" step="5" value="${app.limitMinutes}" 
-                   style="flex: 1; height: 6px; background: var(--bg-muted); border-radius: 3px; accent-color: #a855f7; cursor: pointer;"
+                   style="flex: 1; min-width: 0; width: 100%; height: 6px; background: var(--bg-muted); border-radius: 3px; accent-color: #a855f7; cursor: pointer;"
                    oninput="updateLimitLabel(this, '${app.packageName}')" 
                    onchange="saveLimitValue('${app.packageName}', parseInt(this.value, 10))" />
-            <span class="limit-val" style="font-weight: 900; font-size: 12px; color: #a855f7; min-width: 40px; text-align: right;">${app.limitMinutes}m</span>
+            <span class="limit-val" style="font-weight: 900; font-size: 12px; color: #a855f7; min-width: 42px; text-align: right; flex-shrink: 0; margin-left: 4px;">${app.limitMinutes}m</span>
           </div>
         </div>
         <button class="btn-ghost ripple" style="padding: 6px; border: 1px solid var(--red); color: var(--red); border-radius: 6px; flex-shrink: 0;" onclick="removeAppFromLimits('${app.packageName}')">
