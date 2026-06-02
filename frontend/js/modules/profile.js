@@ -2087,35 +2087,73 @@ function renderMyLimits(container, data) {
 
 window.openMyLimitsModal = openMyLimitsModal;
 
-// Tab switcher for Profile settings modal
-function switchProfileTab(tabId, btn) {
-  // Hide all tab contents
-  const contents = document.querySelectorAll('.profile-tab-content');
-  contents.forEach(el => el.style.display = 'none');
-  
-  // Show active tab content
-  const activeTab = document.getElementById(tabId);
-  if (activeTab) activeTab.style.display = 'block';
-  
-  // Update button states in tab header
-  const buttons = document.querySelectorAll('.profile-tab-btn');
-  buttons.forEach(b => {
-    b.classList.remove('active');
-    b.style.background = 'var(--bg-card)';
-    b.style.color = 'var(--text)';
-  });
-  
-  // Highlight active button
-  btn.classList.add('active');
-  btn.style.background = 'var(--yellow)';
-  btn.style.color = 'var(--black)';
-  
-  // Trigger Lucide icons refreshing for newly shown tab if required
-  if (activeTab && window.lucide) {
-    lucide.createIcons({ root: activeTab });
+// Accordion Toggle handler for Profile & Settings
+async function toggleProfileCollapse(id, headerBtn) {
+  const content = document.getElementById(id);
+  if (!content) return;
+
+  const isHidden = content.style.display === 'none' || !content.style.display;
+
+  // Toggle display
+  content.style.display = isHidden ? 'block' : 'none';
+
+  // Toggle visual active state on the button to make it look active (yellow background, bold)
+  if (isHidden) {
+    headerBtn.classList.add('active');
+    headerBtn.style.background = 'var(--yellow)';
+    headerBtn.style.color = 'var(--black)';
+    
+    const icon = headerBtn.querySelector('.collapse-icon');
+    if (icon) icon.textContent = '▲';
+    
+    // Load inline limits if limits accordion is opened
+    if (id === 'profile-collapse-limits') {
+      await loadProfileLimitsInline();
+    }
+  } else {
+    headerBtn.classList.remove('active');
+    headerBtn.style.background = 'var(--bg-muted)';
+    headerBtn.style.color = 'var(--text)';
+    
+    const icon = headerBtn.querySelector('.collapse-icon');
+    if (icon) icon.textContent = '▼';
+  }
+
+  // Refresh Lucide icons inside content container if present
+  if (isHidden && window.lucide) {
+    lucide.createIcons({ root: content });
   }
 }
 
-window.switchProfileTab = switchProfileTab;
+async function loadProfileLimitsInline() {
+  const container = document.getElementById('profile-limits-inline-container');
+  if (!container) return;
+
+  // Render a sleek brutalist inline loading indicator
+  container.innerHTML = `
+    <div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+      <div class="spinner-ring" style="width:24px;height:24px;border-width:3px;margin:0 auto 12px;border-color:#a855f7 #0000 #0000 #0000;"></div>
+      Loading Live limits...
+    </div>
+  `;
+
+  try {
+    const data = await apiFetch(`${window.API}/api/subscriptions/my-limits`);
+    if (!data || !data.limits) throw new Error('No limits data');
+    renderMyLimits(container, data);
+  } catch (err) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:16px; color:var(--red); font-size:12px; font-weight:800; border: 2px dashed var(--red); border-radius: 8px; background: rgba(239, 68, 68, 0.05);">
+        <i data-lucide="alert-circle" style="width:20px;height:20px;margin-bottom:6px;display:block;margin-left:auto;margin-right:auto;color:var(--red);"></i>
+        Failed to load limits. Please check your connection.
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: container });
+    console.error('loadProfileLimitsInline error:', err);
+  }
+}
+
+window.toggleProfileCollapse = toggleProfileCollapse;
+window.loadProfileLimitsInline = loadProfileLimitsInline;
 
 console.log("[Module] profile.js loaded and Profile bound to window");
