@@ -290,6 +290,23 @@ window.userId = localStorage.getItem('userId') || '';
 window.userName = localStorage.getItem('userName') || 'User';
 window.userProfilePicture = localStorage.getItem('userProfilePicture') || '';
 
+// Sync premium status from IndexedDB cache immediately on boot
+if (window.userId) {
+  (async () => {
+    try {
+      if (window.localDb) {
+        const cached = await window.localDb.userProfile.get(window.userId);
+        if (cached && cached.isPremium !== undefined) {
+          localStorage.setItem('isPremium', cached.isPremium.toString());
+          localStorage.setItem('subscriptionTier', cached.isPremium ? 'premium' : 'free');
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load cached premium state on boot:', e);
+    }
+  })();
+}
+
 // ── Sync Username if missing ───────────────────────────────
 if (window.userId && !localStorage.getItem('userUsername')) {
   window.addEventListener('DOMContentLoaded', () => {

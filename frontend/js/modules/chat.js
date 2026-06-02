@@ -2767,6 +2767,10 @@ async function proactiveSync(force = false) {
       } else {
         localStorage.setItem('userMutedGroups', '[]');
       }
+      if (profile.isPremium !== undefined) {
+        localStorage.setItem('isPremium', profile.isPremium.toString());
+        localStorage.setItem('subscriptionTier', profile.isPremium ? 'premium' : 'free');
+      }
       await cacheProfileImagesOffline(profile);
       await localDb.userProfile.put(profile);
       
