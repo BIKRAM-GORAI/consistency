@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Official Usage and Limitations Guide for Consistency Daily. Check your daily quotas, resets, and premium boosts.">
+  <title>Usage &amp; Limitations Guide | Consistency Daily</title>
+
+  <!-- Safe area notch support for Native wrappers -->
+  <script>
+    if (navigator.userAgent.includes("CapacitorNative/Android")) {
+      document.documentElement.classList.add('native-android');
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('native-android');
+      });
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --yellow: #facc15;
+      --orange: #f97316;
+      --pink: #ec4899;
+      --purple: #a855f7;
+      --teal: #14b8a6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --black: #0a0a0a;
+      --white: #ffffff;
+      
+      /* Light Brutalist Default */
+      --bg: #ebe4e4;
+      --bg-card: #ffffff;
+      --bg-muted: #f5f2eb;
+      --text: #0a0a0a;
+      --text-muted: #4a4a4a;
+      --border: 3px solid #0a0a0a;
+      --border-2: 2px solid #0a0a0a;
+      --shadow: 5px 5px 0px #0a0a0a;
+      --shadow-sm: 3px 3px 0px #0a0a0a;
+      --r-lg: 12px;
+      --r-md: 8px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #212121;
+      --bg-card: #2d2d2d;
+      --bg-muted: #292929;
+      --text: #e0e0e0;
+      --text-muted: #b0b0b0;
+      --white: #2d2d2d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding-bottom: 60px;
+      overflow-x: hidden;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* ── Header Navbar ── */
+    .nav-header {
+      background: var(--bg-card);
+      border-bottom: 3.5px solid var(--black);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      color: var(--black);
+      border: var(--border-2);
+      padding: 8px 16px;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 3px 3px 0 var(--black);
+      border-radius: var(--r-md);
+      transition: all 0.1s;
+    }
+
+    .btn-back:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+      background: var(--yellow);
+    }
+
+    .nav-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    body.native-android .nav-header,
+    html.native-android .nav-header {
+      padding-top: calc(16px + env(safe-area-inset-top, 24px)) !important;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* ── Intro Card ── */
+    .intro-card {
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .intro-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .intro-desc {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* ── Help Sections Grid ── */
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .guide-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .guide-card {
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: transform 0.15s;
+    }
+
+    .guide-card:hover {
+      transform: translate(-3px, -3px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2.5px solid var(--black);
+      padding-bottom: 12px;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: var(--border-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .limits-comparison {
+      display: flex;
+      gap: 12px;
+      background: var(--bg-muted);
+      border: var(--border-2);
+      border-radius: var(--r-md);
+      padding: 12px;
+    }
+
+    .limit-pill {
+      flex: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .pill-label {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .pill-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .text-free { color: var(--text-muted); }
+    .text-premium { color: var(--purple); }
+
+    .rule-box {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .rule-box ul {
+      margin-left: 20px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-banner {
+      background: rgba(168, 85, 247, 0.1);
+      border: 2px dashed var(--purple);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-banner-warn {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--red);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="nav-header">
+    <a href="index.html" class="btn-back"><i data-lucide="arrow-left"></i> <span>Back to App</span></a>
+    <h2 class="nav-title"><i data-lucide="book-open" style="color: var(--purple);"></i> Guide</h2>
+    <div style="width: 120px; display: none;" class="native-spacer"></div>
+  </header>
+
+  <div class="container">
+    <!-- Intro Card -->
+    <div class="intro-card">
+      <h1 class="intro-title">Usage &amp; Limitations Guide</h1>
+      <p class="intro-desc">Welcome to the official limits reference for Consistency Daily. To protect server computing resources and cover dynamic API hosting bills, quotas are established for computational-heavy features. Check all rules, limits, and relative premium boosts below.</p>
+    </div>
+
+    <!-- Grid Layout of Help Cards -->
+    <div class="guide-grid">
+      <!-- 1. AI Summaries & Insights -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--purple);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--purple); color: #fff;"><i data-lucide="sparkles"></i></div>
+          <h3 class="card-title">AI Summaries &amp; Bio</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Base Free</span>
+            <span class="pill-value text-free">15 / Day</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Premium Boost</span>
+            <span class="pill-value text-premium">25 / Day</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Daily AI features include goal translations, summaries, and smart productivity recalibrations.
+          <ul>
+            <li><strong>7-Day Summary Cards</strong>: Constrained strictly to <strong>2 creations/day</strong> for Free users and <strong>4 creations/day</strong> for Premium users.</li>
+            <li><strong>30-Day Wrap-Up Cards</strong>: Limited to <strong>2 summaries/month</strong> for Free and <strong>4 summaries/month</strong> for Premium.</li>
+            <li><strong>Productivity Bio Cooldown</strong>: Recalculating your AI biography features a strict <strong>12-hour cooldown timer</strong> to preserve tokens.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 2. Handwriting Photo Scanner -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--teal);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--teal); color: #000;"><i data-lucide="camera"></i></div>
+          <h3 class="card-title">Handwriting Scanner</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Base Free</span>
+            <span class="pill-value text-free">15 / Day</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Premium Boost</span>
+            <span class="pill-value text-premium">25 / Day</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Convert offline handwritten habit notes directly into digital actionable items using advanced high-fidelity image OCR.
+          <ul>
+            <li>File upload size is limited to <strong>5MB maximum</strong>.</li>
+            <li>Images are compressed automatically on device before transmission to ensure fast uploads.</li>
+            <li>Make sure to use clean handwriting with reasonable room lighting to ensure high-accuracy character recognition.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 3. Voice to Task Transcriber -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--pink);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--pink); color: #fff;"><i data-lucide="mic"></i></div>
+          <h3 class="card-title">Voice-to-Task</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Base Free</span>
+            <span class="pill-value text-free">15 / Day</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Premium Boost</span>
+            <span class="pill-value text-premium">25 / Day</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Record vocal thoughts or speak habits dynamically, converting them into digital lists instantly.
+          <ul>
+            <li>Voice inputs are analyzed using highly precise speech-to-text translators.</li>
+            <li>A reliable network connection is required to transmit and transcribe speech packets.</li>
+            <li>Background ambient noises may decrease transcript readability; please speak clearly.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 4. Monthly Grace Protection -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--blue);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--blue); color: #fff;"><i data-lucide="shield"></i></div>
+          <h3 class="card-title">Monthly Grace Days</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Base Free</span>
+            <span class="pill-value text-free">2 / Month</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Premium Boost</span>
+            <span class="pill-value text-premium">6 / Month</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Grace days protect your hard-earned streaks when you miss ticking off checklist boxes before midnight.
+          <div class="alert-banner alert-banner-warn" style="margin-top: 12px;">
+            <i data-lucide="alert-triangle" style="flex-shrink:0;"></i>
+            <span><strong>CRITICAL CALENDAR MONTH RULE</strong>: Streak protection applies strictly to the current active calendar month. Previous months are entirely excluded from grace applications.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. LeetCode Synchronization -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--orange);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--orange); color: #fff;"><i data-lucide="target"></i></div>
+          <h3 class="card-title">LeetCode Integration</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Base Free</span>
+            <span class="pill-value text-free">3 Changes</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Premium Boost</span>
+            <span class="pill-value text-premium">6 Changes</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Sync your LeetCode coding solves directly into your habit tracking stats dynamically!
+          <ul>
+            <li>Verification bio codes expire after <strong>10 minutes</strong>.</li>
+            <li>Username change counters are tracked lifetime-wide per account to prevent gaming streak stats.</li>
+            <li>Solved count syncing is completely autonomous once the profile verification bio checks pass.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 6. Group Chats & Media -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--green);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--green); color: #000;"><i data-lucide="message-square"></i></div>
+          <h3 class="card-title">Live Chat &amp; Media</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Base Free</span>
+            <span class="pill-value text-free">20 Media/Hr</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Premium Boost</span>
+            <span class="pill-value text-premium">30 Media/Hr</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Share files, media, and voice messages within group boards in real time.
+          <ul>
+            <li><strong>Chat Images</strong>: Max 20 image uploads/hour for Free users; boosted to 30 uploads/hour for Premium builders.</li>
+            <li><strong>Voice Notes</strong>: Voice message recordings are strictly limited to <strong>60 seconds maximum duration</strong> to save hosting disk spaces.</li>
+            <li><strong>Premium Glows</strong>: Active Premium contributors feature dynamic shimmering avatar rings and gradients visible to all chat participants.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Scripts -->
+  <script src="libs/lucide.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sync theme seamlessly from localStorage
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+
+      // Initialise icons
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
