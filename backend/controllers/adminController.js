@@ -1289,6 +1289,71 @@ module.exports = {
         return res.status(404).json({ message: 'Report not found.' });
       }
 
+      // Automated Email Notification on Work On (In Progress) and Resolve (Resolved)
+      if (status === 'In Progress' || status === 'Resolved') {
+        try {
+          const isResolving = status === 'Resolved';
+          const subject = isResolving 
+            ? `[RESOLVED] Issue Report status updated: Fixed!` 
+            : `[IN PROGRESS] We're working on your reported issue!`;
+            
+          const headerColor = isResolving ? '#22c55e' : '#3b82f6';
+          const statusText = isResolving ? 'RESOLVED & FIXED' : 'IN PROGRESS (BEING WORKED UPON)';
+          const statusMsg = isResolving 
+            ? 'Great news! The issue you reported has been successfully resolved and fixed.' 
+            : 'Thank you for reporting this issue. We have reviewed your ticket and our development team is now actively working on a fix.';
+          const boxBg = isResolving ? '#f0fdf4' : '#eff6ff';
+
+          await sendEmail({
+            to: report.email,
+            subject: subject,
+            html: `
+              <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; border: 3px solid #0a0a0a; padding: 24px; border-radius: 12px; background: #ffffff; box-shadow: 6px 6px 0px #0a0a0a; margin: 20px auto;">
+                <div style="background: ${headerColor}; padding: 16px; border: 3px solid #0a0a0a; border-radius: 8px; box-shadow: 3px 3px 0 #0a0a0a; margin-bottom: 20px; text-align: center;">
+                  <h2 style="margin: 0; text-transform: uppercase; font-family: sans-serif; font-size: 20px; color: #ffffff; text-shadow: 1px 1px 0px #000; letter-spacing: 0.5px;">
+                    ${isResolving ? '🐞 Issue Fixed!' : '🛠️ Working On Your Report!'}
+                  </h2>
+                </div>
+                
+                <p style="font-size: 15px; font-weight: 700; color: #0a0a0a;">Hi ${report.username || 'User'},</p>
+                <p style="font-size: 14px; color: #333; line-height: 1.5; font-weight: 600;">
+                  ${statusMsg}
+                </p>
+                
+                <div style="background: ${boxBg}; border: 3px solid #0a0a0a; border-radius: 8px; padding: 18px; margin: 24px 0; box-shadow: 4px 4px 0px #0a0a0a;">
+                  <h3 style="margin: 0 0 12px 0; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #555; border-bottom: 1.5px dashed #0a0a0a; padding-bottom: 6px; letter-spacing: 0.5px;">Ticket Specifications</h3>
+                  <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #0a0a0a;">
+                    <b>Ticket ID:</b> <span style="font-family: monospace; font-size: 12px; background: #e5e7eb; padding: 2px 6px; border: 1.5px solid #0a0a0a; border-radius: 4px;">#${report._id}</span>
+                  </p>
+                  <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #0a0a0a;">
+                    <b>Category:</b> <span style="background: #fff; padding: 2px 6px; border: 1.5px solid #0a0a0a; border-radius: 4px; font-weight: 800;">${report.category}</span>
+                  </p>
+                  <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #0a0a0a;">
+                    <b>Current Status:</b> <span style="background: ${headerColor}; color: white; padding: 2px 6px; border: 1.5px solid #0a0a0a; border-radius: 4px; font-weight: 800; font-size: 11px;">${statusText}</span>
+                  </p>
+                  <div style="margin-top: 12px; padding: 12px; background: #ffffff; border: 2px solid #0a0a0a; border-radius: 6px; font-style: italic; font-size: 13.5px; color: #333; line-height: 1.4; font-weight: 600;">
+                    "${report.description}"
+                  </div>
+                </div>
+
+                <p style="font-size: 14px; font-weight: 600; color: #555;">
+                  Thanks for taking the time to report this and for helping us refine and improve Consistency Tracker!
+                </p>
+                
+                <hr style="border: none; border-top: 2px dashed #e5e7eb; margin: 24px 0;">
+                
+                <div style="text-align: center; font-size: 13px; font-weight: 800; color: #666; text-transform: uppercase;">
+                  The Consistency Team
+                </div>
+              </div>
+            `
+          });
+          console.log(`[Email Service] Notification email successfully sent to user: ${report.email} for report status update.`);
+        } catch (emailErr) {
+          console.error('[ADMIN EMAIL ERROR] Failed to send report update email:', emailErr);
+        }
+      }
+
       res.json({ message: 'Report status updated successfully.', report });
     } catch (err) {
       console.error('[ADMIN ERROR] updateReportStatus:', err);
