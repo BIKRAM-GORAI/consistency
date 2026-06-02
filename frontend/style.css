@@ -4538,6 +4538,8 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 
 /* ── Chat Modal Footer (Glassmorphism) ── */
 #modal-group-chat .modal-footer {
+  position: relative;
+  z-index: 10;
   background: rgba(255, 255, 255, 0.7) !important;
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
