@@ -54,6 +54,15 @@ exports.getSubscriptionStatus = async (req, res) => {
     const baseGrace = parseInt(process.env.FREE_MONTHLY_GRACE_LIMIT, 10) || 2;
     const premiumGrace = parseInt(process.env.PREMIUM_MONTHLY_GRACE_LIMIT, 10) || 6;
 
+    const baseWeeklySumDaily = parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_FREE, 10) || 2;
+    const premiumWeeklySumDaily = parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_PREMIUM, 10) || 4;
+
+    const baseMonthlySumDaily = parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_FREE, 10) || 1;
+    const premiumMonthlySumDaily = parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_PREMIUM, 10) || 1;
+
+    const baseMonthlySumMonthly = parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_FREE, 10) || 2;
+    const premiumMonthlySumMonthly = parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_PREMIUM, 10) || 4;
+
     let priceMonthly = parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10);
     let priceAnnual = parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
     if (isNaN(priceMonthly)) priceMonthly = 299;
@@ -85,7 +94,10 @@ exports.getSubscriptionStatus = async (req, res) => {
         chat: { base: baseChat, premium: premiumChat },
         template: { base: baseTemplate, premium: premiumTemplate },
         leetcode: { base: baseLeetcode, premium: premiumLeetcode },
-        grace: { base: baseGrace, premium: premiumGrace }
+        grace: { base: baseGrace, premium: premiumGrace },
+        weeklySummaryDaily: { base: baseWeeklySumDaily, premium: premiumWeeklySumDaily },
+        monthlySummaryDaily: { base: baseMonthlySumDaily, premium: premiumMonthlySumDaily },
+        monthlySummaryMonthly: { base: baseMonthlySumMonthly, premium: premiumMonthlySumMonthly }
       }
     });
   } catch (error) {
@@ -167,6 +179,33 @@ exports.getMyLimits = async (req, res) => {
     if (nowHour > chatResetHour) chatCount = 0;
     const chatLeft = Math.max(0, chatTotal - chatCount);
 
+    // ── Weekly Summary ─────────────────────────────────────────
+    const weeklySumLimit = isPremium
+      ? (parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_PREMIUM, 10) || 4)
+      : (parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_FREE, 10) || 2);
+    let weeklySumCount = user.weeklySummaryDailyCount || 0;
+    const weeklySumLastReset = user.weeklySummaryResetTime ? new Date(user.weeklySummaryResetTime) : new Date(0);
+    if (now.toDateString() !== weeklySumLastReset.toDateString()) weeklySumCount = 0;
+    const weeklySumLeft = Math.max(0, weeklySumLimit - weeklySumCount);
+
+    // ── Monthly Summary (Daily Limit) ──────────────────────────
+    const monthlySumDailyLimit = isPremium
+      ? (parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_PREMIUM, 10) || 1)
+      : (parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_FREE, 10) || 1);
+    let monthlySumDailyCount = user.monthlySummaryDailyCount || 0;
+    const monthlySumDailyLastReset = user.monthlySummaryResetTime ? new Date(user.monthlySummaryResetTime) : new Date(0);
+    if (now.toDateString() !== monthlySumDailyLastReset.toDateString()) monthlySumDailyCount = 0;
+    const monthlySumDailyLeft = Math.max(0, monthlySumDailyLimit - monthlySumDailyCount);
+
+    // ── Monthly Summary (Monthly Quota) ────────────────────────
+    const monthlySumMonthlyLimit = isPremium
+      ? (parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_PREMIUM, 10) || 4)
+      : (parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_FREE, 10) || 2);
+    let monthlySumMonthlyCount = user.monthlySummaryMonthlyCount || 0;
+    const monthlySumMonthlyLastReset = user.monthlySummaryMonthlyResetTime ? new Date(user.monthlySummaryMonthlyResetTime) : new Date(0);
+    if (now.getMonth() !== monthlySumMonthlyLastReset.getMonth() || now.getFullYear() !== monthlySumMonthlyLastReset.getFullYear()) monthlySumMonthlyCount = 0;
+    const monthlySumMonthlyLeft = Math.max(0, monthlySumMonthlyLimit - monthlySumMonthlyCount);
+
     // Compute "resets at" labels
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -187,16 +226,28 @@ exports.getMyLimits = async (req, res) => {
     const leetcodeLimitFree = parseInt(process.env.MAX_USERNAME_CHANGES, 10) || 3;
     const leetcodeLimitPremium = leetcodeLimitFree + (parseInt(process.env.PREMIUM_ADDITIONAL_LEETCODE_LIMIT, 10) || 3);
 
+    const weeklyLimitFree = parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_FREE, 10) || 2;
+    const weeklyLimitPremium = parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_PREMIUM, 10) || 4;
+
+    const monthlyDailyLimitFree = parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_FREE, 10) || 1;
+    const monthlyDailyLimitPremium = parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_PREMIUM, 10) || 1;
+
+    const monthlyMonthlyLimitFree = parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_FREE, 10) || 2;
+    const monthlyMonthlyLimitPremium = parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_PREMIUM, 10) || 4;
+
     res.status(200).json({
       isPremium,
       tier: user.subscriptionTier,
       limits: {
-        aiInsights:   { used: aiCount,      total: aiTotal,     left: aiLeft,       resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
-        photoScan:    { used: photoCount,   total: photoTotal,  left: photoLeft,    resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
-        voiceToTask:  { used: voiceCount,   total: voiceLimit,  left: voiceLeft,    resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
-        graceDays:    { used: graceCount,   total: graceLimit,  left: graceLeft,    resetsAt: nextMonth.toISOString(),  resetPeriod: 'monthly' },
-        leetcode:     { used: leetcodeUsed, total: leetcodeLimit, left: leetcodeLeft, resetsAt: null,                   resetPeriod: 'permanent' },
-        chatMedia:    { used: chatCount,    total: chatTotal,   left: chatLeft,     resetsAt: nextHour.toISOString(),   resetPeriod: 'hourly' },
+        aiInsights:          { used: aiCount,              total: aiTotal,               left: aiLeft,               resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        photoScan:           { used: photoCount,           total: photoTotal,            left: photoLeft,            resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        voiceToTask:         { used: voiceCount,           total: voiceLimit,            left: voiceLeft,            resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        graceDays:           { used: graceCount,           total: graceLimit,            left: graceLeft,            resetsAt: nextMonth.toISOString(),  resetPeriod: 'monthly' },
+        leetcode:            { used: leetcodeUsed,         total: leetcodeLimit,         left: leetcodeLeft,         resetsAt: null,                     resetPeriod: 'permanent' },
+        chatMedia:           { used: chatCount,            total: chatTotal,             left: chatLeft,             resetsAt: nextHour.toISOString(),   resetPeriod: 'hourly' },
+        weeklySummary:       { used: weeklySumCount,       total: weeklySumLimit,        left: weeklySumLeft,        resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        monthlySummaryDaily: { used: monthlySumDailyCount, total: monthlySumDailyLimit,  left: monthlySumDailyLeft,  resetsAt: tomorrow.toISOString(),   resetPeriod: 'daily' },
+        monthlySummary:      { used: monthlySumMonthlyCount, total: monthlySumMonthlyLimit, left: monthlySumMonthlyLeft, resetsAt: nextMonth.toISOString(),  resetPeriod: 'monthly' },
       },
       config: {
         aiDailyLimitFree: aiLimit,
@@ -215,7 +266,16 @@ exports.getMyLimits = async (req, res) => {
         leetcodeLimitPremium: leetcodeLimitPremium,
         
         chatMediaLimitFree: chatLimit,
-        chatMediaLimitPremium: chatLimit + chatPremiumBoost
+        chatMediaLimitPremium: chatLimit + chatPremiumBoost,
+
+        weeklySummaryLimitDailyFree: weeklyLimitFree,
+        weeklySummaryLimitDailyPremium: weeklyLimitPremium,
+        
+        monthlySummaryLimitDailyFree: monthlyDailyLimitFree,
+        monthlySummaryLimitDailyPremium: monthlyDailyLimitPremium,
+        
+        monthlySummaryLimitMonthlyFree: monthlyMonthlyLimitFree,
+        monthlySummaryLimitMonthlyPremium: monthlyMonthlyLimitPremium
       }
     });
   } catch (error) {

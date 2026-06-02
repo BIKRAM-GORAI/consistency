@@ -54,14 +54,136 @@ const incrementAiLimit = async (user) => {
 };
 
 /**
- * GET /api/ai/generations-left
- * Fetches the remaining daily AI generations count.
+ * Checks the user's weekly summary daily generation count, resetting if a calendar day has passed.
  */
+const checkWeeklySummaryLimit = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.weeklySummaryResetTime ? new Date(user.weeklySummaryResetTime) : new Date(0);
+
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.weeklySummaryDailyCount = 0;
+    user.weeklySummaryResetTime = now;
+    await user.save();
+  }
+
+  const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+  const limit = isPremium
+    ? (parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_PREMIUM, 10) || 4)
+    : (parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_FREE, 10) || 2);
+
+  const generationsLeft = Math.max(0, limit - user.weeklySummaryDailyCount);
+  return { user, generationsLeft, limit };
+};
+
+/**
+ * Increments the weekly summary daily count.
+ */
+const incrementWeeklySummaryLimit = async (user) => {
+  user.weeklySummaryDailyCount += 1;
+  await user.save();
+  const now = new Date();
+  const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+  const limit = isPremium
+    ? (parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_PREMIUM, 10) || 4)
+    : (parseInt(process.env.LIMIT_WEEKLY_SUM_DAILY_FREE, 10) || 2);
+  return Math.max(0, limit - user.weeklySummaryDailyCount);
+};
+
+/**
+ * Checks the user's monthly summary daily and monthly limits, resetting if needed.
+ */
+const checkMonthlySummaryLimits = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+
+  // Daily Reset
+  const lastDailyReset = user.monthlySummaryResetTime ? new Date(user.monthlySummaryResetTime) : new Date(0);
+  if (now.toDateString() !== lastDailyReset.toDateString()) {
+    user.monthlySummaryDailyCount = 0;
+    user.monthlySummaryResetTime = now;
+  }
+
+  // Monthly Reset
+  const lastMonthlyReset = user.monthlySummaryMonthlyResetTime ? new Date(user.monthlySummaryMonthlyResetTime) : new Date(0);
+  if (now.getMonth() !== lastMonthlyReset.getMonth() || now.getFullYear() !== lastMonthlyReset.getFullYear()) {
+    user.monthlySummaryMonthlyCount = 0;
+    user.monthlySummaryMonthlyResetTime = now;
+  }
+
+  if (user.isModified('monthlySummaryDailyCount') || user.isModified('monthlySummaryMonthlyCount')) {
+    await user.save();
+  }
+
+  const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+  const dailyLimit = isPremium
+    ? (parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_PREMIUM, 10) || 1)
+    : (parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_FREE, 10) || 1);
+
+  const monthlyLimit = isPremium
+    ? (parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_PREMIUM, 10) || 4)
+    : (parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_FREE, 10) || 2);
+
+  const dailyLeft = Math.max(0, dailyLimit - user.monthlySummaryDailyCount);
+  const monthlyLeft = Math.max(0, monthlyLimit - user.monthlySummaryMonthlyCount);
+
+  return { user, dailyLeft, dailyLimit, monthlyLeft, monthlyLimit };
+};
+
+/**
+ * Increments the monthly summary daily and monthly limits.
+ */
+const incrementMonthlySummaryLimits = async (user) => {
+  user.monthlySummaryDailyCount += 1;
+  user.monthlySummaryMonthlyCount += 1;
+  await user.save();
+
+  const now = new Date();
+  const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+  const dailyLimit = isPremium
+    ? (parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_PREMIUM, 10) || 1)
+    : (parseInt(process.env.LIMIT_MONTHLY_SUM_DAILY_FREE, 10) || 1);
+
+  const monthlyLimit = isPremium
+    ? (parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_PREMIUM, 10) || 4)
+    : (parseInt(process.env.LIMIT_MONTHLY_SUM_MONTHLY_FREE, 10) || 2);
+
+  const dailyLeft = Math.max(0, dailyLimit - user.monthlySummaryDailyCount);
+  const monthlyLeft = Math.max(0, monthlyLimit - user.monthlySummaryMonthlyCount);
+
+  return { dailyLeft, monthlyLeft };
+};
+
 exports.getGenerationsLeft = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { generationsLeft, limit } = await checkAiLimit(userId);
-    res.status(200).json({ generationsLeft, limit });
+    const { generationsLeft: weeklyGenerationsLeft, limit: weeklyLimit } = await checkWeeklySummaryLimit(userId);
+    const { dailyLeft: monthlyDailyLeft, dailyLimit: monthlyDailyLimit, monthlyLeft: monthlyMonthlyLeft, monthlyLimit: monthlyMonthlyLimit } = await checkMonthlySummaryLimits(userId);
+    res.status(200).json({
+      generationsLeft,
+      limit,
+      weeklyGenerationsLeft,
+      weeklyLimit,
+      monthlyDailyLeft,
+      monthlyDailyLimit,
+      monthlyMonthlyLeft,
+      monthlyMonthlyLimit
+    });
   } catch (error) {
     console.error('[Vercel-Backend] getGenerationsLeft error:', error.message);
     res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
@@ -390,11 +512,11 @@ exports.generateWeeklySummary = async (req, res) => {
       return res.status(400).json({ message: 'Anchor Day ID parameter is required.' });
     }
 
-    // 1. Enforce Daily AI Summary Rate Limiting
-    const { user, generationsLeft, limit } = await checkAiLimit(userId);
-    if (generationsLeft <= 0) {
+    // 1. Enforce Weekly AI Summary Rate Limiting
+    const { user, generationsLeft: weeklyLeft, limit: weeklyLimit } = await checkWeeklySummaryLimit(userId);
+    if (weeklyLeft <= 0) {
       return res.status(429).json({
-        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+        message: `Daily limit for 7-day summaries reached. You can generate up to ${weeklyLimit} weekly summaries per day.`
       });
     }
 
@@ -570,12 +692,14 @@ exports.generateWeeklySummary = async (req, res) => {
     
     const savedSummary = await weeklySummary.save();
 
-    // 2. Increment Daily AI Summary counter upon successful generation
-    const remaining = await incrementAiLimit(user);
+    // 2. Increment Weekly AI Summary counter upon successful generation
+    const finalWeeklyLeft = await incrementWeeklySummaryLimit(user);
+    const { generationsLeft: dailyLeft } = await checkAiLimit(userId);
 
     res.status(200).json({
       ...savedSummary.toObject(),
-      generationsLeft: remaining
+      weeklyGenerationsLeft: finalWeeklyLeft,
+      generationsLeft: dailyLeft
     });
 
   } catch (error) {
@@ -642,11 +766,16 @@ exports.generateMonthlySummary = async (req, res) => {
       return res.status(400).json({ message: 'Anchor Day ID parameter is required.' });
     }
 
-    // 1. Enforce Daily AI Summary Rate Limiting
-    const { user, generationsLeft, limit } = await checkAiLimit(userId);
-    if (generationsLeft <= 0) {
+    // 1. Enforce Monthly AI Summary Rate Limiting (Both Daily limit of 1 and Monthly quota)
+    const { user, dailyLeft, dailyLimit, monthlyLeft, monthlyLimit } = await checkMonthlySummaryLimits(userId);
+    if (dailyLeft <= 0) {
       return res.status(429).json({
-        message: `Daily AI generation limit reached. You can generate up to ${limit} insights per day.`
+        message: `Daily limit for 30-day summaries reached. You can generate up to ${dailyLimit} monthly summaries per day.`
+      });
+    }
+    if (monthlyLeft <= 0) {
+      return res.status(429).json({
+        message: `Monthly quota for 30-day summaries reached. You can generate up to ${monthlyLimit} monthly summaries per month.`
       });
     }
 
@@ -830,12 +959,15 @@ exports.generateMonthlySummary = async (req, res) => {
     
     const savedSummary = await monthlySummary.save();
 
-    // 2. Increment Daily AI Summary counter upon successful generation
-    const remaining = await incrementAiLimit(user);
+    // 2. Increment Monthly AI Summary counters upon successful generation
+    const { dailyLeft: finalDailyLeft, monthlyLeft: finalMonthlyLeft } = await incrementMonthlySummaryLimits(user);
+    const { generationsLeft: dailyLeftInsight } = await checkAiLimit(userId);
 
     res.status(200).json({
       ...savedSummary.toObject(),
-      generationsLeft: remaining
+      monthlyDailyLeft: finalDailyLeft,
+      monthlyMonthlyLeft: finalMonthlyLeft,
+      generationsLeft: dailyLeftInsight
     });
 
   } catch (error) {

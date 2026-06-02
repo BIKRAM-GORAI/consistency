@@ -1355,8 +1355,28 @@ setTimeout(() => {
 async function fetchAiLimit() {
   try {
     const res = await apiFetch(`${window.API}/api/ai/generations-left`);
-    if (res && typeof res.generationsLeft !== 'undefined') {
-      window.generationsLeft = res.generationsLeft;
+    if (res) {
+      if (typeof res.generationsLeft !== 'undefined') {
+        window.generationsLeft = res.generationsLeft;
+      }
+      if (typeof res.weeklyGenerationsLeft !== 'undefined') {
+        window.weeklyGenerationsLeft = res.weeklyGenerationsLeft;
+      }
+      if (typeof res.weeklyLimit !== 'undefined') {
+        window.weeklyLimit = res.weeklyLimit;
+      }
+      if (typeof res.monthlyDailyLeft !== 'undefined') {
+        window.monthlyDailyLeft = res.monthlyDailyLeft;
+      }
+      if (typeof res.monthlyDailyLimit !== 'undefined') {
+        window.monthlyDailyLimit = res.monthlyDailyLimit;
+      }
+      if (typeof res.monthlyMonthlyLeft !== 'undefined') {
+        window.monthlyMonthlyLeft = res.monthlyMonthlyLeft;
+      }
+      if (typeof res.monthlyMonthlyLimit !== 'undefined') {
+        window.monthlyMonthlyLimit = res.monthlyMonthlyLimit;
+      }
       updateAllAiInsightButtons();
     }
   } catch (err) {
@@ -1371,9 +1391,24 @@ async function fetchAiLimit() {
  * Updates all dynamically visible AI recap and milestone buttons with the latest daily limits count.
  */
 function updateAllAiInsightButtons() {
+  // Daily AI Insight badges
   const badges = document.querySelectorAll('.ai-limit-badge');
   badges.forEach(b => {
     b.textContent = `⚡ ${window.generationsLeft} left`;
+  });
+
+  // Weekly summary badges
+  const weeklyBadges = document.querySelectorAll('.weekly-limit-badge');
+  weeklyBadges.forEach(b => {
+    b.textContent = `⚡ ${typeof window.weeklyGenerationsLeft !== 'undefined' ? window.weeklyGenerationsLeft : '?'} left today`;
+  });
+
+  // Monthly summary badges
+  const monthlyBadges = document.querySelectorAll('.monthly-limit-badge');
+  monthlyBadges.forEach(b => {
+    const dailyL = typeof window.monthlyDailyLeft !== 'undefined' ? window.monthlyDailyLeft : '?';
+    const monthlyL = typeof window.monthlyMonthlyLeft !== 'undefined' ? window.monthlyMonthlyLeft : '?';
+    b.textContent = `⚡ ${monthlyL} left this month (Daily: ${dailyL} left)`;
   });
 }
 
@@ -1572,7 +1607,7 @@ function buildWeeklySummaryButtonCard(dayId, dateStr) {
     <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px;">7-Card Milestone Achieved!</h3>
     <p style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); max-width: 320px; margin: 0 auto 16px; line-height: 1.5;">Combine your past 7 logged cards into a single AI weekly productivity summary.</p>
     <button class="ripple" data-requires-network="true" data-original-title="Generate Weekly Wrap-Up" onclick="generateWeeklySummaryCard('${dayId}')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--black); color: var(--yellow); border: 2px solid var(--black); border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 11px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
-      <span>GENERATE WEEKLY WRAP-UP (<span class="ai-limit-badge">⚡ ${window.generationsLeft} left</span>)</span>
+      <span>GENERATE WEEKLY WRAP-UP (<span class="weekly-limit-badge">⚡ ${typeof window.weeklyGenerationsLeft !== 'undefined' ? window.weeklyGenerationsLeft : '?'} left today</span>)</span>
     </button>
   `;
   return card;
@@ -1584,6 +1619,11 @@ function buildWeeklySummaryButtonCard(dayId, dateStr) {
 async function generateWeeklySummaryCard(dayId) {
   if (!navigator.onLine) {
     showToast('Offline: Cannot generate AI wrap-up.', 'warn');
+    return;
+  }
+
+  if (typeof window.weeklyGenerationsLeft !== 'undefined' && window.weeklyGenerationsLeft <= 0) {
+    showToast('Daily limit for 7-day summaries reached.', 'warn');
     return;
   }
 
@@ -1613,10 +1653,13 @@ async function generateWeeklySummaryCard(dayId) {
     });
 
     if (responseSummary && responseSummary._id) {
+      if (typeof responseSummary.weeklyGenerationsLeft !== 'undefined') {
+        window.weeklyGenerationsLeft = responseSummary.weeklyGenerationsLeft;
+      }
       if (typeof responseSummary.generationsLeft !== 'undefined') {
         window.generationsLeft = responseSummary.generationsLeft;
-        updateAllAiInsightButtons();
       }
+      updateAllAiInsightButtons();
       window.allWeeklySummaries.push(responseSummary);
       
       // Save locally in Dexie for offline persistence
@@ -1766,7 +1809,7 @@ function buildMonthlySummaryButtonCard(dayId, dateStr) {
     <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; color: var(--text); letter-spacing: 0.5px;">30-Card Diamond Milestone!</h3>
     <p style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); max-width: 320px; margin: 0 auto 16px; line-height: 1.5;">Compile your past 30 days of consistent logging into a deep AI monthly productivity summary.</p>
     <button class="ripple" data-requires-network="true" data-original-title="Generate 30-Day Summary" onclick="generateMonthlySummaryCard('${dayId}')" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--pink); color: #fff; border: 2px solid var(--black); border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 11px; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 var(--black); transition: all 0.2s;">
-      <span>GENERATE 30-DAY SUMMARY (<span class="ai-limit-badge">⚡ ${window.generationsLeft} left</span>)</span>
+      <span>GENERATE 30-DAY SUMMARY (<span class="monthly-limit-badge">⚡ ${typeof window.monthlyMonthlyLeft !== 'undefined' ? window.monthlyMonthlyLeft : '?'} left this month (Daily: ${typeof window.monthlyDailyLeft !== 'undefined' ? window.monthlyDailyLeft : '?'} left)</span>)</span>
     </button>
   `;
   return card;
@@ -1778,6 +1821,15 @@ function buildMonthlySummaryButtonCard(dayId, dateStr) {
 async function generateMonthlySummaryCard(dayId) {
   if (!navigator.onLine) {
     showToast('Offline: Cannot generate AI monthly summary.', 'warn');
+    return;
+  }
+
+  if (typeof window.monthlyDailyLeft !== 'undefined' && window.monthlyDailyLeft <= 0) {
+    showToast('Daily limit for 30-day summaries reached.', 'warn');
+    return;
+  }
+  if (typeof window.monthlyMonthlyLeft !== 'undefined' && window.monthlyMonthlyLeft <= 0) {
+    showToast('Monthly limit for 30-day summaries reached.', 'warn');
     return;
   }
 
@@ -1807,10 +1859,16 @@ async function generateMonthlySummaryCard(dayId) {
     });
 
     if (responseSummary && responseSummary._id) {
+      if (typeof responseSummary.monthlyDailyLeft !== 'undefined') {
+        window.monthlyDailyLeft = responseSummary.monthlyDailyLeft;
+      }
+      if (typeof responseSummary.monthlyMonthlyLeft !== 'undefined') {
+        window.monthlyMonthlyLeft = responseSummary.monthlyMonthlyLeft;
+      }
       if (typeof responseSummary.generationsLeft !== 'undefined') {
         window.generationsLeft = responseSummary.generationsLeft;
-        updateAllAiInsightButtons();
       }
+      updateAllAiInsightButtons();
       window.allWeeklySummaries.push(responseSummary);
       
       // Morphs/replaces the button card with the final AI summary card smoothly
@@ -1821,7 +1879,7 @@ async function generateMonthlySummaryCard(dayId) {
       if (window.gsap) {
         gsap.from(freshCard, { scale: 0.95, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' });
       }
-      showToast(`30-Day elite insights generated! (⚡ ${window.generationsLeft} left today)`, 'success');
+      showToast(`30-Day elite insights generated! (⚡ ${window.monthlyMonthlyLeft} left this month)`, 'success');
     }
   } catch (err) {
     console.error('Failed to generate monthly summary:', err);

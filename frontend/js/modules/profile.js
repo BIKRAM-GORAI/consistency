@@ -2022,6 +2022,30 @@ function renderMyLimits(container, data) {
       bg: 'rgba(34,197,94,0.08)',
       border: '#22c55e',
     },
+    {
+      key: 'weeklySummary',
+      label: '7-Day Summary (Weekly)',
+      icon: 'sparkles',
+      color: 'var(--yellow)',
+      bg: 'rgba(250,204,21,0.08)',
+      border: '#facc15',
+    },
+    {
+      key: 'monthlySummaryDaily',
+      label: '30-Day Summary (Daily)',
+      icon: 'crown',
+      color: 'var(--pink)',
+      bg: 'rgba(236,72,153,0.08)',
+      border: '#ec4899',
+    },
+    {
+      key: 'monthlySummary',
+      label: '30-Day Summary (Monthly)',
+      icon: 'crown',
+      color: 'var(--pink)',
+      bg: 'rgba(236,72,153,0.08)',
+      border: '#ec4899',
+    },
   ];
 
   function formatReset(item) {

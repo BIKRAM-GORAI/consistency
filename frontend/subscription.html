@@ -722,13 +722,31 @@
                 6 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+3)</span>
               </td>
             </tr>
-            <tr>
+            <tr style="border-bottom: 2px solid var(--black);">
               <td style="padding: 14px; font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
                 <i data-lucide="shield" style="color: var(--purple); width: 16px; height: 16px; flex-shrink:0;"></i> Monthly Grace Days
               </td>
               <td id="limit-grace-base" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 800; text-align: center; border-left: 2px solid var(--black); border-right: 2px solid var(--black); color: var(--text-muted); background: rgba(255,255,255,0.01);">2</td>
               <td id="limit-grace-premium" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 900; text-align: right; color: var(--yellow); background: rgba(251, 204, 21, 0.02);">
                 6 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+4)</span>
+              </td>
+            </tr>
+            <tr style="border-bottom: 2px solid var(--black);">
+              <td style="padding: 14px; font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="sparkles" style="color: var(--yellow); width: 16px; height: 16px; flex-shrink:0;"></i> 7-Day Summaries (Daily)
+              </td>
+              <td id="limit-weekly-daily-base" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 800; text-align: center; border-left: 2px solid var(--black); border-right: 2px solid var(--black); color: var(--text-muted); background: rgba(255,255,255,0.01);">2</td>
+              <td id="limit-weekly-daily-premium" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 900; text-align: right; color: var(--yellow); background: rgba(251, 204, 21, 0.02);">
+                4 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+2)</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 14px; font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="crown" style="color: var(--pink); width: 16px; height: 16px; flex-shrink:0;"></i> 30-Day Summaries (Monthly)
+              </td>
+              <td id="limit-monthly-monthly-base" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 800; text-align: center; border-left: 2px solid var(--black); border-right: 2px solid var(--black); color: var(--text-muted); background: rgba(255,255,255,0.01);">2</td>
+              <td id="limit-monthly-monthly-premium" style="padding: 14px; font-family: monospace; font-size: 14px; font-weight: 900; text-align: right; color: var(--yellow); background: rgba(251, 204, 21, 0.02);">
+                4 <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+2)</span>
               </td>
             </tr>
           </tbody>
@@ -992,6 +1010,26 @@
           if (limitGraceBaseEl) limitGraceBaseEl.textContent = lc.grace.base;
           if (limitGracePremiumEl) {
             limitGracePremiumEl.innerHTML = `${lc.grace.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostGrace})</span>`;
+          }
+        }
+
+        if (lc.weeklySummaryDaily) {
+          const boostWeeklyDaily = lc.weeklySummaryDaily.premium - lc.weeklySummaryDaily.base;
+          const limitWeeklyDailyBaseEl = document.getElementById('limit-weekly-daily-base');
+          const limitWeeklyDailyPremiumEl = document.getElementById('limit-weekly-daily-premium');
+          if (limitWeeklyDailyBaseEl) limitWeeklyDailyBaseEl.textContent = lc.weeklySummaryDaily.base;
+          if (limitWeeklyDailyPremiumEl) {
+            limitWeeklyDailyPremiumEl.innerHTML = `${lc.weeklySummaryDaily.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostWeeklyDaily})</span>`;
+          }
+        }
+
+        if (lc.monthlySummaryMonthly) {
+          const boostMonthlyMonthly = lc.monthlySummaryMonthly.premium - lc.monthlySummaryMonthly.base;
+          const limitMonthlyMonthlyBaseEl = document.getElementById('limit-monthly-monthly-base');
+          const limitMonthlyMonthlyPremiumEl = document.getElementById('limit-monthly-monthly-premium');
+          if (limitMonthlyMonthlyBaseEl) limitMonthlyMonthlyBaseEl.textContent = lc.monthlySummaryMonthly.base;
+          if (limitMonthlyMonthlyPremiumEl) {
+            limitMonthlyMonthlyPremiumEl.innerHTML = `${lc.monthlySummaryMonthly.premium} <span style="color: var(--green); font-size: 11px; font-weight: 800; margin-left: 4px;">(+${boostMonthlyMonthly})</span>`;
           }
         }
       }

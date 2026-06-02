@@ -297,16 +297,39 @@
     <!-- Intro Card -->
     <div class="intro-card">
       <h1 class="intro-title">Usage &amp; Limitations Guide</h1>
-      <p class="intro-desc">Welcome to the official limits reference for Consistency Daily. To protect server computing resources and cover dynamic API hosting bills, quotas are established for computational-heavy features. Check all rules, limits, and relative premium boosts below.</p>
+      <p class="intro-desc">Welcome to the official reference guide for Consistency Daily. Learn how to get the most out of the app's features and understand your daily quotas, resets, and premium boosts.</p>
+    </div>
+
+    <!-- How to Use the App Card -->
+    <div class="intro-card" style="border-color: var(--purple); box-shadow: 5px 5px 0 var(--purple); background: var(--bg-card);">
+      <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 900; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="help-circle" style="color: var(--purple); width: 22px; height: 22px;"></i> How to Use the App
+      </h2>
+      <div style="font-size: 13.5px; font-weight: 600; color: var(--text-muted); line-height: 1.6; display: flex; flex-direction: column; gap: 12px;">
+        <p>Follow this step-by-step workflow to build unbreakable consistency and track your daily habits:</p>
+        <ol style="margin-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+          <li><strong>Start a Day Card:</strong> Click the <strong>＋ New Day Card</strong> button at the top of your dashboard to create a new sheet for today. You can customize categories and add actionable tasks.</li>
+          <li><strong>Organize & Complete:</strong> Group your habits into categories (e.g. Work, Health, Personal). Check off tasks as you complete them. Your daily progress bar updates automatically.</li>
+          <li><strong>Generate Daily AI Insights:</strong> At the end of the day (or next morning), click the <strong>✨ AI Insights</strong> button on your card. The AI will analyze your task completion rates, categories, and distraction limits to give you a rating and productivity feedback.</li>
+          <li><strong>Track Milestones:</strong>
+            <ul style="margin-left: 20px; margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+              <li>Every <strong>7 days</strong> of card logging, a <strong>7-Day Milestone</strong> button card appears. Click it to generate a consolidated Weekly Wrap-up.</li>
+              <li>Every <strong>30 days</strong> of card logging, a <strong>30-Day Diamond Milestone</strong> appears. Click it to generate a comprehensive Monthly Review.</li>
+            </ul>
+          </li>
+          <li><strong>Sync Integrations:</strong> Connect your LeetCode username under profile settings. Your coding problems solved will automatically log on your daily cards to count towards your daily productivity.</li>
+          <li><strong>Protect Your Streak:</strong> If you slacked or forgot to tick off tasks, click <strong>Apply Grace</strong> on a past card within the current month to protect your active habit streak.</li>
+        </ol>
+      </div>
     </div>
 
     <!-- Grid Layout of Help Cards -->
     <div class="guide-grid">
-      <!-- 1. AI Summaries & Insights -->
+      <!-- 1. AI Quotas & Daily Cards -->
       <div class="guide-card" style="box-shadow: 5px 5px 0 var(--purple);">
         <div class="card-header">
           <div class="card-icon" style="background: var(--purple); color: #fff;"><i data-lucide="sparkles"></i></div>
-          <h3 class="card-title">AI Quotas &amp; Daily Cards</h3>
+          <h3 class="card-title">Daily AI Insights</h3>
         </div>
         <div class="limits-comparison">
           <div class="limit-pill">
@@ -323,9 +346,35 @@
           Daily AI features include goal translations, daily card insights, summaries, and smart productivity bio recalibrations.
           <ul>
             <li><strong>AI Insights Pool</strong>: Daily Card summaries, smart translations, and bio calculations are consumed from the same daily insights pool.</li>
-            <li><strong>7-Day Summary Cards</strong>: Constrained strictly to <strong>2 summaries/day</strong> for Free users and <strong>4 summaries/day</strong> for Premium users.</li>
-            <li><strong>30-Day Recap Cards</strong>: Limited strictly to <strong>2 summaries/month</strong> for Free and <strong>4 summaries/month</strong> for Premium.</li>
             <li><strong>Productivity Bio Cooldown</strong>: Recalculating your AI biography features a strict <strong>12-hour cooldown timer</strong> to preserve tokens.</li>
+            <li><strong>Goal Analysis Cooldown</strong>: Goal definitions can be updated and translated dynamically once every <strong>6 hours</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 1b. Milestone AI Summaries (7-Day & 30-Day) -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--yellow);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--yellow); color: #000;"><i data-lucide="crown"></i></div>
+          <h3 class="card-title">Milestone AI Summaries</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">7-Day Weekly Limit</span>
+            <span class="pill-value text-free" id="quota-weekly-daily-text-summary" style="font-size: 13.5px; font-weight: 800;">2 summaries/day</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">30-Day Monthly Limit</span>
+            <span class="pill-value text-premium" id="quota-monthly-monthly-text-summary" style="font-size: 13.5px; font-weight: 800;">4 summaries/month</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Compile multiple days of consistent habit logging into high-level performance wrap-ups.
+          <ul>
+            <li><strong>7-Day Weekly Summaries</strong>: Capped at <strong id="quota-weekly-daily-free-text">2 summaries/day</strong> for Free users and <strong id="quota-weekly-daily-premium-text">4 summaries/day</strong> for Premium users.</li>
+            <li><strong>30-Day Monthly Summaries</strong>: Capped at <strong id="quota-monthly-monthly-free-text">2 summaries/month</strong> for Free users and <strong id="quota-monthly-monthly-premium-text">4 summaries/month</strong> for Premium users.</li>
+            <li><strong>30-Day Summary Daily Limit</strong>: Limited strictly to <strong id="quota-monthly-daily-text">1 summary/day</strong> for both Free and Premium users to prevent duplicate requests and server overload.</li>
           </ul>
         </div>
       </div>
@@ -594,6 +643,28 @@
             
             document.getElementById('quota-chat-free').textContent = c.chatMediaLimitFree + ' Media/Hr';
             document.getElementById('quota-chat-premium').textContent = c.chatMediaLimitPremium + ' Media/Hr';
+
+            if (document.getElementById('quota-weekly-daily-free-text')) {
+              document.getElementById('quota-weekly-daily-free-text').textContent = c.weeklySummaryLimitDailyFree + ' summaries/day';
+            }
+            if (document.getElementById('quota-weekly-daily-premium-text')) {
+              document.getElementById('quota-weekly-daily-premium-text').textContent = c.weeklySummaryLimitDailyPremium + ' summaries/day';
+            }
+            if (document.getElementById('quota-monthly-monthly-free-text')) {
+              document.getElementById('quota-monthly-monthly-free-text').textContent = c.monthlySummaryLimitMonthlyFree + ' summaries/month';
+            }
+            if (document.getElementById('quota-monthly-monthly-premium-text')) {
+              document.getElementById('quota-monthly-monthly-premium-text').textContent = c.monthlySummaryLimitMonthlyPremium + ' summaries/month';
+            }
+            if (document.getElementById('quota-monthly-daily-text')) {
+              document.getElementById('quota-monthly-daily-text').textContent = c.monthlySummaryLimitDailyFree + ' summary/day';
+            }
+            if (document.getElementById('quota-weekly-daily-text-summary')) {
+              document.getElementById('quota-weekly-daily-text-summary').textContent = `Free: ${c.weeklySummaryLimitDailyFree}/day | Prem: ${c.weeklySummaryLimitDailyPremium}/day`;
+            }
+            if (document.getElementById('quota-monthly-monthly-text-summary')) {
+              document.getElementById('quota-monthly-monthly-text-summary').textContent = `Free: ${c.monthlySummaryLimitMonthlyFree}/mo | Prem: ${c.monthlySummaryLimitMonthlyPremium}/mo`;
+            }
           }
         }
       } catch (err) {

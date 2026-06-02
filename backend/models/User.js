@@ -212,6 +212,32 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Weekly AI Summary tracking
+    weeklySummaryDailyCount: {
+      type: Number,
+      default: 0,
+    },
+    weeklySummaryResetTime: {
+      type: Date,
+      default: Date.now,
+    },
+    // Monthly AI Summary tracking
+    monthlySummaryDailyCount: {
+      type: Number,
+      default: 0,
+    },
+    monthlySummaryResetTime: {
+      type: Date,
+      default: Date.now,
+    },
+    monthlySummaryMonthlyCount: {
+      type: Number,
+      default: 0,
+    },
+    monthlySummaryMonthlyResetTime: {
+      type: Date,
+      default: Date.now,
+    },
     // AI Daily Task Extraction (Photo Upload) tracking
     aiPhotoExtractionCount: {
       type: Number,
