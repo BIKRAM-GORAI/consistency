@@ -976,7 +976,7 @@ async function handleChatSubmit(e) {
       senderName: window.userName || 'User',
       senderUsername: localStorage.getItem('userUsername') || '',
       senderPhoto: userPhoto || null,
-      senderIsPremium: localStorage.getItem('subscriptionTier') === 'premium',
+      senderIsPremium: localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium',
       timestamp: firestore.serverTimestamp()
     };
 

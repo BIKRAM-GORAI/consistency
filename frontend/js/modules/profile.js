@@ -92,6 +92,7 @@ async function openProfileModal() {
         await window.localDb.userProfile.put(res);
         if (res.isPremium !== undefined) {
           localStorage.setItem('isPremium', res.isPremium.toString());
+          localStorage.setItem('subscriptionTier', res.isPremium ? 'premium' : 'free');
         }
         renderProfileData(res);
         setLeaderboardTogglesEnabled(true);
