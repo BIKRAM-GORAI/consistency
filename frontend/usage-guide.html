@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Official Usage and Limitations Guide for Consistency Daily. Check your daily quotas, resets, and premium boosts.">
+  <meta name="description" content="Official Usage and Limitations Guide for Consistency Daily. Check your daily quotas, resets, and privacy settings.">
   <title>Usage &amp; Limitations Guide | Consistency Daily</title>
 
   <!-- Safe area notch support for Native wrappers -->
@@ -32,6 +32,7 @@
       --blue: #3b82f6;
       --black: #0a0a0a;
       --white: #ffffff;
+      --coral: #ff6b35;
       
       /* Light Brutalist Default */
       --bg: #ebe4e4;
@@ -209,7 +210,7 @@
 
     .card-title {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: -0.5px;
@@ -242,7 +243,7 @@
 
     .pill-value {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 900;
     }
 
@@ -250,7 +251,7 @@
     .text-premium { color: var(--purple); }
 
     .rule-box {
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 600;
       color: var(--text);
       line-height: 1.6;
@@ -305,24 +306,25 @@
       <div class="guide-card" style="box-shadow: 5px 5px 0 var(--purple);">
         <div class="card-header">
           <div class="card-icon" style="background: var(--purple); color: #fff;"><i data-lucide="sparkles"></i></div>
-          <h3 class="card-title">AI Summaries &amp; Bio</h3>
+          <h3 class="card-title">AI Quotas &amp; Daily Cards</h3>
         </div>
         <div class="limits-comparison">
           <div class="limit-pill">
             <span class="pill-label">Base Free</span>
-            <span class="pill-value text-free">15 / Day</span>
+            <span class="pill-value text-free" id="quota-ai-free">15 / Day</span>
           </div>
           <div style="border-right: 2px dashed #9ca3af;"></div>
           <div class="limit-pill">
             <span class="pill-label">Premium Boost</span>
-            <span class="pill-value text-premium">25 / Day</span>
+            <span class="pill-value text-premium" id="quota-ai-premium">25 / Day</span>
           </div>
         </div>
         <div class="rule-box">
-          Daily AI features include goal translations, summaries, and smart productivity recalibrations.
+          Daily AI features include goal translations, daily card insights, summaries, and smart productivity bio recalibrations.
           <ul>
-            <li><strong>7-Day Summary Cards</strong>: Constrained strictly to <strong>2 creations/day</strong> for Free users and <strong>4 creations/day</strong> for Premium users.</li>
-            <li><strong>30-Day Wrap-Up Cards</strong>: Limited to <strong>2 summaries/month</strong> for Free and <strong>4 summaries/month</strong> for Premium.</li>
+            <li><strong>AI Insights Pool</strong>: Daily Card summaries, smart translations, and bio calculations are consumed from the same daily insights pool.</li>
+            <li><strong>7-Day Summary Cards</strong>: Constrained strictly to <strong>2 summaries/day</strong> for Free users and <strong>4 summaries/day</strong> for Premium users.</li>
+            <li><strong>30-Day Recap Cards</strong>: Limited strictly to <strong>2 summaries/month</strong> for Free and <strong>4 summaries/month</strong> for Premium.</li>
             <li><strong>Productivity Bio Cooldown</strong>: Recalculating your AI biography features a strict <strong>12-hour cooldown timer</strong> to preserve tokens.</li>
           </ul>
         </div>
@@ -337,12 +339,12 @@
         <div class="limits-comparison">
           <div class="limit-pill">
             <span class="pill-label">Base Free</span>
-            <span class="pill-value text-free">15 / Day</span>
+            <span class="pill-value text-free" id="quota-photo-free">15 / Day</span>
           </div>
           <div style="border-right: 2px dashed #9ca3af;"></div>
           <div class="limit-pill">
             <span class="pill-label">Premium Boost</span>
-            <span class="pill-value text-premium">25 / Day</span>
+            <span class="pill-value text-premium" id="quota-photo-premium">25 / Day</span>
           </div>
         </div>
         <div class="rule-box">
@@ -364,12 +366,12 @@
         <div class="limits-comparison">
           <div class="limit-pill">
             <span class="pill-label">Base Free</span>
-            <span class="pill-value text-free">15 / Day</span>
+            <span class="pill-value text-free" id="quota-voice-free">2 / Day</span>
           </div>
           <div style="border-right: 2px dashed #9ca3af;"></div>
           <div class="limit-pill">
             <span class="pill-label">Premium Boost</span>
-            <span class="pill-value text-premium">25 / Day</span>
+            <span class="pill-value text-premium" id="quota-voice-premium">5 / Day</span>
           </div>
         </div>
         <div class="rule-box">
@@ -391,12 +393,12 @@
         <div class="limits-comparison">
           <div class="limit-pill">
             <span class="pill-label">Base Free</span>
-            <span class="pill-value text-free">2 / Month</span>
+            <span class="pill-value text-free" id="quota-grace-free">2 / Month</span>
           </div>
           <div style="border-right: 2px dashed #9ca3af;"></div>
           <div class="limit-pill">
             <span class="pill-label">Premium Boost</span>
-            <span class="pill-value text-premium">6 / Month</span>
+            <span class="pill-value text-premium" id="quota-grace-premium">6 / Month</span>
           </div>
         </div>
         <div class="rule-box">
@@ -408,7 +410,7 @@
         </div>
       </div>
 
-      <!-- 5. LeetCode Synchronization -->
+      <!-- 5. LeetCode Integration -->
       <div class="guide-card" style="box-shadow: 5px 5px 0 var(--orange);">
         <div class="card-header">
           <div class="card-icon" style="background: var(--orange); color: #fff;"><i data-lucide="target"></i></div>
@@ -417,12 +419,12 @@
         <div class="limits-comparison">
           <div class="limit-pill">
             <span class="pill-label">Base Free</span>
-            <span class="pill-value text-free">3 Changes</span>
+            <span class="pill-value text-free" id="quota-leetcode-free">3 Changes</span>
           </div>
           <div style="border-right: 2px dashed #9ca3af;"></div>
           <div class="limit-pill">
             <span class="pill-label">Premium Boost</span>
-            <span class="pill-value text-premium">6 Changes</span>
+            <span class="pill-value text-premium" id="quota-leetcode-premium">6 Changes</span>
           </div>
         </div>
         <div class="rule-box">
@@ -435,29 +437,111 @@
         </div>
       </div>
 
-      <!-- 6. Group Chats & Media -->
-      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--green);">
+      <!-- 6. Smartphone Screen Time limits -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--coral);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--coral); color: #fff;"><i data-lucide="smartphone"></i></div>
+          <h3 class="card-title">Smartphone Screen Time</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Standard PWA / Web</span>
+            <span class="pill-value text-free">Unsupported</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Native Android APK</span>
+            <span class="pill-value text-premium" style="color: var(--coral);">Fully Supported</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Track and display limits for distracting applications to protect your daily routines.
+          <div class="alert-banner alert-banner-warn" style="margin-top: 12px; background: rgba(255, 107, 53, 0.1); border-color: var(--coral);">
+            <i data-lucide="info" style="flex-shrink:0;"></i>
+            <span><strong>NATIVE APK ONLY</strong>: Distraction app tracking is strictly restricted to the mobile APK native Android application. Web standards do not permit background usage stats reading due to browser sandbox security constraints.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Rankings & Global Leaderboard -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--yellow);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--yellow); color: #000;"><i data-lucide="award"></i></div>
+          <h3 class="card-title">Leaderboard Rankings</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Privacy Control</span>
+            <span class="pill-value text-free" style="color: var(--yellow);">100% Opt-Out</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Rankings</span>
+            <span class="pill-value text-premium" style="color: var(--green);">Global Showcase</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Compete with habit builders around the world and maintain streak motivations.
+          <ul>
+            <li><strong>Full Opt-Out Controls</strong>: You can toggle your showcase setting on or off at any time under settings. If disabled, your name and streak are fully hidden from rankings.</li>
+            <li><strong>Public Profiles</strong>: Set your profile to public to generate a custom preview link. A public profile shows your badges, streaks, and your **latest few days of progress cards**.</li>
+            <li><strong>Private Profiles</strong>: Set your profile to private to visitors. Public links will only display your streak count and contribution graph grid, keeping detailed progress card logs hidden.</li>
+            <li><strong>Team Accountable Sync</strong>: Note that regardless of your profile privacy setting, active members inside teams you have joined can still see your progress cards inside team dashboard views to guarantee accountability.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 8. Achievements Visibility & Automation -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--teal);">
+        <div class="card-header">
+          <div class="card-icon" style="background: var(--teal); color: #000;"><i data-lucide="trophy"></i></div>
+          <h3 class="card-title">Key Achievements</h3>
+        </div>
+        <div class="limits-comparison">
+          <div class="limit-pill">
+            <span class="pill-label">Unlocked Goals</span>
+            <span class="pill-value text-free" style="color: var(--green);">Auto-Logged</span>
+          </div>
+          <div style="border-right: 2px dashed #9ca3af;"></div>
+          <div class="limit-pill">
+            <span class="pill-label">Member Visibility</span>
+            <span class="pill-value text-premium" style="color: var(--purple);">Toggle Control</span>
+          </div>
+        </div>
+        <div class="rule-box">
+          Celebrate streaks, key wins, and milestones along your habit track.
+          <ul>
+            <li><strong>Auto-Add Completed Goals</strong>: Completed habits and locked goals are automatically transformed and logged as key wins on your profile timeline!</li>
+            <li><strong>Achievements Showcase Visibility</strong>: You can toggle your achievements visibility on or off under your preferences section. If turned off, group and team members won't be able to see your list of achievements inside group dashboards.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 9. Live Group Chat & Media -->
+      <div class="guide-card" style="box-shadow: 5px 5px 0 var(--green); grid-column: 1 / -1;">
         <div class="card-header">
           <div class="card-icon" style="background: var(--green); color: #000;"><i data-lucide="message-square"></i></div>
-          <h3 class="card-title">Live Chat &amp; Media</h3>
+          <h3 class="card-title">Group Live Chat &amp; Media Attachments</h3>
         </div>
         <div class="limits-comparison">
           <div class="limit-pill">
             <span class="pill-label">Base Free</span>
-            <span class="pill-value text-free">20 Media/Hr</span>
+            <span class="pill-value text-free" id="quota-chat-free">20 Media/Hr</span>
           </div>
           <div style="border-right: 2px dashed #9ca3af;"></div>
           <div class="limit-pill">
             <span class="pill-label">Premium Boost</span>
-            <span class="pill-value text-premium">30 Media/Hr</span>
+            <span class="pill-value text-premium" id="quota-chat-premium">30 Media/Hr</span>
           </div>
         </div>
         <div class="rule-box">
-          Share files, media, and voice messages within group boards in real time.
+          Connect and collaborate with your habit team members in real-time.
           <ul>
-            <li><strong>Chat Images</strong>: Max 20 image uploads/hour for Free users; boosted to 30 uploads/hour for Premium builders.</li>
-            <li><strong>Voice Notes</strong>: Voice message recordings are strictly limited to <strong>60 seconds maximum duration</strong> to save hosting disk spaces.</li>
-            <li><strong>Premium Glows</strong>: Active Premium contributors feature dynamic shimmering avatar rings and gradients visible to all chat participants.</li>
+            <li><strong>Hourly Media Upload Quota</strong>: Max 20 image uploads/hour for Free users; boosted dynamically to 30 uploads/hour for Premium builders.</li>
+            <li><strong>Image Select Batch Limit</strong>: You can select and send a maximum of **4 images** at once in a single message batch submission to prevent channel spamming.</li>
+            <li><strong>Audio Upload Limit</strong>: Custom uploaded audio files must be under **5MB** total file size.</li>
+            <li><strong>Audio Recording Limit</strong>: Dynamic in-app voice notes and audio recordings are strictly capped at a maximum of **60 seconds (1 minute)** duration to protect hosting disk spaces.</li>
+            <li><strong>Premium Glowing Chat Rings</strong>: Active Premium contributors automatically show shimmering avatar rings and custom gradient bubbles visible to all chat participants.</li>
           </ul>
         </div>
       </div>
@@ -467,13 +551,53 @@
   <!-- Lucide Scripts -->
   <script src="libs/lucide.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       // Sync theme seamlessly from localStorage
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
       } else {
         document.documentElement.removeAttribute('data-theme');
+      }
+
+      // Determine Backend URL exactly like modules/state.js
+      const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
+      const API = isAndroidNative ? 'https://consistency-daily.vercel.app' : '';
+
+      // Dynamically fetch configurations from server env
+      try {
+        const response = await fetch(`${API}/api/subscriptions/my-limits`, {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        if (response.ok) {
+          const res = await response.json();
+          if (res && res.config) {
+            const c = res.config;
+            
+            // Populating quotas from server env configs dynamically!
+            document.getElementById('quota-ai-free').textContent = c.aiDailyLimitFree + ' / Day';
+            document.getElementById('quota-ai-premium').textContent = c.aiDailyLimitPremium + ' / Day';
+            
+            document.getElementById('quota-photo-free').textContent = c.photoScanLimitFree + ' / Day';
+            document.getElementById('quota-photo-premium').textContent = c.photoScanLimitPremium + ' / Day';
+            
+            document.getElementById('quota-voice-free').textContent = c.voiceToTaskLimitFree + ' / Day';
+            document.getElementById('quota-voice-premium').textContent = c.voiceToTaskLimitPremium + ' / Day';
+            
+            document.getElementById('quota-grace-free').textContent = c.graceDaysLimitFree + ' / Month';
+            document.getElementById('quota-grace-premium').textContent = c.graceDaysLimitPremium + ' / Month';
+            
+            document.getElementById('quota-leetcode-free').textContent = c.leetcodeLimitFree + ' Changes';
+            document.getElementById('quota-leetcode-premium').textContent = c.leetcodeLimitPremium + ' Changes';
+            
+            document.getElementById('quota-chat-free').textContent = c.chatMediaLimitFree + ' Media/Hr';
+            document.getElementById('quota-chat-premium').textContent = c.chatMediaLimitPremium + ' Media/Hr';
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch limits dynamically (using robust free/premium fallbacks):', err);
       }
 
       // Initialise icons

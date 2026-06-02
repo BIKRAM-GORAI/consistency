@@ -177,6 +177,16 @@ exports.getMyLimits = async (req, res) => {
 
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
 
+    // Compute free and premium configs for the guide to load dynamically
+    const voiceLimitFree = parseInt(process.env.FREE_DAILY_VOICE_LIMIT, 10) || 2;
+    const voiceLimitPremium = parseInt(process.env.PREMIUM_DAILY_VOICE_LIMIT, 10) || 5;
+
+    const graceLimitFree = parseInt(process.env.FREE_MONTHLY_GRACE_LIMIT, 10) || 2;
+    const graceLimitPremium = parseInt(process.env.PREMIUM_MONTHLY_GRACE_LIMIT, 10) || 6;
+
+    const leetcodeLimitFree = parseInt(process.env.MAX_USERNAME_CHANGES, 10) || 3;
+    const leetcodeLimitPremium = leetcodeLimitFree + (parseInt(process.env.PREMIUM_ADDITIONAL_LEETCODE_LIMIT, 10) || 3);
+
     res.status(200).json({
       isPremium,
       tier: user.subscriptionTier,
@@ -187,6 +197,25 @@ exports.getMyLimits = async (req, res) => {
         graceDays:    { used: graceCount,   total: graceLimit,  left: graceLeft,    resetsAt: nextMonth.toISOString(),  resetPeriod: 'monthly' },
         leetcode:     { used: leetcodeUsed, total: leetcodeLimit, left: leetcodeLeft, resetsAt: null,                   resetPeriod: 'permanent' },
         chatMedia:    { used: chatCount,    total: chatTotal,   left: chatLeft,     resetsAt: nextHour.toISOString(),   resetPeriod: 'hourly' },
+      },
+      config: {
+        aiDailyLimitFree: aiLimit,
+        aiDailyLimitPremium: aiLimit + aiPremiumBoost,
+        
+        photoScanLimitFree: photoLimit,
+        photoScanLimitPremium: photoLimit + photoPremiumBoost,
+        
+        voiceToTaskLimitFree: voiceLimitFree,
+        voiceToTaskLimitPremium: voiceLimitPremium,
+        
+        graceDaysLimitFree: graceLimitFree,
+        graceDaysLimitPremium: graceLimitPremium,
+        
+        leetcodeLimitFree: leetcodeLimitFree,
+        leetcodeLimitPremium: leetcodeLimitPremium,
+        
+        chatMediaLimitFree: chatLimit,
+        chatMediaLimitPremium: chatLimit + chatPremiumBoost
       }
     });
   } catch (error) {
