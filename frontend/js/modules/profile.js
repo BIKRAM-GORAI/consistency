@@ -2129,7 +2129,7 @@ async function toggleProfileCollapse(id, headerBtn) {
     headerBtn.style.color = 'var(--black)';
     
     const icon = headerBtn.querySelector('.collapse-icon');
-    if (icon) icon.textContent = '▲';
+    if (icon) icon.textContent = '▼';
     
     // Load inline limits if limits accordion is opened
     if (id === 'profile-collapse-limits') {
@@ -2141,7 +2141,7 @@ async function toggleProfileCollapse(id, headerBtn) {
     headerBtn.style.color = 'var(--text)';
     
     const icon = headerBtn.querySelector('.collapse-icon');
-    if (icon) icon.textContent = '▼';
+    if (icon) icon.textContent = '▶';
   }
 
   // Refresh Lucide icons inside content container if present
