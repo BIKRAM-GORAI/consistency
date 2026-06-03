@@ -173,6 +173,13 @@ async function updateUserStreakAndActivity(userId, clientDate) {
     lastActiveAt: new Date(),
   });
 
+  try {
+    const { checkAndAwardReferralStreak } = require('../utils/pointsHelper');
+    await checkAndAwardReferralStreak(userId, highestStreak);
+  } catch (err) {
+    console.error('[Referral Reward Check Error]:', err);
+  }
+
   return currentStreak;
 }
 
@@ -211,6 +218,9 @@ const getAllDays = async (req, res) => {
       User.findByIdAndUpdate(userId, {
         currentStreak,
         highestStreak: newHighest,
+      }).then(() => {
+        const { checkAndAwardReferralStreak } = require('../utils/pointsHelper');
+        checkAndAwardReferralStreak(userId, newHighest).catch(err => console.error(err));
       }).catch(() => {});
 
       const hasMore = (skip + paginatedDays.length) < total;

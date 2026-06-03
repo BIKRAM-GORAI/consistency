@@ -19,7 +19,7 @@ const saltRounds = 10;
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, username, profilePicture } = req.body;
+    const { name, email, password, username, profilePicture, referralCode: referralCodeUsed } = req.body;
     if (!name || !email || !password || !username || !profilePicture) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -27,6 +27,18 @@ const register = async (req, res) => {
     if (existing) return res.status(400).json({ message: 'Email already exists' });
     const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
     if (existingUser) return res.status(400).json({ message: 'Username already taken' });
+
+    let referrerId = null;
+    if (referralCodeUsed) {
+      const referrer = await User.findOne({ referralCode: referralCodeUsed.toUpperCase().trim() });
+      if (!referrer) {
+        return res.status(400).json({ message: 'Invalid referral code' });
+      }
+      referrerId = referrer._id;
+    }
+
+    const { generateUniqueReferralCode } = require('../utils/pointsHelper');
+    const referralCode = await generateUniqueReferralCode();
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     let profileUrl = '';
@@ -36,10 +48,52 @@ const register = async (req, res) => {
       profileUrl = result.secure_url;
       profileId = result.public_id;
     }
-    const user = new User({ name, username: username.toLowerCase().trim(), email: email.toLowerCase().trim(), password: hashedPassword, profilePicture: profileUrl, profilePictureId: profileId });
+    const user = new User({ 
+      name, 
+      username: username.toLowerCase().trim(), 
+      email: email.toLowerCase().trim(), 
+      password: hashedPassword, 
+      profilePicture: profileUrl, 
+      profilePictureId: profileId,
+      referralCode,
+      referredBy: referrerId,
+      pointsBalance: referrerId ? 200 : 0
+    });
     const saved = await user.save();
+
+    if (referrerId) {
+      const Referral = require('../models/Referral');
+      const PointsLedger = require('../models/PointsLedger');
+      
+      const referral = new Referral({
+        referrerId,
+        referredId: saved._id,
+        referralCode: referralCodeUsed.toUpperCase().trim(),
+        streakReached: false,
+        rewardReleased: false
+      });
+      await referral.save();
+      
+      await PointsLedger.create({
+        userId: saved._id,
+        points: 200,
+        type: 'signup_bonus',
+        description: `Welcome bonus for entering referral code ${referralCodeUsed.toUpperCase().trim()}`,
+        referenceId: referral._id
+      });
+    }
+
     const token = generateToken(saved._id, saved.email);
-    res.status(201).json({ _id: saved._id, name: saved.name, email: saved.email, profilePicture: saved.profilePicture, token });
+    res.status(201).json({ 
+      _id: saved._id, 
+      name: saved.name, 
+      email: saved.email, 
+      profilePicture: saved.profilePicture, 
+      pointsBalance: saved.pointsBalance || 0,
+      referralCode: saved.referralCode,
+      showReferralPrompt: !saved.referredBy && !saved.referralPromptDismissed,
+      token 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -72,9 +126,28 @@ const login = async (req, res) => {
 
     await resetFailedAttempts(user._id);
     user.lastActiveAt = new Date();
+
+    // Generate referral code for existing user if missing
+    if (!user.referralCode) {
+      const { generateUniqueReferralCode } = require('../utils/pointsHelper');
+      user.referralCode = await generateUniqueReferralCode();
+    }
+
     await user.save();
     const token = generateToken(user._id, user.email);
-    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture, username: user.username, currentStreak: user.currentStreak || 0, highestStreak: user.highestStreak || 0, token });
+    res.json({ 
+      _id: user._id, 
+      name: user.name, 
+      email: user.email, 
+      profilePicture: user.profilePicture, 
+      username: user.username, 
+      currentStreak: user.currentStreak || 0, 
+      highestStreak: user.highestStreak || 0, 
+      pointsBalance: user.pointsBalance || 0,
+      referralCode: user.referralCode,
+      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
+      token 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -120,6 +193,9 @@ const oauthLogin = async (req, res) => {
     } else {
       user = new User({ name: name || 'User', email: normalizedEmail, authProviders: [{ provider, uid }] });
       
+      const { generateUniqueReferralCode } = require('../utils/pointsHelper');
+      user.referralCode = await generateUniqueReferralCode();
+
       // Import and compress Google profile photo for new user
       if (googlePhotoUrl) {
         try {
@@ -139,8 +215,28 @@ const oauthLogin = async (req, res) => {
       }
       await user.save();
     }
+
+    // Safety check: ensure existing oauth users get a referral code
+    if (!user.referralCode) {
+      const { generateUniqueReferralCode } = require('../utils/pointsHelper');
+      user.referralCode = await generateUniqueReferralCode();
+      await user.save();
+    }
+
     const token = generateToken(user._id, user.email);
-    res.json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture, username: user.username, currentStreak: user.currentStreak || 0, highestStreak: user.highestStreak || 0, token });
+    res.json({ 
+      _id: user._id, 
+      name: user.name, 
+      email: user.email, 
+      profilePicture: user.profilePicture, 
+      username: user.username, 
+      currentStreak: user.currentStreak || 0, 
+      highestStreak: user.highestStreak || 0, 
+      pointsBalance: user.pointsBalance || 0,
+      referralCode: user.referralCode,
+      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
+      token 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -191,7 +287,10 @@ async function getProfileSettings(req, res) {
       mutedGroups: user.mutedGroups || [],
       subscriptionTier: user.subscriptionTier || 'free',
       subscriptionExpiresAt: user.subscriptionExpiresAt || null,
-      isPremium: isPremium
+      isPremium: isPremium,
+      pointsBalance: user.pointsBalance || 0,
+      referralCode: user.referralCode || '',
+      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }
@@ -267,7 +366,10 @@ async function setProfileSettings(req, res) {
       mutedGroups: user.mutedGroups || [],
       subscriptionTier: user.subscriptionTier || 'free',
       subscriptionExpiresAt: user.subscriptionExpiresAt || null,
-      isPremium: isPremium
+      isPremium: isPremium,
+      pointsBalance: user.pointsBalance || 0,
+      referralCode: user.referralCode || '',
+      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed
     });
   } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
 }

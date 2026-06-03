@@ -76,6 +76,8 @@ exports.getSubscriptionStatus = async (req, res) => {
       refundStatus: user.refundStatus,
       hasPendingTransaction: !!user.pendingSubscriptionId,
       paymentHistory: user.paymentHistory || [],
+      pointsBalance: user.pointsBalance || 0,
+      referralCode: user.referralCode || '',
 
       prices: {
         monthly: priceMonthly,
@@ -868,3 +870,135 @@ exports.requestRefund = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error submitting refund request.' });
   }
 };
+
+/**
+ * POST /api/subscriptions/claim-referral
+ * Claims a referral welcome bonus.
+ */
+exports.claimReferral = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ message: 'Referral code is required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { claimReferralCode } = require('../utils/pointsHelper');
+    const result = await claimReferralCode(user, code);
+
+    res.status(200).json({
+      message: `Successfully applied referral code! You got a 200 CP welcome bonus.`,
+      pointsBalance: user.pointsBalance,
+      referredBy: user.referredBy,
+      referrerName: result.referrerName
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+/**
+ * POST /api/subscriptions/skip-referral
+ * Skips/dismisses the referral modal.
+ */
+exports.skipReferral = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.referralPromptDismissed = true;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Referral prompt skipped',
+      showReferralPrompt: false
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * POST /api/subscriptions/redeem-points
+ * Dynamically redeems points for a Premium Pass Coupon.
+ */
+exports.redeemPoints = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { duration } = req.body;
+    if (!['1_month', '1_year'].includes(duration)) {
+      return res.status(400).json({ message: 'Invalid plan duration' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let priceMonthly = parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10);
+    let priceAnnual = parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+    if (isNaN(priceMonthly)) priceMonthly = 299;
+    if (isNaN(priceAnnual)) priceAnnual = 1999;
+
+    const basePrice = duration === '1_month' ? priceMonthly : priceAnnual;
+    const cpRequired = basePrice * 100;
+
+    if ((user.pointsBalance || 0) < cpRequired) {
+      return res.status(400).json({ 
+        message: `Insufficient CP. You need ${cpRequired} CP to redeem this coupon, but you only have ${user.pointsBalance || 0} CP.` 
+      });
+    }
+
+    // Generate a unique coupon code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let codeUnique = false;
+    let couponCode = '';
+    while (!codeUnique) {
+      couponCode = 'CP-';
+      for (let i = 0; i < 8; i++) {
+        couponCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      const existingCoupon = await Coupon.findOne({ code: couponCode });
+      if (!existingCoupon) {
+        codeUnique = true;
+      }
+    }
+
+    // Create the coupon
+    const newCoupon = new Coupon({
+      code: couponCode,
+      duration: duration,
+      isUsed: false,
+      createdBy: `points_redemption_${user._id}`
+    });
+    await newCoupon.save();
+
+    // Deduct points
+    user.pointsBalance = (user.pointsBalance || 0) - cpRequired;
+    await user.save();
+
+    // Log in Points Ledger
+    const PointsLedger = require('../models/PointsLedger');
+    await PointsLedger.create({
+      userId: user._id,
+      points: -cpRequired,
+      type: 'coupon_redemption',
+      description: `Redeemed ${duration === '1_month' ? '1 Month' : '1 Year'} Premium Pass Coupon`,
+      referenceId: newCoupon._id
+    });
+
+    res.status(200).json({
+      message: `Successfully redeemed ${cpRequired} CP! Your coupon code is: ${couponCode}`,
+      coupon: {
+        code: couponCode,
+        duration: duration
+      },
+      pointsBalance: user.pointsBalance
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+

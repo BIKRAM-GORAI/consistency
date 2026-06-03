@@ -1937,4 +1937,112 @@ window.deleteWeeklySummaryCard = deleteWeeklySummaryCard;
 window.buildMonthlySummaryCard = buildMonthlySummaryCard;
 window.buildMonthlySummaryButtonCard = buildMonthlySummaryButtonCard;
 window.generateMonthlySummaryCard = generateMonthlySummaryCard;
+
+// ── Referral Onboarding Modal Helpers ──────────────────────────
+async function submitOnboardingReferral() {
+  const input = document.getElementById('input-referral-code');
+  const errorEl = document.getElementById('referral-prompt-error');
+  const errorMsgEl = document.getElementById('referral-prompt-error-msg');
+  const btn = document.getElementById('btn-submit-referral');
+
+  if (!input) return;
+  const code = input.value.trim();
+  if (!code) {
+    if (errorMsgEl && errorEl) {
+      errorMsgEl.textContent = 'Please enter a referral code.';
+      errorEl.style.display = 'flex';
+    }
+    return;
+  }
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Processing...';
+  if (errorEl) errorEl.style.display = 'none';
+
+  try {
+    const res = await apiFetch(`${window.API}/api/subscriptions/claim-referral`, {
+      method: 'POST',
+      body: JSON.stringify({ code })
+    });
+
+    if (res && res.pointsBalance !== undefined) {
+      localStorage.setItem('pointsBalance', res.pointsBalance);
+      localStorage.setItem('showReferralPrompt', 'false');
+      if (res.referredBy) {
+        localStorage.setItem('referredBy', res.referredBy);
+      }
+      
+      const modal = document.getElementById('modal-referral-prompt');
+      if (modal) modal.style.display = 'none';
+
+      if (typeof window.showToast === 'function') {
+        window.showToast(res.message || 'Welcome bonus claimed!', 'success');
+      } else {
+        alert(res.message || 'Welcome bonus claimed!');
+      }
+    } else {
+      throw new Error('Invalid response from server.');
+    }
+  } catch (err) {
+    console.error('Error claiming referral:', err);
+    if (errorMsgEl && errorEl) {
+      errorMsgEl.textContent = err.message || 'Failed to claim referral bonus.';
+      errorEl.style.display = 'flex';
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+async function skipOnboardingReferral() {
+  const btn = document.getElementById('btn-skip-referral');
+  if (btn) btn.disabled = true;
+
+  try {
+    await apiFetch(`${window.API}/api/subscriptions/skip-referral`, {
+      method: 'POST'
+    });
+    
+    localStorage.setItem('showReferralPrompt', 'false');
+    const modal = document.getElementById('modal-referral-prompt');
+    if (modal) modal.style.display = 'none';
+    
+    if (typeof window.showToast === 'function') {
+      window.showToast('Onboarding completed.', 'info');
+    }
+  } catch (err) {
+    console.error('Error skipping referral:', err);
+    // Hide anyway to avoid blocking user flow
+    localStorage.setItem('showReferralPrompt', 'false');
+    const modal = document.getElementById('modal-referral-prompt');
+    if (modal) modal.style.display = 'none';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function checkOnboardingReferral() {
+  if (localStorage.getItem('userId') && localStorage.getItem('showReferralPrompt') === 'true') {
+    const modal = document.getElementById('modal-referral-prompt');
+    if (modal) {
+      modal.style.display = 'flex';
+      if (window.lucide) {
+        window.lucide.createIcons({ root: modal });
+      }
+    }
+  }
+}
+
+// Attach onboarding functions to window
+window.submitOnboardingReferral = submitOnboardingReferral;
+window.skipOnboardingReferral = skipOnboardingReferral;
+window.checkOnboardingReferral = checkOnboardingReferral;
+
+// Auto-check on script load
+checkOnboardingReferral();
+document.addEventListener('DOMContentLoaded', checkOnboardingReferral);
+
 console.log("[Module] app.js loaded and App bound to window");
+

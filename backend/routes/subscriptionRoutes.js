@@ -15,4 +15,9 @@ router.post('/razorpay/check-pending', authenticateToken, subscriptionController
 router.post('/razorpay/verify-dev-password', authenticateToken, subscriptionController.verifyDevPassword);
 router.post('/razorpay/request-refund', authenticateToken, subscriptionController.requestRefund);
 
+// Referral & Points System Routes
+router.post('/claim-referral', authenticateToken, subscriptionController.claimReferral);
+router.post('/skip-referral', authenticateToken, subscriptionController.skipReferral);
+router.post('/redeem-points', authenticateToken, subscriptionController.redeemPoints);
+
 module.exports = router;

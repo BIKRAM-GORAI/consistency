@@ -587,7 +587,48 @@
           <i data-lucide="rotate-cw" style="width: 11px; height: 11px;"></i> Force Hard Refresh
         </button>
       </div>
+    </div>
+
+    <!-- Consistency Points (CP) & Rewards Panel -->
+    <div class="status-panel" style="border-color: var(--teal); box-shadow: 5px 5px 0 var(--teal);">
+      <div class="status-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: 0;">
+        <div>
+          <div class="status-title" style="color: var(--teal);">Consistency Points (CP)</div>
+          <div class="status-value" id="points-balance-display" style="color: var(--teal); font-size: 32px; display: flex; align-items: center; gap: 8px;">
+            0 <span style="font-size: 14px; color: var(--text-muted); text-transform: none; font-family: 'Inter', sans-serif; font-weight: 600;">CP Balance (100 CP = ₹1.00)</span>
+          </div>
+        </div>
+        <div style="background: rgba(20, 184, 166, 0.1); border: 2px solid var(--teal); border-radius: var(--r-md); padding: 8px 12px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--teal);">
+          Referral Code: <span id="user-referral-code-display" style="font-family: monospace; font-size: 14px; letter-spacing: 1px; user-select: all;">CONS-XXXXXX</span>
+        </div>
       </div>
+      
+      <div style="margin-top: 20px; border-top: 2px dashed #3f3f46; padding-top: 20px;">
+        <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; color: var(--text);">
+          <i data-lucide="gift" style="color: var(--teal); width: 18px; height: 18px;"></i> Redeem CP for Premium Passes
+        </h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+          <!-- Monthly Pass CP -->
+          <div style="background: #161618; border: 2px solid var(--black); border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 3px 3px 0 var(--black);">
+            <div>
+              <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">1-Month Premium Pass</div>
+              <div style="font-size: 20px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin: 4px 0; color: var(--white);" id="cp-cost-monthly-display">-- CP</div>
+            </div>
+            <button class="btn-buy" id="btn-redeem-monthly" onclick="redeemPointsForPass('1_month')" style="background: var(--teal); box-shadow: 2px 2px 0 var(--black); font-size: 12px; padding: 10px; margin-top: 10px; border-width: 2px; font-weight: 900;">Redeem Pass</button>
+          </div>
+          
+          <!-- Annual Pass CP -->
+          <div style="background: #161618; border: 2px solid var(--black); border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 3px 3px 0 var(--black);">
+            <div>
+              <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">1-Year Premium Pass</div>
+              <div style="font-size: 20px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin: 4px 0; color: var(--white);" id="cp-cost-annual-display">-- CP</div>
+            </div>
+            <button class="btn-buy" id="btn-redeem-annual" onclick="redeemPointsForPass('1_year')" style="background: var(--teal); box-shadow: 2px 2px 0 var(--black); font-size: 12px; padding: 10px; margin-top: 10px; border-width: 2px; font-weight: 900;">Redeem Pass</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <!-- Honest Creator's Story Section -->
@@ -937,6 +978,65 @@
         }
       }
 
+      // Update points display
+      if (data.pointsBalance !== undefined) {
+        localStorage.setItem('pointsBalance', data.pointsBalance);
+      }
+      if (data.referralCode !== undefined) {
+        localStorage.setItem('referralCode', data.referralCode);
+      }
+
+      const balance = data.pointsBalance !== undefined ? data.pointsBalance : (parseInt(localStorage.getItem('pointsBalance'), 10) || 0);
+      const pointsDisplay = document.getElementById('points-balance-display');
+      if (pointsDisplay) {
+        pointsDisplay.innerHTML = `${balance.toLocaleString()} <span style="font-size: 14px; color: var(--text-muted); text-transform: none; font-family: 'Inter', sans-serif; font-weight: 600;">CP Balance (100 CP = ₹1.00)</span>`;
+      }
+      
+      const refDisplay = document.getElementById('user-referral-code-display');
+      if (refDisplay && data.referralCode) {
+        refDisplay.textContent = data.referralCode;
+      }
+
+      // Update CP redemption costs dynamically from pricing
+      if (data.prices) {
+        const costMonthly = data.prices.monthly * 100;
+        const costAnnual = data.prices.annual * 100;
+        
+        const cpMonthlyDisplay = document.getElementById('cp-cost-monthly-display');
+        const cpAnnualDisplay = document.getElementById('cp-cost-annual-display');
+        
+        if (cpMonthlyDisplay) cpMonthlyDisplay.textContent = `${costMonthly.toLocaleString()} CP`;
+        if (cpAnnualDisplay) cpAnnualDisplay.textContent = `${costAnnual.toLocaleString()} CP`;
+        
+        const redeemMonthlyBtn = document.getElementById('btn-redeem-monthly');
+        const redeemAnnualBtn = document.getElementById('btn-redeem-annual');
+        
+        if (redeemMonthlyBtn) {
+          redeemMonthlyBtn.disabled = balance < costMonthly;
+          if (balance < costMonthly) {
+            redeemMonthlyBtn.style.opacity = '0.5';
+            redeemMonthlyBtn.style.cursor = 'not-allowed';
+            redeemMonthlyBtn.title = `Need ${costMonthly} CP`;
+          } else {
+            redeemMonthlyBtn.style.opacity = '1';
+            redeemMonthlyBtn.style.cursor = 'pointer';
+            redeemMonthlyBtn.title = 'Redeem Monthly Pass';
+          }
+        }
+        if (redeemAnnualBtn) {
+          redeemAnnualBtn.disabled = balance < costAnnual;
+          if (balance < costAnnual) {
+            redeemAnnualBtn.style.opacity = '0.5';
+            redeemAnnualBtn.style.cursor = 'not-allowed';
+            redeemAnnualBtn.title = `Need ${costAnnual} CP`;
+          } else {
+            redeemAnnualBtn.style.opacity = '1';
+            redeemAnnualBtn.style.cursor = 'pointer';
+            redeemAnnualBtn.title = 'Redeem Annual Pass';
+          }
+        }
+      }
+
       const tierDisplay = document.getElementById('sub-tier-display');
       const expiryDisplay = document.getElementById('sub-expiry-display');
       const badgeContainer = document.getElementById('sub-badge-container');
@@ -1158,6 +1258,49 @@
         }
       } catch (err) {
         showToast(err.message || 'Error redeeming coupon.', 'error');
+      }
+    }
+
+    // Redeem CP points for a Premium Pass Coupon
+    async function redeemPointsForPass(duration) {
+      if (!confirm(`Are you sure you want to redeem your CP for a ${duration === '1_month' ? '1-Month' : '1-Year'} Premium Pass?`)) {
+        return;
+      }
+      
+      const btn = duration === '1_month' ? document.getElementById('btn-redeem-monthly') : document.getElementById('btn-redeem-annual');
+      if (!btn) return;
+      
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner-ring" style="width:12px; height:12px; border-width:2px; display:inline-block; margin-right:4px; border-color:#000 #0000 #0000 #0000;"></div> Redeeming...';
+      
+      try {
+        const res = await apiRequest('/api/subscriptions/redeem-points', {
+          method: 'POST',
+          body: JSON.stringify({ duration })
+        });
+        
+        showToast(res.message, 'success');
+        
+        // Save the updated points balance to localStorage
+        if (res.pointsBalance !== undefined) {
+          localStorage.setItem('pointsBalance', res.pointsBalance);
+        }
+        
+        // Auto fill the coupon field and focus on it!
+        const couponInput = document.getElementById('promo-coupon-input');
+        if (couponInput && res.coupon && res.coupon.code) {
+          couponInput.value = res.coupon.code;
+          couponInput.focus();
+          showToast('Coupon code generated and auto-filled! Click "Apply" to activate your Premium Pass.', 'info');
+        }
+        
+        await loadStatus();
+      } catch (err) {
+        showToast(err.message || 'Failed to redeem points.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
       }
     }
 

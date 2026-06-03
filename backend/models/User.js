@@ -303,6 +303,26 @@ const UserSchema = new mongoose.Schema(
         default: '',
       },
     }],
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      uppercase: true,
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    pointsBalance: {
+      type: Number,
+      default: 0,
+    },
+    referralPromptDismissed: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
