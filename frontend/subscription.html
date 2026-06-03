@@ -598,8 +598,9 @@
             0 <span style="font-size: 14px; color: var(--text-muted); text-transform: none; font-family: 'Inter', sans-serif; font-weight: 600;">CP Balance (100 CP = ₹1.00)</span>
           </div>
         </div>
-        <div style="background: rgba(20, 184, 166, 0.1); border: 2px solid var(--teal); border-radius: var(--r-md); padding: 8px 12px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--teal);">
-          Referral Code: <span id="user-referral-code-display" style="font-family: monospace; font-size: 14px; letter-spacing: 1px; user-select: all;">CONS-XXXXXX</span>
+        <div style="background: rgba(20, 184, 166, 0.1); border: 2px solid var(--teal); border-radius: var(--r-md); padding: 8px 12px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--teal); display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s;" onclick="copyReferralCode()" title="Click to copy referral code" onmouseover="this.style.background='rgba(20, 184, 166, 0.2)'" onmouseout="this.style.background='rgba(20, 184, 166, 0.1)'">
+          Referral Code: <span id="user-referral-code-display" style="font-family: monospace; font-size: 14px; letter-spacing: 1px; user-select: all; margin-right: 4px;">CONS-XXXXXX</span>
+          <i data-lucide="copy" style="width: 14px; height: 14px; color: var(--teal);"></i>
         </div>
       </div>
       
@@ -625,6 +626,42 @@
               <div style="font-size: 20px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin: 4px 0; color: var(--white);" id="cp-cost-annual-display">-- CP</div>
             </div>
             <button class="btn-buy" id="btn-redeem-annual" onclick="redeemPointsForPass('1_year')" style="background: var(--teal); box-shadow: 2px 2px 0 var(--black); font-size: 12px; padding: 10px; margin-top: 10px; border-width: 2px; font-weight: 900;">Redeem Pass</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Points History Collapsible Section -->
+      <div style="margin-top: 20px; border-top: 2px dashed #3f3f46; padding-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="togglePointsHistory()">
+          <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 0; display: flex; align-items: center; gap: 6px; color: var(--text);">
+            <i data-lucide="history" style="color: var(--teal); width: 18px; height: 18px;"></i> Points History
+          </h4>
+          <span id="points-history-toggle-icon" style="color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px;">
+            Show <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
+          </span>
+        </div>
+        
+        <div id="points-history-container" style="display: none; margin-top: 14px; max-height: 260px; overflow-y: auto; background: #111113; border: 2px solid var(--black); border-radius: var(--r-md); padding: 12px; box-sizing: border-box;">
+          <div id="points-history-list" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 12px;">Loading history...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Claimed Coupons Collapsible Section -->
+      <div style="margin-top: 20px; border-top: 2px dashed #3f3f46; padding-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleMyCoupons()">
+          <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 0; display: flex; align-items: center; gap: 6px; color: var(--text);">
+            <i data-lucide="ticket" style="color: var(--teal); width: 18px; height: 18px;"></i> My Generated Coupons
+          </h4>
+          <span id="my-coupons-toggle-icon" style="color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px;">
+            Show <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
+          </span>
+        </div>
+        
+        <div id="my-coupons-container" style="display: none; margin-top: 14px; max-height: 260px; overflow-y: auto; background: #111113; border: 2px solid var(--black); border-radius: var(--r-md); padding: 12px; box-sizing: border-box;">
+          <div id="my-coupons-list" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 12px;">Loading coupons...</div>
           </div>
         </div>
       </div>
@@ -1252,6 +1289,11 @@
           localStorage.setItem('isPremium', 'true');
           localStorage.setItem('subscriptionTier', 'premium');
           await loadStatus();
+          if (myCouponsLoaded) {
+            await loadMyCoupons();
+          } else {
+            myCouponsLoaded = false;
+          }
           showPremiumCelebration();
         } else {
           showToast(res.message || 'Failed to redeem coupon.', 'error');
@@ -1296,12 +1338,219 @@
         }
         
         await loadStatus();
+        if (pointsHistoryLoaded) {
+          await loadPointsHistory();
+        } else {
+          pointsHistoryLoaded = false;
+        }
+        if (myCouponsLoaded) {
+          await loadMyCoupons();
+        } else {
+          myCouponsLoaded = false;
+        }
       } catch (err) {
         showToast(err.message || 'Failed to redeem points.', 'error');
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
       }
+    }
+
+    // Points History UI Toggling & Retrieval
+    let pointsHistoryLoaded = false;
+    async function togglePointsHistory() {
+      const container = document.getElementById('points-history-container');
+      const toggleIcon = document.getElementById('points-history-toggle-icon');
+      if (!container || !toggleIcon) return;
+      
+      const isHidden = container.style.display === 'none';
+      if (isHidden) {
+        container.style.display = 'block';
+        toggleIcon.innerHTML = 'Hide <i data-lucide="chevron-up" style="width: 14px; height: 14px;"></i>';
+        await loadPointsHistory();
+      } else {
+        container.style.display = 'none';
+        toggleIcon.innerHTML = 'Show <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>';
+      }
+      lucide.createIcons({ root: toggleIcon });
+    }
+
+    async function loadPointsHistory() {
+      const list = document.getElementById('points-history-list');
+      if (!list) return;
+      
+      try {
+        const data = await apiRequest('/api/subscriptions/points-history');
+        if (data.success) {
+          pointsHistoryLoaded = true;
+          const history = data.history || [];
+          if (history.length === 0) {
+            list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 16px;">No points transactions yet.</div>`;
+            return;
+          }
+          
+          list.innerHTML = history.map(item => {
+            let iconName = 'coins';
+            if (item.type === 'signup_bonus') iconName = 'sparkles';
+            else if (item.type === 'referral_reward') iconName = 'user-plus';
+            else if (item.type === 'coupon_redemption') iconName = 'gift';
+            
+            const dateObj = new Date(item.createdAt);
+            const formattedDate = dateObj.toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            }) + ' ' + dateObj.toLocaleTimeString(undefined, {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            const pointsColor = item.points > 0 ? 'var(--green, #22c55e)' : 'var(--orange, #f97316)';
+            const pointsSign = item.points > 0 ? '+' : '';
+            
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #1a1a1e; border: 1px solid var(--black); border-radius: 6px; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                  <div style="background: rgba(20, 184, 166, 0.1); border-radius: 50%; padding: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i data-lucide="${iconName}" style="width: 14px; height: 14px; color: var(--teal);"></i>
+                  </div>
+                  <div style="min-width: 0;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.description}</div>
+                    <div style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-top: 2px;">${formattedDate}</div>
+                  </div>
+                </div>
+                <div style="font-family: monospace; font-size: 12px; font-weight: 900; color: ${pointsColor}; flex-shrink: 0;">
+                  ${pointsSign}${item.points.toLocaleString()} CP
+                </div>
+              </div>
+            `;
+          }).join('');
+          
+          lucide.createIcons({ root: list });
+        } else {
+          list.innerHTML = `<div style="text-align: center; color: var(--orange); font-size: 12px; font-weight: 600; padding: 16px;">Failed to load history.</div>`;
+        }
+      } catch (err) {
+        list.innerHTML = `<div style="text-align: center; color: var(--orange); font-size: 12px; font-weight: 600; padding: 16px;">Error loading points history.</div>`;
+      }
+    }
+
+    function copyReferralCode() {
+      const codeSpan = document.getElementById('user-referral-code-display');
+      if (!codeSpan) return;
+      const code = codeSpan.textContent;
+      if (code === 'CONS-XXXXXX') return;
+      
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Referral code copied to clipboard!', 'success');
+      }).catch(err => {
+        showToast('Failed to copy referral code.', 'error');
+      });
+    }
+
+    // Generated Coupons Toggling & Retrieval
+    let myCouponsLoaded = false;
+    async function toggleMyCoupons() {
+      const container = document.getElementById('my-coupons-container');
+      const toggleIcon = document.getElementById('my-coupons-toggle-icon');
+      if (!container || !toggleIcon) return;
+      
+      const isHidden = container.style.display === 'none';
+      if (isHidden) {
+        container.style.display = 'block';
+        toggleIcon.innerHTML = 'Hide <i data-lucide="chevron-up" style="width: 14px; height: 14px;"></i>';
+        await loadMyCoupons();
+      } else {
+        container.style.display = 'none';
+        toggleIcon.innerHTML = 'Show <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>';
+      }
+      lucide.createIcons({ root: toggleIcon });
+    }
+
+    async function loadMyCoupons() {
+      const list = document.getElementById('my-coupons-list');
+      if (!list) return;
+      
+      try {
+        const data = await apiRequest('/api/subscriptions/my-coupons');
+        if (data.success) {
+          myCouponsLoaded = true;
+          const coupons = data.coupons || [];
+          if (coupons.length === 0) {
+            list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 16px;">No coupons generated yet.</div>`;
+            return;
+          }
+          
+          list.innerHTML = coupons.map(item => {
+            const dateObj = new Date(item.createdAt);
+            const formattedDate = dateObj.toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
+            
+            let statusText = '';
+            let statusStyle = '';
+            if (item.isUsed) {
+              const usedDate = new Date(item.usedAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              });
+              statusText = `Claimed on ${usedDate}`;
+              statusStyle = 'color: var(--text-muted); font-style: italic; font-weight: 600; font-size: 11px;';
+            } else {
+              statusText = 'Unused';
+              statusStyle = 'color: var(--green); font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;';
+            }
+            
+            const durationLabel = item.duration === '1_month' ? '1-Month Pass' : '1-Year Pass';
+            
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #1a1a1e; border: 1px solid var(--black); border-radius: 6px; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                  <div style="background: rgba(20, 184, 166, 0.1); border-radius: 50%; padding: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i data-lucide="ticket" style="width: 14px; height: 14px; color: var(--teal);"></i>
+                  </div>
+                  <div style="min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span id="coupon-code-val-${item._id}" style="font-family: monospace; font-size: 13px; font-weight: 900; color: var(--white); letter-spacing: 0.5px;">${item.code}</span>
+                      <button onclick="copyCouponCode('${item.code}')" style="background: none; border: none; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Copy Coupon Code">
+                        <i data-lucide="copy" style="width: 11px; height: 11px; color: var(--teal);"></i>
+                      </button>
+                    </div>
+                    <div style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-top: 2px;">${durationLabel} • Created ${formattedDate}</div>
+                  </div>
+                </div>
+                <div style="text-align: right; flex-shrink: 0; ${statusStyle}">
+                  ${statusText}
+                </div>
+              </div>
+            `;
+          }).join('');
+          
+          lucide.createIcons({ root: list });
+        } else {
+          list.innerHTML = `<div style="text-align: center; color: var(--orange); font-size: 12px; font-weight: 600; padding: 16px;">Failed to load coupons.</div>`;
+        }
+      } catch (err) {
+        list.innerHTML = `<div style="text-align: center; color: var(--orange); font-size: 12px; font-weight: 600; padding: 16px;">Error loading coupons.</div>`;
+      }
+    }
+
+    function copyCouponCode(code) {
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Coupon code copied to clipboard!', 'success');
+        
+        // Auto fill the promo coupon input for convenience
+        const promoInput = document.getElementById('promo-coupon-input');
+        if (promoInput) {
+          promoInput.value = code;
+          promoInput.focus();
+        }
+      }).catch(err => {
+        showToast('Failed to copy coupon code.', 'error');
+      });
     }
 
     function showPremiumCelebration() {

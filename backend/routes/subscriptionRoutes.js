@@ -19,5 +19,7 @@ router.post('/razorpay/request-refund', authenticateToken, subscriptionControlle
 router.post('/claim-referral', authenticateToken, subscriptionController.claimReferral);
 router.post('/skip-referral', authenticateToken, subscriptionController.skipReferral);
 router.post('/redeem-points', authenticateToken, subscriptionController.redeemPoints);
+router.get('/points-history', authenticateToken, subscriptionController.getPointsHistory);
+router.get('/my-coupons', authenticateToken, subscriptionController.getMyCoupons);
 
 module.exports = router;

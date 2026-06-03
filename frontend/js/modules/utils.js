@@ -345,4 +345,362 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Dynamic WebRTC Camera Capture with fallback to standard input
+async function startCameraCapture(onSuccess) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    console.warn("navigator.mediaDevices.getUserMedia not supported. Falling back to native file input.");
+    fallbackToFileInput(onSuccess);
+    return;
+  }
+
+  // Create modal markup dynamically
+  const overlay = document.createElement('div');
+  overlay.id = 'custom-camera-modal-overlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(5px);
+    z-index: 21000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    color: #fff;
+    box-sizing: border-box;
+    padding: 16px;
+  `;
+
+  // Modal Container
+  const container = document.createElement('div');
+  container.style.cssText = `
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg-card, #ffffff);
+    border: 4px solid var(--black, #0a0a0a);
+    border-radius: 16px;
+    box-shadow: 8px 8px 0 var(--black, #0a0a0a);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+    color: var(--black, #0a0a0a);
+  `;
+
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: var(--pink, #ffb3d9);
+    color: #1a0008;
+    border-bottom: 4px solid var(--black, #0a0a0a);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  `;
+  header.innerHTML = `
+    <span style="display:flex;align-items:center;gap:6px;">
+      <i data-lucide="camera" style="width:16px;height:16px;"></i> Capture Photo
+    </span>
+    <button id="cam-close-btn" style="
+      background: none;
+      border: none;
+      font-size: 20px;
+      font-weight: 900;
+      color: #1a0008;
+      cursor: pointer;
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">✕</button>
+  `;
+
+  // Video wrapper
+  const videoWrapper = document.createElement('div');
+  videoWrapper.style.cssText = `
+    position: relative;
+    width: 100%;
+    max-height: 55vh;
+    max-height: 55dvh;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    align-self: center;
+  `;
+
+  const video = document.createElement('video');
+  video.autoplay = true;
+  video.playsInline = true;
+  video.style.cssText = `
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  `;
+  video.onloadedmetadata = () => {
+    if (video.videoWidth && video.videoHeight) {
+      const aspect = video.videoWidth / video.videoHeight;
+      videoWrapper.style.aspectRatio = aspect;
+    }
+  };
+
+  // Camera guides or target frame
+  const targetGuide = document.createElement('div');
+  targetGuide.style.cssText = `
+    position: absolute;
+    top: 8%;
+    left: 8%;
+    right: 8%;
+    bottom: 8%;
+    border: 3px dashed rgba(255,255,255,0.45);
+    border-radius: 12px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  targetGuide.innerHTML = `
+    <span style="color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px;">
+      Align subject here
+    </span>
+  `;
+
+  videoWrapper.appendChild(video);
+  videoWrapper.appendChild(targetGuide);
+
+  // Footer Actions
+  const footer = document.createElement('div');
+  footer.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--bg-muted, #f7f7f7);
+    border-top: 4px solid var(--black, #0a0a0a);
+    gap: 12px;
+  `;
+
+  // Shutter Snap Button (Middle)
+  const snapBtn = document.createElement('button');
+  snapBtn.id = 'cam-snap-btn';
+  snapBtn.className = 'ripple';
+  snapBtn.style.cssText = `
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid var(--black, #0a0a0a);
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--black, #0a0a0a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    outline: none;
+    padding: 0;
+  `;
+  snapBtn.innerHTML = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; border: 3px solid var(--black, #0a0a0a);"></div>`;
+
+  // Switch Camera Button
+  const switchBtn = document.createElement('button');
+  switchBtn.id = 'cam-switch-btn';
+  switchBtn.className = 'btn-ghost ripple';
+  switchBtn.style.cssText = `
+    border: 3px solid #000000 !important;
+    color: #000000 !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-weight: 800 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    box-shadow: 2px 2px 0 #000000 !important;
+    background: #ffffff !important;
+    display: none; /* Only show if multiple video devices exist */
+  `;
+  switchBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="refresh-cw" style="width:12px;height:12px;stroke:#000000 !important;"></i> Flip</span>`;
+
+  // Back / Cancel
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-ghost ripple';
+  cancelBtn.style.cssText = `
+    border: 3px solid #000000 !important;
+    color: #000000 !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-weight: 800 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    box-shadow: 2px 2px 0 #000000 !important;
+    background: #ffffff !important;
+  `;
+  cancelBtn.textContent = 'Cancel';
+
+  footer.appendChild(cancelBtn);
+  footer.appendChild(snapBtn);
+  footer.appendChild(switchBtn);
+
+  container.appendChild(header);
+  container.appendChild(videoWrapper);
+  container.appendChild(footer);
+  overlay.appendChild(container);
+  document.body.appendChild(overlay);
+
+  // Flash element
+  const flash = document.createElement('div');
+  flash.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.15s ease-out;
+  `;
+  videoWrapper.appendChild(flash);
+
+  if (window.lucide) {
+    lucide.createIcons({ root: container, props: { width: 14, height: 14 } });
+  }
+
+  let currentStream = null;
+  let useRearCamera = true;
+
+  // Stop camera tracks
+  function stopCamera() {
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => track.stop());
+      currentStream = null;
+    }
+  }
+
+  // Close modal
+  function closeModal() {
+    stopCamera();
+    overlay.remove();
+  }
+
+  cancelBtn.onclick = closeModal;
+  header.querySelector('#cam-close-btn').onclick = closeModal;
+
+  // Start Camera Function
+  async function startCamera() {
+    stopCamera();
+
+    const constraints = {
+      video: {
+        facingMode: useRearCamera ? { ideal: 'environment' } : 'user',
+        width: { ideal: 1920, max: 3840 },
+        height: { ideal: 1080, max: 2160 }
+      },
+      audio: false
+    };
+
+    try {
+      currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = currentStream;
+    } catch (err) {
+      console.warn("Error accessing camera with constraints:", err);
+      // Try fallback to any video source
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = currentStream;
+      } catch (fallbackErr) {
+        console.error("Camera access completely failed:", fallbackErr);
+        window.showToast("Could not access camera. Falling back to files.", "error");
+        closeModal();
+        fallbackToFileInput(onSuccess);
+      }
+    }
+  }
+
+  // Snap photo
+  snapBtn.onclick = () => {
+    if (!video.videoWidth) return;
+
+    // Trigger flash animation
+    flash.style.opacity = '1';
+    setTimeout(() => {
+      flash.style.opacity = '0';
+    }, 100);
+
+    setTimeout(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw video frame to canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert to Blob
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          window.showToast("Capture failed.", "error");
+          closeModal();
+          return;
+        }
+
+        // Convert Blob to File object
+        const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        closeModal();
+        onSuccess(file);
+      }, 'image/jpeg', 0.95);
+    }, 150); // slight delay to let flash render
+  };
+
+  // Switch camera event
+  switchBtn.onclick = () => {
+    useRearCamera = !useRearCamera;
+    startCamera();
+  };
+
+  // Enumerate cameras to show Switch button if there's more than one camera
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    if (videoDevices.length > 1) {
+      switchBtn.style.display = 'block';
+      if (window.lucide) lucide.createIcons({ root: switchBtn });
+    }
+  } catch (e) {
+    console.warn("Could not enumerate devices:", e);
+  }
+
+  // Start the video
+  await startCamera();
+}
+window.startCameraCapture = startCameraCapture;
+
+// Fallback: programmatically open file input with capture environment
+function fallbackToFileInput(onSuccess) {
+  const tempInput = document.createElement('input');
+  tempInput.type = 'file';
+  tempInput.accept = 'image/*';
+  tempInput.capture = 'environment';
+  tempInput.onchange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      onSuccess(file);
+    }
+  };
+  tempInput.click();
+}
+
 console.log("[Module] utils.js loaded and utility helpers bound to window");

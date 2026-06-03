@@ -1998,7 +1998,7 @@ function toggleAiRecapExpansion(el, event) {
   }
 }
 
-async function triggerTaskImageScan() {
+async function triggerTaskImageScan(useCamera = false) {
   const dateInput = document.getElementById('day-date-input');
   const selectedDate = dateInput ? dateInput.value : '';
   if (!selectedDate) {
@@ -2013,22 +2013,16 @@ async function triggerTaskImageScan() {
     return;
   }
 
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*';
-
-  fileInput.onchange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
+  const processScannedFile = async (file, event = null) => {
     // Check size limit of 10MB in frontend
     if (file.size > 10 * 1024 * 1024) {
       window.showToast('Photo is too large (exceeds 10MB limit). Please select a compressed image.', 'error');
-      event.target.value = '';
+      if (event && event.target) event.target.value = '';
       return;
     }
 
     const scanBtn = document.getElementById('scan-list-btn');
+    const scanContainer = document.getElementById('scan-list-btn-container') || scanBtn;
     const previewContainer = document.getElementById('scan-preview-container');
     const imgPreview = document.getElementById('scan-img-preview');
     const sizeText = document.getElementById('scan-file-size');
@@ -2045,7 +2039,7 @@ async function triggerTaskImageScan() {
       const reader = new FileReader();
       reader.onload = (e) => {
         imgPreview.src = e.target.result;
-        scanBtn.style.display = 'none'; // Hide main upload button
+        if (scanContainer) scanContainer.style.display = 'none'; // Hide scan buttons container
         previewContainer.style.display = 'block'; // Show preview area
       };
       reader.readAsDataURL(file);
@@ -2056,8 +2050,8 @@ async function triggerTaskImageScan() {
         cancelBtn.onclick = () => {
           previewContainer.style.display = 'none';
           imgPreview.src = '';
-          scanBtn.style.display = 'flex';
-          event.target.value = '';
+          if (scanContainer) scanContainer.style.display = 'flex';
+          if (event && event.target) event.target.value = '';
         };
       }
 
@@ -2066,9 +2060,9 @@ async function triggerTaskImageScan() {
       if (confirmBtn) {
         confirmBtn.onclick = async () => {
           const originalHTML = scanBtn.innerHTML;
-          // Hide preview and restore scanBtn to show loading spinner
+          // Hide preview and restore buttons to show loading spinner
           previewContainer.style.display = 'none';
-          scanBtn.style.display = 'flex';
+          if (scanContainer) scanContainer.style.display = 'flex';
           
           await startActualScan(file, scanBtn, originalHTML, event);
         };
@@ -2076,6 +2070,35 @@ async function triggerTaskImageScan() {
     }
   };
 
+  if (useCamera) {
+    if (window.startCameraCapture) {
+      window.startCameraCapture((file) => {
+        processScannedFile(file);
+      });
+    } else {
+      // Fallback if not loaded
+      const tempInput = document.createElement('input');
+      tempInput.type = 'file';
+      tempInput.accept = 'image/*';
+      tempInput.capture = 'environment';
+      tempInput.onchange = (event) => {
+        const file = event.target.files[0];
+        if (file) processScannedFile(file, event);
+      };
+      tempInput.click();
+    }
+    return;
+  }
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      processScannedFile(file, event);
+    }
+  };
   fileInput.click();
 }
 
@@ -2095,6 +2118,9 @@ async function startActualScan(file, scanBtn, originalHTML, event) {
   }
 
   scanBtn.disabled = true;
+  const cameraBtn = document.getElementById('scan-camera-btn');
+  if (cameraBtn) cameraBtn.disabled = true;
+
   scanBtn.innerHTML = `
     <span style="display:flex;align-items:center;gap:8px;">
       <span class="spinner-ring" style="width:13px;height:13px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
@@ -2211,6 +2237,8 @@ async function startActualScan(file, scanBtn, originalHTML, event) {
     }
 
     scanBtn.disabled = false;
+    const cameraBtn = document.getElementById('scan-camera-btn');
+    if (cameraBtn) cameraBtn.disabled = false;
     scanBtn.innerHTML = originalHTML;
     updateScanButtonText();
   }

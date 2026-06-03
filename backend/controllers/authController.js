@@ -133,7 +133,10 @@ const login = async (req, res) => {
       user.referralCode = await generateUniqueReferralCode();
     }
 
-    await user.save();
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { lastActiveAt: user.lastActiveAt, referralCode: user.referralCode } }
+    );
     const token = generateToken(user._id, user.email);
     res.json({ 
       _id: user._id, 
@@ -219,8 +222,9 @@ const oauthLogin = async (req, res) => {
     // Safety check: ensure existing oauth users get a referral code
     if (!user.referralCode) {
       const { generateUniqueReferralCode } = require('../utils/pointsHelper');
-      user.referralCode = await generateUniqueReferralCode();
-      await user.save();
+      const generatedCode = await generateUniqueReferralCode();
+      await User.updateOne({ _id: user._id }, { $set: { referralCode: generatedCode } });
+      user.referralCode = generatedCode;
     }
 
     const token = generateToken(user._id, user.email);
@@ -402,7 +406,10 @@ async function forgotPasswordOtp(req, res) {
       html: `<p>Your OTP is <b>${otp}</b>. Expires in 5 minutes.</p>`
     });
     res.json({ message: 'OTP sent' });
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) {
+    console.error('forgotPasswordOtp error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 }
 
 async function validateOtp(req, res) {
@@ -416,7 +423,10 @@ async function validateOtp(req, res) {
     if (!isMatch) return res.status(400).json({ message: 'Invalid OTP' });
 
     res.json({ message: 'OTP valid' });
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) {
+    console.error('validateOtp error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 }
 
 async function resetPassword(req, res) {
@@ -433,7 +443,10 @@ async function resetPassword(req, res) {
     user.resetOtpExpire = undefined;
     await user.save();
     res.json({ message: 'Password reset successful' });
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) {
+    console.error('resetPassword error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 }
 
 async function deleteAccount(req, res) {

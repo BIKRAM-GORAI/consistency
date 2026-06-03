@@ -2351,7 +2351,7 @@ async function handleMediaSelect(e) {
   }
 
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  const maxSize = 5 * 1024 * 1024; // 5MB
+  const maxSize = 10 * 1024 * 1024; // 10MB
 
   // 3. Validate all files first
   for (const file of files) {
@@ -2359,7 +2359,7 @@ async function handleMediaSelect(e) {
       return showToast(`Invalid format in batch: ${file.name}`, 'warn');
     }
     if (file.size > maxSize) {
-      return showToast(`File too large (>5MB): ${file.name}`, 'warn');
+      return showToast(`File too large (>10MB): ${file.name}`, 'warn');
     }
   }
 
@@ -3016,4 +3016,23 @@ window.executeBulkDelete = executeBulkDelete;
 window.removeMediaItem = removeMediaItem;
 window.clearMediaPreview = clearMediaPreview;
 window.proactiveSync = proactiveSync;
+
+function triggerChatCameraCapture() {
+  if (window.startCameraCapture) {
+    window.startCameraCapture((file) => {
+      const mockEvent = {
+        target: {
+          files: [file],
+          value: ''
+        }
+      };
+      handleMediaSelect(mockEvent);
+    });
+  } else {
+    const input = document.getElementById('chat-camera-input');
+    if (input) input.click();
+  }
+}
+window.triggerChatCameraCapture = triggerChatCameraCapture;
+
 console.log("[Module] chat.js loaded and Chat functions bound to window");
