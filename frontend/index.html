@@ -671,23 +671,23 @@
         border: 2px solid var(--black);
         border-radius: 6px;
         cursor: pointer;
-        transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+        transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
         box-shadow: 2px 2px 0 var(--black);
-        /* Inactive: slightly desaturated to show it's not selected */
-        filter: saturate(0.7) brightness(0.85);
+        /* Inactive buttons have 90% opacity to remain bright and fully visible */
+        opacity: 0.9;
       }
       #page-pomodoro .pomo-mode-btn.active {
-        filter: saturate(1) brightness(1);
-        transform: translate(-1px, -2px);
-        box-shadow: 3px 4px 0 var(--black);
+        opacity: 1;
+        transform: translate(-2px, -3px);
+        box-shadow: 4px 4px 0 var(--black);
         border-width: 2px;
       }
       #page-pomodoro .pomo-mode-btn:hover {
-        filter: saturate(1) brightness(1);
+        opacity: 1;
       }
       #page-pomodoro #pomo-mode-work   { background: var(--yellow); color: var(--black); }
       #page-pomodoro #pomo-mode-break  { background: var(--lime);   color: var(--black); }
-      #page-pomodoro #pomo-mode-long   { background: var(--purple); color: #fff; }
+      #page-pomodoro #pomo-mode-long   { background: #8B5CF6; color: #fff; } /* Brighter, vibrant purple */
       #page-pomodoro #pomo-mode-custom { background: var(--pink);   color: var(--black); }
 
       /* ── Custom duration panel ── */

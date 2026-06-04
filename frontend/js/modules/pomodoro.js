@@ -626,7 +626,7 @@ function showCustomConfirm(message, onConfirm, onCancel) {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    color: var(--black, #0a0a0a);
+    color: var(--text, #0a0a0a);
   `;
 
   const header = document.createElement('div');
@@ -638,6 +638,7 @@ function showCustomConfirm(message, onConfirm, onCancel) {
     text-transform: uppercase;
     font-size: 13px;
     letter-spacing: 0.5px;
+    color: var(--black, #0a0a0a) !important;
   `;
   header.textContent = '⚠️ Confirm Action';
 
@@ -745,7 +746,7 @@ function showCustomAlert(message, title = '⏰ Focus Alert', onOk) {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    color: var(--black, #0a0a0a);
+    color: var(--text, #0a0a0a);
   `;
 
   const header = document.createElement('div');
@@ -757,6 +758,7 @@ function showCustomAlert(message, title = '⏰ Focus Alert', onOk) {
     text-transform: uppercase;
     font-size: 13px;
     letter-spacing: 0.5px;
+    color: var(--black, #0a0a0a) !important;
   `;
   header.textContent = title;
 
