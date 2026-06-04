@@ -448,8 +448,9 @@ async function startCameraCapture(onSuccess) {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.15s ease;
   `;
-  video.onloadedmetadata = () => {
+  video.onresize = () => {
     if (video.videoWidth && video.videoHeight) {
       const aspect = video.videoWidth / video.videoHeight;
       videoWrapper.style.aspectRatio = aspect;
@@ -513,7 +514,25 @@ async function startCameraCapture(onSuccess) {
   `;
   snapBtn.innerHTML = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; border: 3px solid var(--black, #0a0a0a);"></div>`;
 
-  // Switch Camera Button
+  // Mirror Toggle Button (Left)
+  const mirrorBtn = document.createElement('button');
+  mirrorBtn.id = 'cam-mirror-btn';
+  mirrorBtn.className = 'btn-ghost ripple';
+  mirrorBtn.style.cssText = `
+    border: 3px solid #000000 !important;
+    color: #000000 !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-weight: 800 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    box-shadow: 2px 2px 0 #000000 !important;
+    background: #ffffff !important;
+  `;
+  mirrorBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="square" style="width:12px;height:12px;stroke:#000000 !important;"></i> Mirror</span>`;
+
+  // Switch Camera Button (Right)
   const switchBtn = document.createElement('button');
   switchBtn.id = 'cam-switch-btn';
   switchBtn.className = 'btn-ghost ripple';
@@ -532,7 +551,7 @@ async function startCameraCapture(onSuccess) {
   `;
   switchBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="refresh-cw" style="width:12px;height:12px;stroke:#000000 !important;"></i> Flip</span>`;
 
-  // Back / Cancel
+  // Back / Cancel (Far Left)
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'btn-ghost ripple';
   cancelBtn.style.cssText = `
@@ -550,6 +569,7 @@ async function startCameraCapture(onSuccess) {
   cancelBtn.textContent = 'Cancel';
 
   footer.appendChild(cancelBtn);
+  footer.appendChild(mirrorBtn);
   footer.appendChild(snapBtn);
   footer.appendChild(switchBtn);
 
@@ -581,6 +601,26 @@ async function startCameraCapture(onSuccess) {
 
   let currentStream = null;
   let useRearCamera = true;
+  let isMirrored = false;
+
+  // Mirror view handler
+  function updateMirroring() {
+    if (isMirrored) {
+      video.style.transform = 'scaleX(-1)';
+      mirrorBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="check-square" style="width:12px;height:12px;stroke:#000000 !important;"></i> Mirror</span>`;
+    } else {
+      video.style.transform = 'none';
+      mirrorBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="square" style="width:12px;height:12px;stroke:#000000 !important;"></i> Mirror</span>`;
+    }
+    if (window.lucide) {
+      lucide.createIcons({ root: mirrorBtn });
+    }
+  }
+
+  mirrorBtn.onclick = () => {
+    isMirrored = !isMirrored;
+    updateMirroring();
+  };
 
   // Stop camera tracks
   function stopCamera() {
@@ -606,8 +646,8 @@ async function startCameraCapture(onSuccess) {
     const constraints = {
       video: {
         facingMode: useRearCamera ? { ideal: 'environment' } : 'user',
-        width: { ideal: 1920, max: 3840 },
-        height: { ideal: 1080, max: 2160 }
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
       },
       audio: false
     };
@@ -615,12 +655,83 @@ async function startCameraCapture(onSuccess) {
     try {
       currentStream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = currentStream;
+
+      // Continuous autofocus and exposure constraints application
+      const track = currentStream.getVideoTracks()[0];
+      if (track) {
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        const advConstraints = {};
+        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+          advConstraints.focusMode = 'continuous';
+        }
+        if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+          advConstraints.exposureMode = 'continuous';
+        }
+        if (Object.keys(advConstraints).length > 0) {
+          try {
+            await track.applyConstraints({ advanced: [advConstraints] });
+          } catch (e) {
+            console.warn("Failed to apply advanced camera constraints:", e);
+          }
+        }
+
+        // Auto-set mirroring for front camera (selfie), unmirror for back/webcam
+        const settings = track.getSettings ? track.getSettings() : {};
+        if (settings.facingMode === 'user' || (!settings.facingMode && !useRearCamera)) {
+          isMirrored = true;
+        } else {
+          isMirrored = false;
+        }
+        updateMirroring();
+      }
+
+      // Enumerate cameras to show Switch button (permission is now guaranteed to be granted)
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        if (videoDevices.length > 1) {
+          switchBtn.style.display = 'block';
+          if (window.lucide) lucide.createIcons({ root: switchBtn });
+        } else {
+          switchBtn.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn("Could not enumerate devices during startCamera:", e);
+      }
+
     } catch (err) {
       console.warn("Error accessing camera with constraints:", err);
-      // Try fallback to any video source
+      // Fallback
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         video.srcObject = currentStream;
+
+        // Auto-set mirroring for front camera/fallback
+        const track = currentStream.getVideoTracks()[0];
+        if (track) {
+          const settings = track.getSettings ? track.getSettings() : {};
+          if (settings.facingMode === 'user' || (!settings.facingMode && !useRearCamera)) {
+            isMirrored = true;
+          } else {
+            isMirrored = false;
+          }
+          updateMirroring();
+        }
+
+        // Enumerate devices on fallback
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          if (videoDevices.length > 1) {
+            switchBtn.style.display = 'block';
+            if (window.lucide) lucide.createIcons({ root: switchBtn });
+          } else {
+            switchBtn.style.display = 'none';
+          }
+        } catch (e) {
+          console.warn("Could not enumerate devices during fallback:", e);
+        }
+
       } catch (fallbackErr) {
         console.error("Camera access completely failed:", fallbackErr);
         window.showToast("Could not access camera. Falling back to files.", "error");
@@ -646,6 +757,12 @@ async function startCameraCapture(onSuccess) {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       
+      // If mirrored, flip the canvas horizontally before drawing
+      if (isMirrored) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      
       // Draw video frame to canvas
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
@@ -670,18 +787,6 @@ async function startCameraCapture(onSuccess) {
     useRearCamera = !useRearCamera;
     startCamera();
   };
-
-  // Enumerate cameras to show Switch button if there's more than one camera
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    if (videoDevices.length > 1) {
-      switchBtn.style.display = 'block';
-      if (window.lucide) lucide.createIcons({ root: switchBtn });
-    }
-  } catch (e) {
-    console.warn("Could not enumerate devices:", e);
-  }
 
   // Start the video
   await startCamera();
