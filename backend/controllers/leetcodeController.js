@@ -30,6 +30,12 @@ const generateVerificationCode = async (req, res) => {
       return res.status(400).json({ message: 'LeetCode username is required' });
     }
 
+    // Sanitize leetcodeUsername input to protect against directory traversal and SSRF
+    const usernameRegex = /^[a-zA-Z0-9_-]{1,30}$/;
+    if (!usernameRegex.test(leetcodeUsername)) {
+      return res.status(400).json({ message: 'Invalid LeetCode username format. Only alphanumeric characters, dashes, and underscores are allowed.' });
+    }
+
     // Check if user has reached the maximum username change limit
     const user = await User.findById(userId);
     if (!user) {

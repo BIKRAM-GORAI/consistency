@@ -255,51 +255,26 @@ async function getLeaderboard(req, res) {
     const skip = (page - 1) * limit;
     const clientDate = req.headers['x-client-date'];
 
-    // 1. Pre-decay stale streaks of all users on the leaderboard to ensure sorting is accurate
-    const activeStreakUsers = await User.find({
-      currentStreak: { $gt: 0 },
-      showOnLeaderboard: { $ne: false },
-      username: { $exists: true, $ne: null },
-      isBlacklisted: { $ne: true }
-    }).select('_id currentStreak highestStreak');
+    // 1. Decay stale streaks of inactive users atomically in MongoDB
+    const d = new Date();
+    const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = clientDate || serverToday;
 
-    if (activeStreakUsers.length > 0) {
-      const userIds = activeStreakUsers.map(u => u._id);
-      // Fetch all days for these users in a single query
-      const allDays = await Day.find({ userId: { $in: userIds } }).select('userId date categories').lean();
-      
-      // Group days by userId in memory
-      const daysByUserId = {};
-      for (const d of allDays) {
-        const uidStr = d.userId.toString();
-        if (!daysByUserId[uidStr]) {
-          daysByUserId[uidStr] = [];
-        }
-        daysByUserId[uidStr].push(d);
-      }
+    // Calculate "yesterday" YYYY-MM-DD
+    const [y, m, dayNum] = today.split('-').map(Number);
+    const prev = new Date(y, m - 1, dayNum - 1);
+    const yesterday = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
 
-      // Reconcile and decay streaks in memory
-      const bulkOps = [];
-      for (const u of activeStreakUsers) {
-        const uidStr = u._id.toString();
-        const userDays = daysByUserId[uidStr] || [];
-        const freshCurrent = calculateCurrentStreak(userDays, clientDate);
-        const freshHighest = calculateHighestStreak(userDays);
-
-        if (u.currentStreak !== freshCurrent || u.highestStreak !== freshHighest) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: u._id },
-              update: { $set: { currentStreak: freshCurrent, highestStreak: freshHighest } }
-            }
-          });
-        }
-      }
-
-      if (bulkOps.length > 0) {
-        await User.bulkWrite(bulkOps);
-      }
-    }
+    await User.updateMany(
+      {
+        currentStreak: { $gt: 0 },
+        $or: [
+          { lastCompletedDate: { $lt: yesterday } },
+          { lastCompletedDate: null }
+        ]
+      },
+      { $set: { currentStreak: 0 } }
+    );
 
     // 2. Fetch the perfectly sorted and fresh paginated list
     const query = {
@@ -351,12 +326,19 @@ async function getLeaderboard(req, res) {
         myCurrentStreak = calculateCurrentStreak(myDays, clientDate);
         myHighestStreak = calculateHighestStreak(myDays);
         
-        if (activeUser.currentStreak !== myCurrentStreak || activeUser.highestStreak !== myHighestStreak) {
+        const mostRecentCompletedDay = myDays
+          .filter(d => countTasks(d.categories) > 0)
+          .sort((a, b) => b.date.localeCompare(a.date))[0];
+        const lastCompletedDate = mostRecentCompletedDay ? mostRecentCompletedDay.date : null;
+
+        if (activeUser.currentStreak !== myCurrentStreak || activeUser.highestStreak !== myHighestStreak || activeUser.lastCompletedDate !== lastCompletedDate) {
           activeUser.currentStreak = myCurrentStreak;
           activeUser.highestStreak = myHighestStreak;
+          activeUser.lastCompletedDate = lastCompletedDate;
           await User.findByIdAndUpdate(activeUser._id, {
             currentStreak: myCurrentStreak,
-            highestStreak: myHighestStreak
+            highestStreak: myHighestStreak,
+            lastCompletedDate
           });
         }
 

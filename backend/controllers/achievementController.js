@@ -123,12 +123,33 @@ const getAchievementsByDay = async (req, res) => {
 const getAchievementsByUser = async (req, res) => {
   try {
     const User = require('../models/User');
-    const owner = await User.findById(req.params.userId).select('achievementsPublic');
+    const ProfileShare = require('../models/ProfileShare');
+    const owner = await User.findById(req.params.userId).select('achievementsPublic isPublicProfile');
     if (!owner) return res.status(404).json({ message: 'User not found' });
 
+    const requesterId = req.user ? req.user.userId : null;
+    const isOwner = requesterId && String(requesterId) === String(owner._id);
+
     // undefined means the field never existed (old user) → treat as public
-    if (owner.achievementsPublic === false) {
+    if (owner.achievementsPublic === false && !isOwner) {
       return res.status(403).json({ message: 'PRIVATE', achievementsPublic: false });
+    }
+
+    let canView = isOwner || owner.isPublicProfile !== false;
+    const { code } = req.query;
+    if (!canView && code) {
+      const validShare = await ProfileShare.findOne({
+        userId: owner._id,
+        shareCode: code,
+        expiresAt: { $gt: new Date() }
+      });
+      if (validShare) {
+        canView = true;
+      }
+    }
+
+    if (!canView) {
+      return res.status(403).json({ message: 'This profile is private' });
     }
 
     const docs = await Achievement

@@ -167,9 +167,16 @@ async function updateUserStreakAndActivity(userId, clientDate) {
   const currentStreak = calculateCurrentStreak(days, clientDate);
   const highestStreak = calculateHighestStreak(days);
 
+  // Find the most recent day containing completed tasks
+  const mostRecentCompletedDay = days
+    .filter(d => countCompletedTasks(d.categories) > 0)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const lastCompletedDate = mostRecentCompletedDay ? mostRecentCompletedDay.date : null;
+
   await User.findByIdAndUpdate(userId, {
     currentStreak,
     highestStreak,
+    lastCompletedDate,
     lastActiveAt: new Date(),
   });
 
@@ -214,10 +221,17 @@ const getAllDays = async (req, res) => {
       const currentStreak = calculateCurrentStreak(allUserDays, clientDate);
       const newHighest    = calculateHighestStreak(allUserDays);
 
+      // Find the most recent day containing completed tasks
+      const mostRecentCompletedDay = allUserDays
+        .filter(d => countCompletedTasks(d.categories) > 0)
+        .sort((a, b) => b.date.localeCompare(a.date))[0];
+      const lastCompletedDate = mostRecentCompletedDay ? mostRecentCompletedDay.date : null;
+
       // Persist corrected values (fire-and-forget — don't block the response)
       User.findByIdAndUpdate(userId, {
         currentStreak,
         highestStreak: newHighest,
+        lastCompletedDate,
       }).then(() => {
         const { checkAndAwardReferralStreak } = require('../utils/pointsHelper');
         checkAndAwardReferralStreak(userId, newHighest).catch(err => console.error(err));

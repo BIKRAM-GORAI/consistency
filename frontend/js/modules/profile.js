@@ -349,7 +349,11 @@ async function submitProfileSettings() {
         // Reload leaderboard to reflect visibility settings changes instantly in-place!
         const activePage = document.querySelector('.page.active');
         if (activePage && activePage.id === 'page-leaderboard') {
-          loadLeaderboard(true);
+          if (typeof window.forceReloadLeaderboard === 'function') {
+            window.forceReloadLeaderboard();
+          } else if (typeof loadLeaderboard === 'function') {
+            loadLeaderboard(true);
+          }
         }
       }).catch(err => {
         console.warn('Background profile sync failed:', err);

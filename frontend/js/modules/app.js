@@ -331,6 +331,7 @@ async function toggleLeaderboardShowcase(checked) {
     }
 
     // Refresh leaderboard instantly in-place!
+    _lastLeaderboardLoad = 0;
     loadLeaderboard(true);
   } catch (err) {
     console.error('Error saving leaderboard showcase settings:', err);
@@ -1133,9 +1134,13 @@ async function previewOwnProfile() {
 
 
 // ── Leaderboard ───────────────────────────────────────────
+let _lastLeaderboardLoad = 0;
 
 function setLeaderboardSort(type) {
   if (window.lbSort === type && window.lbPage > 1) return; 
+  if (window.lbSort !== type) {
+    _lastLeaderboardLoad = 0;
+  }
   window.lbSort = type;
   
   // UI feedback for buttons
@@ -1167,6 +1172,13 @@ function renderLeaderboardData(users, reset) {
 async function loadLeaderboard(reset = false) {
   if (window.lbIsLoading) return;
   if (reset) {
+    const now = Date.now();
+    // Throttle leaderboard queries to once every 30 seconds to prevent unnecessary API calls on tab switch
+    if (now - _lastLeaderboardLoad < 30000 && document.getElementById('leaderboard-list')?.children.length > 0) {
+      return;
+    }
+    _lastLeaderboardLoad = now;
+
     window.lbPage = 1;
     const listContainer = document.getElementById('leaderboard-list');
     if (listContainer) listContainer.innerHTML = '';
@@ -1925,6 +1937,10 @@ window.sharePublicProfile = sharePublicProfile;
 window.logShare = logShare;
 window.setLeaderboardSort = setLeaderboardSort;
 window.loadLeaderboard = loadLeaderboard;
+window.forceReloadLeaderboard = () => {
+  _lastLeaderboardLoad = 0;
+  loadLeaderboard(true);
+};
 window.renderLeaderboardItem = renderLeaderboardItem;
 window.fetchAiLimit = fetchAiLimit;
 window.updateAllAiInsightButtons = updateAllAiInsightButtons;

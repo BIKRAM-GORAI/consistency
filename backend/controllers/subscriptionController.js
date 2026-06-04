@@ -307,19 +307,26 @@ exports.applyCoupon = async (req, res) => {
       return res.status(400).json({ message: 'Coupon code is required.' });
     }
 
-    const coupon = await Coupon.findOne({ code: code.toUpperCase().trim() });
-    if (!coupon) {
-      return res.status(404).json({ message: 'Invalid coupon code.' });
-    }
+    const now = new Date();
+    // Atomic coupon redemption to prevent concurrency double-claims
+    const coupon = await Coupon.findOneAndUpdate(
+      { code: code.toUpperCase().trim(), isUsed: false },
+      { $set: { isUsed: true, usedBy: userId, usedAt: now } },
+      { new: true }
+    );
 
-    if (coupon.isUsed) {
+    if (!coupon) {
+      // Check if it exists at all to return a descriptive message
+      const exists = await Coupon.findOne({ code: code.toUpperCase().trim() });
+      if (!exists) {
+        return res.status(404).json({ message: 'Invalid coupon code.' });
+      }
       return res.status(400).json({ message: 'This coupon has already been redeemed.' });
     }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    const now = new Date();
     let currentExpiry = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > now
       ? new Date(user.subscriptionExpiresAt)
       : now;
@@ -335,12 +342,6 @@ exports.applyCoupon = async (req, res) => {
     user.subscriptionTier = 'premium';
     user.subscriptionExpiresAt = currentExpiry;
     await user.save();
-
-    // Mark coupon as consumed
-    coupon.isUsed = true;
-    coupon.usedBy = userId;
-    coupon.usedAt = now;
-    await coupon.save();
 
     res.status(200).json({
       success: true,
@@ -474,6 +475,17 @@ exports.verifyRazorpayPayment = async (req, res) => {
 ============================================================
       `);
       return res.status(400).json({ message: 'Payment verification failed: Signature mismatch.' });
+    }
+
+    // Replay attack prevention: check if this payment ID has already been processed in the database
+    const paymentExists = await User.findOne({
+      $or: [
+        { razorpayPaymentId: razorpay_payment_id },
+        { 'paymentHistory.paymentId': razorpay_payment_id }
+      ]
+    });
+    if (paymentExists) {
+      return res.status(400).json({ message: 'Payment verification failed: This transaction has already been processed.' });
     }
 
     const user = await User.findById(userId);
@@ -723,31 +735,6 @@ exports.checkPendingSubscription = async (req, res) => {
   } catch (error) {
     console.error('checkPendingSubscription error:', error.message);
     res.status(500).json({ message: 'Internal Server Error checking pending transaction status.' });
-  }
-};
-
-/**
- * POST /api/subscriptions/razorpay/verify-dev-password
- * Verifies a developer password given in the environment variable.
- */
-exports.verifyDevPassword = async (req, res) => {
-  try {
-    const { password } = req.body;
-    const devPassword = process.env.DEV_SUBSCRIPTION_PASSWORD;
-
-    if (!devPassword) {
-      console.error('DEV_SUBSCRIPTION_PASSWORD is missing in .env Configuration');
-      return res.status(500).json({ message: 'Developer subscription access password not configured.' });
-    }
-
-    if (password === devPassword) {
-      return res.status(200).json({ success: true });
-    } else {
-      return res.status(401).json({ success: false, message: 'Invalid developer password.' });
-    }
-  } catch (error) {
-    console.error('verifyDevPassword error:', error.message);
-    res.status(500).json({ message: 'Internal Server Error verifying password.' });
   }
 };
 

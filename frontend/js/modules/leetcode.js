@@ -498,12 +498,7 @@ async function addLeetCodeProblem() {
     await loadDays();
 
     // Update LeetCode button states after reload
-    try {
-      const user = await apiFetch(`${window.API}/api/auth/settings`);
-      updateLeetCodeButtonsStatus(!!user.leetcodeLastVerifiedAt);
-    } catch (e) {
-      console.error('Error updating LeetCode button status:', e);
-    }
+    updateLeetCodeButtonsStatus(true);
   } catch (error) {
     console.error('Error cleaning up after adding problem:', error);
     try { closeModal('modal-add-leetcode'); } catch (e) { /* ignore */ }
@@ -514,12 +509,15 @@ async function addLeetCodeProblem() {
 async function openLeetCodeProblemModal(dayId, dayDate) {
   // Check if user has verified LeetCode profile first
   try {
-    const user = await apiFetch(`${window.API}/api/auth/settings`);
-    if (!user.leetcodeLastVerifiedAt) {
-      showToast('Please verify your LeetCode profile first', 'error');
-      // Open profile modal to guide user
-      openProfileModal();
-      return;
+    const isVerified = localStorage.getItem('leetcodeUsername');
+    if (!isVerified) {
+      const user = await apiFetch(`${window.API}/api/auth/settings`);
+      if (!user.leetcodeLastVerifiedAt) {
+        showToast('Please verify your LeetCode profile first', 'error');
+        // Open profile modal to guide user
+        openProfileModal();
+        return;
+      }
     }
   } catch (error) {
     console.error('Error checking profile verification:', error);
@@ -544,8 +542,13 @@ async function openLeetCodeProblemModal(dayId, dayDate) {
 }
 
 // Load LeetCode profile status
-async function loadLeetCodeProfileStatus() {
+async function loadLeetCodeProfileStatus(user = null) {
   try {
+    if (user) {
+      renderLeetCodeUI(user);
+      return;
+    }
+
     // 1. STALE: Try cache first
     const userId = localStorage.getItem('window.userId');
     if (window.userId && window.localDb) {
@@ -555,8 +558,8 @@ async function loadLeetCodeProfileStatus() {
 
     // 2. REVALIDATE: Fetch fresh if online
     if (navigator.onLine) {
-      const user = await apiFetch(`${window.API}/api/auth/settings`);
-      renderLeetCodeUI(user);
+      const freshUser = await apiFetch(`${window.API}/api/auth/settings`);
+      renderLeetCodeUI(freshUser);
     }
   } catch (error) {
     console.error('Error loading LeetCode profile status:', error);

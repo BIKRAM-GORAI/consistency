@@ -323,8 +323,16 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    lastCompletedDate: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
+// Optimize leaderboard queries with compound indexes
+UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, currentStreak: -1 });
+UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, highestStreak: -1 });
 
 module.exports = mongoose.model('User', UserSchema);
