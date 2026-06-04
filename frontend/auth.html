@@ -408,6 +408,62 @@
 
     .auth-back-link:hover { color: var(--black); text-decoration: underline; }
 
+    .auth-footer-nav-btn {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-decoration: none;
+      letter-spacing: 0.5px;
+      padding: 6px 12px;
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      box-shadow: 2px 2px 0px var(--black);
+      transition: all 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .auth-footer-nav-btn.home-btn {
+      background: var(--yellow);
+      color: var(--black);
+    }
+    .auth-footer-nav-btn.home-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0px var(--black);
+      background: var(--yellow);
+    }
+    .auth-footer-nav-btn.home-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px var(--black);
+    }
+    .auth-footer-nav-btn.admin-btn {
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 2px solid #babcbf;
+      box-shadow: 2px 2px 0px #babcbf;
+    }
+    .auth-footer-nav-btn.admin-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0px #babcbf;
+      background: #e5e7eb;
+    }
+    .auth-footer-nav-btn.admin-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px #babcbf;
+    }
+
+    .auth-policy-link {
+      color: #666;
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.15s;
+    }
+    .auth-policy-link:hover {
+      color: var(--black);
+      text-decoration: underline;
+    }
+
     /* ── OAuth Buttons ── */
     .oauth-divider {
       text-align: center;
@@ -718,15 +774,17 @@
       </div>
 
       <!-- Card Footer -->
-      <div class="auth-card-footer" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+      <div class="auth-card-footer" style="display: flex; flex-direction: column; gap: 14px; align-items: center;">
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-          <a href="landing.html" class="auth-back-link">← Back to home</a>
-          <a href="admin-login.html" class="auth-back-link" style="font-size: 11px; opacity: 0.7;">Admin Access →</a>
+          <a href="landing.html" class="auth-footer-nav-btn home-btn">← Back to home</a>
+          <a href="admin-login.html" class="auth-footer-nav-btn admin-btn">Admin Access →</a>
         </div>
-        <div style="margin-top: 5px; font-size: 11px; display: flex; justify-content: center; gap: 15px; text-transform: uppercase;">
-          <a href="terms.html" style="color: #666; text-decoration: none; font-weight: 700;">Terms</a>
+        <div style="margin-top: 2px; font-size: 11px; display: flex; justify-content: center; gap: 15px; text-transform: uppercase;">
+          <a href="terms.html" class="auth-policy-link">Terms</a>
           <span style="color: #ccc;">|</span>
-          <a href="privacy.html" style="color: #666; text-decoration: none; font-weight: 700;">Privacy Policy</a>
+          <a href="privacy.html" class="auth-policy-link">Privacy Policy</a>
+          <span style="color: #ccc;">|</span>
+          <a href="compliance.html" class="auth-policy-link">Data Compliance</a>
         </div>
       </div>
 

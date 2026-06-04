@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Compliance - Consistency Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f1b;
+      --bg-card: #18182c;
+      --black: #111;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --yellow: #FFD60A;
+      --purple: #a855f7;
+      --border: 3px solid #111;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 720px;
+      width: 100%;
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 8px 8px 0 var(--black);
+    }
+
+    .header {
+      text-align: center;
+      border-bottom: var(--border);
+      padding-bottom: 30px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--yellow);
+      color: var(--black);
+      font-weight: 900;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 10px 20px;
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--black);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      margin-bottom: 24px;
+    }
+
+    .back-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--black);
+    }
+
+    .back-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 32px;
+      text-transform: uppercase;
+      color: var(--yellow);
+      letter-spacing: -0.5px;
+      margin-top: 10px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin: 35px 0 15px;
+      border-left: 5px solid var(--yellow);
+      padding-left: 12px;
+    }
+
+    p, li {
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 15px;
+    }
+
+    ul {
+      list-style-type: none;
+      margin-bottom: 20px;
+    }
+
+    li {
+      position: relative;
+      padding-left: 24px;
+      margin-bottom: 12px;
+    }
+
+    li::before {
+      content: "🛡️";
+      position: absolute;
+      left: 0;
+      top: 1px;
+    }
+
+    .alert {
+      background: rgba(168, 85, 247, 0.08);
+      border: 2px solid var(--purple);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 25px 0;
+    }
+
+    .alert-title {
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--purple);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .alert p {
+      margin-bottom: 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 25px;
+      border-top: var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px 10px;
+      }
+      .container {
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-btn" onclick="window.history.back() || window.close()">⬅ Back</a>
+    
+    <div class="header">
+      <h1>Data Compliance</h1>
+      <div class="meta">Last Updated: June 4, 2026</div>
+    </div>
+
+    <h2>1. Regulatory Compliance Frameworks</h2>
+    <p>Consistency Tracker is designed and operated in adherence to international data privacy regulations, including the <strong>General Data Protection Regulation (GDPR)</strong>, the <strong>California Consumer Privacy Act (CCPA)</strong>, and India's <strong>Digital Personal Data Protection (DPDP) Act</strong>. We respect user rights, including access, correction, and erasure.</p>
+
+    <h2>2. Minimally Invasive Device Permissions</h2>
+    <p>We believe in data minimization. Device permissions are requested exclusively when you actively trigger corresponding actions:</p>
+    <ul>
+      <li><strong>Microphone Permission:</strong> Used exclusively to record and capture voice prompts for our <strong>Voice-to-Task</strong> AI converter. Audio streams are captured transiently, converted to text via web speech APIs, and never recorded or transmitted in the background.</li>
+      <li><strong>Camera/Photo Permissions:</strong> Used only when you capture photos for daily card scanning (OCR task extraction), profile customization, or group chat. The camera preview runs locally on your device; image data is only sent to the server when you actively tap the Capture button.</li>
+      <li><strong>Local Storage & Cookies:</strong> Used strictly to persist your active authentication JWT tokens, interface preferences (such as light/dark theme), and system wake lock settings for the Pomodoro timer.</li>
+      <li><strong>Mobile App Usage & Statistics Sync:</strong> If you explicitly grant permission to share application usage data within our mobile app, we collect local focus metrics (such as Pomodoro session statistics and app open counts). This data is securely synchronized with our web servers to construct your unified progress charts and maintain consistent cross-device habit streaks.</li>
+    </ul>
+
+    <h2>3. AI Processing Safety (Google Gemini)</h2>
+    <p>We integrate Google Gemini API to power AI features such as OCR Handwriting Scan and AI Insights.</p>
+    <ul>
+      <li><strong>Transient Pipeline:</strong> Images and text tasks sent to the AI API are transmitted securely via HTTPS and processed ephemerally.</li>
+      <li><strong>No Public LLM Training:</strong> Google Gemini API terms guarantee that our API requests are not used to train public LLM models, and no data is stored permanently on their servers.</li>
+    </ul>
+
+    <h2>4. Payment Security & Isolation (Razorpay)</h2>
+    <p>All subscription and transaction flows are fully delegated to Razorpay via their secure, PCI-DSS compliant checkout frame.</p>
+    <p>Consistency Tracker does not access, see, or store your credit/debit card numbers, CVVs, net banking credentials, or UPI details on our servers.</p>
+
+    <h2>5. Infrastructure Subprocessors</h2>
+    <p>We only share information with trusted infrastructure subprocessors required to maintain the platform's reliability:</p>
+    <ul>
+      <li><strong>MongoDB Atlas:</strong> Secure cloud database storage.</li>
+      <li><strong>Firebase:</strong> Delivery of real-time messaging notifications and chat synchronization.</li>
+      <li><strong>Cloudinary:</strong> Secure user profile images and uploaded group media.</li>
+      <li><strong>Vercel:</strong> Web application hosting.</li>
+    </ul>
+
+    <div class="alert">
+      <div class="alert-title">🔒 Right to Be Forgotten & Account Deletion</div>
+      <p>Clicking <strong>Delete Account</strong> in your user profile settings initiates an immediate, permanent purge of your user document, habits, streaks, milestones, and uploaded files from our databases.</p>
+      <p style="margin-top: 8px;"><strong>Chat History Retention Notice:</strong> To preserve the integrity and conversational context for other members, messages you post inside public or private chat groups are retained in the group history. By participating in these groups, you consent to your group messages remaining visible within those shared channels.</p>
+    </div>
+
+    <div class="footer">
+      &copy; 2026 Consistency Tracker. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
