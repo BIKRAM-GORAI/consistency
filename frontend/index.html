@@ -825,6 +825,18 @@
         #page-pomodoro .pomo-btn  { padding: 11px 20px; font-size: 14px; min-width: 90px; }
         #page-pomodoro .pomo-mode-btn { padding: 6px 11px; font-size: 11px; }
       }
+
+      /* ── Keep Screen Awake Switch Styles ── */
+      .wake-lock-container:active {
+        transform: translate(1px, 1px);
+        box-shadow: 1px 1px 0 var(--black) !important;
+      }
+      .wake-lock-container input:checked ~ .custom-checkbox {
+        background: var(--pink) !important;
+      }
+      .wake-lock-container input:checked ~ .custom-checkbox .checkmark {
+        display: block !important;
+      }
     </style>
 
     <div class="page-header">
@@ -912,6 +924,17 @@
             <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i> Reset
           </button>
         </div>
+      </div>
+
+      <!-- Keep Screen Awake Toggle -->
+      <div class="pomo-wake-lock" style="margin-top: 24px; padding-top: 16px; border-top: 2px dashed var(--black); display: flex; justify-content: center;">
+        <label class="wake-lock-container" style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer; background: var(--bg-muted); border: 2px solid var(--black); padding: 8px 14px; border-radius: 6px; box-shadow: 2px 2px 0 var(--black); transition: transform 0.1s, box-shadow 0.1s; user-select: none; position: relative;">
+          <input type="checkbox" id="pomo-wake-lock-toggle" style="position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;" />
+          <span class="custom-checkbox" style="width: 16px; height: 16px; border: 2px solid var(--black); background: var(--bg-card); display: inline-block; border-radius: 3px; position: relative; transition: background 0.1s; vertical-align: middle;">
+            <span class="checkmark" style="display: none; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid var(--black); border-width: 0 2px 2px 0; transform: rotate(45deg);"></span>
+          </span>
+          <span>☕ Keep Screen Awake</span>
+        </label>
       </div>
 
     </div>

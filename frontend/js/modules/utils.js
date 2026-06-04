@@ -484,35 +484,38 @@ async function startCameraCapture(onSuccess) {
   // Footer Actions
   const footer = document.createElement('div');
   footer.style.cssText = `
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto auto;
+    gap: 12px;
     padding: 16px 20px;
     background: var(--bg-muted, #f7f7f7);
     border-top: 4px solid var(--black, #0a0a0a);
-    gap: 12px;
   `;
 
-  // Shutter Snap Button (Middle)
+  // Shutter Snap Button (Capture)
   const snapBtn = document.createElement('button');
   snapBtn.id = 'cam-snap-btn';
   snapBtn.className = 'ripple';
   snapBtn.style.cssText = `
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: #fff;
-    border: 4px solid var(--black, #0a0a0a);
-    cursor: pointer;
-    box-shadow: 4px 4px 0 var(--black, #0a0a0a);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-    outline: none;
-    padding: 0;
+    border: 3px solid #000000 !important;
+    color: #ffffff !important;
+    background: #ef4444 !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-family: 'Space Grotesk', 'Inter', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: 13px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 2px 2px 0 #000000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
   `;
-  snapBtn.innerHTML = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; border: 3px solid var(--black, #0a0a0a);"></div>`;
+  snapBtn.innerHTML = `<span>📸 Capture</span>`;
 
   // Mirror Toggle Button (Left)
   const mirrorBtn = document.createElement('button');
@@ -521,14 +524,20 @@ async function startCameraCapture(onSuccess) {
   mirrorBtn.style.cssText = `
     border: 3px solid #000000 !important;
     color: #000000 !important;
-    padding: 8px 14px !important;
+    padding: 10px 16px !important;
     border-radius: 8px !important;
     cursor: pointer !important;
+    font-family: 'Space Grotesk', 'Inter', sans-serif !important;
     font-weight: 800 !important;
-    font-size: 11px !important;
+    font-size: 13px !important;
     text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
     box-shadow: 2px 2px 0 #000000 !important;
     background: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
   `;
   mirrorBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="square" style="width:12px;height:12px;stroke:#000000 !important;"></i> Mirror</span>`;
 
@@ -539,38 +548,48 @@ async function startCameraCapture(onSuccess) {
   switchBtn.style.cssText = `
     border: 3px solid #000000 !important;
     color: #000000 !important;
-    padding: 8px 14px !important;
+    padding: 10px 16px !important;
     border-radius: 8px !important;
     cursor: pointer !important;
+    font-family: 'Space Grotesk', 'Inter', sans-serif !important;
     font-weight: 800 !important;
-    font-size: 11px !important;
+    font-size: 13px !important;
     text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
     box-shadow: 2px 2px 0 #000000 !important;
     background: #ffffff !important;
     display: none; /* Only show if multiple video devices exist */
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
   `;
   switchBtn.innerHTML = `<span style="display:flex;align-items:center;gap:4px;color:#000000 !important;"><i data-lucide="refresh-cw" style="width:12px;height:12px;stroke:#000000 !important;"></i> Flip</span>`;
 
-  // Back / Cancel (Far Left)
+  // Back / Cancel
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'btn-ghost ripple';
   cancelBtn.style.cssText = `
     border: 3px solid #000000 !important;
     color: #000000 !important;
-    padding: 8px 14px !important;
+    padding: 10px 16px !important;
     border-radius: 8px !important;
     cursor: pointer !important;
+    font-family: 'Space Grotesk', 'Inter', sans-serif !important;
     font-weight: 800 !important;
-    font-size: 11px !important;
+    font-size: 13px !important;
     text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
     box-shadow: 2px 2px 0 #000000 !important;
     background: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   `;
   cancelBtn.textContent = 'Cancel';
 
+  footer.appendChild(snapBtn);
   footer.appendChild(cancelBtn);
   footer.appendChild(mirrorBtn);
-  footer.appendChild(snapBtn);
   footer.appendChild(switchBtn);
 
   container.appendChild(header);
@@ -690,10 +709,12 @@ async function startCameraCapture(onSuccess) {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         if (videoDevices.length > 1) {
-          switchBtn.style.display = 'block';
+          switchBtn.style.display = 'flex';
+          mirrorBtn.style.gridColumn = 'auto';
           if (window.lucide) lucide.createIcons({ root: switchBtn });
         } else {
           switchBtn.style.display = 'none';
+          mirrorBtn.style.gridColumn = 'span 2';
         }
       } catch (e) {
         console.warn("Could not enumerate devices during startCamera:", e);
@@ -723,10 +744,12 @@ async function startCameraCapture(onSuccess) {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter(device => device.kind === 'videoinput');
           if (videoDevices.length > 1) {
-            switchBtn.style.display = 'block';
+            switchBtn.style.display = 'flex';
+            mirrorBtn.style.gridColumn = 'auto';
             if (window.lucide) lucide.createIcons({ root: switchBtn });
           } else {
             switchBtn.style.display = 'none';
+            mirrorBtn.style.gridColumn = 'span 2';
           }
         } catch (e) {
           console.warn("Could not enumerate devices during fallback:", e);
