@@ -23,11 +23,12 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v62'; // Bumped cache version
+const CACHE_NAME = 'consistency-cache-v63'; // Bumped cache version
 const STATIC_ASSETS = [
   '/',
   'index.html',
   'landing.html',
+  'canvas.html',
   'script.js',
   'subscription.html',
   'donate.html',
@@ -114,7 +115,8 @@ self.addEventListener('fetch', (event) => {
                           url.pathname === '/style.css' ||
                           url.pathname.startsWith('/js/modules/') ||
                           url.pathname === '/subscription.html' ||
-                          url.pathname === '/donate.html';
+                          url.pathname === '/donate.html' ||
+                          url.pathname === '/canvas.html';
 
   if (isCoreCodeAsset) {
     // Network-First for core application files
