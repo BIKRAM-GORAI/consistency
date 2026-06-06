@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Auth & Subscription Guard
+    if (!localStorage.getItem('userId')) {
+      window.location.replace('landing.html' + window.location.search);
+    }
+    const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+    if (!isPremium) {
+      window.location.replace('subscription.html');
+    }
+    
+    // Core theme application
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <title>AI Agentic Canvas | Consistency Daily</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="style.css" />
+  <script src="libs/lucide.min.js"></script>
+  
+  <style>
+    /* Custom style tweaks for the standalone Canvas portal */
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* === DASHBOARD VIEW === */
+    #canvas-dashboard-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      padding: 40px 24px;
+      box-sizing: border-box;
+    }
+
+    .dashboard-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .dashboard-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dashboard-title h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .dashboard-title p {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .dashboard-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .btn-brutal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 15px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+    }
+    .btn-brutal:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--black);
+    }
+    .btn-brutal:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .btn-yellow { background: var(--yellow); color: var(--black); }
+    .btn-yellow i, .btn-yellow svg { color: var(--black) !important; stroke: var(--black) !important; }
+    
+    /* General icon styling inside brutal buttons to prevent missing/invisible rendering */
+    .btn-brutal i, .btn-brutal svg {
+      width: 16px;
+      height: 16px;
+      color: inherit;
+      stroke: currentColor;
+      stroke-width: 2.2px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    
+    #mobile-sidebar-toggle i, #mobile-sidebar-toggle svg {
+      width: 24px;
+      height: 24px;
+      color: var(--black) !important;
+      stroke: var(--black) !important;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .btn-teal { background: var(--teal); color: var(--black); }
+    .btn-purple { background: var(--purple); color: #fff; }
+    .btn-pink { background: var(--pink); color: var(--black); }
+    .btn-coral { background: var(--coral); color: #fff; }
+    .btn-muted { background: var(--bg-muted); color: var(--text); }
+
+    /* Limit info card */
+    .limits-card {
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .limits-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+
+    .limits-bar-container {
+      height: 16px;
+      background: var(--bg-muted);
+      border: var(--border-2);
+      border-radius: var(--r-full);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .limits-bar {
+      height: 100%;
+      background: var(--pink);
+      transition: width 0.4s ease;
+    }
+
+    /* Daily AI message limit pill */
+    .msg-limits-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .msg-limits-card {
+      flex: 1;
+      min-width: 220px;
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .msg-limits-card .limits-info {
+      font-size: 14px;
+    }
+    .msg-limit-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: var(--r-full);
+      border: var(--border-2);
+      background: var(--bg-muted);
+      white-space: nowrap;
+    }
+    .msg-limit-pill.ok { background: var(--lime); color: var(--black); border-color: var(--black); }
+    .msg-limit-pill.low { background: var(--coral); color: #fff; border-color: var(--red); }
+    .msg-limit-pill.empty { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* Sidebar message limit indicator */
+    .sidebar-msg-limit {
+      padding: 6px 16px;
+      border-bottom: var(--border);
+      background: var(--bg-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Search & Grid */
+    .filter-bar {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .filter-input {
+      width: 100%;
+      padding: 14px 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      border: var(--border);
+      border-radius: var(--r-md);
+      background: var(--bg-card);
+      color: var(--text);
+      outline: none;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-input:focus {
+      box-shadow: var(--shadow);
+      border-color: var(--purple);
+    }
+
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .canvas-card {
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 180px;
+      cursor: pointer;
+      position: relative;
+      transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+    }
+    .canvas-card:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 7px 7px 0px var(--black);
+    }
+    
+    .canvas-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .canvas-card-title {
+      font-size: 20px;
+      font-weight: 900;
+      text-transform: uppercase;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    .btn-delete-canvas {
+      background: transparent;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color var(--t), background var(--t);
+    }
+    .btn-delete-canvas:hover {
+      color: var(--red);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .canvas-card-meta {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .canvas-card-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      border: var(--border-2);
+      border-radius: var(--r-sm);
+      background: var(--bg-muted);
+      text-transform: uppercase;
+    }
+
+    /* === DESIGNER VIEW === */
+    #canvas-designer-view {
+      display: none; /* toggled via js */
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background-color: var(--bg);
+    }
+
+    /* Top Toolbar */
+    .designer-toolbar {
+      height: 70px;
+      background: var(--bg-card);
+      border-bottom: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .toolbar-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas-title-input {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      text-transform: uppercase;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      outline: none;
+      padding: 4px 8px;
+      border-bottom: 2px dashed transparent;
+      transition: border var(--t);
+      max-width: 300px;
+    }
+    .canvas-title-input:focus {
+      border-bottom-color: var(--black);
+    }
+
+    .save-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: var(--r-sm);
+    }
+    .save-status.saved { color: var(--green); }
+    .save-status.unsaved { color: var(--amber); }
+    .save-status.saving { color: var(--blue); }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Mode Toggle Switch */
+    .mode-toggle-container {
+      display: flex;
+      background: var(--bg-muted);
+      border: var(--border-2);
+      border-radius: var(--r-md);
+      padding: 2px;
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .mode-toggle-btn {
+      padding: 8px 16px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--r-sm);
+      transition: all var(--t);
+    }
+    .mode-toggle-btn.active {
+      background: var(--black);
+      color: var(--bg-card);
+    }
+
+    /* Main Workspace Layout */
+    .designer-main {
+      display: flex;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Sidebar Panel */
+    #canvas-sidebar-panel {
+      width: 380px;
+      background: var(--bg-card);
+      border-left: var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 5;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .sidebar-resizer {
+      position: absolute;
+      left: -3px;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      cursor: col-resize;
+      z-index: 100;
+      background: transparent;
+      transition: background 0.15s;
+    }
+    .sidebar-resizer:hover, .sidebar-resizer.dragging {
+      background: var(--purple, #7b5ea7);
+    }
+
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--bg-muted);
+      flex-shrink: 0;
+    }
+
+    .sidebar-header h2 {
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--border-2);
+      border-radius: var(--r-sm);
+      background: var(--bg-card);
+      cursor: pointer;
+      color: var(--text);
+      box-shadow: 1px 1px 0 var(--black);
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .btn-icon:hover {
+      background: var(--yellow);
+      transform: translate(-1px, -1px);
+    }
+    .btn-icon.danger {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn-icon.danger:hover {
+      background: #c53030;
+    }
+
+    /* Help Modal */
+    .help-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10010;
+      padding: 20px;
+    }
+    .help-modal-overlay.active {
+      display: flex;
+    }
+    .help-modal {
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 520px;
+      max-height: 80vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .help-modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-muted);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .help-modal-header h3 {
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .help-modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .help-section h4 {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.08));
+    }
+    .help-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .help-item-icon {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: var(--r-sm);
+      border: var(--border-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .help-item-text strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .help-item-text span {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--bg-muted);
+    }
+
+    .chat-msg {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: var(--r-lg);
+      border: var(--border-2);
+      box-shadow: 2px 2px 0 var(--black);
+      font-family: 'Inter', sans-serif;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .chat-msg.user {
+      align-self: flex-end;
+      background: var(--yellow);
+      color: var(--black);
+    }
+    .chat-msg.agent {
+      align-self: flex-start;
+      background: var(--bg-card);
+      color: var(--text);
+    }
+    .chat-msg.system {
+      align-self: center;
+      max-width: 90%;
+      background: var(--bg-muted);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      border-style: dashed;
+      box-shadow: none;
+    }
+
+    .chat-input-area {
+      padding: 16px;
+      border-top: var(--border);
+      background: var(--bg-card);
+    }
+
+    .chat-chips {
+      display: none;
+    }
+
+    .chip-btn {
+      padding: 6px 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      background: var(--bg-muted);
+      border: var(--border-2);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all var(--t);
+    }
+    .chip-btn:hover {
+      background: var(--yellow);
+    }
+
+    .prompt-box-container {
+      display: flex;
+      gap: 8px;
+      position: relative;
+    }
+
+    .prompt-textarea {
+      flex: 1;
+      height: 70px;
+      padding: 10px 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      border: var(--border-2);
+      border-radius: var(--r-md);
+      background: var(--bg-input);
+      color: var(--text);
+      resize: none;
+      outline: none;
+    }
+    .prompt-textarea:focus {
+      border-color: var(--purple);
+    }
+
+    .btn-send {
+      width: 70px;
+      height: 70px;
+      background: var(--purple);
+      color: #fff;
+      border: var(--border-2);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-send:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .btn-send:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+    .btn-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 2px 2px 0 var(--black);
+    }
+
+    /* Manual editing actions below input */
+    .manual-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .manual-btn {
+      flex: 1;
+      padding: 6px 4px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      border: var(--border-2);
+      border-radius: var(--r-sm);
+      background: var(--bg-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .manual-btn:hover { background: var(--bg-card); }
+
+    /* Infinite Canvas Viewport */
+    #canvas-viewport-container {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      background-color: var(--bg-muted);
+      background-image: 
+        radial-gradient(var(--graph-empty, #d8d4c9) 1.5px, transparent 1.5px), 
+        radial-gradient(var(--graph-empty, #d8d4c9) 1.5px, transparent 1.5px);
+      background-size: 30px 30px;
+      background-position: 0 0, 15px 15px;
+    }
+    #canvas-viewport-container:active {
+      cursor: grabbing;
+    }
+
+    #canvas-workspace {
+      position: absolute;
+      width: 5000px;
+      height: 5000px;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+
+    #canvas-svg-overlay {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    .flow-edge-path {
+      fill: none;
+      stroke: var(--text);
+      stroke-width: 4px;
+      marker-end: url(#arrow);
+      transition: stroke 0.2s;
+    }
+    .flow-edge-path.interactive {
+      pointer-events: stroke;
+      cursor: pointer;
+    }
+    .flow-edge-path.interactive:hover {
+      stroke: var(--red);
+      stroke-width: 6px;
+    }
+
+    .edge-label-bg {
+      fill: var(--bg-card);
+      stroke: var(--text);
+      stroke-width: 2px;
+      rx: 4px;
+    }
+    .edge-label-text {
+      font-size: 13px;
+      font-weight: 800;
+      fill: var(--text);
+      text-anchor: middle;
+      dominant-baseline: middle;
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    #canvas-nodes-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Node Cards styling */
+    .flow-node-card {
+      position: absolute;
+      width: 270px;
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      pointer-events: auto;
+      user-select: none;
+      z-index: 10;
+      transition: box-shadow 0.15s;
+    }
+    .flow-node-card:hover {
+      box-shadow: var(--shadow);
+    }
+    .flow-node-card.selected {
+      border-color: var(--purple);
+      box-shadow: 0px 0px 10px rgba(123, 94, 167, 0.4), var(--shadow);
+    }
+
+    /* Visual connection port handles on borders */
+    .node-connector {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: var(--bg-card, #fff);
+      border: 2px solid var(--black, #0a0a0a);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--black, #0a0a0a);
+      cursor: pointer;
+      z-index: 30;
+      box-shadow: 1px 1px 0px var(--black, #0a0a0a);
+      pointer-events: auto;
+      transition: background 0.15s;
+    }
+    .node-connector:hover {
+      background: var(--yellow, #FFD60A);
+    }
+    .node-connector.active-link {
+      background: var(--pink, #FF3EA5);
+      color: #fff;
+      box-shadow: 0 0 8px var(--pink);
+    }
+    .connector-top { top: 0; left: 50%; transform: translate(-50%, -50%); }
+    .connector-right { right: 0; top: 50%; transform: translate(50%, -50%); }
+    .connector-bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+    .connector-left { left: 0; top: 50%; transform: translate(-50%, -50%); }
+
+    .node-header {
+      padding: 10px 14px;
+      border-bottom: var(--border-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: move;
+      border-top-left-radius: var(--r-sm);
+      border-top-right-radius: var(--r-sm);
+    }
+    .node-header h3 {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Colors per Node Type */
+    .flow-node-card.node-type-action .node-header { background: var(--teal); color: var(--black); }
+    .flow-node-card.node-type-condition .node-header { background: var(--pink); color: var(--black); }
+    .flow-node-card.node-type-goal .node-header { background: var(--lime); color: var(--black); }
+
+    .node-content {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .node-text-editable {
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.3;
+      outline: none;
+      border: 1px dashed transparent;
+      padding: 4px;
+      border-radius: var(--r-sm);
+      word-break: break-word;
+      text-transform: uppercase;
+    }
+    .node-text-editable:focus {
+      border-color: var(--text-light);
+      background: var(--bg-muted);
+    }
+
+    /* Checklist */
+    .node-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      padding-top: 10px;
+    }
+
+    .node-checklist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .node-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .node-checkbox-label input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--black);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #fff;
+    }
+    .node-checkbox-label input[type="checkbox"]:checked {
+      background: var(--lime);
+    }
+    .node-checkbox-label input[type="checkbox"]:checked::after {
+      content: '✓';
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--black);
+    }
+
+    .node-checklist-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .node-checkbox-label input[type="checkbox"]:checked + .node-checklist-text {
+      text-decoration: line-through;
+      color: var(--text-light);
+    }
+
+    .btn-delete-subtask {
+      background: transparent;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .btn-delete-subtask:hover { color: var(--red); }
+
+    .add-subtask-container {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .add-subtask-input {
+      flex: 1;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border: var(--border-2);
+      border-radius: var(--r-sm);
+      background: var(--bg-card);
+      color: var(--text);
+      outline: none;
+    }
+    .btn-add-subtask {
+      padding: 4px 8px;
+      background: var(--black);
+      color: var(--bg-card);
+      border: none;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 11px;
+    }
+
+    /* Node Card Footer info */
+    .node-footer {
+      padding: 6px 14px;
+      border-top: var(--border-2);
+      background: var(--bg-muted);
+      border-bottom-left-radius: var(--r-sm);
+      border-bottom-right-radius: var(--r-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .node-status-badge {
+      padding: 2px 6px;
+      border-radius: var(--r-sm);
+      border: 1.5px solid var(--black);
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .node-status-badge.status-pending { background: #fff; color: var(--black); }
+    .node-status-badge.status-completed { background: var(--green); color: #fff; }
+
+    .node-actions-menu {
+      display: flex;
+      gap: 8px;
+    }
+    .node-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      display: inline-flex;
+    }
+    .node-action-btn:hover { color: var(--text); }
+    .node-action-btn.delete:hover { color: var(--red); }
+
+    /* Visual Control Overlay for Viewport zooming/panning */
+    .viewport-controls {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 8;
+    }
+
+    .viewport-control-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-card);
+      border: var(--border-2);
+      border-radius: var(--r-md);
+      box-shadow: 2px 2px 0 var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 900;
+      color: var(--text);
+      transition: all var(--t);
+    }
+    .viewport-control-btn:hover {
+      background: var(--yellow);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--black);
+    }
+    .viewport-control-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    /* Toast notification */
+    #canvas-toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translate(-50%, -150%);
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 11000;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 13px;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #canvas-toast.active {
+      transform: translate(-50%, 0);
+    }
+    #canvas-toast.success { border-color: var(--green); background: #f0fdf4; color: var(--black); }
+    #canvas-toast.warn { border-color: var(--coral); background: #fffbeb; color: var(--black); }
+    #canvas-toast.error { border-color: var(--red); background: #fef2f2; color: var(--black); }
+
+    /* ============================================================
+       DARK MODE OVERRIDES
+       ============================================================ */
+    [data-theme="dark"] #canvas-viewport-container {
+      background-image:
+        radial-gradient(rgba(255,255,255,0.12) 1.5px, transparent 1.5px),
+        radial-gradient(rgba(255,255,255,0.12) 1.5px, transparent 1.5px);
+    }
+
+    [data-theme="dark"] .flow-edge-path {
+      stroke: rgba(255, 255, 255, 0.65);
+    }
+    [data-theme="dark"] .flow-edge-path.interactive:hover {
+      stroke: var(--red);
+    }
+    [data-theme="dark"] #canvas-svg-overlay marker path {
+      fill: rgba(255, 255, 255, 0.65);
+    }
+    [data-theme="dark"] .edge-label-bg {
+      fill: var(--bg-card);
+      stroke: rgba(255,255,255,0.25);
+    }
+    [data-theme="dark"] .edge-label-text {
+      fill: var(--text);
+    }
+
+    /* Node cards */
+    [data-theme="dark"] .node-connector {
+      background: var(--bg-card);
+      border-color: rgba(255,255,255,0.5);
+      color: rgba(255,255,255,0.8);
+      box-shadow: 1px 1px 0px rgba(255,255,255,0.2);
+    }
+    [data-theme="dark"] .node-connector:hover {
+      background: var(--yellow);
+      color: var(--black);
+    }
+    [data-theme="dark"] .node-connector.active-link {
+      background: var(--pink);
+      color: #fff;
+    }
+
+    [data-theme="dark"] .node-status-badge {
+      border-color: rgba(255,255,255,0.4);
+    }
+    [data-theme="dark"] .node-status-badge.status-pending {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+
+    [data-theme="dark"] .node-checkbox-label input[type="checkbox"] {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.4);
+    }
+    [data-theme="dark"] .node-checkbox-label input[type="checkbox"]:checked {
+      background: var(--lime);
+    }
+    [data-theme="dark"] .node-checkbox-label input[type="checkbox"]:checked::after {
+      color: var(--black);
+    }
+    [data-theme="dark"] .node-checklist {
+      border-top-color: rgba(255,255,255,0.1);
+    }
+    [data-theme="dark"] .node-text-editable:focus {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.3);
+    }
+    [data-theme="dark"] .btn-add-subtask {
+      background: rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+    [data-theme="dark"] .btn-add-subtask:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* Viewport control buttons */
+    [data-theme="dark"] .viewport-control-btn {
+      box-shadow: 2px 2px 0 rgba(255,255,255,0.15);
+    }
+    [data-theme="dark"] .viewport-control-btn:hover {
+      box-shadow: 3px 3px 0 rgba(255,255,255,0.15);
+    }
+
+    /* Manual action buttons */
+    [data-theme="dark"] .manual-btn {
+      border-color: rgba(255,255,255,0.2);
+      color: var(--text);
+    }
+    [data-theme="dark"] .btn-icon {
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 1px 1px 0 rgba(255,255,255,0.1);
+    }
+    [data-theme="dark"] .btn-icon:hover {
+      background: var(--yellow);
+      color: var(--black);
+    }
+
+    /* Toast dark */
+    [data-theme="dark"] #canvas-toast.success { background: #052e16; color: #86efac; border-color: var(--green); }
+    [data-theme="dark"] #canvas-toast.warn { background: #1c1a02; color: #fde68a; border-color: var(--coral); }
+    [data-theme="dark"] #canvas-toast.error { background: #1f0303; color: #fca5a5; border-color: var(--red); }
+
+    /* Sidebar / chat dark */
+    [data-theme="dark"] .chat-history {
+      background: var(--bg-muted);
+    }
+    [data-theme="dark"] .chip-btn {
+      border-color: rgba(255,255,255,0.2);
+    }
+    [data-theme="dark"] .sidebar-resizer:hover,
+    [data-theme="dark"] .sidebar-resizer.dragging {
+      background: var(--purple);
+    }
+
+    /* Help modal dark */
+    [data-theme="dark"] .help-section h4 {
+      border-bottom-color: rgba(255,255,255,0.1);
+    }
+
+    /* Canvas mode-toggle in toolbar dark */
+    [data-theme="dark"] .mode-toggle-container {
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 2px 2px 0px rgba(255,255,255,0.1);
+    }
+    [data-theme="dark"] .mode-toggle-btn.active {
+      background: rgba(255,255,255,0.9);
+      color: var(--bg-card);
+    }
+
+    /* Canvas toolbar btn-brutal dark */
+    [data-theme="dark"] .btn-brutal.btn-muted {
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 2px 2px 0 rgba(255,255,255,0.1);
+    }
+    [data-theme="dark"] .btn-brutal.btn-muted:hover {
+      box-shadow: 6px 6px 0px rgba(255,255,255,0.15);
+    }
+    [data-theme="dark"] .canvas-title-input {
+      color: var(--text);
+    }
+
+    /* Modal standard overrides */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1010;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .brutal-modal {
+      background: var(--bg-card);
+      border: var(--border);
+      border-radius: var(--r-lg);
+      padding: 28px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .modal-title {
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      border: var(--border-2);
+      border-radius: var(--r-md);
+      background: var(--bg-input);
+      color: var(--text);
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--purple);
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    /* CSS Loader spinner */
+    .spinner {
+      border: 3px solid rgba(0,0,0,0.1);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border-left-color: currentColor;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Cross-device Responsiveness Overrides */
+    @media (max-width: 768px) {
+      /* Reset layout for mobile drawer style */
+      .designer-main {
+        flex-direction: row;
+      }
+      #canvas-sidebar-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 380px;
+        height: 100% !important;
+        border-left: var(--border);
+        border-top: none !important;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: -4px 0px 24px rgba(0, 0, 0, 0.25);
+        z-index: 9999;
+      }
+      #canvas-sidebar-panel.mobile-active,
+      #canvas-designer-view.mobile-sidebar-open #canvas-sidebar-panel {
+        transform: translateX(0);
+      }
+      .sidebar-resizer {
+        display: none !important;
+      }
+      .mobile-close-btn {
+        display: inline-flex !important;
+      }
+      #mobile-sidebar-toggle {
+        display: flex !important;
+      }
+      #canvas-designer-view.mobile-sidebar-open #mobile-sidebar-toggle {
+        display: none !important;
+      }
+
+      /* Adjust designer toolbar for smaller screens */
+      .designer-toolbar {
+        padding: 0 12px;
+        height: auto;
+        min-height: 70px;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+      .toolbar-left, .toolbar-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .canvas-title-input {
+        max-width: 180px;
+        font-size: 16px;
+      }
+      .designer-toolbar .btn-brutal {
+        padding: 8px 10px !important;
+        gap: 4px !important;
+      }
+      .btn-save-text {
+        display: none !important;
+      }
+
+      /* Dashboard View overrides */
+      #canvas-dashboard-view {
+        padding: 24px 16px;
+      }
+      .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        text-align: center;
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+      }
+      .dashboard-brand {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+      }
+      .dashboard-actions {
+        justify-content: center;
+      }
+      .msg-limits-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       CANVASES DASHBOARD VIEW
+       ============================================================ -->
+  <main id="canvas-dashboard-view">
+    <div class="dashboard-container">
+      
+      <!-- Dashboard Header -->
+      <header class="dashboard-header">
+        <div class="dashboard-brand">
+          <span style="font-size: 32px; color: var(--black);"><i data-lucide="palette"></i></span>
+          <div class="dashboard-title">
+            <h1>AI Agentic Canvas</h1>
+            <p>Design visual action plans & conditional workflows with your AI agent</p>
+          </div>
+        </div>
+        <div class="dashboard-actions">
+          <button class="btn-brutal btn-muted" onclick="window.location.href='index.html'">
+            <i data-lucide="arrow-left"></i> App Dashboard
+          </button>
+          <button class="btn-brutal btn-yellow" id="btn-add-canvas" onclick="openCreateModal()">
+            <i data-lucide="plus"></i> Create Canvas
+          </button>
+        </div>
+      </header>
+
+      <!-- Usage Limits -->
+      <div class="msg-limits-row">
+        <div class="limits-card" style="flex:1; margin-bottom:0;">
+          <div class="limits-info">
+            <span>Lifetime Canvas Limit</span>
+            <span id="canvas-limit-fraction">0 / 30 Canvases</span>
+          </div>
+          <div class="limits-bar-container">
+            <div class="limits-bar" id="canvas-limit-bar" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="msg-limits-card">
+          <div class="limits-info">
+            <span>AI Messages Today</span>
+            <span id="dashboard-msg-limit-pill" class="msg-limit-pill">— / — left</span>
+          </div>
+          <div style="font-family:'Inter',sans-serif; font-size:12px; color:var(--text-muted); font-weight:500;">Resets daily at midnight. Each AI prompt counts as 1 message.</div>
+        </div>
+      </div>
+
+      <!-- Search Input Filter -->
+      <div class="filter-bar">
+        <input type="text" id="dashboard-search-input" class="filter-input" placeholder="🔍 Search canvases by name..." oninput="filterCanvases(this.value)" />
+      </div>
+
+      <!-- Canvas Cards Grid -->
+      <div class="canvas-grid" id="canvas-grid-list">
+        <!-- Injected by JS -->
+        <div style="text-align: center; grid-column: 1 / -1; padding: 40px 0; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">
+          Loading your canvases...
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ============================================================
+       CANVAS DESIGNER VIEW
+       ============================================================ -->
+  <main id="canvas-designer-view">
+    
+    <!-- Top toolbar -->
+    <header class="designer-toolbar">
+      <div class="toolbar-left">
+        <button class="btn-brutal btn-muted" onclick="backToDashboard()" style="padding: 8px 16px; font-size: 13px;">
+          <i data-lucide="arrow-left"></i> Dashboard
+        </button>
+        <div class="toolbar-title-wrap">
+          <input type="text" id="designer-canvas-title" class="canvas-title-input" value="Loading Flow..." onchange="renameCanvas(this.value)" />
+        </div>
+        <div class="save-status saved" id="save-status-indicator">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> <span>Saved</span>
+        </div>
+      </div>
+      
+      <div class="toolbar-actions">
+        <!-- Design/Execution toggle -->
+        <div class="mode-toggle-container">
+          <button class="mode-toggle-btn active" id="btn-mode-design" onclick="setMode('design')">Design</button>
+          <button class="mode-toggle-btn" id="btn-mode-execute" onclick="setMode('execute')">Execute</button>
+        </div>
+
+        <button class="btn-brutal btn-muted" onclick="triggerUndo()" title="Undo (Ctrl+Z)" style="padding: 8px 12px; font-size: 13px;">
+          <i data-lucide="undo-2"></i>
+        </button>
+        <button class="btn-brutal btn-muted" onclick="triggerRedo()" title="Redo (Ctrl+Y)" style="padding: 8px 12px; font-size: 13px;">
+          <i data-lucide="redo-2"></i>
+        </button>
+        
+        <button class="btn-brutal btn-muted" onclick="clearCanvasFlow()" title="Clear all nodes and connections" style="padding: 8px 12px; font-size: 13px; border-color: var(--red); color: var(--red);">
+          <i data-lucide="trash-2"></i>
+        </button>
+
+        <button class="btn-brutal btn-yellow" onclick="saveCanvasCurrentState()" style="padding: 8px 16px; font-size: 13px;">
+          <i data-lucide="save"></i> <span class="btn-save-text">Save</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Designer main view -->
+    <div class="designer-main">
+      
+      <!-- Infinite Drag/Zoom Viewport -->
+      <section id="canvas-viewport-container">
+        
+        <!-- Viewport Controls overlay -->
+        <div class="viewport-controls">
+          <button class="viewport-control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+          <button class="viewport-control-btn" onclick="zoomOut()" title="Zoom Out">-</button>
+          <button class="viewport-control-btn" onclick="resetZoom()" title="Reset Zoom">⚓</button>
+        </div>
+
+        <!-- Transformable workspace -->
+        <div id="canvas-workspace">
+          <!-- SVG connections overlay -->
+          <svg id="canvas-svg-overlay">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text)" />
+              </marker>
+            </defs>
+            <g id="svg-paths-container"></g>
+          </svg>
+
+          <!-- Absolute positioned node cards -->
+          <div id="canvas-nodes-container"></div>
+        </div>
+
+      </section>
+
+      <!-- Sidebar Chat & Config Panel -->
+      <aside id="canvas-sidebar-panel">
+        <div class="sidebar-resizer" id="sidebar-resizer"></div>
+        
+        <div class="sidebar-header">
+          <h2><i data-lucide="sparkles" style="width: 16px; height: 16px; flex-shrink: 0;"></i> AI Workflow Agent</h2>
+          <div class="sidebar-header-actions">
+            <button class="btn-icon" onclick="openHelpModal()" title="How to use this canvas">
+              <i data-lucide="info" style="width: 15px; height: 15px;"></i>
+            </button>
+            <button class="btn-icon mobile-close-btn" onclick="toggleMobileSidebar()" title="Close chat" style="display: none;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x" style="width: 15px; height: 15px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+        <!-- Daily AI message limit strip -->
+        <div class="sidebar-msg-limit" id="sidebar-msg-limit-bar">
+          <span>Messages remaining today</span>
+          <span id="sidebar-msg-limit-pill" class="msg-limit-pill">—</span>
+        </div>
+
+        <!-- Chat history -->
+        <div class="chat-history" id="chat-history-log">
+          <div class="chat-msg agent">
+            Welcome to the AI Agentic Canvas! Type an instruction below or click a template prompt to let me design your workflow graph. Try telling me what routine or conditional plan you want to map out!
+          </div>
+        </div>
+
+        <!-- Suggestion Chips & Prompt Input -->
+        <div class="chat-input-area">
+
+          <div class="prompt-box-container">
+            <textarea id="ai-prompt-input" class="prompt-textarea" placeholder="Instruct the agent (e.g. 'Build a diet plan with a weekend cheat day condition')..."></textarea>
+            <button id="send-prompt-btn" class="btn-send" onclick="sendPromptToAgent()" title="Send command">
+              <i data-lucide="send"></i>
+            </button>
+          </div>
+
+          <div class="manual-actions">
+            <button class="manual-btn" onclick="addNodeManually('action')" title="Add Action Node">
+              <i data-lucide="play" style="width: 12px; height: 12px;"></i> Action
+            </button>
+            <button class="manual-btn" onclick="addNodeManually('condition')" title="Add Condition Node">
+              <i data-lucide="git-branch" style="width: 12px; height: 12px;"></i> Cond.
+            </button>
+            <button class="manual-btn" onclick="addNodeManually('goal')" title="Add Goal Node">
+              <i data-lucide="target" style="width: 12px; height: 12px;"></i> Goal
+            </button>
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- Mobile Floating Toggle Button for Chat Drawer -->
+    <button id="mobile-sidebar-toggle" class="btn-brutal btn-yellow" onclick="toggleMobileSidebar()" title="Toggle AI Agent Chat" style="position: absolute; bottom: 24px; right: 24px; z-index: 10000; border-radius: 50%; width: 54px; height: 54px; display: none; align-items: center; justify-content: center; box-shadow: var(--shadow);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square" style="width: 24px; height: 24px; color: var(--black); stroke: var(--black);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    </button>
+
+  </main>
+
+  <!-- ============================================================
+       MODAL: CREATE NEW CANVAS
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-create-canvas">
+    <div class="brutal-modal">
+      <h2 class="modal-title">New Canvas</h2>
+      <div style="font-family:'Inter',sans-serif; font-size:13px; color:var(--text-muted); font-weight:600; margin-top:-8px;">
+        Name your canvas to start drawing and detailing your workflows.
+      </div>
+      <div class="form-group" style="margin-top: 8px;">
+        <label style="display:block; font-weight:800; font-size:12px; text-transform:uppercase; margin-bottom:8px;">Canvas Name</label>
+        <input type="text" id="new-canvas-name-input" class="form-input" placeholder="e.g. Study Plan, Weight Loss Routine..." value="Untitled Flow" onkeydown="if(event.key === 'Enter') submitCreateCanvas()" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-brutal btn-muted" onclick="closeCreateModal()" style="padding: 10px 18px;">Cancel</button>
+        <button class="btn-brutal btn-yellow" onclick="submitCreateCanvas()" style="padding: 10px 18px;">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="help-modal-overlay" id="help-modal-overlay">
+    <div class="help-modal">
+      <div class="help-modal-header">
+        <h3><i data-lucide="info" style="width: 20px; height: 20px;"></i> Canvas Guide</h3>
+        <button class="btn-icon" onclick="closeHelpModal()" title="Close">
+          <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+        </button>
+      </div>
+      <div class="help-modal-body">
+
+        <div class="help-section">
+          <h4>🤖 AI Agent</h4>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--purple); color: #fff;">✦</div>
+            <div class="help-item-text">
+              <strong>Type a prompt & send</strong>
+              <span>Describe your plan in natural language (e.g. "Build a morning routine with a condition for gym days"). The AI will generate your entire flow.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--yellow);">⇧↵</div>
+            <div class="help-item-text">
+              <strong>Shift + Enter</strong>
+              <span>Keyboard shortcut to send your message. Regular Enter inserts a new line.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h4>✋ Manual Editing</h4>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--teal);">▶</div>
+            <div class="help-item-text">
+              <strong>Action</strong>
+              <span>A step or task in your flow (e.g. "Wake up", "Study for 2 hours"). Shown in teal.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--pink);">⎇</div>
+            <div class="help-item-text">
+              <strong>Condition (Cond.)</strong>
+              <span>A decision point with branching paths (e.g. "Did I pass?"). Shown in pink.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--lime);">◎</div>
+            <div class="help-item-text">
+              <strong>Goal</strong>
+              <span>An end state or milestone you want to reach (e.g. "Get fit"). Shown in lime.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">🔗</div>
+            <div class="help-item-text">
+              <strong>Connect</strong>
+              <span>Click "Connect" to enter linking mode. Then click the "+" port on any card border to start, and another "+" port to finish the connection arrow.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h4>🖱️ Canvas Controls</h4>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">✥</div>
+            <div class="help-item-text">
+              <strong>Pan the Canvas</strong>
+              <span>Click and drag on any empty area to move around the canvas.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">⊕</div>
+            <div class="help-item-text">
+              <strong>Zoom In / Out</strong>
+              <span>Scroll your mouse wheel on the canvas, or use the +/- buttons in the bottom-left corner.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">☰</div>
+            <div class="help-item-text">
+              <strong>Drag Nodes</strong>
+              <span>Grab the colored header bar of any card and drag it to reposition.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">✎</div>
+            <div class="help-item-text">
+              <strong>Edit Labels</strong>
+              <span>Click the text inside any card to edit it directly. Tab or click away to save.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h4>⌨️ Shortcuts & Modes</h4>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">↩</div>
+            <div class="help-item-text">
+              <strong>Undo / Redo</strong>
+              <span>Ctrl+Z to undo and Ctrl+Y to redo your last action.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">⊞</div>
+            <div class="help-item-text">
+              <strong>Design Mode</strong>
+              <span>Build and edit your flow: drag nodes, add connections, edit text, and manage subtasks.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">▷</div>
+            <div class="help-item-text">
+              <strong>Execute Mode</strong>
+              <span>Run your plan: nodes are locked in place. Tick subtasks to track progress, auto-completing nodes when all items are done.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">⊟</div>
+            <div class="help-item-text">
+              <strong>Delete Connection</strong>
+              <span>In Design mode, click any arrow/line to get a delete prompt.</span>
+            </div>
+          </div>
+          <div class="help-item">
+            <div class="help-item-icon" style="background: var(--bg-muted);">📐</div>
+            <div class="help-item-text">
+              <strong>Auto-Align</strong>
+              <span>Type "Align all nodes" in the chat to auto-arrange your flow left-to-right without duplicating anything.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div id="canvas-toast">
+    <span id="canvas-toast-icon"></span>
+    <span id="canvas-toast-text">Toast message</span>
+  </div>
+
+  <!-- Load App scripts -->
+  <script type="module" src="js/modules/state.js"></script>
+  <script type="module" src="js/modules/utils.js"></script>
+  <script type="module" src="js/modules/api.js"></script>
+  <script type="module" src="js/modules/canvas.js"></script>
+  <script>
+    // Initialize Lucide icons on start
+    lucide.createIcons();
+  </script>
+</body>
+</html>
