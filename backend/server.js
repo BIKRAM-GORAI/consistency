@@ -24,6 +24,8 @@ const aiRoutes          = require('./routes/aiRoutes');
 const appLimitRoutes    = require('./routes/appLimitRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const reportRoutes       = require('./routes/reportRoutes');
+const canvasWorkflowRoutes = require('./routes/canvasWorkflowRoutes');
+
 
 // ── App setup ──────────────────────────────────────────────
 const app = express();
@@ -211,6 +213,8 @@ app.use('/api/ai',           authenticateToken, dataModificationLimiter, aiRoute
 app.use('/api/applimits',    authenticateToken, dataModificationLimiter, appLimitRoutes);
 app.use('/api/subscriptions', authenticateToken, dataModificationLimiter, subscriptionRoutes);
 app.use('/api/reports',       authenticateToken, dataModificationLimiter, reportRoutes);
+app.use('/api/canvas-workflows', canvasWorkflowRoutes);
+
 
 // ── Serve static frontend files ────────────────────────────
 // __dirname = backend/, so ../frontend is the sibling folder.

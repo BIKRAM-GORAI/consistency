@@ -255,6 +255,15 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Canvas AI Chat daily message tracking
+    canvasMsgCount: {
+      type: Number,
+      default: 0,
+    },
+    canvasMsgResetTime: {
+      type: Date,
+      default: Date.now,
+    },
     graceCount: {
       type: Number,
       default: 0,

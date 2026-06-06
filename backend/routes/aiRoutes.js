@@ -18,6 +18,14 @@ router.get('/photo-limits', authenticateToken, aiController.getPhotoLimits);
 router.post('/authorize-voice-to-task', authenticateToken, aiController.authorizeVoiceToTask);
 router.get('/voice-limits', authenticateToken, aiController.getVoiceLimits);
 
+// Route for direct client-to-Render AI Canvas flow ticket authorization
+router.post('/authorize-canvas', authenticateToken, aiController.authorizeCanvasFlow);
+
+// Canvas AI daily message limit tracking
+router.get('/canvas-msg-limits', authenticateToken, aiController.getCanvasMsgLimits);
+router.post('/commit-canvas-msg', authenticateToken, aiController.commitCanvasMsg);
+
+
 // Route to generate or refresh the public profile productivity biography
 router.post('/productivity-bio', authenticateToken, aiController.generateProductivityBio);
 

@@ -336,6 +336,9 @@
       <button class="nav-btn" id="btn-pomodoro" onclick="showPage('pomodoro')">
         <span><i data-lucide="clock"></i></span><span class="btn-text"> Pomodoro</span>
       </button>
+      <button class="nav-btn" id="btn-canvas" onclick="navigateToCanvas()">
+        <span><i data-lucide="palette"></i></span><span class="btn-text"> Canvas</span>
+      </button>
     </div>
 
     <div class="nav-user-area" style="display:flex; align-items:center; gap: 16px;">
@@ -1442,6 +1445,10 @@
       <span class="bnav-icon"><i data-lucide="crown"></i></span>
       <span>Rankings</span>
     </button>
+    <button class="bottom-nav-btn" id="bnav-canvas" onclick="navigateToCanvas()">
+      <span class="bnav-icon"><i data-lucide="palette"></i></span>
+      <span>Canvas</span>
+    </button>
   </nav>
 
   <!-- ===== MODAL: Add Achievement ===== -->
@@ -2540,6 +2547,16 @@
   <script src="script.js?v=59"></script>
   <script>
     lucide.createIcons();
+
+    function navigateToCanvas() {
+      const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+      if (!isPremium) {
+        window.location.href = 'subscription.html';
+      } else {
+        window.location.href = 'canvas.html';
+      }
+    }
+    window.navigateToCanvas = navigateToCanvas;
   </script>
 
   <!-- ===== MODAL: Group Chat ===== -->

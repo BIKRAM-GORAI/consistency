@@ -1456,4 +1456,137 @@ exports.getVoiceLimits = async (req, res) => {
   }
 };
 
+/**
+ * Canvas AI daily message limit helpers
+ */
+const getCanvasDailyLimit = () => {
+  const limit = parseInt(process.env.CANVAS_DAILY_MSG_LIMIT, 10);
+  return isNaN(limit) ? 20 : limit;
+};
+
+const checkCanvasMsgLimit = async (userId) => {
+  const User = require('../models/User');
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.canvasMsgResetTime ? new Date(user.canvasMsgResetTime) : new Date(0);
+
+  // Reset counter if a new calendar day has started
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.canvasMsgCount = 0;
+    user.canvasMsgResetTime = now;
+    await user.save();
+  }
+
+  const limit = getCanvasDailyLimit();
+  const msgsLeft = Math.max(0, limit - user.canvasMsgCount);
+
+  // Build reset timestamp (midnight local server time)
+  const resetAt = new Date(now);
+  resetAt.setDate(resetAt.getDate() + 1);
+  resetAt.setHours(0, 0, 0, 0);
+
+  return { user, msgsLeft, limit, resetAt };
+};
+
+const incrementCanvasMsgCount = async (user) => {
+  user.canvasMsgCount += 1;
+  await user.save();
+  const limit = getCanvasDailyLimit();
+  return Math.max(0, limit - user.canvasMsgCount);
+};
+
+/**
+ * POST /api/ai/authorize-canvas
+ * Verifies the user is Premium, checks the daily canvas AI message limit,
+ * and issues a 5-minute signed JWT token for the canvas AI generator.
+ */
+exports.authorizeCanvasFlow = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const isPremium = user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+    if (!isPremium) {
+      return res.status(403).json({ message: 'Access denied. The AI Agentic Canvas is exclusive to Premium subscribers.' });
+    }
+
+    // --- Daily message limit check ---
+    const { msgsLeft, limit, resetAt } = await checkCanvasMsgLimit(userId);
+    if (msgsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily canvas AI message limit reached (${limit} per day). Resets at midnight.`,
+        msgsLeft: 0,
+        limit,
+        resetAt
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Vercel-Backend] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const generationToken = jwt.sign(
+      { userId, action: 'generate-canvas-flow' },
+      jwtSecret,
+      { expiresIn: '5m' }
+    );
+
+    res.status(200).json({
+      generationToken,
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002',
+      msgsLeft,
+      limit
+    });
+
+  } catch (error) {
+    console.error('[Vercel-Backend] authorizeCanvasFlow error:', error.message);
+    res.status(500).json({ message: 'Internal Server Error while authorizing canvas generation.' });
+  }
+};
+
+/**
+ * GET /api/ai/canvas-msg-limits
+ * Returns the user's remaining canvas AI messages for today without spending any quota.
+ */
+exports.getCanvasMsgLimits = async (req, res) => {
+  try {
+    const { msgsLeft, limit, resetAt } = await checkCanvasMsgLimit(req.user.userId);
+    res.status(200).json({ msgsLeft, limit, resetAt });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+/**
+ * POST /api/ai/commit-canvas-msg
+ * Called by the frontend after a successful AI canvas response to consume one quota slot.
+ */
+exports.commitCanvasMsg = async (req, res) => {
+  try {
+    const { user } = await checkCanvasMsgLimit(req.user.userId);
+    const msgsLeft = await incrementCanvasMsgCount(user);
+    const limit = getCanvasDailyLimit();
+    console.log(`[Canvas] User ${req.user.userId} committed canvas message. Remaining: ${msgsLeft}/${limit}`);
+    res.status(200).json({ msgsLeft, limit });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+
+
 

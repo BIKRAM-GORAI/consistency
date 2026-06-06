@@ -488,6 +488,129 @@ app.post('/api/ai/voice-to-task', upload.single('audio'), async (req, res) => {
   }
 });
 
+/**
+ * POST /api/ai/generate-canvas-flow
+ * Validates single-use JWT canvas ticket, calls Gemini to parse prompt/current-state,
+ * and returns the updated nodes and edges graph structure.
+ */
+app.post('/api/ai/generate-canvas-flow', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[AI-Service] JWT_SECRET is not set in environment.');
+      return res.status(500).json({ error: 'Internal Server Error: Shared secret missing.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (verifyError) {
+      console.warn(`[AI-Service] JWT Verification failed: ${verifyError.message}`);
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+    }
+
+    if (decoded.action !== 'generate-canvas-flow') {
+      return res.status(403).json({ error: 'Forbidden: Invalid action for this token' });
+    }
+
+    const { prompt, nodes, edges } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: 'Bad Request: prompt is required' });
+    }
+
+    const apiKey = process.env.GEMINI_CANVAS_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+      console.error('[AI-Service] Configuration Error: GEMINI_CANVAS_API_KEY is not set.');
+      return res.status(500).json({ error: 'Internal Server Error: AI provider key missing.' });
+    }
+
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+    console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini for canvas flow generation...`);
+
+    const systemInstruction = 
+      "You are an expert AI workflow designer and productivity coach.\n" +
+      "Your goal is to build or modify a visual node-based conditional flowchart representing a user's productivity routine or plan.\n\n" +
+      "You MUST output a single valid JSON object following this EXACT schema:\n" +
+      "{\n" +
+      "  \"nodes\": [\n" +
+      "    {\n" +
+      "      \"id\": \"unique_node_id_1\",\n" +
+      "      \"label\": \"Action, Goal or Condition details\",\n" +
+      "      \"type\": \"action\" or \"condition\" or \"goal\",\n" +
+      "      \"status\": \"pending\" or \"completed\",\n" +
+      "      \"x\": number,\n" +
+      "      \"y\": number,\n" +
+      "      \"checklist\": [\"Subtask item 1\", \"Subtask item 2\"]\n" +
+      "    }\n" +
+      "  ],\n" +
+      "  \"edges\": [\n" +
+      "    {\n" +
+      "      \"id\": \"unique_edge_id_1\",\n" +
+      "      \"from\": \"source_node_id\",\n" +
+      "      \"to\": \"target_node_id\",\n" +
+      "      \"label\": \"Optional link description (e.g., Yes, No, Success, Failure)\"\n" +
+      "    }\n" +
+      "  ]\n" +
+      "}\n\n" +
+      "Strict Rules:\n" +
+      "1. Keep existing nodes: If nodes are provided in the input, retain their IDs, custom positions (x, y), and status values unless the user's prompt explicitly requests to modify or delete them. Do not reset coordinates randomly.\n" +
+      "2. Layout: Place nodes logically. Nodes are cards of 270px width and ~180px height. To prevent overlaps, ensure a minimum of 360px separation horizontally (x direction) and 240px separation vertically (y direction). The flow should generally progress from left to right (increasing x starting from 100 up to 2500, y from 100 to 1200).\n" +
+      "3. Connections: Draw logical directed edges between related nodes. If a node is a 'condition', it should typically branch to separate pathways (e.g. Yes/No edges).\n" +
+      "4. Output ONLY the raw JSON. Do not wrap in ```json markdown block formatting. Do not include conversational filler.";
+
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: systemInstruction },
+            { text: `Current state graph:\nNodes: ${JSON.stringify(nodes || [])}\nEdges: ${JSON.stringify(edges || [])}\n\nUser Edit Request: "${prompt}"` }
+          ]
+        }],
+        generationConfig: {
+          response_mime_type: 'application/json'
+        }
+      })
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error(`[AI-Service] Gemini API returned status ${geminiResponse.status}:`, errorText);
+      return res.status(geminiResponse.status).json({ error: 'Gemini API error', details: errorText });
+    }
+
+    const data = await geminiResponse.json();
+    const resultText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+
+    if (!resultText) {
+      console.error('[AI-Service] Empty response from Gemini API:', JSON.stringify(data));
+      return res.status(502).json({ error: 'Bad Gateway: Empty response from AI provider' });
+    }
+
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(resultText.trim());
+    } catch (parseError) {
+      console.warn(`[AI-Service] Raw response text is not valid JSON:`, resultText);
+      return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: resultText });
+    }
+
+    res.status(200).json(parsedResult);
+  } catch (error) {
+    console.error('[AI-Service] Execution error in generate-canvas-flow:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
 // Start listening
 app.listen(PORT, () => {
   console.log(`🤖 Standalone AI Microservice running on port ${PORT}`);
