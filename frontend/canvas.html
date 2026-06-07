@@ -23,6 +23,8 @@
   
   <link rel="stylesheet" href="style.css" />
   <script src="libs/lucide.min.js"></script>
+  <!-- Canvas Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
   
   <style>
     /* Custom style tweaks for the standalone Canvas portal */
@@ -1375,6 +1377,155 @@
       100% { transform: rotate(360deg); }
     }
 
+    /* ============================================================
+       CANVAS NODE TOOLBOX OVERLAY
+       ============================================================ */
+    #canvas-node-toolbox {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(12px) saturate(150%);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      border: 2px solid rgba(0,0,0,0.18);
+      border-radius: 50px;
+      padding: 10px 18px;
+      box-shadow: 4px 4px 0px rgba(0,0,0,0.18), 0 8px 32px rgba(0,0,0,0.12);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      white-space: nowrap;
+    }
+    [data-theme="dark"] #canvas-node-toolbox {
+      background: rgba(30, 30, 40, 0.62);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 4px 4px 0px rgba(0,0,0,0.4), 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #canvas-node-toolbox.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(20px);
+    }
+    .toolbox-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.45);
+      letter-spacing: 0.08em;
+      padding-right: 8px;
+      border-right: 1.5px solid rgba(0,0,0,0.15);
+      margin-right: 2px;
+    }
+    [data-theme="dark"] .toolbox-label {
+      color: rgba(255,255,255,0.5);
+      border-right-color: rgba(255,255,255,0.15);
+    }
+    .toolbox-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      border: 2px solid var(--black);
+      border-radius: 30px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      box-shadow: 2px 2px 0px var(--black);
+      white-space: nowrap;
+    }
+    .toolbox-btn:hover {
+      transform: translate(-1px, -2px);
+      box-shadow: 3px 4px 0px var(--black);
+      filter: brightness(1.05);
+    }
+    .toolbox-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px var(--black);
+    }
+    .toolbox-btn-action { background: var(--teal); color: var(--black); }
+    .toolbox-btn-condition { background: var(--pink); color: var(--black); }
+    .toolbox-btn-goal { background: var(--lime); color: var(--black); }
+    .toolbox-divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+    [data-theme="dark"] .toolbox-divider {
+      background: rgba(255,255,255,0.15);
+    }
+    
+    /* ============================================================
+       DOWNLOAD MODAL
+       ============================================================ */
+    #modal-download-canvas .brutal-modal {
+      max-width: 420px;
+    }
+    .download-format-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    .download-format-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 13px;
+      text-transform: uppercase;
+      border: var(--border);
+      border-radius: var(--r-md);
+      background: var(--bg-muted);
+      cursor: pointer;
+      box-shadow: 2px 2px 0px var(--black);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .download-format-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0px var(--black);
+      background: var(--yellow);
+    }
+    .download-format-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px var(--black);
+    }
+    .download-format-btn .format-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .download-format-btn .format-ext {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+    .download-format-btn .format-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: none;
+      color: var(--text-muted);
+    }
+    #download-progress-msg {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      min-height: 20px;
+      display: none;
+    }
+
     /* Cross-device Responsiveness Overrides */
     @media (max-width: 768px) {
       /* Reset layout for mobile drawer style */
@@ -1472,6 +1623,20 @@
       .msg-limits-row {
         flex-direction: column;
         gap: 12px;
+      }
+      /* Compact toolbox on mobile */
+      #canvas-node-toolbox {
+        bottom: 90px;
+        padding: 8px 12px;
+        gap: 6px;
+      }
+      .toolbox-label {
+        display: none;
+      }
+      .toolbox-btn {
+        padding: 7px 10px;
+        font-size: 11px;
+        gap: 4px;
       }
     }
   </style>
@@ -1595,6 +1760,9 @@
           <i data-lucide="trash-2"></i>
         </button>
 
+        <button class="btn-brutal btn-teal" onclick="openDownloadModal()" title="Download canvas as image" style="padding: 8px 12px; font-size: 13px;">
+          <i data-lucide="download"></i> <span class="btn-save-text">Export</span>
+        </button>
         <button class="btn-brutal btn-yellow" onclick="saveCanvasCurrentState()" style="padding: 8px 16px; font-size: 13px;">
           <i data-lucide="save"></i> <span class="btn-save-text">Save</span>
         </button>
@@ -1612,6 +1780,22 @@
           <button class="viewport-control-btn" onclick="zoomIn()" title="Zoom In">+</button>
           <button class="viewport-control-btn" onclick="zoomOut()" title="Zoom Out">-</button>
           <button class="viewport-control-btn" onclick="resetZoom()" title="Reset Zoom">⚓</button>
+        </div>
+
+        <!-- Floating Node Toolbox Overlay -->
+        <div id="canvas-node-toolbox">
+          <span class="toolbox-label">Add Node</span>
+          <button class="toolbox-btn toolbox-btn-action" onclick="addNodeManually('action')" title="Add an Action node">
+            <i data-lucide="play" style="width:13px;height:13px;"></i> Action
+          </button>
+          <div class="toolbox-divider"></div>
+          <button class="toolbox-btn toolbox-btn-condition" onclick="addNodeManually('condition')" title="Add a Condition node">
+            <i data-lucide="git-branch" style="width:13px;height:13px;"></i> Condition
+          </button>
+          <div class="toolbox-divider"></div>
+          <button class="toolbox-btn toolbox-btn-goal" onclick="addNodeManually('goal')" title="Add a Goal node">
+            <i data-lucide="target" style="width:13px;height:13px;"></i> Goal
+          </button>
         </div>
 
         <!-- Transformable workspace -->
@@ -1670,16 +1854,8 @@
             </button>
           </div>
 
-          <div class="manual-actions">
-            <button class="manual-btn" onclick="addNodeManually('action')" title="Add Action Node">
-              <i data-lucide="play" style="width: 12px; height: 12px;"></i> Action
-            </button>
-            <button class="manual-btn" onclick="addNodeManually('condition')" title="Add Condition Node">
-              <i data-lucide="git-branch" style="width: 12px; height: 12px;"></i> Cond.
-            </button>
-            <button class="manual-btn" onclick="addNodeManually('goal')" title="Add Goal Node">
-              <i data-lucide="target" style="width: 12px; height: 12px;"></i> Goal
-            </button>
+          <div style="margin-top:8px; font-family:'Inter',sans-serif; font-size:11px; font-weight:600; color:var(--text-muted); text-align:center;">
+            💡 Use the <strong>Add Node</strong> toolbar on the canvas to add nodes
           </div>
         </div>
 
@@ -1874,6 +2050,39 @@
       <div class="modal-footer" style="margin-top: 12px; gap: 12px; display: flex; justify-content: flex-end;">
         <button class="btn-brutal btn-muted" onclick="closePremiumModal()" style="padding: 12px 20px; font-weight: 800;">Close Preview</button>
         <button class="btn-brutal btn-yellow" onclick="window.location.href='subscription.html'" style="padding: 12px 24px; background: var(--yellow); font-weight: 900;">Upgrade to Premium 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: DOWNLOAD / EXPORT CANVAS
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-download-canvas">
+    <div class="brutal-modal">
+      <h2 class="modal-title">Export Canvas</h2>
+      <div style="font-family:'Inter',sans-serif; font-size:13px; color:var(--text-muted); font-weight:600; margin-top:-8px;">
+        Choose a format to download your canvas as an image or document.
+      </div>
+      <div class="download-format-grid" style="margin-top: 8px;">
+        <button class="download-format-btn" onclick="downloadCanvas('png')">
+          <span class="format-icon">🖼️</span>
+          <span class="format-ext">PNG</span>
+          <span class="format-desc">Lossless image, best quality</span>
+        </button>
+        <button class="download-format-btn" onclick="downloadCanvas('jpg')">
+          <span class="format-icon">📷</span>
+          <span class="format-ext">JPG</span>
+          <span class="format-desc">Compressed, smaller file</span>
+        </button>
+        <button class="download-format-btn" onclick="downloadCanvas('pdf')">
+          <span class="format-icon">📄</span>
+          <span class="format-ext">PDF</span>
+          <span class="format-desc">Document, A4 landscape</span>
+        </button>
+      </div>
+      <div id="download-progress-msg">Rendering canvas, please wait...</div>
+      <div class="modal-footer">
+        <button class="btn-brutal btn-muted" onclick="closeDownloadModal()" style="padding: 10px 18px;">Cancel</button>
       </div>
     </div>
   </div>

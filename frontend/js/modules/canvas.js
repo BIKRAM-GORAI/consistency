@@ -175,6 +175,10 @@ function initCanvasModule() {
     if (e.target === premiumModal) {
       closePremiumModal();
     }
+    const downloadModal = document.getElementById('modal-download-canvas');
+    if (e.target === downloadModal) {
+      closeDownloadModal();
+    }
   });
 
   // Render static icons on load
@@ -928,6 +932,7 @@ function handleViewportMouseDown(e) {
   if (e.target.closest('.flow-node-card') || 
       e.target.closest('#canvas-sidebar-panel') || 
       e.target.closest('.viewport-controls') ||
+      e.target.closest('#canvas-node-toolbox') ||
       e.target.closest('.designer-toolbar')) {
     return;
   }
@@ -960,6 +965,7 @@ function handleViewportTouchStart(e) {
   if (e.target.closest('.flow-node-card') || 
       e.target.closest('#canvas-sidebar-panel') || 
       e.target.closest('.viewport-controls') ||
+      e.target.closest('#canvas-node-toolbox') ||
       e.target.closest('.designer-toolbar') ||
       e.target.closest('#mobile-sidebar-toggle')) {
     return;
@@ -1215,6 +1221,16 @@ window.setMode = function(m) {
 
   document.getElementById('btn-mode-design').classList.toggle('active', mode === 'design');
   document.getElementById('btn-mode-execute').classList.toggle('active', mode === 'execute');
+
+  // Show/hide the node toolbox (only visible in design mode)
+  const toolbox = document.getElementById('canvas-node-toolbox');
+  if (toolbox) {
+    if (mode === 'design') {
+      toolbox.classList.remove('hidden');
+    } else {
+      toolbox.classList.add('hidden');
+    }
+  }
 
   // Cancel linking mode if active
   if (isLinking) {
@@ -1714,6 +1730,148 @@ window.clearCanvasFlow = function() {
   renderCanvas();
 };
 
+/**
+ * ============================================================
+ * CANVAS EXPORT (DOWNLOAD)
+ * ============================================================
+ */
+
+window.openDownloadModal = function() {
+  const modal = document.getElementById('modal-download-canvas');
+  if (modal) {
+    modal.classList.add('active');
+    const progressMsg = document.getElementById('download-progress-msg');
+    if (progressMsg) progressMsg.style.display = 'none';
+    // Re-enable all format buttons
+    modal.querySelectorAll('.download-format-btn').forEach(btn => { btn.disabled = false; });
+  }
+};
+
+window.closeDownloadModal = function() {
+  const modal = document.getElementById('modal-download-canvas');
+  if (modal) modal.classList.remove('active');
+};
+
+window.downloadCanvas = async function(format) {
+  const progressMsg = document.getElementById('download-progress-msg');
+  const modal = document.getElementById('modal-download-canvas');
+
+  // Show loading state
+  if (progressMsg) {
+    progressMsg.style.display = 'block';
+    progressMsg.textContent = 'Rendering canvas, please wait...';
+  }
+  // Disable buttons to prevent double-click
+  if (modal) {
+    modal.querySelectorAll('.download-format-btn').forEach(btn => { btn.disabled = true; });
+  }
+
+  try {
+    // Temporarily hide the toolbox so it doesn't appear in export
+    const toolbox = document.getElementById('canvas-node-toolbox');
+    const viewportControls = document.querySelector('.viewport-controls');
+    const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+    if (toolbox) toolbox.style.visibility = 'hidden';
+    if (viewportControls) viewportControls.style.visibility = 'hidden';
+    if (mobileToggle) mobileToggle.style.visibility = 'hidden';
+
+    // The target is the full designer view (without sidebar)
+    const captureTarget = document.getElementById('canvas-viewport-container');
+
+    if (!window.html2canvas) {
+      throw new Error('html2canvas library not loaded. Please check your internet connection.');
+    }
+
+    const canvas = await window.html2canvas(captureTarget, {
+      backgroundColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1a1a2e' : '#f7f5ef',
+      scale: 2, // Retina quality
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    // Restore visibility
+    if (toolbox) toolbox.style.visibility = '';
+    if (viewportControls) viewportControls.style.visibility = '';
+    if (mobileToggle) mobileToggle.style.visibility = '';
+
+    const canvasName = (canvasData.name || 'canvas').replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `${canvasName}_${timestamp}`;
+
+    if (format === 'png') {
+      const link = document.createElement('a');
+      link.download = `${filename}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Canvas exported as PNG!', 'success');
+    } else if (format === 'jpg') {
+      const link = document.createElement('a');
+      link.download = `${filename}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.92);
+      link.click();
+      showToast('Canvas exported as JPG!', 'success');
+    } else if (format === 'pdf') {
+      // PDF export using a dynamically-loaded jsPDF
+      if (progressMsg) progressMsg.textContent = 'Generating PDF...';
+      
+      if (!window.jspdf) {
+        // Load jsPDF dynamically if not present
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script.crossOrigin = 'anonymous';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const { jsPDF } = window.jspdf;
+      // A4 landscape in points: 842 x 595
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Scale image to fit page
+      const imgRatio = canvas.width / canvas.height;
+      let imgWidth = pdfWidth;
+      let imgHeight = pdfWidth / imgRatio;
+      if (imgHeight > pdfHeight) {
+        imgHeight = pdfHeight;
+        imgWidth = pdfHeight * imgRatio;
+      }
+
+      const imgX = (pdfWidth - imgWidth) / 2;
+      const imgY = (pdfHeight - imgHeight) / 2;
+
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, imgWidth, imgHeight);
+      pdf.save(`${filename}.pdf`);
+      showToast('Canvas exported as PDF!', 'success');
+    }
+
+    closeDownloadModal();
+  } catch (err) {
+    console.error('Canvas export failed:', err);
+    showToast(`Export failed: ${err.message || 'Unknown error'}`, 'error');
+    
+    // Restore visibility on error
+    const toolbox = document.getElementById('canvas-node-toolbox');
+    const viewportControls = document.querySelector('.viewport-controls');
+    const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+    if (toolbox) toolbox.style.visibility = '';
+    if (viewportControls) viewportControls.style.visibility = '';
+    if (mobileToggle) mobileToggle.style.visibility = '';
+    
+    if (progressMsg) progressMsg.style.display = 'none';
+    if (modal) {
+      modal.querySelectorAll('.download-format-btn').forEach(btn => { btn.disabled = false; });
+    }
+  }
+};
+
 window.backToDashboard = async function() {
   if (isDirty) {
     if (confirm('You have unsaved changes. Would you like to save before leaving?')) {
@@ -2012,6 +2170,9 @@ window.autoLayoutNodes = autoLayoutNodes;
 window.openHelpModal = openHelpModal;
 window.closeHelpModal = closeHelpModal;
 window.checkPremiumStatus = checkPremiumStatus;
+window.openDownloadModal = openDownloadModal;
+window.closeDownloadModal = closeDownloadModal;
+window.downloadCanvas = downloadCanvas;
 
 /**
  * Canvas AI Message limit loaders
