@@ -195,6 +195,221 @@
       overflow: hidden;
     }
 
+    .hero-layout-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      z-index: 2;
+    }
+
+    .hero-left-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+    }
+
+    .samurai-3d-container {
+      display: none;
+      width: 100%;
+      height: 400px;
+      position: relative;
+      z-index: 3;
+      overflow: visible;
+      margin-top: 20px;
+    }
+
+    .samurai-3d-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Screen Shake ── */
+    @keyframes screenShake {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      10% { transform: translate(-4px, 3px) rotate(-0.5deg); }
+      20% { transform: translate(3px, -4px) rotate(0.5deg); }
+      30% { transform: translate(-3px, -2px) rotate(0deg); }
+      40% { transform: translate(4px, 4px) rotate(0.5deg); }
+      50% { transform: translate(-2px, 3px) rotate(-0.5deg); }
+      60% { transform: translate(-4px, -2px) rotate(0deg); }
+      70% { transform: translate(3px, 3px) rotate(0.5deg); }
+      80% { transform: translate(-2px, -3px) rotate(-0.5deg); }
+      90% { transform: translate(4px, 2px) rotate(0deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    .screen-shake {
+      animation: screenShake 0.22s ease-in-out;
+    }
+
+    /* ── Slash Line Overlay ── */
+    .slash-line-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10000;
+    }
+    .slash-streak {
+      position: absolute;
+      width: 160%;
+      height: 14px;
+      background: linear-gradient(90deg, transparent, #fff, #ff3ea5, #00c9a7, #fff, transparent);
+      box-shadow: 0 0 25px #00c9a7, 0 0 50px #ff3ea5;
+      top: 50%;
+      left: -30%;
+      transform: rotate(-30deg) translateY(-50%) scaleX(0);
+      transform-origin: center;
+      opacity: 0;
+    }
+    .slash-streak.active {
+      animation: slashAnim 0.35s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    }
+    @keyframes slashAnim {
+      0% {
+        transform: rotate(-30deg) translateY(-50%) scaleX(0);
+        opacity: 1;
+      }
+      30% {
+        transform: rotate(-30deg) translateY(-50%) scaleX(1);
+        opacity: 1;
+      }
+      100% {
+        transform: rotate(-30deg) translateY(-50%) scaleX(1);
+        opacity: 0;
+      }
+    }
+
+    /* ── Shatter Void Overlay ── */
+    .shatter-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      pointer-events: none;
+      background: rgba(13, 12, 29, 0);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.8s ease;
+    }
+    .shatter-overlay.active {
+      pointer-events: auto;
+      background: rgba(13, 12, 29, 0.94);
+    }
+    .shatter-ruins {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.85);
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .shatter-overlay.active .shatter-ruins {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+    .ruins-card {
+      background: #fff;
+      border: var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 8px 8px 0px #ffd60a;
+      max-width: 90%;
+      width: 460px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .ruins-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      color: var(--black);
+      text-transform: uppercase;
+      letter-spacing: -2px;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+    .ruins-subtitle {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--pink);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Falling Clones Container ── */
+    #clones-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10005;
+      overflow: hidden;
+    }
+    .anim-clone {
+      position: fixed !important;
+      margin: 0 !important;
+      transition: transform 0.8s cubic-bezier(0.3, 0.05, 0.2, 1), opacity 0.7s ease;
+      pointer-events: none;
+      will-change: transform, opacity;
+      box-shadow: var(--shadow) !important;
+    }
+
+    @media (min-width: 1024px) {
+      .hero-layout-wrapper.has-3d {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 40px;
+        align-items: center;
+        text-align: left;
+      }
+
+      .hero-layout-wrapper.has-3d .hero-left-content {
+        align-items: flex-start;
+        text-align: left;
+      }
+
+      .hero-layout-wrapper.has-3d .landing-subtitle {
+        margin: 24px 0 44px;
+      }
+
+      .hero-layout-wrapper.has-3d .landing-actions {
+        justify-content: flex-start;
+      }
+
+      .hero-layout-wrapper.has-3d .samurai-3d-container {
+        display: block;
+        height: 65vh;
+        max-height: 700px;
+        min-height: 480px;
+        max-width: 100%;
+        margin-top: 0;
+        cursor: pointer;
+        pointer-events: auto;
+      }
+    }
+
     .marquee-container, .scrolled .marquee-container, .marquee-content, .marquee-item, .jagged-edge {
       display: none;
     }
@@ -2010,29 +2225,37 @@
     <div class="shape shape-7" aria-hidden="true"></div>
     <div class="shape shape-8" aria-hidden="true"></div>
 
-    <div class="landing-badge">
-      <span class="landing-badge-dot"></span>
-      Your personal consistency hub
-    </div>
+    <div class="hero-layout-wrapper" id="hero-layout-wrapper">
+      <div class="hero-left-content">
+        <div class="landing-badge">
+          <span class="landing-badge-dot"></span>
+          Your personal consistency hub
+        </div>
 
-    <h1 class="landing-hero-title">
-      Build<br>
-      <span class="highlight">Habits.</span><br>
-      <span class="highlight-pink">Stay</span> Consistent.
-    </h1>
+        <h1 class="landing-hero-title">
+          Build<br>
+          <span class="highlight">Habits.</span><br>
+          <span class="highlight-pink">Stay</span> Consistent.
+        </h1>
 
-    <p class="landing-subtitle">
-      A clean, private space for you and your friends to log daily tasks, maintain streaks, and manage long-term goals —
-      each on their own account.
-    </p>
+        <p class="landing-subtitle">
+          A clean, private space for you and your friends to log daily tasks, maintain streaks, and manage long-term goals —
+          each on their own account.
+        </p>
 
-    <div class="landing-actions">
-      <a href="auth.html?tab=login" class="btn-landing-primary" id="btn-go-login">
-        <i data-lucide="zap"></i> Login
-      </a>
-      <a href="auth.html?tab=register" class="btn-landing-secondary" id="btn-go-register">
-        <i data-lucide="sparkles"></i> Create Account
-      </a>
+        <div class="landing-actions">
+          <a href="auth.html?tab=login" class="btn-landing-primary" id="btn-go-login">
+            <i data-lucide="zap"></i> Login
+          </a>
+          <a href="auth.html?tab=register" class="btn-landing-secondary" id="btn-go-register">
+            <i data-lucide="sparkles"></i> Create Account
+          </a>
+        </div>
+      </div>
+
+      <div id="samurai-3d-container" class="samurai-3d-container">
+        <div id="samurai-canvas-holder" style="width: 100%; height: 100%; position: relative;"></div>
+      </div>
     </div>
 
     <div class="landing-features">
@@ -2409,7 +2632,7 @@
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gamingwithdeoxy@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
           <a href="https://www.instagram.com/deyxop/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="Instagram"></i> Instagram</a>
+              data-lucide="instagram"></i> Instagram</a>
           <a href="https://github.com/Debjeet-Dey" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -2424,7 +2647,7 @@
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=bikram77620@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
           <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="Instagram"></i> Instagram</a>
+              data-lucide="instagram"></i> Instagram</a>
           <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -2439,7 +2662,7 @@
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tanjirokamado777555@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
           <a href="https://www.instagram.com/let.him.coode/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="Instagram"></i> Instagram</a>
+              data-lucide="instagram"></i> Instagram</a>
           <a href="https://github.com/abhishekadhikari-247" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -3071,6 +3294,593 @@
     }
     lucide.createIcons();
   </script>
+
+  <!-- 3D Samurai Interactive Canvas Script -->
+  <script>
+    (function() {
+      // 1. Device detection (Desktop/Laptop only: screen width >= 1024px and fine pointer mouse/trackpad)
+      const isMobile = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 1024;
+      if (isMobile) {
+        console.log("3D samurai disabled: Mobile device detected.");
+        return;
+      }
+
+      // 2. Stable Connection check (Network speed & saving mode check)
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (conn) {
+        if (conn.saveData || (conn.effectiveType && ['slow-2g', '2g', '3g'].includes(conn.effectiveType)) || (conn.downlink && conn.downlink < 1.5)) {
+          console.log("3D samurai disabled: Low bandwidth, high latency or data saver active.");
+          return;
+        }
+      }
+
+      // 3. Dynamic loading of Three.js with load timer timeout
+      const THREE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+      const scriptTimeout = setTimeout(() => {
+        console.warn("3D samurai disabled: Three.js took too long to load (Connection unstable).");
+        cleanupScript();
+      }, 2500); // 2.5-second timeout
+
+      const threeScript = document.createElement('script');
+      threeScript.src = THREE_CDN;
+      threeScript.defer = true;
+      document.head.appendChild(threeScript);
+
+      function cleanupScript() {
+        if (threeScript.parentNode) {
+          threeScript.parentNode.removeChild(threeScript);
+        }
+      }
+
+      threeScript.onload = function() {
+        clearTimeout(scriptTimeout);
+        try {
+          initializeSamurai();
+        } catch (e) {
+          console.error("Failed to initialize 3D samurai scene:", e);
+        }
+      };
+
+      // 4. Initialize Three.js scene and model builder
+      function initializeSamurai() {
+        const wrapper = document.getElementById('hero-layout-wrapper');
+        const container = document.getElementById('samurai-3d-container');
+        const holder = document.getElementById('samurai-canvas-holder');
+        if (!wrapper || !container || !holder) return;
+
+        // Apply visual container class to activate desktop split-screen grid
+        wrapper.classList.add('has-3d');
+
+        // Setup Three.js
+        const scene = new THREE.Scene();
+        scene.background = null;
+
+        const width = holder.clientWidth;
+        const height = holder.clientHeight;
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        // Position camera to align with scaled up model height
+        camera.position.set(0, 0.9, 4.8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        holder.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        dirLight.position.set(5, 8, 5);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.bias = -0.001;
+        scene.add(dirLight);
+
+        const popLight = new THREE.DirectionalLight(0x00c9a7, 0.4); // teal pop backlighting
+        popLight.position.set(-5, 3, -5);
+        scene.add(popLight);
+
+        // Brutalist outline helper
+        function createBrutalistMesh(geometry, color, hasOutline = true, outlineColor = 0x0a0a0a, lineWeight = 2) {
+          const material = new THREE.MeshToonMaterial({ 
+            color: color
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+
+          if (hasOutline) {
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMat = new THREE.LineBasicMaterial({ 
+              color: outlineColor, 
+              linewidth: lineWeight 
+            });
+            const line = new THREE.LineSegments(edges, lineMat);
+            mesh.add(line);
+          }
+          return mesh;
+        }
+
+        const samurai = new THREE.Group();
+        scene.add(samurai);
+
+        // Pedestal
+        const pedestalGeo = new THREE.CylinderGeometry(1.6, 1.8, 0.25, 8);
+        const pedestal = createBrutalistMesh(pedestalGeo, 0x0a0a0a, true, 0xffd60a, 2);
+        pedestal.position.y = -1.25;
+        scene.add(pedestal);
+
+        // Torso/Armor
+        const torsoGeo = new THREE.BoxGeometry(0.8, 1.0, 0.6);
+        const torso = createBrutalistMesh(torsoGeo, 0xff6b35); // Coral
+        torso.position.y = 0.0;
+        samurai.add(torso);
+
+        // Neck
+        const neckGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.2, 8);
+        const neck = createBrutalistMesh(neckGeo, 0xffd60a);
+        neck.position.y = 0.55;
+        samurai.add(neck);
+
+        // Head
+        const headGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const head = createBrutalistMesh(headGeo, 0xffd60a); // Yellow
+        head.position.y = 0.85;
+        samurai.add(head);
+
+        // Eyes
+        const eyeGeo = new THREE.BoxGeometry(0.1, 0.05, 0.1);
+        const leftEye = createBrutalistMesh(eyeGeo, 0x0a0a0a, false);
+        leftEye.position.set(-0.15, 0.03, 0.23);
+        const rightEye = leftEye.clone();
+        rightEye.position.x = 0.15;
+        head.add(leftEye);
+        head.add(rightEye);
+
+        // Straw Hat (Kasa)
+        const hatGeo = new THREE.ConeGeometry(0.75, 0.35, 10);
+        const hat = createBrutalistMesh(hatGeo, 0x0a0a0a, true, 0xffd60a, 2.5);
+        hat.position.y = 1.15;
+        samurai.add(hat);
+
+        // Shoulder Armor Pads (Sode)
+        const shoulderPadGeo = new THREE.BoxGeometry(0.25, 0.45, 0.55);
+        const leftShoulderPad = createBrutalistMesh(shoulderPadGeo, 0xff3ea5); // Pink
+        leftShoulderPad.position.set(-0.55, 0.25, 0);
+        const rightShoulderPad = createBrutalistMesh(shoulderPadGeo, 0xff3ea5);
+        rightShoulderPad.position.set(0.55, 0.25, 0);
+        samurai.add(leftShoulderPad);
+        samurai.add(rightShoulderPad);
+
+        // Left Arm (Relaxed)
+        const leftArmGroup = new THREE.Group();
+        leftArmGroup.position.set(-0.55, 0.3, 0);
+        const upperArmGeo = new THREE.BoxGeometry(0.18, 0.4, 0.18);
+        const leftUpperArm = createBrutalistMesh(upperArmGeo, 0x0a0a0a);
+        leftUpperArm.position.y = -0.2;
+        leftArmGroup.add(leftUpperArm);
+        
+        const leftForearm = createBrutalistMesh(upperArmGeo, 0xffd60a);
+        leftForearm.position.set(-0.05, -0.45, 0.1);
+        leftForearm.rotation.x = -Math.PI / 4;
+        leftArmGroup.add(leftForearm);
+        samurai.add(leftArmGroup);
+
+        // Right Arm (Weapon Wielding)
+        const rightArmGroup = new THREE.Group();
+        rightArmGroup.position.set(0.55, 0.3, 0);
+        
+        const rightUpperArm = createBrutalistMesh(upperArmGeo, 0x0a0a0a);
+        rightUpperArm.position.y = -0.2;
+        rightArmGroup.add(rightUpperArm);
+
+        const rightForearmGroup = new THREE.Group();
+        rightForearmGroup.position.set(0, -0.4, 0);
+        const rightForearm = createBrutalistMesh(upperArmGeo, 0xffd60a);
+        rightForearm.position.y = -0.15;
+        rightForearmGroup.add(rightForearm);
+
+        // Katana
+        const katanaGroup = new THREE.Group();
+        katanaGroup.position.set(0, -0.3, 0.1);
+        katanaGroup.rotation.x = Math.PI / 2;
+
+        const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.35, 8);
+        const handle = createBrutalistMesh(handleGeo, 0x0a0a0a);
+        handle.position.y = -0.175;
+        katanaGroup.add(handle);
+
+        const guardGeo = new THREE.BoxGeometry(0.15, 0.04, 0.15);
+        const guard = createBrutalistMesh(guardGeo, 0xff3ea5);
+        katanaGroup.add(guard);
+
+        // Katana blade with custom glowing teal toon material
+        const bladeGeo = new THREE.BoxGeometry(0.02, 1.1, 0.06);
+        const bladeMat = new THREE.MeshToonMaterial({
+          color: 0x00c9a7,
+          emissive: 0x00c9a7,
+          emissiveIntensity: 1.0
+        });
+        const blade = new THREE.Mesh(bladeGeo, bladeMat);
+        blade.position.y = 0.55;
+        blade.castShadow = true;
+        blade.receiveShadow = true;
+
+        const bladeEdges = new THREE.EdgesGeometry(bladeGeo);
+        const bladeLine = new THREE.LineSegments(bladeEdges, new THREE.LineBasicMaterial({ color: 0x0a0a0a, linewidth: 2 }));
+        blade.add(bladeLine);
+        katanaGroup.add(blade);
+
+        rightForearmGroup.add(katanaGroup);
+        rightArmGroup.add(rightForearmGroup);
+        samurai.add(rightArmGroup);
+
+        // Legs
+        const legGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
+        const leftLeg = createBrutalistMesh(legGeo, 0x0a0a0a);
+        leftLeg.position.set(-0.25, -0.8, 0);
+        const rightLeg = createBrutalistMesh(legGeo, 0x0a0a0a);
+        rightLeg.position.set(0.25, -0.8, 0);
+        samurai.add(leftLeg);
+        samurai.add(rightLeg);
+
+        // Scale up the samurai by 1.4x and position it to sit on the pedestal
+        samurai.scale.set(1.4, 1.4, 1.4);
+        samurai.position.y = 0.55;
+
+        // Spark particles system
+        const particles = [];
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+
+        function spawnSparks(x, y, z) {
+          const colors = [0xffd60a, 0xff3ea5, 0x00c9a7, 0xff6b35];
+          for (let i = 0; i < 20; i++) {
+            const size = 0.04 + Math.random() * 0.06;
+            const geo = new THREE.BoxGeometry(size, size, size);
+            const col = colors[Math.floor(Math.random() * colors.length)];
+            const mesh = createBrutalistMesh(geo, col, false);
+            mesh.position.set(
+              x + (Math.random() - 0.5) * 0.2, 
+              y + (Math.random() - 0.5) * 0.2, 
+              z + (Math.random() - 0.5) * 0.2
+            );
+
+            const velocity = new THREE.Vector3(
+              (Math.random() - 0.5) * 3.0,
+              (Math.random() - 0.15) * 3.0,
+              (Math.random() - 0.5) * 3.0
+            );
+            
+            particleGroup.add(mesh);
+            particles.push({
+              mesh: mesh,
+              velocity: velocity,
+              life: 1.0,
+              decay: 0.025 + Math.random() * 0.035
+            });
+          }
+        }
+
+        // Sword slashing states
+        let isSlashing = false;
+        let slashTime = 0;
+        let didTriggerShatter = false;
+        
+        const normalRightArmRotX = 0.0;
+        const normalRightArmRotY = 0.0;
+        const normalRightArmRotZ = -Math.PI / 12;
+
+        const normalForearmRotX = -Math.PI / 3;
+        const normalKatanaRotX = Math.PI / 3;
+        const normalKatanaRotY = 0.0;
+
+        rightArmGroup.rotation.set(normalRightArmRotX, normalRightArmRotY, normalRightArmRotZ);
+        rightForearmGroup.rotation.set(normalForearmRotX, 0, 0);
+        katanaGroup.rotation.set(normalKatanaRotX, normalKatanaRotY, 0);
+
+        function triggerSlash() {
+          if (isSlashing) return;
+          isSlashing = true;
+          slashTime = 0;
+          didTriggerShatter = false;
+          
+          blade.material.color.setHex(0xff3ea5);
+          blade.material.emissive.setHex(0xff3ea5);
+        }
+
+        function updateSlash(delta) {
+          if (!isSlashing) return;
+          slashTime += delta;
+
+          // Phase 1: Wind-up (0s to 0.12s)
+          if (slashTime < 0.12) {
+            const t = slashTime / 0.12;
+            rightArmGroup.rotation.x = THREE.MathUtils.lerp(normalRightArmRotX, -Math.PI / 3, t);
+            rightArmGroup.rotation.y = THREE.MathUtils.lerp(normalRightArmRotY, -Math.PI / 4, t);
+            rightForearmGroup.rotation.x = THREE.MathUtils.lerp(normalForearmRotX, -Math.PI / 6, t);
+            katanaGroup.rotation.x = THREE.MathUtils.lerp(normalKatanaRotX, Math.PI / 1.5, t);
+          } 
+          // Phase 2: Swing/Slash strike (0.12s to 0.22s)
+          else if (slashTime < 0.22) {
+            const t = (slashTime - 0.12) / 0.10;
+            rightArmGroup.rotation.x = THREE.MathUtils.lerp(-Math.PI / 3, Math.PI / 3, t);
+            rightArmGroup.rotation.y = THREE.MathUtils.lerp(-Math.PI / 4, Math.PI / 3, t);
+            rightForearmGroup.rotation.x = THREE.MathUtils.lerp(-Math.PI / 6, -Math.PI / 2, t);
+            katanaGroup.rotation.x = THREE.MathUtils.lerp(Math.PI / 1.5, -Math.PI / 6, t);
+            
+            if (t > 0.4 && t < 0.6) {
+              spawnSparks(0.5, 0.2, 0.8);
+            }
+          } 
+          // Phase 3: Contact/Shatter Trigger (0.22s to 0.35s)
+          else if (slashTime < 0.35) {
+            if (!didTriggerShatter) {
+              didTriggerShatter = true;
+              executeButtonWaterfall();
+            }
+          } 
+          // Phase 4: Recover stance (0.35s to 0.8s)
+          else if (slashTime < 0.8) {
+            const t = (slashTime - 0.35) / 0.45;
+            rightArmGroup.rotation.x = THREE.MathUtils.lerp(Math.PI / 3, normalRightArmRotX, t);
+            rightArmGroup.rotation.y = THREE.MathUtils.lerp(Math.PI / 3, normalRightArmRotY, t);
+            rightForearmGroup.rotation.x = THREE.MathUtils.lerp(-Math.PI / 2, normalForearmRotX, t);
+            katanaGroup.rotation.x = THREE.MathUtils.lerp(-Math.PI / 6, normalKatanaRotX, t);
+          } 
+          // Stance recovered
+          else {
+            isSlashing = false;
+            blade.material.color.setHex(0x00c9a7); // Teal
+            blade.material.emissive.setHex(0x00c9a7);
+            rightArmGroup.rotation.set(normalRightArmRotX, normalRightArmRotY, normalRightArmRotZ);
+            rightForearmGroup.rotation.set(normalForearmRotX, 0, 0);
+            katanaGroup.rotation.set(normalKatanaRotX, normalKatanaRotY, 0);
+          }
+        }
+
+        function executeButtonWaterfall() {
+          // 1. Show glowing slash line overlay
+          const streak = document.getElementById('slash-streak');
+          if (streak) {
+            streak.classList.add('active');
+            setTimeout(() => {
+              streak.classList.remove('active');
+            }, 350);
+          }
+
+          // 2. Shake the screen
+          document.body.classList.add('screen-shake');
+          setTimeout(() => {
+            document.body.classList.remove('screen-shake');
+          }, 220);
+
+          // 3. Find and select elements to drop
+          const targets = [];
+          
+          // Hero CTA buttons
+          const ctaPrimary = document.getElementById('btn-go-login');
+          const ctaSecondary = document.getElementById('btn-go-register');
+          if (ctaPrimary) targets.push(ctaPrimary);
+          if (ctaSecondary) targets.push(ctaSecondary);
+
+          // Navbar buttons
+          const navLogin = document.getElementById('nav-login-btn');
+          const navRegister = document.getElementById('nav-register-btn');
+          if (navLogin) targets.push(navLogin);
+          if (navRegister) targets.push(navRegister);
+
+          // Install floating button
+          const installBtn = document.querySelector('.install-floating-btn');
+          if (installBtn) targets.push(installBtn);
+
+          // Feature pills
+          const pills = document.querySelectorAll('.feature-pill');
+          pills.forEach(p => targets.push(p));
+
+          const clonesContainer = document.getElementById('clones-container');
+          const overlay = document.getElementById('shatter-overlay');
+          const ruins = document.getElementById('shatter-ruins');
+          if (!clonesContainer || !overlay || !ruins) return;
+
+          // Clear old clones
+          clonesContainer.innerHTML = '';
+          const activeClones = [];
+
+          // Create clones and hide original elements
+          targets.forEach((elem, index) => {
+            const rect = elem.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            const clone = elem.cloneNode(true);
+            clone.style.width = `${rect.width}px`;
+            clone.style.height = `${rect.height}px`;
+            clone.style.left = `${rect.left}px`;
+            clone.style.top = `${rect.top}px`;
+            clone.className = elem.className + ' anim-clone';
+            
+            // Set initial position
+            clone.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+            clone.style.opacity = '1';
+
+            clonesContainer.appendChild(clone);
+            
+            // Hide original element
+            elem.style.visibility = 'hidden';
+
+            activeClones.push({
+              original: elem,
+              clone: clone,
+              rect: rect
+            });
+          });
+
+          // Show the dark void overlay (fades background to dark blue-black)
+          overlay.classList.add('active');
+
+          // Trigger the falling stagger loop
+          activeClones.forEach((item, index) => {
+            setTimeout(() => {
+              // Calculate random tumbling path
+              const randomX = (Math.random() - 0.5) * 200; // side shift
+              const targetY = window.innerHeight + 150 - item.rect.top; // fall past viewport bottom
+              const randomRot = -45 + Math.random() * 90; // tumble rotation
+              
+              item.clone.style.transform = `translate3d(${randomX}px, ${targetY}px, 0) rotate(${randomRot}deg)`;
+              item.clone.style.opacity = '0';
+            }, index * 40); // 40ms stagger between falling buttons
+          });
+
+          // 4. Staggered Reassembly after 1.8 seconds
+          setTimeout(() => {
+            // Reassembly cascade: fly back one by one in reverse order
+            const reverseClones = [...activeClones].reverse();
+            
+            reverseClones.forEach((item, index) => {
+              setTimeout(() => {
+                // Fly back to original position (translate 0,0,0 and rotate 0)
+                item.clone.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+                item.clone.style.opacity = '1';
+
+                // Once transition ends, clean it up and restore original
+                setTimeout(() => {
+                  item.original.style.visibility = 'visible';
+                  item.clone.remove();
+                }, 800); // matches transition duration (800ms)
+              }, index * 45); // 45ms stagger back
+            });
+
+            // Fade background void back to transparent
+            setTimeout(() => {
+              overlay.classList.remove('active');
+            }, reverseClones.length * 45 + 100);
+
+          }, 1800); // hold ruins screen for 1.8s
+        }
+
+        // Trigger sword slash on container click
+        container.addEventListener('click', triggerSlash);
+
+        // Head and torso cursor tracking variables
+        let targetMouseX = 0;
+        let targetMouseY = 0;
+        let currentMouseX = 0;
+        let currentMouseY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+          const rect = container.getBoundingClientRect();
+          if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+
+          const rectCenterX = rect.left + rect.width / 2;
+          const rectCenterY = rect.top + rect.height / 2;
+          
+          targetMouseX = (e.clientX - rectCenterX) / (window.innerWidth / 2);
+          targetMouseY = (e.clientY - rectCenterY) / (window.innerHeight / 2);
+        });
+
+        // Animation rendering loop
+        const clock = new THREE.Clock();
+        let time = 0;
+
+        function animate() {
+          requestAnimationFrame(animate);
+
+          const delta = clock.getDelta();
+          time += delta;
+
+          // 1. Idle breathing
+          if (!isSlashing) {
+            const breathing = Math.sin(time * 2.2);
+            // Torso bobs up/down slightly on pedestal
+            samurai.position.y = 0.55 + breathing * 0.02;
+            head.rotation.z = Math.sin(time * 1.1) * 0.02;
+            leftArmGroup.rotation.z = Math.sin(time * 1.4) * 0.035;
+            rightArmGroup.rotation.x = normalRightArmRotX + Math.sin(time * 1.4) * 0.03;
+          } else {
+            updateSlash(delta);
+          }
+
+          // 2. Cursor tracking smooth lerping
+          currentMouseX += (targetMouseX - currentMouseX) * 0.075;
+          currentMouseY += (targetMouseY - currentMouseY) * 0.075;
+
+          if (!isSlashing) {
+            torso.rotation.y = currentMouseX * 0.2;
+            torso.rotation.x = -currentMouseY * 0.12;
+
+            head.rotation.y = currentMouseX * 0.45;
+            head.rotation.x = -currentMouseY * 0.3;
+            hat.rotation.y = currentMouseX * 0.45;
+            hat.rotation.x = -currentMouseY * 0.3;
+          }
+
+          // 3. Update sparks particles
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.mesh.position.addScaledVector(p.velocity, delta);
+            p.velocity.y -= 3.5 * delta; // gravity pull
+            p.life -= p.decay;
+            p.mesh.scale.setScalar(p.life);
+            
+            if (p.life <= 0) {
+              particleGroup.remove(p.mesh);
+              particles.splice(i, 1);
+            }
+          }
+
+          renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Responsive resize listener
+        window.addEventListener('resize', () => {
+          const w = holder.clientWidth;
+          const h = holder.clientHeight;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        });
+      }
+    })();
+  </script>
+
+  <!-- Clones Container for Falling Elements -->
+  <div id="clones-container"></div>
+
+  <!-- Shatter Void Overlay for Slash Transition -->
+  <div id="shatter-overlay" class="shatter-overlay">
+    <div id="shatter-ruins" class="shatter-ruins">
+      <div class="ruins-card">
+        <!-- Bespoke Neo-Brutalist SVG Samurai Helmet -->
+        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(4px 4px 0px #0a0a0a); border: 3px solid #0a0a0a; background: #ffd60a; border-radius: 50%; padding: 12px; margin-bottom: 24px;">
+          <!-- Crossed Sword Handles -->
+          <path d="M15,85 L35,65" stroke="#0a0a0a" stroke-width="4" stroke-linecap="round"/>
+          <path d="M85,85 L65,65" stroke="#0a0a0a" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="35" cy="65" r="3" fill="#ff3ea5" stroke="#0a0a0a" stroke-width="2"/>
+          <circle cx="65" cy="65" r="3" fill="#ff3ea5" stroke="#0a0a0a" stroke-width="2"/>
+          <!-- Samurai Crest/Horns -->
+          <path d="M20,35 Q50,8 50,48 Q50,8 80,35 Q50,30 20,35 Z" fill="#ff3ea5" stroke="#0a0a0a" stroke-width="3" stroke-linejoin="round"/>
+          <!-- Helmet Dome -->
+          <path d="M30,48 Q50,38 70,48 L73,56 Q50,51 27,56 Z" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="2"/>
+          <!-- Face Shield / Menpo -->
+          <path d="M35,56 L65,56 L60,78 C60,85 40,85 40,78 Z" fill="#ff6b35" stroke="#0a0a0a" stroke-width="3" stroke-linejoin="round"/>
+          <!-- Mustache -->
+          <path d="M43,67 Q50,62 57,67 Q63,70 60,63 Q50,65 40,63 Q37,70 43,67 Z" fill="#0a0a0a"/>
+        </svg>
+        <h2 class="ruins-title">SAMURAI DESTROYED IT!</h2>
+        <div class="ruins-subtitle">Website reassembling...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="slash-overlay" class="slash-line-overlay">
+    <div id="slash-streak" class="slash-streak"></div>
+  </div>
 </body>
 
 </html>
