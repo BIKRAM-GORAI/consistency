@@ -1805,7 +1805,7 @@ window.downloadCanvas = async function(format) {
       throw new Error('html2canvas library not loaded. Please check your internet connection.');
     }
 
-    // ── STEP 3: Calculate bounding box of all nodes ─────────────────────
+    // ── STEP 3: Calculate bounding box of all nodes and connections ─────
     const NODE_WIDTH = 270;
     const NODE_PADDING = 120; // generous padding so edge nodes are never clipped
 
@@ -1823,6 +1823,56 @@ window.downloadCanvas = async function(format) {
     } else {
       // Blank canvas — use a sensible default area
       minX = 0; minY = 0; maxX = 800; maxY = 500;
+    }
+
+    // Also expand bounds to cover any sweeping Bezier curves (connection lines)
+    if (canvasData.edges && canvasData.edges.length > 0 && canvasData.nodes && canvasData.nodes.length > 0) {
+      canvasData.edges.forEach(edge => {
+        const nFrom = canvasData.nodes.find(n => n.id === edge.from);
+        const nTo = canvasData.nodes.find(n => n.id === edge.to);
+        if (nFrom && nTo) {
+          const hFrom = document.getElementById(`node-${edge.from}`)?.offsetHeight || 180;
+          const hTo = document.getElementById(`node-${edge.to}`)?.offsetHeight || 180;
+
+          const fromSide = edge.fromSide || 'right';
+          const toSide = edge.toSide || 'left';
+
+          let x1, y1;
+          if (fromSide === 'top') { x1 = nFrom.x + NODE_WIDTH / 2; y1 = nFrom.y; }
+          else if (fromSide === 'right') { x1 = nFrom.x + NODE_WIDTH; y1 = nFrom.y + hFrom / 2; }
+          else if (fromSide === 'bottom') { x1 = nFrom.x + NODE_WIDTH / 2; y1 = nFrom.y + hFrom; }
+          else { x1 = nFrom.x; y1 = nFrom.y + hFrom / 2; }
+
+          let x2, y2;
+          if (toSide === 'top') { x2 = nTo.x + NODE_WIDTH / 2; y2 = nTo.y; }
+          else if (toSide === 'right') { x2 = nTo.x + NODE_WIDTH; y2 = nTo.y + hTo / 2; }
+          else if (toSide === 'bottom') { x2 = nTo.x + NODE_WIDTH / 2; y2 = nTo.y + hTo; }
+          else { x2 = nTo.x; y2 = nTo.y + hTo / 2; }
+
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const offset = Math.max(50, dist * 0.35);
+
+          let cp1x = x1, cp1y = y1;
+          if (fromSide === 'top') cp1y -= offset;
+          else if (fromSide === 'right') cp1x += offset;
+          else if (fromSide === 'bottom') cp1y += offset;
+          else if (fromSide === 'left') cp1x -= offset;
+
+          let cp2x = x2, cp2y = y2;
+          if (toSide === 'top') cp2y -= offset;
+          else if (toSide === 'right') cp2x += offset;
+          else if (toSide === 'bottom') cp2y += offset;
+          else if (toSide === 'left') cp2x -= offset;
+
+          // Expand bounding box with the control points
+          minX = Math.min(minX, cp1x, cp2x);
+          minY = Math.min(minY, cp1y, cp2y);
+          maxX = Math.max(maxX, cp1x, cp2x);
+          maxY = Math.max(maxY, cp1y, cp2y);
+        }
+      });
     }
 
     // Apply padding
@@ -2076,7 +2126,8 @@ window.downloadCanvas = async function(format) {
       const pdfH       = Math.round(pdfW / imgRatio);
 
       const pdf = new jsPDF({ orientation: imgRatio >= 1 ? 'landscape' : 'portrait', unit: 'pt', format: [pdfW, pdfH] });
-      pdf.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, pdfH);
+      // Optimize: Use JPEG compression with quality 0.85 and FAST speed to reduce the file size from ~330 MB to ~2-3 MB
+      pdf.addImage(finalCanvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, pdfW, pdfH, undefined, 'FAST');
       pdf.save(`${filename}.pdf`);
       showToast('Canvas exported as high-quality PDF!', 'success');
     }
