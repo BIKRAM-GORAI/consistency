@@ -1057,6 +1057,12 @@ function applyViewportTransform() {
   if (workspace) {
     workspace.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
   }
+  if (viewportContainer) {
+    const bgSize = 30 * scale;
+    const offset = bgSize / 2;
+    viewportContainer.style.backgroundSize = `${bgSize}px ${bgSize}px`;
+    viewportContainer.style.backgroundPosition = `${panX}px ${panY}px, ${panX + offset}px ${panY + offset}px`;
+  }
 }
 
 // Control buttons
@@ -1863,6 +1869,12 @@ window.downloadCanvas = async function(format) {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const bgColor = isDark ? '#212121' : '#f5f2eb';
 
+    // Temporarily remove background patterns/colors from viewportContainer so html2canvas doesn't capture them
+    const origBgImage = viewportContainer.style.backgroundImage;
+    const origBgColor = viewportContainer.style.backgroundColor;
+    viewportContainer.style.backgroundImage = 'none';
+    viewportContainer.style.backgroundColor = 'transparent';
+
     const renderedCanvas = await window.html2canvas(viewportContainer, {
       backgroundColor: null,  // ← transparent: lets our dot bg show through
       scale: 4,               // 4× pixel density → ultra-sharp at any zoom
@@ -1876,6 +1888,10 @@ window.downloadCanvas = async function(format) {
       windowWidth: contentWidth,
       windowHeight: contentHeight,
     });
+
+    // Restore original background patterns/colors immediately after capture
+    viewportContainer.style.backgroundImage = origBgImage;
+    viewportContainer.style.backgroundColor = origBgColor;
 
     // ── STEP 6: Restore original viewport state ─────────────────────────
     viewportContainer.style.width   = origWidth;

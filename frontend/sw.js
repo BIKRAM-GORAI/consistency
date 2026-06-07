@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v63'; // Bumped cache version
+const CACHE_NAME = 'consistency-cache-v64'; // Bumped cache version
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -132,31 +132,49 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          return caches.match(event.request).then((cached) => {
+          return caches.match(event.request, { ignoreSearch: true }).then((cached) => {
             if (cached) return cached;
             if (event.request.mode === 'navigate') {
-              return caches.match('landing.html').then((fallback) => {
+              return caches.match('landing.html', { ignoreSearch: true }).then((fallback) => {
                 if (fallback) return fallback;
-                return caches.match('/');
+                return caches.match('/', { ignoreSearch: true }).then((fallbackSlash) => {
+                  if (fallbackSlash) return fallbackSlash;
+                  return new Response('Offline / Network Error', {
+                    status: 503,
+                    statusText: 'Service Unavailable',
+                    headers: { 'Content-Type': 'text/html' }
+                  });
+                });
               });
             }
+            return new Response('Network error and asset not cached.', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
           });
         })
     );
   } else {
     // Cache-First for other assets
     event.respondWith(
-      caches.match(event.request).then((cached) => {
+      caches.match(event.request, { ignoreSearch: true }).then((cached) => {
         if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          if (response.status === 200) {
-            const resClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, resClone);
+        return fetch(event.request)
+          .then((response) => {
+            if (response.status === 200) {
+              const resClone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, resClone);
+              });
+            }
+            return response;
+          })
+          .catch(() => {
+            return new Response('Network error and asset not cached.', {
+              status: 503,
+              statusText: 'Service Unavailable'
             });
-          }
-          return response;
-        });
+          });
       })
     );
   }
