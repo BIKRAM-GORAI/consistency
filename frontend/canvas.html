@@ -1420,28 +1420,38 @@
         min-height: 70px;
         flex-wrap: wrap;
         gap: 8px;
-        padding-top: 8px;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
         padding-bottom: 8px;
       }
-      .toolbar-left, .toolbar-actions {
+      .toolbar-left {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      .toolbar-actions {
         width: 100%;
         justify-content: space-between;
+        gap: 6px;
       }
       .canvas-title-input {
-        max-width: 180px;
-        font-size: 16px;
+        max-width: 130px;
+        font-size: 15px;
       }
       .designer-toolbar .btn-brutal {
         padding: 8px 10px !important;
         gap: 4px !important;
       }
-      .btn-save-text {
+      .btn-save-text, .btn-back-text {
         display: none !important;
+      }
+      .mode-toggle-btn {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
       }
 
       /* Dashboard View overrides */
       #canvas-dashboard-view {
-        padding: 24px 16px;
+        padding: calc(env(safe-area-inset-top, 0px) + 24px) 16px 24px 16px;
       }
       .dashboard-header {
         flex-direction: column;
@@ -1557,7 +1567,7 @@
     <header class="designer-toolbar">
       <div class="toolbar-left">
         <button class="btn-brutal btn-muted" onclick="backToDashboard()" style="padding: 8px 16px; font-size: 13px;">
-          <i data-lucide="arrow-left"></i> Dashboard
+          <i data-lucide="arrow-left"></i> <span class="btn-back-text">Dashboard</span>
         </button>
         <div class="toolbar-title-wrap">
           <input type="text" id="designer-canvas-title" class="canvas-title-input" value="Loading Flow..." onchange="renameCanvas(this.value)" />
