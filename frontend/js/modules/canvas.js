@@ -1801,7 +1801,7 @@ window.downloadCanvas = async function(format) {
 
     // ── STEP 3: Calculate bounding box of all nodes ─────────────────────
     const NODE_WIDTH = 270;
-    const NODE_PADDING = 60; // extra padding around all nodes
+    const NODE_PADDING = 120; // generous padding so edge nodes are never clipped
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
@@ -1854,15 +1854,18 @@ window.downloadCanvas = async function(format) {
     viewportContainer.style.overflow = 'visible';
 
     // Small delay to let the DOM repaint
-    await new Promise(r => setTimeout(r, 80));
+    await new Promise(r => setTimeout(r, 120));
 
-    // ── STEP 5: Capture at ultra-high quality (scale=4 for crisp zooms) ──
+    // ── STEP 5: Capture node content with TRANSPARENT background ──────────
+    // We use null backgroundColor so node cards render with their own CSS
+    // backgrounds, but the surrounding space is transparent — allowing our
+    // programmatically drawn dot grid to show through everywhere.
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const bgColor = isDark ? '#212121' : '#f5f2eb';
 
     const renderedCanvas = await window.html2canvas(viewportContainer, {
-      backgroundColor: bgColor,
-      scale: 4,           // 4× pixel density → ultra-sharp at any zoom
+      backgroundColor: null,  // ← transparent: lets our dot bg show through
+      scale: 4,               // 4× pixel density → ultra-sharp at any zoom
       useCORS: true,
       allowTaint: true,
       logging: false,
@@ -1889,11 +1892,10 @@ window.downloadCanvas = async function(format) {
     if (viewportControls) viewportControls.style.visibility = '';
     if (mobileToggle) mobileToggle.style.visibility = '';
 
-    // ── STEP 6.5: Composite onto a full-background canvas ────────────────
-    // html2canvas can leave transparent/clipped areas where CSS backgrounds
-    // didn't paint. We fix this by drawing the background ourselves first,
-    // then painting the captured content on top.
-    const exportPixelWidth  = renderedCanvas.width;
+    // ── STEP 6.5: Build final composited canvas ────────────────────────────
+    // Layer order: solid bg fill → dot grid → node content → watermark
+    const EXPORT_SCALE = 4;
+    const exportPixelWidth  = renderedCanvas.width;   // already × EXPORT_SCALE
     const exportPixelHeight = renderedCanvas.height;
 
     const finalCanvas = document.createElement('canvas');
@@ -1901,36 +1903,73 @@ window.downloadCanvas = async function(format) {
     finalCanvas.height = exportPixelHeight;
     const ctx = finalCanvas.getContext('2d');
 
-    // Fill solid background
+    // 1️⃣  Solid background fill — covers 100% of every pixel
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, exportPixelWidth, exportPixelHeight);
 
-    // Draw dot grid pattern (matches the canvas viewport CSS background)
-    // Scale dots by the capture scale factor (4×) and node scale (1)
-    const dotExportScale = 4; // matches html2canvas scale option
-    const dotSpacing = 30 * dotExportScale;   // 30px in canvas coords * 4 = 120px in pixels
-    const dotRadius  = 1.5 * dotExportScale;  // 1.5px dot * 4 = 6px in pixels
-    const dotColor   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
+    // 2️⃣  Dot grid pattern — matches the CSS radial-gradient on the viewport
+    //     dotSpacing and dotRadius must be scaled by EXPORT_SCALE since the
+    //     canvas coordinate space is 4× the CSS pixel space.
+    const dotSpacing = 30 * EXPORT_SCALE;    // 30 CSS-px → 120 canvas-px
+    const dotRadius  = 1.5 * EXPORT_SCALE;   // 1.5 CSS-px → 6 canvas-px
+    const dotColor   = isDark
+      ? 'rgba(255, 255, 255, 0.12)'
+      : 'rgba(0, 0, 0, 0.10)';
 
     ctx.fillStyle = dotColor;
-    for (let x = 0; x < exportPixelWidth; x += dotSpacing) {
-      for (let y = 0; y < exportPixelHeight; y += dotSpacing) {
+    // Primary dots
+    for (let gx = 0; gx < exportPixelWidth + dotSpacing; gx += dotSpacing) {
+      for (let gy = 0; gy < exportPixelHeight + dotSpacing; gy += dotSpacing) {
         ctx.beginPath();
-        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+        ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
         ctx.fill();
-        // Second offset dot set (matches the CSS background-position offset)
-        const ox = x + dotSpacing / 2;
-        const oy = y + dotSpacing / 2;
-        if (ox < exportPixelWidth && oy < exportPixelHeight) {
-          ctx.beginPath();
-          ctx.arc(ox, oy, dotRadius, 0, Math.PI * 2);
-          ctx.fill();
-        }
+      }
+    }
+    // Offset dots (CSS uses two background-position values: 0 0 and 15px 15px)
+    const offset = dotSpacing / 2;
+    for (let gx = offset; gx < exportPixelWidth + dotSpacing; gx += dotSpacing) {
+      for (let gy = offset; gy < exportPixelHeight + dotSpacing; gy += dotSpacing) {
+        ctx.beginPath();
+        ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
-    // Draw the captured canvas content on top
+    // 3️⃣  Node content (transparent bg, so dots show through the gaps)
     ctx.drawImage(renderedCanvas, 0, 0);
+
+    // 4️⃣  "Consistency Daily" watermark — bottom-right corner
+    const watermarkPad  = 32 * EXPORT_SCALE;
+    const watermarkSize = 13 * EXPORT_SCALE;
+    ctx.font = `900 ${watermarkSize}px "Space Grotesk", sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+
+    const wmText = 'consistency-daily.vercel.app';
+    // Subtle shadow/halo for legibility on any background
+    ctx.shadowColor   = isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
+    ctx.shadowBlur    = 6 * EXPORT_SCALE;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.28)';
+    ctx.fillText(wmText, exportPixelWidth - watermarkPad, exportPixelHeight - watermarkPad);
+
+    // Thin dot before the text as a brand indicator
+    const dotBrandR = 3 * EXPORT_SCALE;
+    const dotBrandX = exportPixelWidth - watermarkPad - ctx.measureText(wmText).width - dotBrandR * 2.5;
+    const dotBrandY = exportPixelHeight - watermarkPad - watermarkSize / 2;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle  = isDark ? 'rgba(100, 255, 218, 0.7)' : 'rgba(0, 120, 90, 0.55)'; // teal accent
+    ctx.beginPath();
+    ctx.arc(dotBrandX, dotBrandY, dotBrandR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur  = 0;
+
+
 
     // ── STEP 7: Create download file ─────────────────────────────────────
     const canvasName = (canvasData.name || 'canvas').replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
