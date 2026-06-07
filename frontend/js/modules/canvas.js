@@ -161,6 +161,16 @@ function initCanvasModule() {
   // Setup Sidebar width resizer
   setupSidebarResizer();
 
+  // Set initial floating button visibility based on screen width on load
+  const floatBtn = document.getElementById('canvas-ai-float-btn');
+  if (floatBtn) {
+    if (window.innerWidth <= 768) {
+      floatBtn.style.setProperty('display', 'flex', 'important');
+    } else {
+      floatBtn.style.setProperty('display', 'none', 'important');
+    }
+  }
+
   // Register click outside modals
   window.addEventListener('click', (e) => {
     const createModal = document.getElementById('modal-create-canvas');
@@ -2501,31 +2511,50 @@ function updateMsgLimitPill(msgsLeft, limit) {
 window.loadCanvasMsgLimits = loadCanvasMsgLimits;
 window.updateMsgLimitPill = updateMsgLimitPill;
 
-function toggleMobileSidebar() {
+function closeSidebar() {
   const panel = document.getElementById('canvas-sidebar-panel');
-  const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+  const floatBtn = document.getElementById('canvas-ai-float-btn');
   const designerView = document.getElementById('canvas-designer-view');
 
-  if (panel) {
-    const isActive = panel.classList.toggle('mobile-active');
-    
-    if (designerView) {
-      designerView.classList.toggle('mobile-sidebar-open', isActive);
-    }
+  if (window.innerWidth <= 768) {
+    if (panel) panel.classList.remove('mobile-active');
+    if (designerView) designerView.classList.remove('mobile-sidebar-open');
+  } else {
+    if (panel) panel.classList.add('desktop-hidden');
+  }
 
-    if (toggleBtn) {
-      if (isActive) {
-        toggleBtn.style.setProperty('display', 'none', 'important');
-      } else {
-        // Only show if we are on a mobile screen size (< 768px)
-        if (window.innerWidth <= 768) {
-          toggleBtn.style.setProperty('display', 'flex', 'important');
-        } else {
-          toggleBtn.style.setProperty('display', 'none', 'important');
-        }
-      }
-    }
+  if (floatBtn) {
+    floatBtn.style.setProperty('display', 'flex', 'important');
   }
 }
+
+function openSidebar() {
+  const panel = document.getElementById('canvas-sidebar-panel');
+  const floatBtn = document.getElementById('canvas-ai-float-btn');
+  const designerView = document.getElementById('canvas-designer-view');
+
+  if (window.innerWidth <= 768) {
+    if (panel) panel.classList.add('mobile-active');
+    if (designerView) designerView.classList.add('mobile-sidebar-open');
+  } else {
+    if (panel) panel.classList.remove('desktop-hidden');
+  }
+
+  if (floatBtn) {
+    floatBtn.style.setProperty('display', 'none', 'important');
+  }
+}
+
+function toggleMobileSidebar() {
+  const panel = document.getElementById('canvas-sidebar-panel');
+  if (panel && panel.classList.contains('mobile-active')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+}
+
+window.closeSidebar = closeSidebar;
+window.openSidebar = openSidebar;
 window.toggleMobileSidebar = toggleMobileSidebar;
 

@@ -1602,13 +1602,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Enter sends, Shift+Enter new line (on desktop/laptop devices)
+    // Shift+Enter sends, Enter new line
     chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.isAndroidNative;
         if (!isMobile) {
-          if (!e.shiftKey) {
-            e.preventDefault();
+          if (e.shiftKey) {
+            e.preventDefault(); // Prevent newline insertion
             handleChatSubmit(e);
           }
         }

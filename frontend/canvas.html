@@ -461,6 +461,9 @@
       flex-shrink: 0;
       position: relative;
     }
+    #canvas-sidebar-panel.desktop-hidden {
+      display: none !important;
+    }
 
     .sidebar-resizer {
       position: absolute;
@@ -1617,13 +1620,13 @@
       .sidebar-resizer {
         display: none !important;
       }
-      .mobile-close-btn {
+      .sidebar-close-btn {
         display: inline-flex !important;
       }
-      #mobile-sidebar-toggle {
+      #canvas-ai-float-btn {
         display: flex !important;
       }
-      #canvas-designer-view.mobile-sidebar-open #mobile-sidebar-toggle {
+      #canvas-designer-view.mobile-sidebar-open #canvas-ai-float-btn {
         display: none !important;
       }
 
@@ -1888,8 +1891,8 @@
             <button class="btn-icon" onclick="openHelpModal()" title="How to use this canvas">
               <i data-lucide="info" style="width: 15px; height: 15px;"></i>
             </button>
-            <button class="btn-icon mobile-close-btn" onclick="toggleMobileSidebar()" title="Close chat" style="display: none;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x" style="width: 15px; height: 15px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <button class="btn-icon sidebar-close-btn" onclick="closeSidebar()" title="Close chat">
+              <i data-lucide="x" style="width: 15px; height: 15px;"></i>
             </button>
           </div>
         </div>
@@ -1901,6 +1904,18 @@
 
         <!-- Chat history -->
         <div class="chat-history" id="chat-history-log">
+          <!-- AI Usage Tips Banner -->
+          <div class="chat-usage-tips" style="background: rgba(255, 214, 10, 0.1); border: 2px solid var(--black); border-radius: var(--r-md); padding: 12px; margin-bottom: 16px; font-family: 'Inter', sans-serif; font-size: 11px; line-height: 1.4; color: var(--text); box-shadow: 2px 2px 0 var(--black);">
+            <div style="font-weight: 800; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif; font-size: 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="help-circle" style="width: 14px; height: 14px; color: var(--yellow);"></i> AI Agent Tips
+            </div>
+            <ul style="margin: 0; padding-left: 14px; display: flex; flex-direction: column; gap: 6px;">
+              <li><strong>Independent Messages:</strong> The agent has no conversation memory. Every message is processed independently.</li>
+              <li><strong>Avoid Opposing Actions:</strong> Do not request opposite actions (e.g. adding and deleting nodes) in a single instruction. Modify/add new things together, but for deletions, delete manually first, then ask the AI to add/modify.</li>
+              <li><strong>Shortcut:</strong> Press <strong>Shift + Enter</strong> to send, <strong>Enter</strong> to start a new line.</li>
+            </ul>
+          </div>
+
           <div class="chat-msg agent">
             Welcome to the AI Agentic Canvas! Type an instruction below or click a template prompt to let me design your workflow graph. Try telling me what routine or conditional plan you want to map out!
           </div>
@@ -1925,8 +1940,8 @@
 
     </div>
 
-    <!-- Mobile Floating Toggle Button for Chat Drawer -->
-    <button id="mobile-sidebar-toggle" class="btn-brutal btn-yellow" onclick="toggleMobileSidebar()" title="Toggle AI Agent Chat" style="position: absolute; bottom: 24px; right: 24px; z-index: 10000; border-radius: 50%; width: 54px; height: 54px; display: none; align-items: center; justify-content: center; box-shadow: var(--shadow);">
+    <!-- Floating Toggle Button for AI Agent Chat -->
+    <button id="canvas-ai-float-btn" class="btn-brutal btn-yellow" onclick="openSidebar()" title="Open AI Agent Chat" style="position: absolute; bottom: 24px; right: 24px; z-index: 10000; border-radius: 50%; width: 54px; height: 54px; display: none; align-items: center; justify-content: center; box-shadow: var(--shadow);">
       <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 16px; color: #000000; letter-spacing: -0.5px; line-height: 1;">AI</span>
     </button>
 
