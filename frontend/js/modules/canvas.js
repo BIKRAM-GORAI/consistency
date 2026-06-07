@@ -1859,6 +1859,23 @@ window.downloadCanvas = async function(format) {
     viewportContainer.style.height  = `${contentHeight}px`;
     viewportContainer.style.overflow = 'visible';
 
+    // Temporarily adjust SVG overlay bounds and viewBox so html2canvas doesn't clip paths
+    const svgOverlay = document.getElementById('canvas-svg-overlay');
+    let origSvgLeft = '', origSvgTop = '', origSvgWidth = '', origSvgHeight = '', origSvgViewBox = null;
+    if (svgOverlay) {
+      origSvgLeft = svgOverlay.style.left;
+      origSvgTop = svgOverlay.style.top;
+      origSvgWidth = svgOverlay.style.width;
+      origSvgHeight = svgOverlay.style.height;
+      origSvgViewBox = svgOverlay.getAttribute('viewBox');
+
+      svgOverlay.style.left   = `${minX}px`;
+      svgOverlay.style.top    = `${minY}px`;
+      svgOverlay.style.width  = `${contentWidth}px`;
+      svgOverlay.style.height = `${contentHeight}px`;
+      svgOverlay.setAttribute('viewBox', `${minX} ${minY} ${contentWidth} ${contentHeight}`);
+    }
+
     // Small delay to let the DOM repaint
     await new Promise(r => setTimeout(r, 120));
 
@@ -1892,6 +1909,19 @@ window.downloadCanvas = async function(format) {
     // Restore original background patterns/colors immediately after capture
     viewportContainer.style.backgroundImage = origBgImage;
     viewportContainer.style.backgroundColor = origBgColor;
+
+    // Restore SVG overlay state
+    if (svgOverlay) {
+      svgOverlay.style.left   = origSvgLeft;
+      svgOverlay.style.top    = origSvgTop;
+      svgOverlay.style.width  = origSvgWidth;
+      svgOverlay.style.height = origSvgHeight;
+      if (origSvgViewBox) {
+        svgOverlay.setAttribute('viewBox', origSvgViewBox);
+      } else {
+        svgOverlay.removeAttribute('viewBox');
+      }
+    }
 
     // ── STEP 6: Restore original viewport state ─────────────────────────
     viewportContainer.style.width   = origWidth;
