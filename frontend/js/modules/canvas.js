@@ -1834,19 +1834,37 @@ window.downloadCanvas = async function(format) {
     const contentWidth  = maxX - minX;
     const contentHeight = maxY - minY;
 
-    // ── STEP 4: Temporarily adjust the workspace transform to show all nodes ─
+    // ── STEP 4: Temporarily shift all node coordinates and redraw paths to fit positive coordinate space ─
     const savedPanX  = panX;
     const savedPanY  = panY;
     const savedScale = scale;
 
-    // Set scale=1, pan so (minX, minY) is at the viewport origin
-    const tempScale = 1;
-    const tempPanX  = -minX;
-    const tempPanY  = -minY;
+    const origCoords = canvasData.nodes.map(n => ({ id: n.id, x: n.x, y: n.y }));
+    const shiftX = -minX;
+    const shiftY = -minY;
 
-    panX  = tempPanX;
-    panY  = tempPanY;
-    scale = tempScale;
+    // Mutate internal node coordinates temporarily to shift everything into positive space
+    canvasData.nodes.forEach(n => {
+      n.x += shiftX;
+      n.y += shiftY;
+    });
+
+    // Update DOM positions of node cards temporarily
+    canvasData.nodes.forEach(n => {
+      const el = document.getElementById(`node-${n.id}`);
+      if (el) {
+        el.style.left = `${n.x}px`;
+        el.style.top = `${n.y}px`;
+      }
+    });
+
+    // Redraw edges with the new shifted coordinates
+    drawConnections();
+
+    // Set scale=1, pan so shifted (0, 0) is at the viewport origin
+    panX  = 0;
+    panY  = 0;
+    scale = 1;
     applyViewportTransform();
 
     // Temporarily resize the viewport container to exactly fit the content
@@ -1859,21 +1877,14 @@ window.downloadCanvas = async function(format) {
     viewportContainer.style.height  = `${contentHeight}px`;
     viewportContainer.style.overflow = 'visible';
 
-    // Temporarily adjust SVG overlay bounds and viewBox so html2canvas doesn't clip paths
+    // Temporarily adjust SVG overlay size to content size (at left: 0, top: 0 relative to workspace)
     const svgOverlay = document.getElementById('canvas-svg-overlay');
-    let origSvgLeft = '', origSvgTop = '', origSvgWidth = '', origSvgHeight = '', origSvgViewBox = null;
+    let origSvgWidth = '', origSvgHeight = '';
     if (svgOverlay) {
-      origSvgLeft = svgOverlay.style.left;
-      origSvgTop = svgOverlay.style.top;
       origSvgWidth = svgOverlay.style.width;
       origSvgHeight = svgOverlay.style.height;
-      origSvgViewBox = svgOverlay.getAttribute('viewBox');
-
-      svgOverlay.style.left   = `${minX}px`;
-      svgOverlay.style.top    = `${minY}px`;
       svgOverlay.style.width  = `${contentWidth}px`;
       svgOverlay.style.height = `${contentHeight}px`;
-      svgOverlay.setAttribute('viewBox', `${minX} ${minY} ${contentWidth} ${contentHeight}`);
     }
 
     // Small delay to let the DOM repaint
@@ -1910,17 +1921,27 @@ window.downloadCanvas = async function(format) {
     viewportContainer.style.backgroundImage = origBgImage;
     viewportContainer.style.backgroundColor = origBgColor;
 
-    // Restore SVG overlay state
+    // Restore original node coordinates
+    origCoords.forEach(orig => {
+      const node = canvasData.nodes.find(n => n.id === orig.id);
+      if (node) {
+        node.x = orig.x;
+        node.y = orig.y;
+        const el = document.getElementById(`node-${node.id}`);
+        if (el) {
+          el.style.left = `${node.x}px`;
+          el.style.top = `${node.y}px`;
+        }
+      }
+    });
+
+    // Redraw connections to restore original path positions
+    drawConnections();
+
+    // Restore SVG overlay size
     if (svgOverlay) {
-      svgOverlay.style.left   = origSvgLeft;
-      svgOverlay.style.top    = origSvgTop;
       svgOverlay.style.width  = origSvgWidth;
       svgOverlay.style.height = origSvgHeight;
-      if (origSvgViewBox) {
-        svgOverlay.setAttribute('viewBox', origSvgViewBox);
-      } else {
-        svgOverlay.removeAttribute('viewBox');
-      }
     }
 
     // ── STEP 6: Restore original viewport state ─────────────────────────
