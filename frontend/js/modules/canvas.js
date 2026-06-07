@@ -1783,6 +1783,39 @@ window.closeDownloadModal = function() {
   if (modal) modal.classList.remove('active');
 };
 
+/**
+ * Utility to save or share a generated file (especially on native apps like Capacitor Android/iOS)
+ */
+async function saveOrShareFile(dataUrl, filename, mimeType) {
+  try {
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.isAndroidNative;
+    if (isMobileDevice && navigator.canShare) {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], filename, { type: mimeType });
+      
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: filename,
+        });
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('Web Share failed, falling back to download:', err);
+  }
+  
+  // Standard fallback download link
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  return false;
+}
+
 window.downloadCanvas = async function(format) {
   const progressMsg = document.getElementById('download-progress-msg');
   const modal = document.getElementById('modal-download-canvas');
@@ -2262,16 +2295,12 @@ window.downloadCanvas = async function(format) {
     const filename   = `${canvasName}_${timestamp}`;
 
     if (format === 'png') {
-      const link = document.createElement('a');
-      link.download = `${filename}.png`;
-      link.href = finalCanvas.toDataURL('image/png');
-      link.click();
+      const dataUrl = finalCanvas.toDataURL('image/png');
+      await saveOrShareFile(dataUrl, `${filename}.png`, 'image/png');
       showToast('Canvas exported as high-quality PNG!', 'success');
     } else if (format === 'jpg') {
-      const link = document.createElement('a');
-      link.download = `${filename}.jpg`;
-      link.href = finalCanvas.toDataURL('image/jpeg', 1.0); // max quality
-      link.click();
+      const dataUrl = finalCanvas.toDataURL('image/jpeg', 1.0);
+      await saveOrShareFile(dataUrl, `${filename}.jpg`, 'image/jpeg');
       showToast('Canvas exported as high-quality JPG!', 'success');
     } else if (format === 'pdf') {
       if (progressMsg) progressMsg.textContent = 'Generating PDF...';
@@ -2296,7 +2325,9 @@ window.downloadCanvas = async function(format) {
       const pdf = new jsPDF({ orientation: imgRatio >= 1 ? 'landscape' : 'portrait', unit: 'pt', format: [pdfW, pdfH] });
       // Optimize: Use JPEG compression with quality 0.85 and FAST speed to reduce the file size from ~330 MB to ~2-3 MB
       pdf.addImage(finalCanvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, pdfW, pdfH, undefined, 'FAST');
-      pdf.save(`${filename}.pdf`);
+      
+      const dataUrl = pdf.output('datauristring');
+      await saveOrShareFile(dataUrl, `${filename}.pdf`, 'application/pdf');
       showToast('Canvas exported as high-quality PDF!', 'success');
     }
 
