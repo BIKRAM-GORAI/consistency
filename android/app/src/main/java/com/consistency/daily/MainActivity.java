@@ -26,6 +26,14 @@ public class MainActivity extends BridgeActivity {
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().setBackgroundColor(android.graphics.Color.parseColor("#FFD60A"));
             
+            // Set download listener to intercept and handle downloads natively (including Base64 export data)
+            this.bridge.getWebView().setDownloadListener(new android.webkit.DownloadListener() {
+                @Override
+                public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                    handleNativeDownload(url, mimetype);
+                }
+            });
+
             // If cold start came from a notification click, load it directly in the WebView
             if (coldStartGroupId != null && !coldStartGroupId.isEmpty()) {
                 String launchUrl = "https://consistency-daily.vercel.app/index.html?openChat=" + coldStartGroupId + "&t=" + System.currentTimeMillis();
@@ -239,5 +247,102 @@ public class MainActivity extends BridgeActivity {
             }
         }
         return "https://localhost";
+    }
+
+    private void handleNativeDownload(final String url, final String mimetype) {
+        if (url == null) return;
+
+        if (url.startsWith("data:")) {
+            // Handle Base64 Data URL (e.g. data:image/png;base64,...)
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        int commaIndex = url.indexOf(",");
+                        if (commaIndex == -1) return;
+                        
+                        String base64Data = url.substring(commaIndex + 1);
+                        final byte[] decodedBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
+                        
+                        // Extract file extension and construct filename
+                        String ext = "bin";
+                        if (mimetype != null) {
+                            if (mimetype.contains("png")) ext = "png";
+                            else if (mimetype.contains("jpeg") || mimetype.contains("jpg")) ext = "jpg";
+                            else if (mimetype.contains("pdf")) ext = "pdf";
+                        } else {
+                            // Guess mimetype from data: uri header
+                            String header = url.substring(0, commaIndex);
+                            if (header.contains("png")) ext = "png";
+                            else if (header.contains("jpeg") || header.contains("jpg")) ext = "jpg";
+                            else if (header.contains("pdf")) ext = "pdf";
+                        }
+                        
+                        final String fileName = "exported_canvas_" + System.currentTimeMillis() + "." + ext;
+                        
+                        boolean success = false;
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                            // Use MediaStore for Android 10+ (no permissions required for Downloads)
+                            android.content.ContentResolver resolver = getContentResolver();
+                            android.content.ContentValues contentValues = new android.content.ContentValues();
+                            contentValues.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                            contentValues.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mimetype);
+                            contentValues.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+                            
+                            android.net.Uri uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues);
+                            if (uri != null) {
+                                android.os.ParcelFileDescriptor pfd = resolver.openFileDescriptor(uri, "w");
+                                if (pfd != null) {
+                                    java.io.FileOutputStream fos = new java.io.FileOutputStream(pfd.getFileDescriptor());
+                                    fos.write(decodedBytes);
+                                    fos.close();
+                                    pfd.close();
+                                    success = true;
+                                }
+                            }
+                        } else {
+                            // Fallback for older Android versions using standard file storage
+                            java.io.File path = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                            if (!path.exists()) {
+                                path.mkdirs();
+                            }
+                            java.io.File file = new java.io.File(path, fileName);
+                            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+                            fos.write(decodedBytes);
+                            fos.close();
+                            success = true;
+                        }
+                        
+                        final boolean isSuccess = success;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (isSuccess) {
+                                    android.widget.Toast.makeText(MainActivity.this, "File saved to Downloads: " + fileName, android.widget.Toast.LENGTH_LONG).show();
+                                } else {
+                                    android.widget.Toast.makeText(MainActivity.this, "Failed to save file", android.widget.Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                    } catch (final Exception e) {
+                        e.printStackTrace();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                android.widget.Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }
+            }).start();
+        } else {
+            // Handle standard HTTP/HTTPS URLs via DownloadManager or system intent
+            try {
+                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                startActivity(intent);
+            } catch (Exception e) {
+                android.widget.Toast.makeText(this, "Cannot open download URL", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

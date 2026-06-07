@@ -1788,7 +1788,19 @@ window.closeDownloadModal = function() {
  */
 async function saveOrShareFile(dataUrl, filename, mimeType) {
   try {
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.isAndroidNative;
+    // If it's the native Android App wrapper, bypass Web Share and trigger link click
+    // so that the WebView's DownloadListener intercepts it and saves it natively.
+    if (window.isAndroidNative) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return true;
+    }
+
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobileDevice && navigator.canShare) {
       const res = await fetch(dataUrl);
       const blob = await res.blob();
