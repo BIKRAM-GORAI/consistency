@@ -1451,7 +1451,10 @@
         <span>Canvas</span>
       </button>
     </nav>
-    <button class="bottom-nav-arrow" id="bottom-nav-arrow" onclick="scrollBottomNavRight()" aria-label="Scroll right">
+    <button class="bnav-scroll-indicator scroll-left" id="bnav-scroll-left" onclick="scrollBottomNav('left')" style="display: none;" aria-label="Scroll left">
+      <i data-lucide="chevron-left"></i>
+    </button>
+    <button class="bnav-scroll-indicator scroll-right" id="bnav-scroll-right" onclick="scrollBottomNav('right')" aria-label="Scroll right">
       <i data-lucide="chevron-right"></i>
     </button>
   </div>
@@ -2557,6 +2560,51 @@
       window.location.href = 'canvas.html';
     }
     window.navigateToCanvas = navigateToCanvas;
+
+    function scrollBottomNav(direction) {
+      const nav = document.getElementById('bottom-nav');
+      if (!nav) return;
+      const scrollAmount = 150;
+      if (direction === 'left') {
+        nav.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        nav.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    }
+    window.scrollBottomNav = scrollBottomNav;
+
+    // Listen to scroll events on the mobile bottom nav to dynamically toggle indicators visibility
+    window.addEventListener('load', () => {
+      const nav = document.getElementById('bottom-nav');
+      const leftBtn = document.getElementById('bnav-scroll-left');
+      const rightBtn = document.getElementById('bnav-scroll-right');
+      
+      if (nav && leftBtn && rightBtn) {
+        const updateIndicators = () => {
+          // Show left indicator if scrolled right
+          if (nav.scrollLeft > 5) {
+            leftBtn.style.display = 'flex';
+          } else {
+            leftBtn.style.display = 'none';
+          }
+          
+          // Show right indicator if there is more content to scroll to the right
+          const maxScroll = nav.scrollWidth - nav.clientWidth;
+          if (nav.scrollLeft < maxScroll - 5) {
+            rightBtn.style.display = 'flex';
+          } else {
+            rightBtn.style.display = 'none';
+          }
+        };
+
+        nav.addEventListener('scroll', updateIndicators);
+        updateIndicators();
+        window.addEventListener('resize', updateIndicators);
+        
+        // Setup a small delayed runner in case content takes a moment to render
+        setTimeout(updateIndicators, 400);
+      }
+    });
   </script>
 
   <!-- ===== MODAL: Group Chat ===== -->

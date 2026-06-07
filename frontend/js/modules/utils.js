@@ -831,39 +831,4 @@ function fallbackToFileInput(onSuccess) {
   tempInput.click();
 }
 
-// ── Mobile bottom navigation scroll indicator logic ──
-window.scrollBottomNavRight = () => {
-  const bottomNav = document.getElementById('bottom-nav');
-  if (bottomNav) {
-    bottomNav.scrollBy({ left: 120, behavior: 'smooth' });
-  }
-};
-
-window.addEventListener('DOMContentLoaded', () => {
-  const bottomNav = document.getElementById('bottom-nav');
-  const bottomNavArrow = document.getElementById('bottom-nav-arrow');
-
-  if (bottomNav && bottomNavArrow) {
-    const updateArrowVisibility = () => {
-      // Show arrow only if there is scrollable content to the right (with a small buffer)
-      const canScrollRight = bottomNav.scrollWidth - bottomNav.clientWidth - bottomNav.scrollLeft > 5;
-      if (canScrollRight) {
-        bottomNavArrow.classList.add('visible');
-        bottomNavArrow.parentElement.classList.add('show-fade');
-      } else {
-        bottomNavArrow.classList.remove('visible');
-        bottomNavArrow.parentElement.classList.remove('show-fade');
-      }
-    };
-    
-    bottomNav.addEventListener('scroll', updateArrowVisibility);
-    window.addEventListener('resize', updateArrowVisibility);
-    
-    // Initial checks
-    updateArrowVisibility();
-    setTimeout(updateArrowVisibility, 500);
-    setTimeout(updateArrowVisibility, 1500);
-  }
-});
-
 console.log("[Module] utils.js loaded and utility helpers bound to window");
