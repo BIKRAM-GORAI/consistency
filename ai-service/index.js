@@ -228,7 +228,7 @@ app.post('/api/ai/extract-tasks', upload.single('image'), async (req, res) => {
     }
 
     const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
-    console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini model ${modelName} for task extraction...`);
+    console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini model ${modelName} for task extraction (key suffix: ...${apiKey.slice(-5)})...`);
 
     // Sanitize MIME-type to avoid Unsupported MIME type errors (e.g. application/octet-stream)
     let mimeType = req.file.mimetype;
@@ -531,7 +531,7 @@ app.post('/api/ai/generate-canvas-flow', async (req, res) => {
     }
 
     const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
-    console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini for canvas flow generation...`);
+    console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini for canvas flow generation (key suffix: ...${apiKey.slice(-5)})...`);
 
     const systemInstruction = 
       "You are an expert AI workflow designer and productivity coach.\n" +

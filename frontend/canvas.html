@@ -2,13 +2,9 @@
 <html lang="en">
 <head>
   <script>
-    // Auth & Subscription Guard
+    // Auth Guard
     if (!localStorage.getItem('userId')) {
       window.location.replace('landing.html' + window.location.search);
-    }
-    const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
-    if (!isPremium) {
-      window.location.replace('subscription.html');
     }
     
     // Core theme application
@@ -1497,6 +1493,25 @@
         </div>
       </header>
 
+      <!-- Desktop Usability Banner -->
+      <div class="desktop-notice-card" style="background: var(--yellow); border: var(--border-2); border-radius: var(--r-md); padding: 16px 20px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 12px; color: var(--black);">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--black);"><i data-lucide="monitor" style="width: 24px; height: 24px; stroke-width: 2.2px; color: var(--black) !important; stroke: var(--black) !important;"></i></span>
+          <div style="font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; line-height: 1.5; color: var(--black);">
+            <strong style="font-family: 'Space Grotesk', sans-serif; font-size: 14px; text-transform: uppercase; display: block; margin-bottom: 2px; color: var(--black);">Desktop Version Recommended</strong>
+            For the ultimate workflow design experience, we recommend using a desktop or laptop computer. The larger viewport allows you to lay out, organize, and drag complex multi-node workflows and decision trees with ease.
+          </div>
+        </div>
+        
+        <!-- Copyable link helper -->
+        <div style="display: flex; align-items: center; gap: 8px; border: var(--border-2); border-radius: var(--r-sm); background: #ffffff; padding: 6px 12px; box-shadow: 2px 2px 0 var(--black); width: fit-content; max-width: 100%; box-sizing: border-box;">
+          <code id="web-app-url" style="font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 800; color: var(--black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;">https://consistency-daily.vercel.app/</code>
+          <button onclick="copyWebAppLink(this)" style="background: var(--teal); border: 1.5px solid var(--black); border-radius: 4px; padding: 4px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--black); cursor: pointer; box-shadow: 1px 1px 0 var(--black); flex-shrink: 0; display: flex; align-items: center; gap: 4px; transition: transform 0.1s;">
+            <i data-lucide="copy" style="width: 11px; height: 11px; color: var(--black) !important; stroke: var(--black) !important;"></i> <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Usage Limits -->
       <div class="msg-limits-row">
         <div class="limits-card" style="flex:1; margin-bottom:0;">
@@ -1821,6 +1836,34 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Premium Upgrade Teaser ===== -->
+  <div class="modal-overlay" id="modal-premium-upgrade">
+    <div class="brutal-modal" style="border: var(--border-3); box-shadow: 8px 8px 0 var(--black); background: var(--bg-card); max-width: 500px; padding: 28px;">
+      <div style="background: var(--purple); color: #fff; padding: 20px; border-bottom: var(--border-3); margin: -28px -28px 20px -28px; border-top-left-radius: var(--r-md); border-top-right-radius: var(--r-md); display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 28px; display: flex; color: #fff;"><i data-lucide="sparkles" style="width: 28px; height: 28px; color: #fff !important; stroke: #fff !important;"></i></span>
+        <h2 class="modal-title" style="color: #fff; margin: 0; font-family: 'Space Grotesk', sans-serif;">Unlock Agentic Canvas</h2>
+      </div>
+      <div style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; line-height: 1.6; color: var(--text); display: flex; flex-direction: column; gap: 16px;">
+        <p style="margin: 0; font-weight: 700; font-size: 15px;">
+          You've discovered the AI Agentic Canvas! Upgrade to Premium to unleash its full potential:
+        </p>
+        <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; list-style-type: '⚡ ';">
+          <li><strong>Unlimited Custom Canvases</strong>: Build as many visual pipelines and roadmaps as you need.</li>
+          <li><strong>AI Generation Engine</strong>: Instruct the AI agent to draw and connect entire dependency graphs from a single prompt.</li>
+          <li><strong>Persistent Cloud Auto-Save</strong>: Safely store, reload, and resume your design charts anytime.</li>
+          <li><strong>Interactive Task Execution Mode</strong>: Track progress by marking node checklists as completed in real time.</li>
+        </ul>
+        <p style="margin: 0; font-size: 13px; color: var(--text-muted); font-style: italic;">
+          Take control of your learning, planning, and goal tracking today.
+        </p>
+      </div>
+      <div class="modal-footer" style="margin-top: 12px; gap: 12px; display: flex; justify-content: flex-end;">
+        <button class="btn-brutal btn-muted" onclick="closePremiumModal()" style="padding: 12px 20px; font-weight: 800;">Close Preview</button>
+        <button class="btn-brutal btn-yellow" onclick="window.location.href='subscription.html'" style="padding: 12px 24px; background: var(--yellow); font-weight: 900;">Upgrade to Premium 🚀</button>
       </div>
     </div>
   </div>

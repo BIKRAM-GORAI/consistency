@@ -82,6 +82,60 @@ function closeHelpModal() {
 }
 
 /**
+ * Premium Upgrade Modal and Status Checks
+ */
+function openPremiumModal() {
+  const modal = document.getElementById('modal-premium-upgrade');
+  if (modal) {
+    modal.classList.add('active');
+    if (window.lucide) lucide.createIcons({ root: modal });
+  }
+}
+
+function closePremiumModal() {
+  const modal = document.getElementById('modal-premium-upgrade');
+  if (modal) modal.classList.remove('active');
+}
+
+function checkPremiumStatus() {
+  const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+  if (!isPremium) {
+    openPremiumModal();
+    return false;
+  }
+  return true;
+}
+
+function checkPremiumStatusSilent() {
+  return localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+}
+
+function copyWebAppLink(btnEl) {
+  const url = 'https://consistency-daily.vercel.app/';
+  navigator.clipboard.writeText(url).then(() => {
+    const span = btnEl.querySelector('span');
+    const originalText = span ? span.textContent : 'Copy';
+    
+    if (span) span.textContent = 'Copied!';
+    btnEl.style.background = 'var(--lime)';
+    
+    showToast('Web App URL copied to clipboard!', 'success');
+    
+    setTimeout(() => {
+      if (span) span.textContent = originalText;
+      btnEl.style.background = 'var(--teal)';
+    }, 2000);
+  }).catch(err => {
+    console.error('Failed to copy text: ', err);
+    showToast('Failed to copy link', 'error');
+  });
+}
+
+window.openPremiumModal = openPremiumModal;
+window.closePremiumModal = closePremiumModal;
+window.copyWebAppLink = copyWebAppLink;
+
+/**
  * Initialization of Canvas Module
  */
 function initCanvasModule() {
@@ -116,6 +170,10 @@ function initCanvasModule() {
     const helpModal = document.getElementById('help-modal-overlay');
     if (e.target === helpModal) {
       closeHelpModal();
+    }
+    const premiumModal = document.getElementById('modal-premium-upgrade');
+    if (e.target === premiumModal) {
+      closePremiumModal();
     }
   });
 
@@ -242,6 +300,32 @@ function navigateTo(url) {
  */
 
 async function loadCanvases() {
+  const isPremium = checkPremiumStatusSilent();
+  if (!isPremium) {
+    canvasesList = [{
+      _id: 'demo-preview-canvas',
+      name: '✨ Interactive Demo Canvas (Premium Teaser)',
+      createdAt: new Date().toISOString()
+    }];
+    canvasLimit = 0;
+    
+    // Update limit indicators
+    const fractionText = document.getElementById('canvas-limit-fraction');
+    const bar = document.getElementById('canvas-limit-bar');
+    if (fractionText) {
+      fractionText.textContent = `0 / 0 Canvases (Upgrade to Unlock)`;
+    }
+    if (bar) {
+      bar.style.width = `0%`;
+    }
+
+    // Set message limit bars
+    updateMsgLimitPill(0, 0);
+
+    renderCanvases(canvasesList);
+    return;
+  }
+
   try {
     const data = await window.apiFetch(`${window.API || ''}/api/canvas-workflows`);
     canvasesList = data.canvases || [];
@@ -334,6 +418,7 @@ function filterCanvases(query) {
 }
 
 function openCreateModal() {
+  if (!checkPremiumStatus()) return;
   if (canvasesList.length >= canvasLimit) {
     showToast(`Limit reached. You can only create up to ${canvasLimit} canvases in your lifetime.`, 'warn');
     return;
@@ -374,6 +459,7 @@ async function submitCreateCanvas() {
 }
 
 async function deleteCanvas(id, name) {
+  if (!checkPremiumStatus()) return;
   if (!confirm(`Are you sure you want to permanently delete "${name}"?`)) return;
 
   try {
@@ -395,6 +481,134 @@ async function deleteCanvas(id, name) {
  */
 
 async function loadCanvasDetails(id) {
+  if (id === 'demo-preview-canvas') {
+    activeCanvasId = 'demo-preview-canvas';
+    document.getElementById('canvas-dashboard-view').style.display = 'none';
+    document.getElementById('canvas-designer-view').style.display = 'flex';
+    
+    // Populate demo flow data
+    canvasData = {
+      _id: 'demo-preview-canvas',
+      name: '✨ Interactive Demo Canvas',
+      nodes: [
+        {
+          id: 'node_demo_1',
+          label: '🚀 Launch Learning Platform',
+          type: 'goal',
+          status: 'pending',
+          x: 100,
+          y: 200,
+          checklist: ['Complete marketing campaigns', 'Finalize courses list'],
+          completedSubtasks: []
+        },
+        {
+          id: 'node_demo_2',
+          label: '📝 Collect Student Feedback',
+          type: 'action',
+          status: 'completed',
+          x: 450,
+          y: 100,
+          checklist: ['Create feedback survey', 'Share on social media'],
+          completedSubtasks: ['Create feedback survey', 'Share on social media']
+        },
+        {
+          id: 'node_demo_3',
+          label: '❓ Satisfies Demand?',
+          type: 'condition',
+          status: 'pending',
+          x: 800,
+          y: 200,
+          checklist: ['Over 70% positive feedback?'],
+          completedSubtasks: []
+        },
+        {
+          id: 'node_demo_4',
+          label: '📚 Create Course Content',
+          type: 'action',
+          status: 'pending',
+          x: 1150,
+          y: 100,
+          checklist: ['Record video lessons', 'Edit & publish'],
+          completedSubtasks: []
+        },
+        {
+          id: 'node_demo_5',
+          label: '🔄 Adjust Course Scope',
+          type: 'action',
+          status: 'pending',
+          x: 1150,
+          y: 350,
+          checklist: ['Refine topics', 'Re-survey audience'],
+          completedSubtasks: []
+        }
+      ],
+      edges: [
+        {
+          id: 'edge_demo_1',
+          from: 'node_demo_2',
+          fromSide: 'right',
+          to: 'node_demo_3',
+          toSide: 'left',
+          label: 'feedback received'
+        },
+        {
+          id: 'edge_demo_2',
+          from: 'node_demo_3',
+          fromSide: 'top',
+          to: 'node_demo_4',
+          toSide: 'left',
+          label: 'yes'
+        },
+        {
+          id: 'edge_demo_3',
+          from: 'node_demo_3',
+          fromSide: 'bottom',
+          to: 'node_demo_5',
+          toSide: 'left',
+          label: 'no'
+        },
+        {
+          id: 'edge_demo_4',
+          from: 'node_demo_4',
+          fromSide: 'right',
+          to: 'node_demo_1',
+          toSide: 'top',
+          label: 'courses ready'
+        }
+      ]
+    };
+    
+    document.getElementById('designer-canvas-title').value = canvasData.name;
+    
+    // Clear stacks
+    undoStack = [];
+    redoStack = [];
+    isDirty = false;
+
+    // Reset pan/zoom
+    panX = 120;
+    panY = 150;
+    scale = 0.85;
+    applyViewportTransform();
+
+    renderCanvas();
+    setIndicatorState('saved');
+    
+    // Log helpful system instructions inside sidebar chat
+    const log = document.getElementById('chat-history-log');
+    if (log) {
+      log.innerHTML = `
+        <div class="chat-msg agent">
+          Welcome to the Interactive Demo! You are viewing a premium canvas teaser. Feel free to zoom, pan, and drag cards to experience the layout engine.
+        </div>
+        <div class="chat-msg system">
+          ⭐ Premium Feature: Instruct the AI Agent to build entire workflows instantly from your text prompts.
+        </div>
+      `;
+    }
+    return;
+  }
+
   try {
     setIndicatorState('saving', 'Loading canvas...');
     const data = await window.apiFetch(`${window.API || ''}/api/canvas-workflows/${id}`);
@@ -916,8 +1130,10 @@ function dragNodeEnd() {
   
   if (draggedNodeId) {
     draggedNodeId = null;
-    markDirty();
-    pushHistory();
+    if (checkPremiumStatusSilent()) {
+      markDirty();
+      pushHistory();
+    }
   }
 }
 
@@ -942,7 +1158,7 @@ function startDragNodeTouch(e, nodeId) {
     const cardEl = document.getElementById(`node-${nodeId}`);
     if (cardEl) cardEl.classList.add('selected');
   }
-
+ 
   window.addEventListener('touchmove', dragNodeMoveTouch, { passive: false });
   window.addEventListener('touchend', dragNodeEndTouch);
 }
@@ -980,8 +1196,10 @@ function dragNodeEndTouch() {
   
   if (draggedNodeId) {
     draggedNodeId = null;
-    markDirty();
-    pushHistory();
+    if (checkPremiumStatusSilent()) {
+      markDirty();
+      pushHistory();
+    }
   }
 }
 
@@ -1020,6 +1238,7 @@ window.setMode = function(m) {
  */
 
 window.addNodeManually = function(type) {
+  if (!checkPremiumStatus()) return;
   if (mode !== 'design') {
     showToast('Switched to design mode to add nodes', 'warn');
     setMode('design');
@@ -1075,6 +1294,7 @@ window.addNodeManually = function(type) {
 };
 
 window.deleteNode = function(nodeId) {
+  if (!checkPremiumStatus()) return;
   if (mode !== 'design') return;
   if (!confirm('Are you sure you want to delete this node? All connections to it will be removed.')) return;
 
@@ -1090,6 +1310,10 @@ window.deleteNode = function(nodeId) {
 };
 
 window.updateNodeLabel = function(nodeId, newLabel) {
+  if (!checkPremiumStatus()) {
+    renderCanvas();
+    return;
+  }
   const node = canvasData.nodes.find(n => n.id === nodeId);
   if (node) {
     const cleanLabel = newLabel.trim();
@@ -1104,6 +1328,7 @@ window.updateNodeLabel = function(nodeId, newLabel) {
 };
 
 window.toggleNodeStatus = function(nodeId) {
+  if (!checkPremiumStatus()) return;
   const node = canvasData.nodes.find(n => n.id === nodeId);
   if (node) {
     node.status = (node.status === 'completed') ? 'pending' : 'completed';
@@ -1123,6 +1348,10 @@ window.toggleNodeStatus = function(nodeId) {
 
 // Checklist management
 window.submitAddSubtask = function(nodeId, inputEl) {
+  if (!checkPremiumStatus()) {
+    inputEl.value = '';
+    return;
+  }
   const text = inputEl.value.trim();
   if (!text) return;
   inputEl.value = '';
@@ -1139,6 +1368,7 @@ window.submitAddSubtask = function(nodeId, inputEl) {
 };
 
 window.deleteSubtask = function(nodeId, itemIdx) {
+  if (!checkPremiumStatus()) return;
   const node = canvasData.nodes.find(n => n.id === nodeId);
   if (node) {
     const itemText = node.checklist[itemIdx];
@@ -1156,6 +1386,10 @@ window.deleteSubtask = function(nodeId, itemIdx) {
 };
 
 window.toggleSubtaskDone = function(nodeId, itemText, isChecked) {
+  if (!checkPremiumStatus()) {
+    renderCanvas(); // Re-render to reset visual checked state
+    return;
+  }
   const node = canvasData.nodes.find(n => n.id === nodeId);
   if (node) {
     if (!node.completedSubtasks) node.completedSubtasks = [];
@@ -1201,6 +1435,7 @@ function cancelLinkingState() {
 }
 
 window.startManualLinkMode = function() {
+  if (!checkPremiumStatus()) return;
   if (mode !== 'design') {
     showToast('Switched to design mode to connect nodes', 'warn');
     setMode('design');
@@ -1229,6 +1464,7 @@ window.startManualLinkMode = function() {
 window.handleConnectorClick = function(event, nodeId, side) {
   if (event) event.stopPropagation();
   
+  if (!checkPremiumStatus()) return;
   if (mode !== 'design') return;
 
   if (!isLinking) {
@@ -1290,6 +1526,7 @@ window.handleConnectorClick = function(event, nodeId, side) {
 };
 
 window.deleteEdge = function(edgeId) {
+  if (!checkPremiumStatus()) return;
   canvasData.edges = canvasData.edges.filter(e => e.id !== edgeId);
   markDirty();
   pushHistory();
@@ -1319,6 +1556,7 @@ function pushHistory() {
 }
 
 window.triggerUndo = function() {
+  if (!checkPremiumStatus()) return;
   if (undoStack.length === 0) {
     showToast('Nothing to undo', 'warn');
     return;
@@ -1342,6 +1580,7 @@ window.triggerUndo = function() {
 };
 
 window.triggerRedo = function() {
+  if (!checkPremiumStatus()) return;
   if (redoStack.length === 0) {
     showToast('Nothing to redo', 'warn');
     return;
@@ -1417,6 +1656,11 @@ function setIndicatorState(state, customText = '') {
 }
 
 window.renameCanvas = async function(newName) {
+  if (!checkPremiumStatus()) {
+    const input = document.getElementById('designer-canvas-title');
+    if (input) input.value = canvasData.name;
+    return;
+  }
   const clean = newName.trim();
   if (!clean || clean === canvasData.name) return;
 
@@ -1426,6 +1670,7 @@ window.renameCanvas = async function(newName) {
 };
 
 window.saveCanvasCurrentState = async function(isAutoSave = false) {
+  if (!checkPremiumStatus()) return;
   if (!activeCanvasId) return;
 
   if (!isAutoSave) {
@@ -1458,6 +1703,7 @@ window.saveCanvasCurrentState = async function(isAutoSave = false) {
 };
 
 window.clearCanvasFlow = function() {
+  if (!checkPremiumStatus()) return;
   if (!confirm('Reset canvas? This will clear all nodes and edges. This action can be undone.')) return;
   
   canvasData.nodes = [];
@@ -1504,6 +1750,7 @@ function appendChatMessage(sender, text) {
  * Places nodes in neat vertical columns based on their rank (dependency levels)
  */
 function autoLayoutNodes() {
+  if (!checkPremiumStatus()) return;
   if (!canvasData.nodes || canvasData.nodes.length === 0) return;
 
   // 1. Calculate in-degrees (number of incoming edges) to find roots
@@ -1604,6 +1851,10 @@ window.useSuggestion = function(text) {
 };
 
 window.sendPromptToAgent = async function() {
+  if (!checkPremiumStatus()) {
+    aiPromptInput.value = '';
+    return;
+  }
   const prompt = aiPromptInput.value.trim();
   if (!prompt) return;
 
@@ -1760,11 +2011,17 @@ window.deleteCanvas = deleteCanvas;
 window.autoLayoutNodes = autoLayoutNodes;
 window.openHelpModal = openHelpModal;
 window.closeHelpModal = closeHelpModal;
+window.checkPremiumStatus = checkPremiumStatus;
 
 /**
  * Canvas AI Message limit loaders
  */
 async function loadCanvasMsgLimits() {
+  const isPremium = checkPremiumStatusSilent();
+  if (!isPremium) {
+    updateMsgLimitPill(0, 0);
+    return;
+  }
   try {
     const data = await window.apiFetch(`${window.API || ''}/api/ai/canvas-msg-limits`);
     if (data && typeof data.msgsLeft === 'number') {
@@ -1776,8 +2033,14 @@ async function loadCanvasMsgLimits() {
 }
 
 function updateMsgLimitPill(msgsLeft, limit) {
-  const text = `${msgsLeft} / ${limit} left`;
-  const cls = msgsLeft === 0 ? 'empty' : msgsLeft <= 3 ? 'low' : 'ok';
+  const isPremium = checkPremiumStatusSilent();
+  let text = `${msgsLeft} / ${limit} left`;
+  let cls = msgsLeft === 0 ? 'empty' : msgsLeft <= 3 ? 'low' : 'ok';
+  
+  if (!isPremium) {
+    text = 'Upgrade to Unlock';
+    cls = 'empty';
+  }
   
   ['sidebar-msg-limit-pill', 'dashboard-msg-limit-pill'].forEach(id => {
     const el = document.getElementById(id);

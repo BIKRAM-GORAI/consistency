@@ -2549,12 +2549,7 @@
     lucide.createIcons();
 
     function navigateToCanvas() {
-      const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
-      if (!isPremium) {
-        window.location.href = 'subscription.html';
-      } else {
-        window.location.href = 'canvas.html';
-      }
+      window.location.href = 'canvas.html';
     }
     window.navigateToCanvas = navigateToCanvas;
   </script>
