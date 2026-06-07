@@ -1723,13 +1723,13 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 /* ============================================================
    BOTTOM NAV (mobile only)
    ============================================================ */
-.bottom-nav {
+.bottom-nav-container {
   display: none;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .bottom-nav {
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  .bottom-nav-container {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -1755,8 +1755,8 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   .brand-icon .lucide { width: 18px; height: 18px; }
 
   /* Bottom navigation bar */
-  .bottom-nav {
-    display: flex;
+  .bottom-nav-container {
+    display: block;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -1765,6 +1765,29 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     background: var(--bg-card);
     border-top: var(--border);
     box-shadow: 0 -4px 0 var(--black);
+  }
+
+  .bottom-nav-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 48px;
+    background: linear-gradient(to right, transparent, var(--bg-card));
+    pointer-events: none;
+    z-index: 302;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .bottom-nav-container.show-fade::after {
+    opacity: 1;
+  }
+
+  .bottom-nav {
+    display: flex;
+    position: relative;
     padding: 8px 12px;
     justify-content: flex-start;
     align-items: center;
@@ -1773,6 +1796,48 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    border-top: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .bottom-nav-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    background: var(--yellow);
+    border: var(--border-2);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 305;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.1s;
+    padding: 0;
+    color: var(--black);
+  }
+
+  .bottom-nav-arrow.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .bottom-nav-arrow:active {
+    transform: translateY(-50%) scale(0.9);
+    box-shadow: 1px 1px 0 var(--black);
+  }
+
+  .bottom-nav-arrow .lucide {
+    width: 14px;
+    height: 14px;
+    stroke-width: 3px;
   }
 
   .bottom-nav::-webkit-scrollbar {
@@ -1932,7 +1997,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
    ≥ 769px
    ============================================================ */
 @media (min-width: 769px) {
-  .bottom-nav { display: none !important; }
+  .bottom-nav-container { display: none !important; }
   .nav-actions { display: flex; }
 }
 
@@ -6102,9 +6167,12 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
    ============================================================ */
 @media (max-width: 1024px) {
   /* Adjust bottom nav margins or heights if needed for safe areas */
-  .bottom-nav {
+  .bottom-nav-container {
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
     height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .bottom-nav {
+    height: 100%;
   }
 }
 

@@ -1417,39 +1417,44 @@
   </div>
 
   <!-- Mobile bottom navigation bar (shown only on ≤768px via CSS) -->
-  <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
-    <button class="bottom-nav-btn active" id="bnav-home" onclick="showPage('home')">
-      <span class="bnav-icon"><i data-lucide="calendar"></i></span>
-      <span>Daily</span>
+  <div class="bottom-nav-container">
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
+      <button class="bottom-nav-btn active" id="bnav-home" onclick="showPage('home')">
+        <span class="bnav-icon"><i data-lucide="calendar"></i></span>
+        <span>Daily</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-goals" onclick="showPage('goals')">
+        <span class="bnav-icon"><i data-lucide="target"></i></span>
+        <span>Goals</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')">
+        <span class="bnav-icon" style="position:relative; display:inline-flex;">
+          <i data-lucide="users"></i>
+          <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none; top:-3px; right:-3px; border-color:#fff;"></span>
+        </span>
+        <span>Groups</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-pomodoro" onclick="showPage('pomodoro')">
+        <span class="bnav-icon"><i data-lucide="clock"></i></span>
+        <span>Focus</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
+        <span class="bnav-icon"><i data-lucide="trophy"></i></span>
+        <span>Wins</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-leaderboard" onclick="showPage('leaderboard')">
+        <span class="bnav-icon"><i data-lucide="crown"></i></span>
+        <span>Rankings</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-canvas" onclick="navigateToCanvas()">
+        <span class="bnav-icon"><i data-lucide="palette"></i></span>
+        <span>Canvas</span>
+      </button>
+    </nav>
+    <button class="bottom-nav-arrow" id="bottom-nav-arrow" onclick="scrollBottomNavRight()" aria-label="Scroll right">
+      <i data-lucide="chevron-right"></i>
     </button>
-    <button class="bottom-nav-btn" id="bnav-goals" onclick="showPage('goals')">
-      <span class="bnav-icon"><i data-lucide="target"></i></span>
-      <span>Goals</span>
-    </button>
-    <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')">
-      <span class="bnav-icon" style="position:relative; display:inline-flex;">
-        <i data-lucide="users"></i>
-        <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none; top:-3px; right:-3px; border-color:#fff;"></span>
-      </span>
-      <span>Groups</span>
-    </button>
-    <button class="bottom-nav-btn" id="bnav-pomodoro" onclick="showPage('pomodoro')">
-      <span class="bnav-icon"><i data-lucide="clock"></i></span>
-      <span>Focus</span>
-    </button>
-    <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
-      <span class="bnav-icon"><i data-lucide="trophy"></i></span>
-      <span>Wins</span>
-    </button>
-    <button class="bottom-nav-btn" id="bnav-leaderboard" onclick="showPage('leaderboard')">
-      <span class="bnav-icon"><i data-lucide="crown"></i></span>
-      <span>Rankings</span>
-    </button>
-    <button class="bottom-nav-btn" id="bnav-canvas" onclick="navigateToCanvas()">
-      <span class="bnav-icon"><i data-lucide="palette"></i></span>
-      <span>Canvas</span>
-    </button>
-  </nav>
+  </div>
 
   <!-- ===== MODAL: Add Achievement ===== -->
   <div class="modal-overlay" id="modal-add-achievement" onclick="closeModalOnOverlay(event, 'modal-add-achievement')">
