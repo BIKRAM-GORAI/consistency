@@ -1889,6 +1889,49 @@ window.downloadCanvas = async function(format) {
     if (viewportControls) viewportControls.style.visibility = '';
     if (mobileToggle) mobileToggle.style.visibility = '';
 
+    // ── STEP 6.5: Composite onto a full-background canvas ────────────────
+    // html2canvas can leave transparent/clipped areas where CSS backgrounds
+    // didn't paint. We fix this by drawing the background ourselves first,
+    // then painting the captured content on top.
+    const exportPixelWidth  = renderedCanvas.width;
+    const exportPixelHeight = renderedCanvas.height;
+
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width  = exportPixelWidth;
+    finalCanvas.height = exportPixelHeight;
+    const ctx = finalCanvas.getContext('2d');
+
+    // Fill solid background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, exportPixelWidth, exportPixelHeight);
+
+    // Draw dot grid pattern (matches the canvas viewport CSS background)
+    // Scale dots by the capture scale factor (4×) and node scale (1)
+    const dotExportScale = 4; // matches html2canvas scale option
+    const dotSpacing = 30 * dotExportScale;   // 30px in canvas coords * 4 = 120px in pixels
+    const dotRadius  = 1.5 * dotExportScale;  // 1.5px dot * 4 = 6px in pixels
+    const dotColor   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
+
+    ctx.fillStyle = dotColor;
+    for (let x = 0; x < exportPixelWidth; x += dotSpacing) {
+      for (let y = 0; y < exportPixelHeight; y += dotSpacing) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+        // Second offset dot set (matches the CSS background-position offset)
+        const ox = x + dotSpacing / 2;
+        const oy = y + dotSpacing / 2;
+        if (ox < exportPixelWidth && oy < exportPixelHeight) {
+          ctx.beginPath();
+          ctx.arc(ox, oy, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Draw the captured canvas content on top
+    ctx.drawImage(renderedCanvas, 0, 0);
+
     // ── STEP 7: Create download file ─────────────────────────────────────
     const canvasName = (canvasData.name || 'canvas').replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
     const timestamp  = new Date().toISOString().slice(0, 10);
@@ -1897,13 +1940,13 @@ window.downloadCanvas = async function(format) {
     if (format === 'png') {
       const link = document.createElement('a');
       link.download = `${filename}.png`;
-      link.href = renderedCanvas.toDataURL('image/png');
+      link.href = finalCanvas.toDataURL('image/png');
       link.click();
       showToast('Canvas exported as high-quality PNG!', 'success');
     } else if (format === 'jpg') {
       const link = document.createElement('a');
       link.download = `${filename}.jpg`;
-      link.href = renderedCanvas.toDataURL('image/jpeg', 1.0); // max quality
+      link.href = finalCanvas.toDataURL('image/jpeg', 1.0); // max quality
       link.click();
       showToast('Canvas exported as high-quality JPG!', 'success');
     } else if (format === 'pdf') {
@@ -1922,12 +1965,12 @@ window.downloadCanvas = async function(format) {
 
       const { jsPDF } = window.jspdf;
       // Use the actual canvas aspect ratio for the PDF page size
-      const imgRatio   = renderedCanvas.width / renderedCanvas.height;
+      const imgRatio   = finalCanvas.width / finalCanvas.height;
       const pdfW       = 1122; // A3 landscape width in points (approx) — gives more room
       const pdfH       = Math.round(pdfW / imgRatio);
 
       const pdf = new jsPDF({ orientation: imgRatio >= 1 ? 'landscape' : 'portrait', unit: 'pt', format: [pdfW, pdfH] });
-      pdf.addImage(renderedCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, pdfH);
+      pdf.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, pdfH);
       pdf.save(`${filename}.pdf`);
       showToast('Canvas exported as high-quality PDF!', 'success');
     }
