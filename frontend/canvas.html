@@ -1045,15 +1045,19 @@
       font-family: 'Space Grotesk', sans-serif;
       font-size: 11px;
       font-weight: 700;
-      padding: 4px 8px;
+      height: 28px;
+      padding: 0 8px;
       border: var(--border-2);
       border-radius: var(--r-sm);
       background: var(--bg-card);
       color: var(--text);
       outline: none;
+      box-sizing: border-box;
+      line-height: 24px;
     }
     .btn-add-subtask {
-      padding: 4px 8px;
+      height: 28px;
+      padding: 0 12px;
       background: var(--black);
       color: var(--bg-card);
       border: none;
@@ -1061,6 +1065,10 @@
       cursor: pointer;
       font-weight: 800;
       font-size: 11px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* Node Card Footer info */
@@ -1839,7 +1847,6 @@
 
         <!-- Floating Node Toolbox Overlay -->
         <div id="canvas-node-toolbox">
-          <span class="toolbox-label">Add Node</span>
           <button class="toolbox-btn toolbox-btn-action" onclick="addNodeManually('action')" title="Add an Action node">
             <i data-lucide="play" style="width:13px;height:13px;"></i> Action
           </button>
