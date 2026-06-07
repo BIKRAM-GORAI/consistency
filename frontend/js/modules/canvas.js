@@ -1759,7 +1759,7 @@ window.downloadCanvas = async function(format) {
   // Show loading state
   if (progressMsg) {
     progressMsg.style.display = 'block';
-    progressMsg.textContent = 'Rendering canvas, please wait...';
+    progressMsg.textContent = 'Saving canvas...';
   }
   // Disable buttons to prevent double-click
   if (modal) {
@@ -1767,7 +1767,27 @@ window.downloadCanvas = async function(format) {
   }
 
   try {
-    // Temporarily hide the toolbox so it doesn't appear in export
+    // ── STEP 1: Auto-save current state before export ──────────────────
+    if (isDirty && activeCanvasId && checkPremiumStatusSilent()) {
+      try {
+        await window.apiFetch(`${window.API || ''}/api/canvas-workflows/${activeCanvasId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: canvasData.name,
+            nodes: canvasData.nodes,
+            edges: canvasData.edges
+          })
+        });
+        isDirty = false;
+        setIndicatorState('saved');
+      } catch (saveErr) {
+        console.warn('Pre-export save failed, continuing with current state:', saveErr);
+      }
+    }
+
+    if (progressMsg) progressMsg.textContent = 'Rendering full canvas...';
+
+    // ── STEP 2: Hide UI overlays so they don't appear in export ────────
     const toolbox = document.getElementById('canvas-node-toolbox');
     const viewportControls = document.querySelector('.viewport-controls');
     const mobileToggle = document.getElementById('mobile-sidebar-toggle');
@@ -1775,50 +1795,121 @@ window.downloadCanvas = async function(format) {
     if (viewportControls) viewportControls.style.visibility = 'hidden';
     if (mobileToggle) mobileToggle.style.visibility = 'hidden';
 
-    // The target is the full designer view (without sidebar)
-    const captureTarget = document.getElementById('canvas-viewport-container');
-
     if (!window.html2canvas) {
       throw new Error('html2canvas library not loaded. Please check your internet connection.');
     }
 
-    const canvas = await window.html2canvas(captureTarget, {
-      backgroundColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1a1a2e' : '#f7f5ef',
-      scale: 2, // Retina quality
+    // ── STEP 3: Calculate bounding box of all nodes ─────────────────────
+    const NODE_WIDTH = 270;
+    const NODE_PADDING = 60; // extra padding around all nodes
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    if (canvasData.nodes && canvasData.nodes.length > 0) {
+      canvasData.nodes.forEach(node => {
+        // Estimate node height (checklist items add ~28px each, base ~180px)
+        const estimatedH = 180 + ((node.checklist || []).length * 28);
+        minX = Math.min(minX, node.x);
+        minY = Math.min(minY, node.y);
+        maxX = Math.max(maxX, node.x + NODE_WIDTH);
+        maxY = Math.max(maxY, node.y + estimatedH);
+      });
+    } else {
+      // Blank canvas — use a sensible default area
+      minX = 0; minY = 0; maxX = 800; maxY = 500;
+    }
+
+    // Apply padding
+    minX -= NODE_PADDING;
+    minY -= NODE_PADDING;
+    maxX += NODE_PADDING;
+    maxY += NODE_PADDING;
+
+    const contentWidth  = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    // ── STEP 4: Temporarily adjust the workspace transform to show all nodes ─
+    const savedPanX  = panX;
+    const savedPanY  = panY;
+    const savedScale = scale;
+
+    // Set scale=1, pan so (minX, minY) is at the viewport origin
+    const tempScale = 1;
+    const tempPanX  = -minX;
+    const tempPanY  = -minY;
+
+    panX  = tempPanX;
+    panY  = tempPanY;
+    scale = tempScale;
+    applyViewportTransform();
+
+    // Temporarily resize the viewport container to exactly fit the content
+    const viewportContainer = document.getElementById('canvas-viewport-container');
+    const origWidth  = viewportContainer.style.width;
+    const origHeight = viewportContainer.style.height;
+    const origOverflow = viewportContainer.style.overflow;
+
+    viewportContainer.style.width   = `${contentWidth}px`;
+    viewportContainer.style.height  = `${contentHeight}px`;
+    viewportContainer.style.overflow = 'visible';
+
+    // Small delay to let the DOM repaint
+    await new Promise(r => setTimeout(r, 80));
+
+    // ── STEP 5: Capture at ultra-high quality (scale=4 for crisp zooms) ──
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const bgColor = isDark ? '#212121' : '#f5f2eb';
+
+    const renderedCanvas = await window.html2canvas(viewportContainer, {
+      backgroundColor: bgColor,
+      scale: 4,           // 4× pixel density → ultra-sharp at any zoom
       useCORS: true,
       allowTaint: true,
       logging: false,
+      width: contentWidth,
+      height: contentHeight,
       scrollX: 0,
       scrollY: 0,
+      windowWidth: contentWidth,
+      windowHeight: contentHeight,
     });
 
-    // Restore visibility
+    // ── STEP 6: Restore original viewport state ─────────────────────────
+    viewportContainer.style.width   = origWidth;
+    viewportContainer.style.height  = origHeight;
+    viewportContainer.style.overflow = origOverflow;
+
+    panX  = savedPanX;
+    panY  = savedPanY;
+    scale = savedScale;
+    applyViewportTransform();
+
+    // Restore UI overlays
     if (toolbox) toolbox.style.visibility = '';
     if (viewportControls) viewportControls.style.visibility = '';
     if (mobileToggle) mobileToggle.style.visibility = '';
 
+    // ── STEP 7: Create download file ─────────────────────────────────────
     const canvasName = (canvasData.name || 'canvas').replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `${canvasName}_${timestamp}`;
+    const timestamp  = new Date().toISOString().slice(0, 10);
+    const filename   = `${canvasName}_${timestamp}`;
 
     if (format === 'png') {
       const link = document.createElement('a');
       link.download = `${filename}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = renderedCanvas.toDataURL('image/png');
       link.click();
-      showToast('Canvas exported as PNG!', 'success');
+      showToast('Canvas exported as high-quality PNG!', 'success');
     } else if (format === 'jpg') {
       const link = document.createElement('a');
       link.download = `${filename}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.92);
+      link.href = renderedCanvas.toDataURL('image/jpeg', 1.0); // max quality
       link.click();
-      showToast('Canvas exported as JPG!', 'success');
+      showToast('Canvas exported as high-quality JPG!', 'success');
     } else if (format === 'pdf') {
-      // PDF export using a dynamically-loaded jsPDF
       if (progressMsg) progressMsg.textContent = 'Generating PDF...';
-      
+
       if (!window.jspdf) {
-        // Load jsPDF dynamically if not present
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
           script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
@@ -1830,41 +1921,36 @@ window.downloadCanvas = async function(format) {
       }
 
       const { jsPDF } = window.jspdf;
-      // A4 landscape in points: 842 x 595
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      // Use the actual canvas aspect ratio for the PDF page size
+      const imgRatio   = renderedCanvas.width / renderedCanvas.height;
+      const pdfW       = 1122; // A3 landscape width in points (approx) — gives more room
+      const pdfH       = Math.round(pdfW / imgRatio);
 
-      // Scale image to fit page
-      const imgRatio = canvas.width / canvas.height;
-      let imgWidth = pdfWidth;
-      let imgHeight = pdfWidth / imgRatio;
-      if (imgHeight > pdfHeight) {
-        imgHeight = pdfHeight;
-        imgWidth = pdfHeight * imgRatio;
-      }
-
-      const imgX = (pdfWidth - imgWidth) / 2;
-      const imgY = (pdfHeight - imgHeight) / 2;
-
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, imgWidth, imgHeight);
+      const pdf = new jsPDF({ orientation: imgRatio >= 1 ? 'landscape' : 'portrait', unit: 'pt', format: [pdfW, pdfH] });
+      pdf.addImage(renderedCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, pdfH);
       pdf.save(`${filename}.pdf`);
-      showToast('Canvas exported as PDF!', 'success');
+      showToast('Canvas exported as high-quality PDF!', 'success');
     }
 
     closeDownloadModal();
   } catch (err) {
     console.error('Canvas export failed:', err);
     showToast(`Export failed: ${err.message || 'Unknown error'}`, 'error');
-    
-    // Restore visibility on error
+
+    // Restore everything on error
     const toolbox = document.getElementById('canvas-node-toolbox');
     const viewportControls = document.querySelector('.viewport-controls');
     const mobileToggle = document.getElementById('mobile-sidebar-toggle');
     if (toolbox) toolbox.style.visibility = '';
     if (viewportControls) viewportControls.style.visibility = '';
     if (mobileToggle) mobileToggle.style.visibility = '';
-    
+
+    // Also restore viewport if it was resized
+    try {
+      panX = savedPanX; panY = savedPanY; scale = savedScale;
+      applyViewportTransform();
+    } catch(_) {}
+
     if (progressMsg) progressMsg.style.display = 'none';
     if (modal) {
       modal.querySelectorAll('.download-format-btn').forEach(btn => { btn.disabled = false; });
