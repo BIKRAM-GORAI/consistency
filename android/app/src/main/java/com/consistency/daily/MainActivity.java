@@ -83,6 +83,26 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
+        // Intercept navigation inside the main WebView to handle deep links safely (PhonePe, GPay, Paytm, etc.)
+        this.bridge.getWebView().setWebViewClient(new com.getcapacitor.BridgeWebViewClient(this.bridge) {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (handleCustomScheme(url)) {
+                    return true;
+                }
+                return super.shouldOverrideUrlLoading(view, request);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (handleCustomScheme(url)) {
+                    return true;
+                }
+                return super.shouldOverrideUrlLoading(view, url);
+            }
+        });
+
         // When Razorpay redirects to the bank's 3D-Secure page via window.open(),
         // Android fires a system Intent → "Open with" browser picker appears.
         // We override onCreateWindow here, extract the target URL from the popup
@@ -111,50 +131,9 @@ public class MainActivity extends BridgeActivity {
                             return true;
                         }
                         
-                        // Handle native deep-link schemes (e.g. phonepe://, upi://, gpay://, paytm://, intent://)
-                        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:") && !url.startsWith("javascript:")) {
-                            android.util.Log.d("PaymentPopup", "Intercepted native deep-link: " + url);
-                            
-                            // Special handling for intent:// schemes
-                            if (url.startsWith("intent://")) {
-                                try {
-                                    android.content.Intent intent = android.content.Intent.parseUri(url, android.content.Intent.URI_INTENT_SCHEME);
-                                    if (intent != null) {
-                                        try {
-                                            MainActivity.this.startActivity(intent);
-                                        } catch (android.content.ActivityNotFoundException e) {
-                                            // Fallback handling if target app is not installed
-                                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                                            if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
-                                                android.util.Log.d("PaymentPopup", "Target app not installed. Loading fallback URL in main WebView: " + fallbackUrl);
-                                                MainActivity.this.bridge.getWebView().loadUrl(fallbackUrl);
-                                            } else {
-                                                String packageName = intent.getPackage();
-                                                if (packageName != null) {
-                                                    android.util.Log.d("PaymentPopup", "Target app not installed. Opening Play Store for: " + packageName);
-                                                    android.content.Intent marketIntent = new android.content.Intent(
-                                                        android.content.Intent.ACTION_VIEW,
-                                                        android.net.Uri.parse("market://details?id=" + packageName)
-                                                    );
-                                                    MainActivity.this.startActivity(marketIntent);
-                                                }
-                                            }
-                                        }
-                                        return true;
-                                    }
-                                } catch (Exception e) {
-                                    android.util.Log.e("PaymentPopup", "Failed to parse/handle intent URI: " + url, e);
-                                }
-                            } else {
-                                // Direct deep link scheme (phonepe://, upi://, etc.)
-                                try {
-                                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
-                                    MainActivity.this.startActivity(intent);
-                                    return true;
-                                } catch (Exception e) {
-                                    android.util.Log.e("PaymentPopup", "Failed to start activity for deep-link: " + url, e);
-                                }
-                            }
+                        // Handle native deep-link schemes (PhonePe, GPay, Paytm, etc.) gracefully
+                        if (handleCustomScheme(url)) {
+                            return true;
                         }
                         
                         // Redirect the URL into the main app WebView (for Razorpay popup redirects)
@@ -344,5 +323,83 @@ public class MainActivity extends BridgeActivity {
                 android.widget.Toast.makeText(this, "Cannot open download URL", android.widget.Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private boolean handleCustomScheme(String url) {
+        if (url == null) return false;
+
+        // If it is a standard web or local URL, do not intercept it
+        if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("about:") || url.startsWith("javascript:") || url.startsWith("file://") || url.startsWith("data:")) {
+            return false;
+        }
+
+        android.util.Log.d("CustomSchemeHandler", "Intercepted custom scheme: " + url);
+
+        // Handle intent:// schemes
+        if (url.startsWith("intent://")) {
+            try {
+                android.content.Intent intent = android.content.Intent.parseUri(url, android.content.Intent.URI_INTENT_SCHEME);
+                if (intent != null) {
+                    try {
+                        startActivity(intent);
+                    } catch (android.content.ActivityNotFoundException e) {
+                        // Fallback handling if target app is not installed
+                        String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                        if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
+                            android.util.Log.d("CustomSchemeHandler", "Target app not installed. Loading fallback URL: " + fallbackUrl);
+                            this.bridge.getWebView().loadUrl(fallbackUrl);
+                        } else {
+                            String packageName = intent.getPackage();
+                            if (packageName != null) {
+                                android.util.Log.d("CustomSchemeHandler", "Target app not installed. Opening Play Store for: " + packageName);
+                                try {
+                                    android.content.Intent marketIntent = new android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("market://details?id=" + packageName)
+                                    );
+                                    startActivity(marketIntent);
+                                } catch (Exception ex) {
+                                    android.widget.Toast.makeText(MainActivity.this, "This application is not installed on your device.", android.widget.Toast.LENGTH_LONG).show();
+                                }
+                            } else {
+                                android.widget.Toast.makeText(MainActivity.this, "This application is not installed on your device.", android.widget.Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    }
+                    return true;
+                }
+            } catch (Exception e) {
+                android.util.Log.e("CustomSchemeHandler", "Failed to parse/handle intent URI: " + url, e);
+            }
+            return true;
+        }
+
+        // Direct custom scheme (gpay://, phonepe://, paytm://, upi://)
+        try {
+            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
+            startActivity(intent);
+        } catch (Exception e) {
+            android.util.Log.e("CustomSchemeHandler", "Failed to start activity for custom scheme: " + url, e);
+            
+            // Detect user-friendly payment name
+            String appName = "payment app";
+            if (url.startsWith("gpay://")) appName = "Google Pay";
+            else if (url.startsWith("phonepe://")) appName = "PhonePe";
+            else if (url.startsWith("paytm://")) appName = "Paytm";
+            else if (url.startsWith("bhim://")) appName = "BHIM UPI";
+            
+            final String finalAppName = appName;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    android.widget.Toast.makeText(
+                        MainActivity.this, 
+                        "The " + finalAppName + " app is not installed. Please choose another payment method.", 
+                        android.widget.Toast.LENGTH_LONG
+                    ).show();
+                }
+            });
+        }
+        return true;
     }
 }

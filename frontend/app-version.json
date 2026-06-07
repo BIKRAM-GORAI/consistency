@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.6",
+  "latestVersion": "2.7",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.6:\n• 💳 Seamless Native UPI Payments: Added complete native deep-link delegation for PhonePe, Paytm, GPay, and other UPI apps to eliminate WebView crashes and make checkouts lightning-fast!\n• 🛠️ Razorpay Checkout & Refund Improvements: Seamlessly integrated standard live payment and refund APIs, optimizing transaction security and reliability."
+  "releaseNotes": "✨ What's new in v2.7:\n• 💳 Payment App Detection: Intercepts custom UPI schemes (GPay, PhonePe, Paytm) and alerts if an app is not installed, preventing crashes.\n• 💾 Canvas High-Quality Export Fix: Fully resolves connection label background and node card background black box rendering in exported images.\n• 📁 Native Downloads Support: Seamlessly intercepts and saves exported canvas PNG/JPG/PDF formats directly into device Downloads folder natively."
 }
