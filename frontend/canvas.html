@@ -1307,6 +1307,61 @@
       color: var(--text);
     }
 
+    /* ── Dark mode: Toolbox buttons ── */
+    /* Border and shadow use white-tint so they're visible on dark bg */
+    [data-theme="dark"] .toolbox-btn {
+      border-color: rgba(255,255,255,0.55);
+      box-shadow: 2px 2px 0px rgba(255,255,255,0.25);
+      color: #0a0a0a; /* keep text dark — buttons are brightly colored (teal/pink/lime) */
+    }
+    [data-theme="dark"] .toolbox-btn:hover {
+      box-shadow: 3px 4px 0px rgba(255,255,255,0.35);
+    }
+    [data-theme="dark"] .toolbox-btn:active {
+      box-shadow: 1px 1px 0px rgba(255,255,255,0.2);
+    }
+    /* Lucide icons inside toolbox buttons must stay dark (#0a0a0a) since buttons are bright-colored */
+    [data-theme="dark"] #canvas-node-toolbox .toolbox-btn svg,
+    [data-theme="dark"] #canvas-node-toolbox .toolbox-btn i {
+      color: #0a0a0a !important;
+      stroke: #0a0a0a !important;
+    }
+
+    /* ── Dark mode: Export (btn-teal) in toolbar ── */
+    [data-theme="dark"] .btn-brutal.btn-teal {
+      border-color: rgba(255,255,255,0.4);
+      box-shadow: 2px 2px 0 rgba(255,255,255,0.15);
+      color: #0a0a0a; /* teal bg is bright, keep text dark */
+    }
+    [data-theme="dark"] .btn-brutal.btn-teal svg,
+    [data-theme="dark"] .btn-brutal.btn-teal i {
+      color: #0a0a0a !important;
+      stroke: #0a0a0a !important;
+    }
+    [data-theme="dark"] .btn-brutal.btn-teal:hover {
+      box-shadow: 6px 6px 0px rgba(255,255,255,0.25);
+    }
+
+    /* ── Dark mode: Download format buttons ── */
+    [data-theme="dark"] .download-format-btn {
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 2px 2px 0px rgba(255,255,255,0.12);
+      color: var(--text);
+    }
+    [data-theme="dark"] .download-format-btn:hover {
+      background: var(--yellow);
+      color: #0a0a0a;
+      border-color: rgba(255,255,255,0.5);
+      box-shadow: 4px 4px 0px rgba(255,255,255,0.25);
+    }
+    [data-theme="dark"] .download-format-btn .format-ext {
+      color: var(--text);
+    }
+    [data-theme="dark"] .download-format-btn:hover .format-ext,
+    [data-theme="dark"] .download-format-btn:hover .format-desc {
+      color: #0a0a0a;
+    }
+
     /* Modal standard overrides */
     .modal-overlay {
       position: fixed;
