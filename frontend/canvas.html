@@ -918,6 +918,13 @@
     .connector-bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
     .connector-left { left: 0; top: 50%; transform: translate(-50%, -50%); }
 
+    /* Hide elements during canvas export to avoid layout rendering anomalies */
+    body.exporting-canvas .node-connector,
+    body.exporting-canvas .node-action-btn.delete,
+    body.exporting-canvas .add-subtask-container {
+      display: none !important;
+    }
+
     .node-header {
       padding: 10px 14px;
       border-bottom: var(--border-2);
@@ -2171,10 +2178,10 @@
   </div>
 
   <!-- Load App scripts -->
-  <script type="module" src="js/modules/state.js"></script>
-  <script type="module" src="js/modules/utils.js"></script>
-  <script type="module" src="js/modules/api.js"></script>
-  <script type="module" src="js/modules/canvas.js"></script>
+  <script type="module" src="js/modules/state.js?v=67"></script>
+  <script type="module" src="js/modules/utils.js?v=67"></script>
+  <script type="module" src="js/modules/api.js?v=67"></script>
+  <script type="module" src="js/modules/canvas.js?v=67"></script>
   <script>
     // Initialize Lucide icons on start
     lucide.createIcons();

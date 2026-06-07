@@ -44,6 +44,19 @@ let btnSend = null;
 let aiPromptInput = null;
 
 /**
+ * Coordinate Sanitization Utility
+ */
+function sanitizeNodeCoordinates(nodes) {
+  if (!nodes) return;
+  nodes.forEach(n => {
+    n.x = Number(n.x);
+    if (isNaN(n.x) || !isFinite(n.x)) n.x = 0;
+    n.y = Number(n.y);
+    if (isNaN(n.y) || !isFinite(n.y)) n.y = 0;
+  });
+}
+
+/**
  * Toast Utility
  */
 function showToast(message, type = 'success') {
@@ -628,6 +641,7 @@ async function loadCanvasDetails(id) {
     const data = await window.apiFetch(`${window.API || ''}/api/canvas-workflows/${id}`);
     
     canvasData = data;
+    sanitizeNodeCoordinates(canvasData.nodes);
     document.getElementById('designer-canvas-title').value = canvasData.name;
     
     // Clear stacks
@@ -1720,6 +1734,7 @@ window.saveCanvasCurrentState = async function(isAutoSave = false) {
     });
 
     canvasData = response;
+    sanitizeNodeCoordinates(canvasData.nodes);
     isDirty = false;
     setIndicatorState('saved');
     if (!isAutoSave) {
@@ -1811,6 +1826,18 @@ window.downloadCanvas = async function(format) {
     if (viewportControls) viewportControls.style.visibility = 'hidden';
     if (mobileToggle) mobileToggle.style.visibility = 'hidden';
 
+    // Hide node connectors, action buttons, and subtask additions during export to prevent rendering artifacts (ghost black blocks)
+    document.body.classList.add('exporting-canvas');
+
+    const connectors = document.querySelectorAll('.node-connector');
+    connectors.forEach(c => { c.style.display = 'none'; });
+
+    const deleteBtns = document.querySelectorAll('.node-action-btn.delete');
+    deleteBtns.forEach(b => { b.style.display = 'none'; });
+
+    const addSubtaskContainers = document.querySelectorAll('.add-subtask-container');
+    addSubtaskContainers.forEach(container => { container.style.display = 'none'; });
+
     if (!window.html2canvas) {
       throw new Error('html2canvas library not loaded. Please check your internet connection.');
     }
@@ -1818,6 +1845,9 @@ window.downloadCanvas = async function(format) {
     // ── STEP 3: Calculate bounding box of all nodes and connections ─────
     const NODE_WIDTH = 270;
     const NODE_PADDING = 120; // generous padding so edge nodes are never clipped
+
+    // Force parse coordinates strictly as numbers
+    sanitizeNodeCoordinates(canvasData.nodes);
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
@@ -1885,14 +1915,46 @@ window.downloadCanvas = async function(format) {
       });
     }
 
+    // Fall back to safe bounds if calculations failed or resolved to non-finite values
+    if (isNaN(minX) || !isFinite(minX)) minX = 0;
+    if (isNaN(minY) || !isFinite(minY)) minY = 0;
+    if (isNaN(maxX) || !isFinite(maxX)) maxX = 1000;
+    if (isNaN(maxY) || !isFinite(maxY)) maxY = 800;
+
     // Apply padding
     minX -= NODE_PADDING;
     minY -= NODE_PADDING;
     maxX += NODE_PADDING;
     maxY += NODE_PADDING;
 
-    const contentWidth  = maxX - minX;
-    const contentHeight = maxY - minY;
+    let contentWidth  = maxX - minX;
+    let contentHeight = maxY - minY;
+
+    // Safety fallback for dimensions
+    if (isNaN(contentWidth) || contentWidth <= 0) {
+      contentWidth = 1200;
+    } else if (contentWidth > 16000) {
+      contentWidth = 16000;
+    }
+
+    if (isNaN(contentHeight) || contentHeight <= 0) {
+      contentHeight = 900;
+    } else if (contentHeight > 16000) {
+      contentHeight = 16000;
+    }
+
+    // Calculate dynamic export scale to ensure the resulting canvas does not exceed the browser's 16,384px limit.
+    // We aim for 4x scale for crispness, but scale down if the workflow is large.
+    let exportScale = 4;
+    const maxBrowserCanvasDim = 16384;
+    if (contentWidth * exportScale > maxBrowserCanvasDim) {
+      exportScale = maxBrowserCanvasDim / contentWidth;
+    }
+    if (contentHeight * exportScale > maxBrowserCanvasDim) {
+      exportScale = Math.min(exportScale, maxBrowserCanvasDim / contentHeight);
+    }
+    // Ensure the scale is at least 1.0 for decent quality
+    exportScale = Math.max(1.0, exportScale);
 
     // ── STEP 4: Temporarily shift all node coordinates and redraw paths to fit positive coordinate space ─
     const savedPanX  = panX;
@@ -1951,11 +2013,72 @@ window.downloadCanvas = async function(format) {
     await new Promise(r => setTimeout(r, 120));
 
     // ── STEP 5: Capture node content with TRANSPARENT background ──────────
-    // We use null backgroundColor so node cards render with their own CSS
-    // backgrounds, but the surrounding space is transparent — allowing our
-    // programmatically drawn dot grid to show through everywhere.
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const bgColor = isDark ? '#212121' : '#f5f2eb';
+
+    // ── CRITICAL: html2canvas cannot resolve CSS custom properties (var() tokens)
+    // for either HTML elements or SVG elements. We must inline all computed values.
+    //
+    // Strategy A — HTML elements: apply via el.style[prop]
+    // Strategy B — SVG elements:  apply via el.setAttribute('fill'/'stroke')
+    //
+    // First, resolve the actual color values from the document root:
+    const rootStyle = window.getComputedStyle(document.documentElement);
+    const resolvedVars = {
+      bgCard:   rootStyle.getPropertyValue('--bg-card').trim()   || (isDark ? '#2d2d2d' : '#ffffff'),
+      text:     rootStyle.getPropertyValue('--text').trim()      || (isDark ? '#e0e0e0' : '#0a0a0a'),
+      black:    rootStyle.getPropertyValue('--black').trim()     || '#0a0a0a',
+      teal:     rootStyle.getPropertyValue('--teal').trim()      || '#64FFDA',
+      pink:     rootStyle.getPropertyValue('--pink').trim()      || '#FF3EA5',
+      lime:     rootStyle.getPropertyValue('--lime').trim()      || '#B5FF4D',
+    };
+
+    // Strategy A: HTML elements — use getComputedStyle to inline-resolve all CSS custom props
+    const CSS_PROPS_TO_RESOLVE = [
+      'backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderRightColor',
+      'borderBottomColor', 'borderLeftColor', 'boxShadow', 'outlineColor'
+    ];
+
+    const allHtmlEls = Array.from(viewportContainer.querySelectorAll('*')).filter(el => !(el instanceof SVGElement));
+    const inlineBackups = allHtmlEls.map(el => {
+      const computed = window.getComputedStyle(el);
+      const backup = {};
+      CSS_PROPS_TO_RESOLVE.forEach(prop => {
+        backup[prop] = el.style[prop];
+        const computedVal = computed[prop];
+        if (computedVal) el.style[prop] = computedVal;
+      });
+      return backup;
+    });
+
+    // Strategy B: SVG elements — set fill/stroke presentation attributes directly
+    const edgeLabelBgs   = Array.from(viewportContainer.querySelectorAll('.edge-label-bg'));
+    const edgeLabelTexts = Array.from(viewportContainer.querySelectorAll('.edge-label-text'));
+    const svgPaths       = Array.from(viewportContainer.querySelectorAll('.flow-edge-path'));
+    const svgArrowMarkers = Array.from(viewportContainer.querySelectorAll('marker path, marker polygon'));
+
+    const svgAttrBackups = {
+      labelBgFill:   edgeLabelBgs.map(el => el.getAttribute('fill')),
+      labelBgStroke: edgeLabelBgs.map(el => el.getAttribute('stroke')),
+      labelTextFill: edgeLabelTexts.map(el => el.getAttribute('fill')),
+      pathStroke:    svgPaths.map(el => el.getAttribute('stroke')),
+      markerFill:    svgArrowMarkers.map(el => el.getAttribute('fill')),
+    };
+
+    edgeLabelBgs.forEach(el => {
+      el.setAttribute('fill', resolvedVars.bgCard);
+      el.setAttribute('stroke', resolvedVars.black);
+    });
+    edgeLabelTexts.forEach(el => {
+      el.setAttribute('fill', resolvedVars.text);
+    });
+    svgPaths.forEach(el => {
+      const currentStroke = window.getComputedStyle(el).stroke;
+      el.setAttribute('stroke', currentStroke || resolvedVars.black);
+    });
+    svgArrowMarkers.forEach(el => {
+      el.setAttribute('fill', resolvedVars.black);
+    });
 
     // Temporarily remove background patterns/colors from viewportContainer so html2canvas doesn't capture them
     const origBgImage = viewportContainer.style.backgroundImage;
@@ -1964,8 +2087,8 @@ window.downloadCanvas = async function(format) {
     viewportContainer.style.backgroundColor = 'transparent';
 
     const renderedCanvas = await window.html2canvas(viewportContainer, {
-      backgroundColor: null,  // ← transparent: lets our dot bg show through
-      scale: 4,               // 4× pixel density → ultra-sharp at any zoom
+      backgroundColor: null,
+      scale: exportScale,
       useCORS: true,
       allowTaint: true,
       logging: false,
@@ -1977,9 +2100,38 @@ window.downloadCanvas = async function(format) {
       windowHeight: contentHeight,
     });
 
+    // Restore all inlined HTML computed styles immediately after capture
+    allHtmlEls.forEach((el, i) => {
+      const backup = inlineBackups[i];
+      CSS_PROPS_TO_RESOLVE.forEach(prop => {
+        el.style[prop] = backup[prop];
+      });
+    });
+
+    // Restore all SVG attributes
+    edgeLabelBgs.forEach((el, i) => {
+      const v = svgAttrBackups.labelBgFill[i];
+      if (v === null) el.removeAttribute('fill'); else el.setAttribute('fill', v);
+      const vs = svgAttrBackups.labelBgStroke[i];
+      if (vs === null) el.removeAttribute('stroke'); else el.setAttribute('stroke', vs);
+    });
+    edgeLabelTexts.forEach((el, i) => {
+      const v = svgAttrBackups.labelTextFill[i];
+      if (v === null) el.removeAttribute('fill'); else el.setAttribute('fill', v);
+    });
+    svgPaths.forEach((el, i) => {
+      const v = svgAttrBackups.pathStroke[i];
+      if (v === null) el.removeAttribute('stroke'); else el.setAttribute('stroke', v);
+    });
+    svgArrowMarkers.forEach((el, i) => {
+      const v = svgAttrBackups.markerFill[i];
+      if (v === null) el.removeAttribute('fill'); else el.setAttribute('fill', v);
+    });
+
     // Restore original background patterns/colors immediately after capture
     viewportContainer.style.backgroundImage = origBgImage;
     viewportContainer.style.backgroundColor = origBgColor;
+
 
     // Restore original node coordinates
     origCoords.forEach(orig => {
@@ -2014,14 +2166,20 @@ window.downloadCanvas = async function(format) {
     scale = savedScale;
     applyViewportTransform();
 
-    // Restore UI overlays
+    // Restore UI overlays and hidden elements
     if (toolbox) toolbox.style.visibility = '';
     if (viewportControls) viewportControls.style.visibility = '';
     if (mobileToggle) mobileToggle.style.visibility = '';
 
+    connectors.forEach(c => { c.style.display = ''; });
+    deleteBtns.forEach(b => { b.style.display = ''; });
+    addSubtaskContainers.forEach(container => { container.style.display = ''; });
+
+    document.body.classList.remove('exporting-canvas');
+
     // ── STEP 6.5: Build final composited canvas ────────────────────────────
     // Layer order: solid bg fill → dot grid → node content → watermark
-    const EXPORT_SCALE = 4;
+    const EXPORT_SCALE = exportScale;
     const exportPixelWidth  = renderedCanvas.width;   // already × EXPORT_SCALE
     const exportPixelHeight = renderedCanvas.height;
 
@@ -2154,6 +2312,11 @@ window.downloadCanvas = async function(format) {
     if (toolbox) toolbox.style.visibility = '';
     if (viewportControls) viewportControls.style.visibility = '';
     if (mobileToggle) mobileToggle.style.visibility = '';
+
+    document.querySelectorAll('.node-connector').forEach(c => { c.style.display = ''; });
+    document.querySelectorAll('.node-action-btn.delete').forEach(b => { b.style.display = ''; });
+    document.querySelectorAll('.add-subtask-container').forEach(container => { container.style.display = ''; });
+    document.body.classList.remove('exporting-canvas');
 
     // Also restore viewport if it was resized
     try {
@@ -2407,7 +2570,8 @@ window.sendPromptToAgent = async function() {
     canvasData.nodes = nextGraph.nodes || [];
     canvasData.edges = nextGraph.edges || [];
 
-    // Force refresh ID structure checks
+    // Force refresh ID structure checks & coordinate parsing
+    sanitizeNodeCoordinates(canvasData.nodes);
     canvasData.nodes.forEach(n => {
       if (!n.completedSubtasks) n.completedSubtasks = [];
     });
