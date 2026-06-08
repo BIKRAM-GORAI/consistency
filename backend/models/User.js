@@ -58,7 +58,7 @@ const UserSchema = new mongoose.Schema(
     },
     theme: {
       type: String,
-      enum: ['light', 'dark'],
+      enum: ['light', 'dark', 'premium-aurora'],
       default: 'light',
     },
     currentStreak: {

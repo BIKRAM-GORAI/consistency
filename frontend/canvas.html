@@ -11,6 +11,8 @@
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (savedTheme === 'premium-aurora') {
+      document.documentElement.setAttribute('data-theme', 'premium-aurora');
     }
   </script>
   <meta charset="UTF-8" />
@@ -22,6 +24,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="aurora-theme.css" />
   <script src="libs/lucide.min.js"></script>
   <!-- Canvas Export Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
@@ -1715,6 +1718,12 @@
   </style>
 </head>
 <body>
+  <!-- ===== AURORA BACKGROUND ===== -->
+  <div class="aurora-bg">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+    <div class="aurora-blob blob-3"></div>
+  </div>
 
   <!-- ============================================================
        CANVASES DASHBOARD VIEW

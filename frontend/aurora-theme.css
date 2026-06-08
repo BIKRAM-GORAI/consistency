@@ -1,0 +1,2041 @@
+/* ============================================================
+   CONSISTENCY TRACKER — Premium Aurora Glass Theme
+   Light Glassmorphism · Frosted Cards · Lavender & Rose Accents
+   Version: 3.0 — Properly Designed Glassmorphism
+   ============================================================ */
+
+/* ── 1. CSS Custom Properties Override ── */
+[data-theme="premium-aurora"] {
+  /* ── Body Background (Soft Warm White with Lavender Tint) ── */
+  --bg:                  #f0eef8;
+  /* ── Card Background (Noticeably Distinct, Frosted Glass) ── */
+  --bg-card:             rgba(255, 255, 255, 0.62);
+  --bg-input:            rgba(255, 255, 255, 0.85);
+  --bg-muted:            rgba(139, 92, 246, 0.04);
+  --bg-readonly:         rgba(0, 0, 0, 0.03);
+  --graph-empty:         rgba(0, 0, 0, 0.06);
+  --chat-messages-bg:    rgba(255, 255, 255, 0.55);
+  --day-card-dot-color:  transparent; /* Remove dot pattern */
+
+  /* ── Text (Rich Dark Charcoal — High Legibility) ── */
+  --text:                #1e1b2e;
+  --text-muted:          #5b5674;
+  --text-light:          #8b84a8;
+
+  /* ── Accent Color Palette ── */
+  --pink:                #e879a0;
+  --yellow:              #f59e0b;
+  --teal:                #0d9488;
+  --coral:               #f97316;
+  --purple:              #8b5cf6;
+  --lime:                #65a30d;
+  --blue:                #3b82f6;
+  --red:                 #ef4444;
+  --green:               #10b981;
+  --amber:               #f59e0b;
+  --orange:              #f97316;
+
+  /* ── Border System (Clean, Crisp Glass Borders) ── */
+  --black:               #1e1b2e;
+  --border:              1.5px solid rgba(139, 92, 246, 0.18);
+  --border-2:            1px solid rgba(139, 92, 246, 0.12);
+
+  /* ── Shadow System (Soft, Multi-layer Depth) ── */
+  --shadow:              0 4px 24px rgba(109, 40, 217, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --shadow-lg:           0 12px 40px rgba(109, 40, 217, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-sm:           0 2px 12px rgba(109, 40, 217, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-xl:           0 20px 60px rgba(109, 40, 217, 0.15), 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+
+  /* ── Border Radii (Smooth, Modern) ── */
+  --r-sm:                10px;
+  --r-md:                18px;
+  --r-lg:                24px;
+  --r-xl:                32px;
+
+  /* ── Goal State Backgrounds ── */
+  --bg-goal-completed:         rgba(16, 185, 129, 0.06);
+  --bg-goal-completed-overdue: rgba(245, 158, 11, 0.06);
+  --bg-goal-overdue:           rgba(239, 68, 68, 0.06);
+  --bg-cat-input:              rgba(255, 255, 255, 0.8);
+  --bg-ach-section:            rgba(255, 255, 255, 0.5);
+  --bg-ach-note:               rgba(0, 0, 0, 0.02);
+
+  /* ── Distraction Colors ── */
+  --distraction-green:         #10b981;
+  --distraction-red:           #ef4444;
+  --bg-distraction-green:      rgba(16, 185, 129, 0.08);
+  --bg-distraction-red:        rgba(239, 68, 68, 0.08);
+}
+
+/* ============================================================
+   2. ANIMATED AURORA BACKGROUND
+   ============================================================ */
+.aurora-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+[data-theme="premium-aurora"] .aurora-bg {
+  display: block;
+  /* Gradient base layer: warm lavender-pink-white radial field */
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(216, 180, 254, 0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 70% at 80% 80%, rgba(251, 207, 232, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(224, 231, 255, 0.4) 0%, transparent 70%),
+    linear-gradient(160deg, #f3f0ff 0%, #fdf2f8 50%, #f0f9ff 100%);
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.blob-1 {
+  width: 55vw;
+  height: 55vw;
+  background: radial-gradient(circle, rgba(196, 148, 250, 0.7) 0%, transparent 70%);
+  top: -15vw;
+  left: -10vw;
+  animation: float-blob-1 28s infinite alternate ease-in-out;
+}
+
+.blob-2 {
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(249, 168, 212, 0.65) 0%, transparent 70%);
+  bottom: -10vw;
+  right: -8vw;
+  animation: float-blob-2 22s infinite alternate ease-in-out;
+}
+
+.blob-3 {
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.5) 0%, transparent 70%);
+  top: 35%;
+  left: 48%;
+  animation: float-blob-3 25s infinite alternate ease-in-out;
+}
+
+@keyframes float-blob-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(6vw, 8vh) scale(1.12); }
+  66%  { transform: translate(-3vw, 12vh) scale(0.95); }
+  100% { transform: translate(-5vw, 4vh) scale(1.05); }
+}
+
+@keyframes float-blob-2 {
+  0%   { transform: translate(0, 0) scale(1.05); }
+  33%  { transform: translate(-8vw, -6vh) scale(0.9); }
+  66%  { transform: translate(4vw, -10vh) scale(1.1); }
+  100% { transform: translate(5vw, 3vh) scale(0.95); }
+}
+
+@keyframes float-blob-3 {
+  0%   { transform: translate(-50%, -50%) scale(0.9); }
+  33%  { transform: translate(-50%, -50%) translate(8vw, -10vh) scale(1.1); }
+  66%  { transform: translate(-50%, -50%) translate(-4vw, 8vh) scale(0.85); }
+  100% { transform: translate(-50%, -50%) translate(3vw, -5vh) scale(1.0); }
+}
+
+/* ============================================================
+   3. BODY & PAGE BACKGROUND
+   ============================================================ */
+[data-theme="premium-aurora"] body {
+  background: var(--bg) !important;
+}
+
+[data-theme="premium-aurora"] .page {
+  /* Nothing explicit — aurora-bg handles the gradient */
+}
+
+/* ============================================================
+   4. NAVBAR (Frosted Glass Navigation)
+   ============================================================ */
+[data-theme="premium-aurora"] .navbar {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 4px 30px rgba(139, 92, 246, 0.06), inset 0 -1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="premium-aurora"] .brand-name {
+  background: linear-gradient(135deg, #7c3aed, #db2777) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="premium-aurora"] .nav-streak,
+[data-theme="premium-aurora"] .nav-user-chip {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="premium-aurora"] .nav-btn {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  color: #1e1b2e !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .nav-btn:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .nav-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #e879a0) !important;
+  border: 1px solid rgba(139, 92, 246, 0.4) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ============================================================
+   5. PAGE TITLE AREA
+   ============================================================ */
+[data-theme="premium-aurora"] .page-title {
+  background: linear-gradient(135deg, #4c1d95, #be185d) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  letter-spacing: -0.5px !important;
+  text-transform: none !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="premium-aurora"] .page-subtitle {
+  color: #7c6d94 !important;
+  font-weight: 500 !important;
+}
+
+[data-theme="premium-aurora"] .header-motivation {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
+  border-style: solid !important;
+  color: #5b21b6 !important;
+  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 20px !important;
+}
+
+[data-theme="premium-aurora"] .header-motivation .lucide {
+  color: #8b5cf6 !important;
+}
+
+/* ============================================================
+   6. DAILY CARDS — True Glassmorphism
+   ============================================================ */
+[data-theme="premium-aurora"] .day-card {
+  /* Core glass effect */
+  background: rgba(255, 255, 255, 0.55) !important;
+  background-image: none !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+
+  /* Crisp, layered border system */
+  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+
+  /* Rich multi-layer shadow for depth */
+  box-shadow:
+    0 8px 32px rgba(109, 40, 217, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(139, 92, 246, 0.06) !important;
+
+  border-radius: 20px !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.25s ease !important;
+}
+
+[data-theme="premium-aurora"] .day-card:hover {
+  transform: translateY(-4px) scale(1.003) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow:
+    0 20px 50px rgba(109, 40, 217, 0.14),
+    0 8px 20px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(139, 92, 246, 0.1) !important;
+}
+
+/* Top gradient accent bar — replace vertical brutalist bar */
+[data-theme="premium-aurora"] .day-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important;
+  height: 3px !important;
+  width: 100% !important;
+  background: linear-gradient(90deg, transparent 0%, #8b5cf6 30%, #e879a0 70%, transparent 100%) !important;
+  border-radius: 20px 20px 0 0 !important;
+  opacity: 0.8 !important;
+}
+
+[data-theme="premium-aurora"] .day-card.today-card::before {
+  background: linear-gradient(90deg, transparent 0%, #e879a0 30%, #f97316 70%, transparent 100%) !important;
+  opacity: 1 !important;
+}
+
+/* Card inner structure adjustments */
+[data-theme="premium-aurora"] .card-header {
+  padding-left: 8px !important;
+  padding-top: 6px !important;
+}
+
+[data-theme="premium-aurora"] .card-date {
+  color: #1e1b2e !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="premium-aurora"] .card-day-name {
+  color: #7c6d94 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.8px !important;
+}
+
+/* TODAY badge */
+[data-theme="premium-aurora"] .badge-today {
+  background: linear-gradient(135deg, #e879a0, #f97316) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(232, 121, 160, 0.35) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+}
+
+/* PAST badge */
+[data-theme="premium-aurora"] .badge-past {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border: 1px solid rgba(139, 92, 246, 0.18) !important;
+  color: #7c6d94 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+/* FUTURE badge */
+[data-theme="premium-aurora"] .badge-future {
+  background: linear-gradient(135deg, #3b82f6, #0d9488) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+}
+
+/* ============================================================
+   7. GOAL CARDS — Glass with Status Colors
+   ============================================================ */
+[data-theme="premium-aurora"] .goal-card {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  box-shadow:
+    0 8px 32px rgba(109, 40, 217, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 20px !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease !important;
+}
+
+[data-theme="premium-aurora"] .goal-card:hover {
+  transform: translateY(-4px) scale(1.003) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow:
+    0 20px 50px rgba(109, 40, 217, 0.14),
+    0 8px 20px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+[data-theme="premium-aurora"] .goal-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important;
+  height: 3px !important;
+  width: 100% !important;
+  background: linear-gradient(90deg, transparent 0%, #f97316 30%, #8b5cf6 70%, transparent 100%) !important;
+  border-radius: 20px 20px 0 0 !important;
+  opacity: 0.8 !important;
+}
+
+/* Goal status card overrides */
+[data-theme="premium-aurora"] .goal-card.goal-completed {
+  background: rgba(209, 250, 229, 0.55) !important;
+  border-color: rgba(16, 185, 129, 0.28) !important;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .goal-card.goal-completed::before {
+  background: linear-gradient(90deg, transparent 0%, #10b981 30%, #0d9488 70%, transparent 100%) !important;
+}
+
+[data-theme="premium-aurora"] .goal-card.goal-completed .goal-title {
+  color: #065f46 !important;
+}
+
+[data-theme="premium-aurora"] .goal-card.goal-completed-overdue {
+  background: rgba(255, 237, 213, 0.55) !important;
+  border-color: rgba(249, 115, 22, 0.28) !important;
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .goal-card.goal-completed-overdue::before {
+  background: linear-gradient(90deg, transparent 0%, #f97316 30%, #f59e0b 70%, transparent 100%) !important;
+}
+
+[data-theme="premium-aurora"] .goal-card.goal-overdue {
+  background: rgba(254, 226, 226, 0.55) !important;
+  border-color: rgba(239, 68, 68, 0.28) !important;
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .goal-card.goal-overdue::before {
+  background: linear-gradient(90deg, transparent 0%, #ef4444 30%, #f97316 70%, transparent 100%) !important;
+}
+
+/* Days left badges */
+[data-theme="premium-aurora"] .days-safe {
+  background: rgba(13, 148, 136, 0.12) !important;
+  border: 1px solid rgba(13, 148, 136, 0.35) !important;
+  color: #0f766e !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] .days-warn {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #b45309 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] .days-danger {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border: 1px solid rgba(249, 115, 22, 0.35) !important;
+  color: #c2410c !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] .days-overdue {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #b91c1c !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] .days-completed {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #047857 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] .days-completed-overdue {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border: 1px solid rgba(249, 115, 22, 0.35) !important;
+  color: #c2410c !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+/* ============================================================
+   8. GROUP CARDS — Frosted Glass
+   ============================================================ */
+[data-theme="premium-aurora"] .group-card {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  box-shadow:
+    0 8px 32px rgba(109, 40, 217, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 20px !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease !important;
+}
+
+[data-theme="premium-aurora"] .group-card:hover {
+  transform: translateY(-4px) scale(1.003) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow:
+    0 20px 50px rgba(109, 40, 217, 0.14),
+    0 8px 20px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+[data-theme="premium-aurora"] .group-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important;
+  height: 3px !important;
+  width: 100% !important;
+  background: linear-gradient(90deg, transparent 0%, #0d9488 30%, #3b82f6 70%, transparent 100%) !important;
+  border-radius: 20px 20px 0 0 !important;
+  opacity: 0.8 !important;
+}
+
+[data-theme="premium-aurora"] .group-card.my-team-card::before {
+  background: linear-gradient(90deg, transparent 0%, #8b5cf6 30%, #e879a0 70%, transparent 100%) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="premium-aurora"] .group-card-top {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1) !important;
+}
+
+[data-theme="premium-aurora"] .group-empty-card {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px dashed rgba(139, 92, 246, 0.25) !important;
+  border-radius: 20px !important;
+}
+
+/* ============================================================
+   9. PROGRESS BARS
+   ============================================================ */
+[data-theme="premium-aurora"] .progress-section {
+  padding-left: 8px !important;
+}
+
+[data-theme="premium-aurora"] .progress-track {
+  background: rgba(139, 92, 246, 0.06) !important;
+  border: 1px solid rgba(139, 92, 246, 0.1) !important;
+  border-radius: 8px !important;
+  height: 8px !important;
+}
+
+[data-theme="premium-aurora"] .progress-fill {
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+[data-theme="premium-aurora"] .prog-red    { background: linear-gradient(90deg, #ef4444, #f87171) !important; }
+[data-theme="premium-aurora"] .prog-yellow { background: linear-gradient(90deg, #f59e0b, #fbbf24) !important; }
+[data-theme="premium-aurora"] .prog-ltgreen { background: linear-gradient(90deg, #0d9488, #2dd4bf) !important; }
+[data-theme="premium-aurora"] .prog-green  { background: linear-gradient(90deg, #10b981, #34d399) !important; }
+
+[data-theme="premium-aurora"] .progress-label {
+  color: #7c6d94 !important;
+}
+
+/* ============================================================
+   10. CATEGORIES & TASKS (Inside Cards)
+   ============================================================ */
+[data-theme="premium-aurora"] .categories-list {
+  padding-left: 8px !important;
+}
+
+[data-theme="premium-aurora"] .category-block {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(139, 92, 246, 0.14) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .category-header {
+  background: rgba(139, 92, 246, 0.04) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1) !important;
+  padding: 8px 14px !important;
+}
+
+[data-theme="premium-aurora"] .category-name {
+  color: #3b1f73 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="premium-aurora"] .category-name::before {
+  background: linear-gradient(135deg, #8b5cf6, #e879a0) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  width: 7px !important;
+  height: 7px !important;
+}
+
+[data-theme="premium-aurora"] .category-count {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  color: #6d28d9 !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="premium-aurora"] .task-item:hover {
+  background: rgba(139, 92, 246, 0.04) !important;
+}
+
+/* Round, minimal checkboxes */
+[data-theme="premium-aurora"] .task-checkbox {
+  border: 2px solid rgba(139, 92, 246, 0.3) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 50% !important;
+  width: 18px !important;
+  height: 18px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-theme="premium-aurora"] .task-checkbox:not(:disabled):hover {
+  border-color: #8b5cf6 !important;
+  background: rgba(139, 92, 246, 0.08) !important;
+  transform: scale(1.12) !important;
+}
+
+[data-theme="premium-aurora"] .task-checkbox:checked {
+  background: linear-gradient(135deg, #8b5cf6, #e879a0) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
+}
+
+[data-theme="premium-aurora"] .task-checkbox:checked::after {
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="premium-aurora"] .task-title {
+  color: #1e1b2e !important;
+  font-weight: 500 !important;
+}
+
+/* ============================================================
+   11. BUTTONS — Light Glass with Definite Borders
+   ============================================================ */
+
+/* ── Primary / Submit Buttons (Violet-to-Rose gradient) ── */
+[data-theme="premium-aurora"] .btn-primary,
+[data-theme="premium-aurora"] button.btn-primary,
+[data-theme="premium-aurora"] a.btn-primary,
+[data-theme="premium-aurora"] #submit-day-btn,
+[data-theme="premium-aurora"] #submit-goal-btn,
+[data-theme="premium-aurora"] #submit-cat-btn,
+[data-theme="premium-aurora"] #submit-create-group-btn,
+[data-theme="premium-aurora"] #submit-edit-group-btn,
+[data-theme="premium-aurora"] #submit-join-group-btn,
+[data-theme="premium-aurora"] #submit-edit-cat-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #e879a0 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+[data-theme="premium-aurora"] .btn-primary:hover,
+[data-theme="premium-aurora"] button.btn-primary:hover,
+[data-theme="premium-aurora"] a.btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%) !important;
+}
+
+[data-theme="premium-aurora"] .btn-primary:active {
+  transform: translateY(0.5px) !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* ── Ghost / Secondary Buttons (Frosted Glass Neutral) ── */
+[data-theme="premium-aurora"] .btn-ghost,
+[data-theme="premium-aurora"] #voice-cancel-btn,
+[data-theme="premium-aurora"] #scan-cancel-btn,
+[data-theme="premium-aurora"] button[onclick*="closeModal"] {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #3b1f73 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+[data-theme="premium-aurora"] .btn-ghost:hover,
+[data-theme="premium-aurora"] #voice-cancel-btn:hover,
+[data-theme="premium-aurora"] #scan-cancel-btn:hover,
+[data-theme="premium-aurora"] button[onclick*="closeModal"]:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.1) !important;
+  color: #1e1b2e !important;
+}
+
+/* ── Delete / Danger Buttons ── */
+[data-theme="premium-aurora"] .btn-delete,
+[data-theme="premium-aurora"] .btn-remove,
+[data-theme="premium-aurora"] .btn-del-cat,
+[data-theme="premium-aurora"] .btn-del-task,
+[data-theme="premium-aurora"] .btn-delete-day,
+[data-theme="premium-aurora"] .btn-del-ach {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.3) !important;
+  color: #b91c1c !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .btn-delete:hover,
+[data-theme="premium-aurora"] .btn-del-cat:hover,
+[data-theme="premium-aurora"] .btn-del-task:hover,
+[data-theme="premium-aurora"] .btn-delete-day:hover,
+[data-theme="premium-aurora"] .btn-del-ach:hover {
+  background: rgba(239, 68, 68, 0.14) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* ── Add Category / Add Achievement Buttons (Teal Glass) ── */
+[data-theme="premium-aurora"] .btn-add-cat,
+[data-theme="premium-aurora"] .btn-add-ach,
+[data-theme="premium-aurora"] #add-goal-header-btn,
+[data-theme="premium-aurora"] #add-category-btn,
+[data-theme="premium-aurora"] #add-goal-task-btn,
+[data-theme="premium-aurora"] #add-new-cat-task-btn,
+[data-theme="premium-aurora"] #add-edit-cat-task-btn,
+[data-theme="premium-aurora"] #apply-template-btn {
+  background: rgba(13, 148, 136, 0.1) !important;
+  border: 1.5px solid rgba(13, 148, 136, 0.3) !important;
+  color: #0f766e !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .btn-add-cat:hover,
+[data-theme="premium-aurora"] .btn-add-ach:hover,
+[data-theme="premium-aurora"] #add-goal-header-btn:hover {
+  background: rgba(13, 148, 136, 0.16) !important;
+  border-color: rgba(13, 148, 136, 0.5) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15) !important;
+}
+
+/* ── Edit Buttons (Blue Glass) ── */
+[data-theme="premium-aurora"] .btn-edit-cat,
+[data-theme="premium-aurora"] .btn-edit-ach,
+[data-theme="premium-aurora"] .btn-view-ach-all,
+[data-theme="premium-aurora"] .btn-save-template {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .btn-edit-cat:hover,
+[data-theme="premium-aurora"] .btn-edit-ach:hover {
+  background: rgba(59, 130, 246, 0.14) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* ── Group Admin Buttons ── */
+[data-theme="premium-aurora"] .btn-group-admin {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #3b1f73 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .btn-group-admin:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .btn-group-admin.delete {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #b91c1c !important;
+}
+
+[data-theme="premium-aurora"] .btn-group-admin.delete:hover {
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  background: rgba(254, 226, 226, 0.7) !important;
+}
+
+/* ── Summary & AI Insight Toggle Buttons ── */
+[data-theme="premium-aurora"] .summary-toggle {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  color: #5b5674 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 10px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .summary-toggle:hover {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  color: #4c1d95 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1) !important;
+}
+
+/* ── Sort / Special Actions (Gold Glass) ── */
+[data-theme="premium-aurora"] .btn-add-leetcode,
+[data-theme="premium-aurora"] #btn-sort-current.active,
+[data-theme="premium-aurora"] #btn-sort-highest.active,
+[data-theme="premium-aurora"] #confirm-grace-submit-btn,
+[data-theme="premium-aurora"] #btn-load-more-lb,
+[data-theme="premium-aurora"] #btn-load-more-goals {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.35) !important;
+  color: #92400e !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .btn-add-leetcode:hover,
+[data-theme="premium-aurora"] #confirm-grace-submit-btn:hover {
+  background: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* ── Voice / Record Buttons (Emerald Glass) ── */
+[data-theme="premium-aurora"] #voice-record-btn {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.3) !important;
+  color: #047857 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] #voice-record-btn:hover {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+}
+
+[data-theme="premium-aurora"] #voice-action-btn {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.3) !important;
+  color: #b91c1c !important;
+  box-shadow: none !important;
+}
+
+[data-theme="premium-aurora"] #voice-send-btn,
+[data-theme="premium-aurora"] #scan-confirm-btn {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.3) !important;
+  color: #047857 !important;
+  box-shadow: none !important;
+}
+
+/* ── Add New Day Button ── */
+[data-theme="premium-aurora"] .add-day-btn {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(232, 121, 160, 0.12) 100%) !important;
+  border: 2px solid rgba(139, 92, 246, 0.25) !important;
+  color: #6d28d9 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="premium-aurora"] .add-day-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(232, 121, 160, 0.2) 100%) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  transform: translateY(-3px) scale(1.04) !important;
+  box-shadow: 0 10px 28px rgba(139, 92, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* ── Groups Page — Inline Button Overrides ── */
+/* Live Chat button */
+[data-theme="premium-aurora"] button[onclick^="openGroupChat"] {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  color: #4c1d95 !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+[data-theme="premium-aurora"] button[onclick^="openGroupChat"]:hover {
+  background: rgba(139, 92, 246, 0.18) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Requests button */
+[data-theme="premium-aurora"] button[onclick^="openRequestsModal"] {
+  background: rgba(245, 158, 11, 0.09) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.3) !important;
+  color: #92400e !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Private Team & Public Group header buttons */
+[data-theme="premium-aurora"] button[onclick^="openCreateGroupModal"] {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
+  color: #3b1f73 !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] button[onclick^="openCreateGroupModal"]:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.14) !important;
+}
+
+/* FCM / Notification Banner button */
+[data-theme="premium-aurora"] #fcm-banner-btn {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  color: #4c1d95 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Member View / Remove buttons */
+[data-theme="premium-aurora"] .member-view-btn {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #3b1f73 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
+/* Grace Day button */
+[data-theme="premium-aurora"] button[onclick^="applyGrace"] {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  color: #4c1d95 !important;
+  border-radius: 6px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* PWA Install Buttons */
+[data-theme="premium-aurora"] button[onclick="triggerPwaInstallDirect()"] {
+  background: rgba(13, 148, 136, 0.1) !important;
+  border: 1.5px solid rgba(13, 148, 136, 0.3) !important;
+  color: #0f766e !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+[data-theme="premium-aurora"] a[onclick="dismissPwaPrompt()"] {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
+  color: #4c1d95 !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* ── Sort Buttons (inactive state) ── */
+[data-theme="premium-aurora"] #btn-sort-current,
+[data-theme="premium-aurora"] #btn-sort-highest {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #5b5674 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* ============================================================
+   12. FORMS & INPUTS
+   ============================================================ */
+[data-theme="premium-aurora"] .form-control {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 12px !important;
+  color: #1e1b2e !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+[data-theme="premium-aurora"] .form-control:focus {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  outline: none !important;
+}
+
+[data-theme="premium-aurora"] .form-control[readonly] {
+  background: rgba(248, 246, 255, 0.7) !important;
+  border-style: dashed !important;
+  color: #8b84a8 !important;
+}
+
+[data-theme="premium-aurora"] .form-group label {
+  color: #3b1f73 !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 13px !important;
+}
+
+[data-theme="premium-aurora"] .form-hint {
+  background: rgba(139, 92, 246, 0.04) !important;
+  border: 1px solid rgba(139, 92, 246, 0.12) !important;
+  color: #7c6d94 !important;
+  border-radius: 8px !important;
+}
+
+/* ============================================================
+   13. MODALS — Premium Frosted Glass
+   ============================================================ */
+[data-theme="premium-aurora"] .modal-overlay {
+  background: rgba(30, 20, 50, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+[data-theme="premium-aurora"] .modal {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(32px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow:
+    0 24px 60px rgba(109, 40, 217, 0.14),
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  border-radius: 24px !important;
+}
+
+[data-theme="premium-aurora"] .modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1) !important;
+  border-radius: 24px 24px 0 0 !important;
+  padding: 22px 24px 18px !important;
+}
+
+[data-theme="premium-aurora"] .modal-header h2 {
+  color: #1e1b2e !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: none !important;
+  text-transform: none !important;
+  font-weight: 800 !important;
+  font-size: 20px !important;
+  background: linear-gradient(135deg, #4c1d95, #be185d) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+[data-theme="premium-aurora"] .modal-close {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  color: #5b5674 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 10px !important;
+  transition: all 0.25s ease !important;
+}
+
+[data-theme="premium-aurora"] .modal-close:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  color: #ef4444 !important;
+  box-shadow: none !important;
+  transform: rotate(90deg) !important;
+}
+
+[data-theme="premium-aurora"] .modal-footer {
+  background: rgba(248, 246, 255, 0.6) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.1) !important;
+  border-radius: 0 0 24px 24px !important;
+}
+
+/* Summary inner content */
+[data-theme="premium-aurora"] .summary-inner {
+  background: rgba(248, 246, 255, 0.6) !important;
+  border: 1px solid rgba(139, 92, 246, 0.12) !important;
+  border-radius: 10px !important;
+}
+
+/* ============================================================
+   14. TOAST NOTIFICATIONS
+   ============================================================ */
+[data-theme="premium-aurora"] .toast {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #1e1b2e !important;
+  box-shadow: 0 12px 36px rgba(109, 40, 217, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 14px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================================
+   15. LEADERBOARD — Glass Cards
+   ============================================================ */
+[data-theme="premium-aurora"] .leaderboard-list {
+  gap: 12px !important;
+}
+
+[data-theme="premium-aurora"] .lb-card {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card:hover {
+  transform: translateY(-2px) scale(1.002) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 12px 32px rgba(109, 40, 217, 0.1) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card.card-rank-1 {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card.card-rank-2 {
+  background: rgba(148, 163, 184, 0.1) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card.card-rank-3 {
+  background: rgba(180, 83, 9, 0.06) !important;
+  border-color: rgba(180, 83, 9, 0.25) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card .lb-name,
+[data-theme="premium-aurora"] .lb-card .lb-streak-count,
+[data-theme="premium-aurora"] .lb-card .lb-rank {
+  color: #1e1b2e !important;
+}
+
+[data-theme="premium-aurora"] .lb-card .lb-username {
+  color: #7c6d94 !important;
+}
+
+[data-theme="premium-aurora"] .lb-rank {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border: 1px solid rgba(139, 92, 246, 0.18) !important;
+  color: #4c1d95 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] .lb-rank.rank-1 { background: #fbbf24 !important; color: #422006 !important; border-color: rgba(245, 158, 11, 0.5) !important; }
+[data-theme="premium-aurora"] .lb-rank.rank-2 { background: #d1d5db !important; color: #1f2937 !important; border-color: rgba(156, 163, 175, 0.5) !important; }
+[data-theme="premium-aurora"] .lb-rank.rank-3 { background: #f5a06a !important; color: #431407 !important; border-color: rgba(180, 83, 9, 0.4) !important; }
+
+/* ============================================================
+   16. PROFILE & SETTINGS PANEL
+   ============================================================ */
+[data-theme="premium-aurora"] .profile-avatar-container {
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15) !important;
+  border: 2px solid rgba(139, 92, 246, 0.3) !important;
+}
+
+[data-theme="premium-aurora"] .profile-collapse-header {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #1e1b2e !important;
+  border-radius: 14px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .profile-collapse-header:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+}
+
+[data-theme="premium-aurora"] .profile-collapse-content {
+  background: rgba(248, 246, 255, 0.6) !important;
+  border: 1px solid rgba(139, 92, 246, 0.12) !important;
+  border-radius: 14px !important;
+}
+
+/* ============================================================
+   17. BADGE & SCREENTIME SECTION CARDS
+   ============================================================ */
+[data-theme="premium-aurora"] .badge-section-card,
+[data-theme="premium-aurora"] .screentime-section-card {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 14px !important;
+}
+
+[data-theme="premium-aurora"] .badge-section-title,
+[data-theme="premium-aurora"] .screentime-section-title {
+  color: #5b21b6 !important;
+}
+
+/* ============================================================
+   18. BOTTOM NAVIGATION
+   ============================================================ */
+[data-theme="premium-aurora"] .bottom-nav-container {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.06) !important;
+}
+
+[data-theme="premium-aurora"] .bottom-nav-btn {
+  color: #8b84a8 !important;
+  border: none !important;
+  background: transparent !important;
+  transition: color 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .bottom-nav-btn.active {
+  color: #8b5cf6 !important;
+}
+
+/* ============================================================
+   19. PWA MODAL OVERRIDES
+   ============================================================ */
+[data-theme="premium-aurora"] #pwa-modal-overlay h2 {
+  color: #1e1b2e !important;
+}
+
+[data-theme="premium-aurora"] #pwa-modal-overlay p,
+[data-theme="premium-aurora"] #pwa-modal-overlay li {
+  color: #5b5674 !important;
+}
+
+[data-theme="premium-aurora"] #pwa-modal-overlay .modal > div > div {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="premium-aurora"] #pwa-modal-overlay .modal > div > div:last-of-type {
+  background: rgba(248, 246, 255, 0.7) !important;
+  border: 1px dashed rgba(139, 92, 246, 0.2) !important;
+}
+
+/* ============================================================
+   20. GROUP OWNER BADGE & CHIPS
+   ============================================================ */
+[data-theme="premium-aurora"] .group-owner-badge {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+  color: #4c1d95 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+[data-theme="premium-aurora"] .group-name {
+  color: #1e1b2e !important;
+}
+
+[data-theme="premium-aurora"] .group-meta {
+  color: #7c6d94 !important;
+}
+
+/* ============================================================
+   21. DIVIDERS & MISC
+   ============================================================ */
+[data-theme="premium-aurora"] hr {
+  border-top: 1px solid rgba(139, 92, 246, 0.1) !important;
+}
+
+[data-theme="premium-aurora"] .add-category-row {
+  padding-left: 8px !important;
+}
+
+/* Empty state */
+[data-theme="premium-aurora"] .empty-state {
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px dashed rgba(139, 92, 246, 0.25) !important;
+  border-radius: 20px !important;
+}
+
+/* Spinner ring */
+[data-theme="premium-aurora"] .spinner-ring {
+  border-color: rgba(139, 92, 246, 0.15) !important;
+  border-top-color: #8b5cf6 !important;
+  border-right-color: #e879a0 !important;
+}
+
+/* FCM Notification Banner */
+[data-theme="premium-aurora"] #fcm-permission-banner {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(109, 40, 217, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Team code pill */
+[data-theme="premium-aurora"] .team-code-pill,
+[data-theme="premium-aurora"] button[onclick^="copyTeamCode"] {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.3) !important;
+  color: #92400e !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Join Group / Cancel Request buttons (inline) */
+[data-theme="premium-aurora"] button[onclick^="joinPublicGroup"],
+[data-theme="premium-aurora"] button[onclick^="cancelJoinRequest"] {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
+  color: #3b1f73 !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] button[onclick^="cancelJoinRequest"] {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #b91c1c !important;
+  background: rgba(254, 226, 226, 0.5) !important;
+}
+
+/* Mute button (unmuted state) */
+[data-theme="premium-aurora"] button[onclick^="toggleGroupMuteStatus"] {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #3b1f73 !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Approve / Reject request buttons in modal */
+[data-theme="premium-aurora"] button[onclick^="handleRequest"][title="Approve"] {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.3) !important;
+  color: #047857 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="premium-aurora"] button[onclick^="handleRequest"][title="Reject"] {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.3) !important;
+  color: #b91c1c !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+/* ============================================================
+   22. FIX: THEME SELECT DROPDOWN (Settings / Profile)
+   ============================================================ */
+[data-theme="premium-aurora"] #theme-select,
+[data-theme="premium-aurora"] select#theme-select {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
+  border-radius: 12px !important;
+  color: #1e1b2e !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(109, 40, 217, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  padding: 8px 14px !important;
+  cursor: pointer !important;
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+}
+
+[data-theme="premium-aurora"] #theme-select:focus {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12), 0 2px 10px rgba(109, 40, 217, 0.06) !important;
+  outline: none !important;
+}
+
+[data-theme="premium-aurora"] #theme-select option {
+  background: #ffffff !important;
+  color: #1e1b2e !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================================
+   23. FIX: TOGGLE SWITCHES (Email Reminders, Public Profile, etc.)
+        Replace the jarring solid lime green with a soft lavender-violet
+   ============================================================ */
+[data-theme="premium-aurora"] .toggle-track {
+  background: rgba(139, 92, 246, 0.12) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 999px !important;
+}
+
+[data-theme="premium-aurora"] .toggle-thumb {
+  background: rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Checked (ON) state — soft violet gradient, no harsh green */
+[data-theme="premium-aurora"] .toggle-switch input:checked + .toggle-track {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(232, 121, 160, 0.45) 100%) !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15), inset 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="premium-aurora"] .toggle-switch input:checked + .toggle-track .toggle-thumb {
+  background: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.25) !important;
+}
+
+/* Disabled state */
+[data-theme="premium-aurora"] .toggle-switch input:disabled + .toggle-track {
+  opacity: 0.4 !important;
+}
+
+/* ============================================================
+   24. FIX: LEADERBOARD CARDS — Slightly more visible on aurora bg
+   ============================================================ */
+/* Regular (rank 4+) cards — more opaque so they stand out */
+[data-theme="premium-aurora"] .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3) {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  box-shadow:
+    0 6px 24px rgba(109, 40, 217, 0.09),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Top 3 — use subtle tinted glass instead of fully opaque colored backgrounds */
+[data-theme="premium-aurora"] .lb-card.card-rank-1 {
+  background: rgba(251, 191, 36, 0.25) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card.card-rank-2 {
+  background: rgba(148, 163, 184, 0.25) !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.4) !important;
+  box-shadow: 0 6px 24px rgba(148, 163, 184, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card.card-rank-3 {
+  background: rgba(252, 165, 161, 0.2) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.25) !important;
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] .lb-card:hover {
+  transform: translateY(-3px) scale(1.003) !important;
+  box-shadow: 0 14px 36px rgba(109, 40, 217, 0.13), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* Streak boxes — softer glass versions of the original colors */
+[data-theme="premium-aurora"] .lb-streak-box {
+  border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Current streak box — warm amber glass */
+[data-theme="premium-aurora"] .lb-streak-box.current {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #92400e !important;
+}
+
+/* Highest streak box — rose glass */
+[data-theme="premium-aurora"] .lb-streak-box.highest {
+  background: rgba(232, 121, 160, 0.18) !important;
+  border-color: rgba(232, 121, 160, 0.35) !important;
+  color: #9d174d !important;
+}
+
+/* ============================================================
+   25. FIX: LIVE CHAT MODAL — Header, Close Button, Plus Menu
+   ============================================================ */
+
+/* Chat modal header — clear frosted glass, not dark or var(--bg-card) */
+[data-theme="premium-aurora"] #modal-group-chat .modal-header,
+[data-theme="premium-aurora"] #modal-group-chat [style*="modal-header"] {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Chat close button (X) — ensure it is fully visible */
+[data-theme="premium-aurora"] #modal-group-chat button.modal-close {
+  background: rgba(239, 68, 68, 0.85) !important;
+  border: 2px solid rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+  border-radius: 10px !important;
+  opacity: 1 !important;
+}
+
+[data-theme="premium-aurora"] #modal-group-chat button.modal-close i {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Inline close button override matching the HTML's style= */
+[data-theme="premium-aurora"] #modal-group-chat [onclick="closeChatModal()"] {
+  background: rgba(239, 68, 68, 0.9) !important;
+  border: 2px solid rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25) !important;
+}
+
+/* Video call button */
+[data-theme="premium-aurora"] #chat-video-call-btn {
+  background: rgba(139, 92, 246, 0.85) !important;
+  border: 2px solid rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 3px 10px rgba(139, 92, 246, 0.25) !important;
+  border-radius: 10px !important;
+}
+
+/* Bulk delete button */
+[data-theme="premium-aurora"] #chat-bulk-delete-btn {
+  background: rgba(239, 68, 68, 0.85) !important;
+  border: 2px solid rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.2) !important;
+  border-radius: 10px !important;
+}
+
+/* ── Chat Plus Menu Popup (Upload Image / Take Photo etc.) ── */
+[data-theme="premium-aurora"] .chat-plus-menu {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
+  box-shadow:
+    0 16px 40px rgba(109, 40, 217, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="premium-aurora"] .plus-menu-item {
+  color: #1e1b2e !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  border-radius: 10px !important;
+}
+
+[data-theme="premium-aurora"] .plus-menu-item:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+  color: #4c1d95 !important;
+  transform: translateX(4px) !important;
+}
+
+/* ── Chat Plus (sticker) button ── */
+[data-theme="premium-aurora"] .sticker-btn,
+[data-theme="premium-aurora"] #chat-plus-btn {
+  background: rgba(139, 92, 246, 0.12) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .sticker-btn:hover,
+[data-theme="premium-aurora"] #chat-plus-btn:hover {
+  background: rgba(139, 92, 246, 0.2) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(109, 40, 217, 0.18) !important;
+}
+
+[data-theme="premium-aurora"] #chat-plus-icon {
+  color: #6d28d9 !important;
+}
+
+/* ── Chat submit button ── */
+[data-theme="premium-aurora"] #chat-form button[type="submit"] {
+  background: linear-gradient(135deg, #8b5cf6 0%, #e879a0 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
+  border-radius: 12px !important;
+}
+
+/* ── Chat text input ── */
+[data-theme="premium-aurora"] #chat-input {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 14px !important;
+  color: #1e1b2e !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="premium-aurora"] #chat-input:focus {
+  border-color: rgba(139, 92, 246, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ── Chat modal footer ── */
+[data-theme="premium-aurora"] #modal-group-chat .modal-footer {
+  background: rgba(248, 246, 255, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.12) !important;
+  border-radius: 0 0 24px 24px !important;
+}
+
+/* ── Chat Load More button ── */
+[data-theme="premium-aurora"] #btn-chat-load-more {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  color: #4c1d95 !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+}
+
+/* ── Chat Group Icon Avatar border ── */
+[data-theme="premium-aurora"] #chat-group-icon-wrap {
+  border: 2px solid rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.12) !important;
+}
+
+/* ── Chat Group Name in header ── */
+[data-theme="premium-aurora"] #chat-group-name {
+  color: #1e1b2e !important;
+  text-transform: none !important;
+  font-size: 17px !important;
+}
+
+/* ── Profile Settings Card container ── */
+[data-theme="premium-aurora"] .profile-settings-card,
+[data-theme="premium-aurora"] [id^="section-settings"] .profile-collapse-content {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.15) !important;
+  border-radius: 16px !important;
+}
+
+/* ── Individual setting row ── */
+[data-theme="premium-aurora"] .settings-row,
+[data-theme="premium-aurora"] .setting-row {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid rgba(139, 92, 246, 0.12) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ============================================================
+   22. STANDALONE CANVAS PORTAL GLASSMORPHISM
+   ============================================================ */
+
+[data-theme="premium-aurora"] #canvas-dashboard-view {
+  background: transparent !important;
+}
+
+[data-theme="premium-aurora"] .canvas-card,
+[data-theme="premium-aurora"] .limits-card,
+[data-theme="premium-aurora"] .msg-limits-card {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  border-radius: 16px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .canvas-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 36px rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="premium-aurora"] .canvas-card-title {
+  color: #3b0764 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="premium-aurora"] .limits-bar-container {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  border-radius: 9999px !important;
+}
+
+[data-theme="premium-aurora"] .limits-bar {
+  background: linear-gradient(90deg, #8b5cf6, #ec4899) !important;
+  border-radius: 9999px !important;
+}
+
+[data-theme="premium-aurora"] .filter-input {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 12px !important;
+  color: #1e1b2e !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.03) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="premium-aurora"] .filter-input:focus {
+  border-color: rgba(139, 92, 246, 0.6) !important;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.25) !important;
+}
+
+/* ── Buttons overrides in standalone canvas ── */
+[data-theme="premium-aurora"] .btn-brutal {
+  border-radius: 12px !important;
+  text-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .btn-brutal:hover {
+  transform: translateY(-2px) !important;
+}
+
+[data-theme="premium-aurora"] .btn-brutal:active {
+  transform: translateY(1px) !important;
+}
+
+[data-theme="premium-aurora"] .btn-yellow {
+  background: rgba(245, 158, 11, 0.08) !important;
+  color: #b45309 !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+[data-theme="premium-aurora"] .btn-yellow:hover {
+  background: rgba(245, 158, 11, 0.12) !important;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .btn-muted {
+  background: rgba(0, 0, 0, 0.03) !important;
+  color: #3f3f46 !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+[data-theme="premium-aurora"] .btn-muted:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="premium-aurora"] .btn-purple {
+  background: rgba(139, 92, 246, 0.08) !important;
+  color: #6d28d9 !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+[data-theme="premium-aurora"] .btn-purple:hover {
+  background: rgba(139, 92, 246, 0.12) !important;
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .btn-pink {
+  background: rgba(236, 72, 153, 0.08) !important;
+  color: #be185d !important;
+  border: 1.5px solid rgba(236, 72, 153, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+[data-theme="premium-aurora"] .btn-pink:hover {
+  background: rgba(236, 72, 153, 0.12) !important;
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .btn-teal {
+  background: rgba(13, 148, 136, 0.08) !important;
+  color: #0f766e !important;
+  border: 1.5px solid rgba(13, 148, 136, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+[data-theme="premium-aurora"] .btn-teal:hover {
+  background: rgba(13, 148, 136, 0.12) !important;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .btn-coral {
+  background: rgba(249, 115, 22, 0.08) !important;
+  color: #c2410c !important;
+  border: 1.5px solid rgba(249, 115, 22, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+[data-theme="premium-aurora"] .btn-coral:hover {
+  background: rgba(249, 115, 22, 0.12) !important;
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .btn-icon {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+  border-radius: 8px !important;
+  color: #4c1d95 !important;
+  transition: all 0.2s ease !important;
+}
+[data-theme="premium-aurora"] .btn-icon:hover {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+/* ── Designer Workspace ── */
+[data-theme="premium-aurora"] #canvas-designer-view {
+  background: transparent !important;
+}
+
+[data-theme="premium-aurora"] .designer-toolbar {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1.5px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+[data-theme="premium-aurora"] .canvas-title-input {
+  color: #1e1b2e !important;
+  font-weight: 800 !important;
+}
+[data-theme="premium-aurora"] .canvas-title-input:focus {
+  border-bottom-color: rgba(139, 92, 246, 0.5) !important;
+}
+
+/* ── Mode Toggle switch ── */
+[data-theme="premium-aurora"] .mode-toggle-container {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03) !important;
+  border-radius: 10px !important;
+}
+[data-theme="premium-aurora"] .mode-toggle-btn {
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+}
+[data-theme="premium-aurora"] .mode-toggle-btn.active {
+  background: #6d28d9 !important;
+  color: #ffffff !important;
+}
+
+/* ── Designer Sidebar / Agent Chat ── */
+[data-theme="premium-aurora"] #canvas-sidebar-panel {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-left: 1.5px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+[data-theme="premium-aurora"] .sidebar-header {
+  background: rgba(248, 246, 255, 0.4) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.12) !important;
+  color: #3b0764 !important;
+}
+
+[data-theme="premium-aurora"] .chat-history {
+  background: transparent !important;
+}
+
+[data-theme="premium-aurora"] .chat-msg.agent {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #1c1917 !important;
+  border-radius: 14px !important;
+}
+
+[data-theme="premium-aurora"] .chat-msg.user {
+  background: rgba(236, 72, 153, 0.08) !important;
+  border: 1px solid rgba(236, 72, 153, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #be185d !important;
+  border-radius: 14px !important;
+}
+
+[data-theme="premium-aurora"] .chat-input-area {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] .prompt-textarea {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 12px !important;
+  color: #1e1b2e !important;
+}
+[data-theme="premium-aurora"] .prompt-textarea:focus {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.15) !important;
+}
+
+[data-theme="premium-aurora"] .btn-send {
+  background: #6d28d9 !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.2) !important;
+  border-radius: 12px !important;
+}
+[data-theme="premium-aurora"] .btn-send:hover {
+  background: #5b21b6 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(109, 40, 217, 0.3) !important;
+}
+
+/* ── Node Toolbox ── */
+[data-theme="premium-aurora"] #canvas-node-toolbox {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08) !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="premium-aurora"] .toolbox-btn {
+  border-radius: 10px !important;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+  font-weight: 800 !important;
+}
+
+/* ── Canvas Flow Node Cards ── */
+[data-theme="premium-aurora"] .flow-node-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+[data-theme="premium-aurora"] .flow-node-card.selected {
+  border-color: rgba(139, 92, 246, 0.6) !important;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.25), 0 10px 30px rgba(139, 92, 246, 0.05) !important;
+}
+
+[data-theme="premium-aurora"] .node-header {
+  border-bottom: 1.5px solid rgba(139, 92, 246, 0.12) !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="premium-aurora"] .node-footer {
+  border-top: 1.5px solid rgba(139, 92, 246, 0.12) !important;
+  background: rgba(248, 246, 255, 0.4) !important;
+}
+
+[data-theme="premium-aurora"] .flow-node-card.node-type-action .node-header {
+  background: rgba(13, 148, 136, 0.06) !important;
+  color: #0f766e !important;
+}
+
+[data-theme="premium-aurora"] .flow-node-card.node-type-condition .node-header {
+  background: rgba(236, 72, 153, 0.06) !important;
+  color: #be185d !important;
+}
+
+[data-theme="premium-aurora"] .flow-node-card.node-type-goal .node-header {
+  background: rgba(16, 185, 129, 0.06) !important;
+  color: #047857 !important;
+}
+
+[data-theme="premium-aurora"] .node-connector {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1) !important;
+}
+
+[data-theme="premium-aurora"] .node-connector:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border-color: rgba(139, 92, 246, 0.7) !important;
+}
+
+[data-theme="premium-aurora"] .node-connector.active-link {
+  background: #ec4899 !important;
+  border-color: #be185d !important;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5) !important;
+}
+
+[data-theme="premium-aurora"] .node-checkbox-label input[type="checkbox"] {
+  border: 1.5px solid rgba(139, 92, 246, 0.35) !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="premium-aurora"] .node-checkbox-label input[type="checkbox"]:checked {
+  background: #10b981 !important;
+  border-color: #059669 !important;
+}
+
+[data-theme="premium-aurora"] .add-subtask-input {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="premium-aurora"] .btn-add-subtask {
+  background: rgba(139, 92, 246, 0.08) !important;
+  color: #6d28d9 !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  border-radius: 6px !important;
+}
+[data-theme="premium-aurora"] .btn-add-subtask:hover {
+  background: rgba(139, 92, 246, 0.12) !important;
+}
+
+[data-theme="premium-aurora"] #canvas-viewport-container {
+  background-image: 
+    radial-gradient(rgba(139, 92, 246, 0.07) 1.5px, transparent 1.5px), 
+    radial-gradient(rgba(139, 92, 246, 0.07) 1.5px, transparent 1.5px) !important;
+}
+
+[data-theme="premium-aurora"] .flow-edge-path {
+  stroke: rgba(139, 92, 246, 0.45) !important;
+}
+[data-theme="premium-aurora"] .flow-edge-path.interactive:hover {
+  stroke: #ef4444 !important;
+}
+

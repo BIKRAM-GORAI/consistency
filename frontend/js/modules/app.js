@@ -269,8 +269,11 @@ async function deleteTemplate(templateId) {
   }
 }
 
-async function toggleDarkTheme(isDark) {
-  if (isDark) {
+async function toggleAppTheme(theme) {
+  if (theme === 'premium-aurora') {
+    document.documentElement.setAttribute('data-theme', 'premium-aurora');
+    localStorage.setItem('theme', 'premium-aurora');
+  } else if (theme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
   } else {
@@ -278,14 +281,23 @@ async function toggleDarkTheme(isDark) {
     localStorage.setItem('theme', 'light');
   }
   
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect) {
+    themeSelect.value = theme;
+  }
+  
   try {
     await apiFetch(`${window.API}/api/auth/settings`, {
       method: 'PATCH',
-      body: JSON.stringify({ theme: isDark ? 'dark' : 'light' })
+      body: JSON.stringify({ theme })
     });
   } catch(err) {
     console.error('Failed to sync theme preference:', err);
   }
+}
+
+async function toggleDarkTheme(isDark) {
+  await toggleAppTheme(isDark ? 'dark' : 'light');
 }
 
 async function toggleLeaderboardShowcase(checked) {
@@ -364,11 +376,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  const savedTheme = localStorage.getItem('theme');
-  const themeToggle = document.getElementById('dark-theme-toggle');
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  const themeSelect = document.getElementById('theme-select');
   if (savedTheme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-    if (themeToggle) themeToggle.checked = true;
+  } else if (savedTheme === 'premium-aurora') {
+    document.documentElement.setAttribute('data-theme', 'premium-aurora');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  if (themeSelect) {
+    themeSelect.value = savedTheme;
   }
 
   await fetchConfig();
@@ -1932,6 +1950,7 @@ window.addEditTemplateTaskField = addEditTemplateTaskField;
 window.submitEditTemplate = submitEditTemplate;
 window.deleteTemplate = deleteTemplate;
 window.toggleDarkTheme = toggleDarkTheme;
+window.toggleAppTheme = toggleAppTheme;
 window.toggleLeaderboardShowcase = toggleLeaderboardShowcase;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.openLightbox = openLightbox;

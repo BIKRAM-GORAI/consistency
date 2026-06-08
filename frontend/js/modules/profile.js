@@ -20,11 +20,30 @@ async function openProfileModal() {
   const pwdIcon = document.getElementById('toggle-pwd-icon');
   if (pwdIcon) pwdIcon.textContent = '▼';
 
-  // Initialize temporary state for app limits and dark theme toggle
+  // Initialize temporary state for app limits and theme select dropdown
   window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
-  const darkThemeToggle = document.getElementById('dark-theme-toggle');
-  if (darkThemeToggle) {
-    darkThemeToggle.checked = localStorage.getItem('theme') === 'dark';
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect) {
+    themeSelect.value = localStorage.getItem('theme') || 'light';
+    
+    // Bind inline select change to toggle the theme instantly in the DOM without closing the modal
+    themeSelect.onchange = async (e) => {
+      const selectedTheme = e.target.value;
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (selectedTheme !== currentTheme) {
+        if (selectedTheme === 'premium-aurora') {
+          const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+          if (!isPremium) {
+            themeSelect.value = currentTheme;
+            showToast('👑 Premium Theme. Upgrade to unlock Aurora Glass and other exclusive features!', 'warn');
+            return;
+          }
+        }
+        if (typeof window.toggleAppTheme === 'function') {
+          await window.toggleAppTheme(selectedTheme);
+        }
+      }
+    };
   }
 
   // Synchronous baseline population from localStorage to ensure instant loading of username, email, photo, showcase status, and LeetCode details on refresh/offline
@@ -251,6 +270,11 @@ function renderProfileData(user) {
   if (typeof loadLeetCodeProfileStatus === 'function') {
     loadLeetCodeProfileStatus();
   }
+
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect && user.theme) {
+    themeSelect.value = user.theme;
+  }
 }
 
 function togglePasswordSection() {
@@ -339,14 +363,41 @@ async function submitProfileSettings() {
       await persistAppLimits(window.currentAppLimits);
     }
 
-    // Apply and sync dark theme if changed
-    const darkThemeToggle = document.getElementById('dark-theme-toggle');
-    if (darkThemeToggle) {
-      const isDark = darkThemeToggle.checked;
-      const currentTheme = localStorage.getItem('theme');
-      if ((isDark ? 'dark' : 'light') !== currentTheme) {
-        if (typeof window.toggleDarkTheme === 'function') {
-          await window.toggleDarkTheme(isDark);
+    // Apply and sync theme if changed
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+      const selectedTheme = themeSelect.value;
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (selectedTheme !== currentTheme) {
+        if (selectedTheme === 'premium-aurora') {
+          const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+          if (!isPremium) {
+            themeSelect.value = currentTheme;
+            showToast('👑 Premium Theme. Upgrade to unlock Aurora Glass and other exclusive features!', 'warn');
+            closeModal('modal-profile');
+            if (typeof window.handleManageSubscription === 'function') {
+              window.handleManageSubscription(new Event('click'));
+            } else {
+              window.location.href = 'subscription.html';
+            }
+            return;
+          }
+        }
+        if (typeof window.toggleAppTheme === 'function') {
+          await window.toggleAppTheme(selectedTheme);
+        } else {
+          if (selectedTheme === 'dark') {
+            await window.toggleDarkTheme(true);
+          } else if (selectedTheme === 'light') {
+            await window.toggleDarkTheme(false);
+          } else if (selectedTheme === 'premium-aurora') {
+            document.documentElement.setAttribute('data-theme', 'premium-aurora');
+            localStorage.setItem('theme', 'premium-aurora');
+            await apiFetch(`${window.API}/api/auth/settings`, {
+              method: 'PATCH',
+              body: JSON.stringify({ theme: 'premium-aurora' })
+            });
+          }
         }
       }
     }
