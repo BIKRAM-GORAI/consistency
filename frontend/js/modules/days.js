@@ -1824,7 +1824,26 @@ function openReminderModal(dayId) {
       checklistContainer.innerHTML = '<p style="color:var(--text-muted);font-size:12px;margin:0;">No tasks on this day card.</p>';
     } else {
       const selectedIds = new Set(r.selectedTasks || []);
-      day.categories.forEach(cat => {
+      day.categories.forEach((cat, catIdx) => {
+        // Build category header block
+        const catDiv = document.createElement("div");
+        catDiv.className = "reminder-cat-block";
+        catDiv.style.marginBottom = "12px";
+        
+        // Check if all tasks in this category are checked
+        const allTasksChecked = cat.tasks.length > 0 && cat.tasks.every(t => selectedIds.has(t._id));
+        
+        catDiv.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color, #ccc);">
+            <input type="checkbox" class="reminder-cat-select-all" data-cat-idx="${catIdx}" ${allTasksChecked ? "checked" : ""} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--black);" />
+            <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase;">${window.escHtml(cat.name)}</span>
+          </div>
+          <div class="reminder-cat-tasks" style="padding-left: 16px; display: flex; flex-direction: column; gap: 6px;">
+          </div>
+        `;
+        
+        const tasksContainer = catDiv.querySelector(".reminder-cat-tasks");
+        
         cat.tasks.forEach(task => {
           const checked = selectedIds.has(task._id) ? "checked" : "";
           const itemDiv = document.createElement("div");
@@ -1833,10 +1852,36 @@ function openReminderModal(dayId) {
           itemDiv.style.gap = "8px";
           itemDiv.style.fontSize = "13px";
           itemDiv.innerHTML = `
-            <input type="checkbox" class="reminder-task-chk" value="${task._id}" data-title="${window.escHtml(task.title)}" ${checked} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--black);" />
-            <span style="font-weight: 600;">[${window.escHtml(cat.name)}] ${window.escHtml(task.title)}</span>
+            <input type="checkbox" class="reminder-task-chk" data-cat-idx="${catIdx}" value="${task._id}" data-title="${window.escHtml(task.title)}" ${checked} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--black);" />
+            <span style="font-weight: 600;">${window.escHtml(task.title)}</span>
           `;
-          checklistContainer.appendChild(itemDiv);
+          tasksContainer.appendChild(itemDiv);
+        });
+        
+        checklistContainer.appendChild(catDiv);
+      });
+      
+      // Add event listeners to select-all-category checkboxes
+      checklistContainer.querySelectorAll(".reminder-cat-select-all").forEach(catChk => {
+        catChk.addEventListener("change", (e) => {
+          const idx = catChk.getAttribute("data-cat-idx");
+          const checked = catChk.checked;
+          checklistContainer.querySelectorAll(`.reminder-task-chk[data-cat-idx="${idx}"]`).forEach(tChk => {
+            tChk.checked = checked;
+          });
+        });
+      });
+      
+      // Add event listeners to task checkboxes to update the category checkbox state
+      checklistContainer.querySelectorAll(".reminder-task-chk").forEach(tChk => {
+        tChk.addEventListener("change", (e) => {
+          const idx = tChk.getAttribute("data-cat-idx");
+          const catChk = checklistContainer.querySelector(`.reminder-cat-select-all[data-cat-idx="${idx}"]`);
+          if (catChk) {
+            const siblings = checklistContainer.querySelectorAll(`.reminder-task-chk[data-cat-idx="${idx}"]`);
+            const allChecked = Array.from(siblings).every(sibling => sibling.checked);
+            catChk.checked = allChecked;
+          }
         });
       });
     }
@@ -1853,7 +1898,7 @@ function toggleReminderTimeFields(enabled) {
 }
 
 function selectAllReminderTasks(selectAll) {
-  const checkboxes = document.querySelectorAll("#reminder-tasks-checklist .reminder-task-chk");
+  const checkboxes = document.querySelectorAll("#reminder-tasks-checklist input[type='checkbox']");
   checkboxes.forEach(chk => chk.checked = selectAll);
 }
 

@@ -70,10 +70,10 @@ public class AlarmService extends Service {
         }
         PendingIntent dismissPendingIntent = PendingIntent.getBroadcast(this, 1, dismissIntent, dismissFlags);
 
-        // 4. Build high-priority notification with Dismiss action
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
