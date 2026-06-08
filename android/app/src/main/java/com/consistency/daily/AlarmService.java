@@ -70,9 +70,11 @@ public class AlarmService extends Service {
         }
         PendingIntent dismissPendingIntent = PendingIntent.getBroadcast(this, 1, dismissIntent, dismissFlags);
 
+        String collapsedText = getCollapsedSummary(message);
+
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
-                .setContentText(message)
+                .setContentText(collapsedText)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -153,5 +155,42 @@ public class AlarmService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopAlarm();
+    }
+
+    private String getCollapsedSummary(String message) {
+        if (message == null) return "";
+        if (!message.contains("\n")) return message;
+        
+        String clean = message.replace("• ", "");
+        String[] lines = clean.split("\n");
+        StringBuilder summary = new StringBuilder();
+        
+        String header = "";
+        int startIdx = 0;
+        
+        if (lines.length > 0) {
+            String firstLine = lines[0].trim();
+            if (firstLine.contains("pending tasks today:") || firstLine.contains("Pending items:")) {
+                header = "Pending: ";
+                startIdx = 1;
+            } else {
+                header = firstLine + " ";
+                startIdx = 1;
+            }
+        }
+        
+        summary.append(header);
+        boolean firstTask = true;
+        for (int i = startIdx; i < lines.length; i++) {
+            String task = lines[i].trim();
+            if (task.isEmpty()) continue;
+            if (!firstTask) {
+                summary.append(", ");
+            }
+            summary.append(task);
+            firstTask = false;
+        }
+        
+        return summary.toString().trim();
     }
 }

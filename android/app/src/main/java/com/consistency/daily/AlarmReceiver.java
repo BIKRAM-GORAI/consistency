@@ -99,11 +99,8 @@ public class AlarmReceiver extends BroadcastReceiver {
             } else if (hasPendingTasks) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("You have ").append(pendingTasks.length()).append(" pending tasks today:\n");
-                for (int i = 0; i < Math.min(pendingTasks.length(), 3); i++) {
+                for (int i = 0; i < pendingTasks.length(); i++) {
                     sb.append("• ").append(pendingTasks.optString(i)).append("\n");
-                }
-                if (pendingTasks.length() > 3) {
-                    sb.append("• And ").append(pendingTasks.length() - 3).append(" more...");
                 }
                 message = sb.toString();
                 shouldTrigger = true;
@@ -135,11 +132,8 @@ public class AlarmReceiver extends BroadcastReceiver {
             StringBuilder sb = new StringBuilder();
             if (selectedTasks != null && selectedTasks.length() > 0) {
                 sb.append("Pending items:\n");
-                for (int i = 0; i < Math.min(selectedTasks.length(), 4); i++) {
+                for (int i = 0; i < selectedTasks.length(); i++) {
                     sb.append("• ").append(selectedTasks.optString(i)).append("\n");
-                }
-                if (selectedTasks.length() > 4) {
-                    sb.append("• And ").append(selectedTasks.length() - 4).append(" more...");
                 }
             } else {
                 sb.append("Time to review your tasks for the day!");
@@ -188,9 +182,11 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, launchIntent, pendingFlags);
 
+        String collapsedText = getCollapsedSummary(message);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NOTIF_CHANNEL_ID)
                 .setContentTitle(title)
-                .setContentText(message)
+                .setContentText(collapsedText)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -199,6 +195,43 @@ public class AlarmReceiver extends BroadcastReceiver {
                 .setContentIntent(contentIntent);
 
         notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+    }
+
+    private String getCollapsedSummary(String message) {
+        if (message == null) return "";
+        if (!message.contains("\n")) return message;
+        
+        String clean = message.replace("• ", "");
+        String[] lines = clean.split("\n");
+        StringBuilder summary = new StringBuilder();
+        
+        String header = "";
+        int startIdx = 0;
+        
+        if (lines.length > 0) {
+            String firstLine = lines[0].trim();
+            if (firstLine.contains("pending tasks today:") || firstLine.contains("Pending items:")) {
+                header = "Pending: ";
+                startIdx = 1;
+            } else {
+                header = firstLine + " ";
+                startIdx = 1;
+            }
+        }
+        
+        summary.append(header);
+        boolean firstTask = true;
+        for (int i = startIdx; i < lines.length; i++) {
+            String task = lines[i].trim();
+            if (task.isEmpty()) continue;
+            if (!firstTask) {
+                summary.append(", ");
+            }
+            summary.append(task);
+            firstTask = false;
+        }
+        
+        return summary.toString().trim();
     }
 
     private void createNotificationChannel(Context context, NotificationManager manager) {

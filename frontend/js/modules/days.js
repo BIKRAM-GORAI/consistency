@@ -1828,17 +1828,35 @@ function openReminderModal(dayId) {
         // Build category header block
         const catDiv = document.createElement("div");
         catDiv.className = "reminder-cat-block";
+        
+        // Neo-brutalist "gift box" styling
+        const accentColors = [
+          'var(--teal)',
+          'var(--pink)',
+          'var(--lime)',
+          'var(--yellow)',
+          'var(--orange)',
+          'var(--purple)'
+        ];
+        const accentColor = accentColors[catIdx % accentColors.length];
+        
+        catDiv.style.background = "var(--bg-muted)";
+        catDiv.style.border = "2px solid var(--black)";
+        catDiv.style.borderRadius = "8px";
+        catDiv.style.padding = "10px";
+        catDiv.style.boxShadow = "2px 2px 0 var(--black)";
         catDiv.style.marginBottom = "12px";
+        catDiv.style.borderLeft = `6px solid ${accentColor}`;
         
         // Check if all tasks in this category are checked
         const allTasksChecked = cat.tasks.length > 0 && cat.tasks.every(t => selectedIds.has(t._id));
         
         catDiv.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color, #ccc);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed var(--black);">
             <input type="checkbox" class="reminder-cat-select-all" data-cat-idx="${catIdx}" ${allTasksChecked ? "checked" : ""} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--black);" />
-            <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase;">${window.escHtml(cat.name)}</span>
+            <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase; color: var(--text);">${window.escHtml(cat.name)}</span>
           </div>
-          <div class="reminder-cat-tasks" style="padding-left: 16px; display: flex; flex-direction: column; gap: 6px;">
+          <div class="reminder-cat-tasks" style="padding-left: 8px; display: flex; flex-direction: column; gap: 6px;">
           </div>
         `;
         
