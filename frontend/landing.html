@@ -3249,17 +3249,30 @@
       }
     });
 
-    // ── Get App Button → opens install choice modal ──
+    // ── Get App Button → modal on desktop, direct APK download on mobile ──
     const APK_URL = 'https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk';
     const installBtn = document.createElement('button');
     installBtn.className = 'install-floating-btn';
     installBtn.innerHTML = '<i data-lucide="download"></i> Get App';
     installBtn.style.display = 'flex';
-    installBtn.onclick = () => openInstallChoiceModal();
+    installBtn.onclick = () => {
+      // On mobile/touch devices → directly start APK download, no modal
+      const isMobileDevice = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || window.matchMedia("(pointer: coarse)").matches;
+      if (isMobileDevice) {
+        const link = document.createElement('a');
+        link.href = APK_URL;
+        link.download = 'Consistency.Daily.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        openInstallChoiceModal();
+      }
+    };
     document.body.appendChild(installBtn);
     lucide.createIcons({ root: installBtn });
 
-    // ── Install Choice Modal ──
+    // ── Install Choice Modal (Desktop only) ──
     function openInstallChoiceModal() {
       const existing = document.getElementById('install-choice-modal');
       if (existing) { existing.style.display = 'flex'; return; }
@@ -3270,91 +3283,91 @@
         position: fixed; inset: 0; z-index: 99998;
         background: rgba(10,10,10,0.82); backdrop-filter: blur(8px);
         display: flex; align-items: center; justify-content: center;
-        padding: 20px; box-sizing: border-box;
+        padding: 24px; box-sizing: border-box;
       `;
       overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.style.display = 'none'; });
 
       overlay.innerHTML = `
         <div style="
-          background: var(--bg, #fff); border: 4px solid #0a0a0a;
-          border-radius: 16px; padding: 32px 28px; max-width: 460px; width: 100%;
-          box-shadow: 10px 10px 0 #0a0a0a; position: relative; box-sizing: border-box;
+          background: #fafafa; border: 4px solid #0a0a0a;
+          border-radius: 20px; padding: 40px 36px; max-width: 700px; width: 100%;
+          box-shadow: 12px 12px 0 #0a0a0a; position: relative; box-sizing: border-box;
         ">
           <!-- Close -->
           <button onclick="document.getElementById('install-choice-modal').style.display='none'" style="
-            position:absolute; top:14px; right:14px; background:#0a0a0a; color:#fff;
-            border:none; border-radius:50%; width:30px; height:30px; font-size:16px;
+            position:absolute; top:16px; right:16px; background:#0a0a0a; color:#fff;
+            border:none; border-radius:50%; width:34px; height:34px; font-size:18px;
             font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center;
-            line-height:1;
+            line-height:1; flex-shrink:0;
           ">&times;</button>
 
-          <div style="text-align:center; margin-bottom:24px;">
-            <div style="font-size:36px; margin-bottom:8px;">📲</div>
+          <div style="text-align:center; margin-bottom:28px;">
+            <div style="font-size:42px; margin-bottom:10px;">📲</div>
             <h2 style="
-              font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:900;
-              text-transform:uppercase; letter-spacing:0.5px; margin:0 0 6px; color:#0a0a0a;
+              font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:900;
+              text-transform:uppercase; letter-spacing:0.5px; margin:0 0 8px; color:#0a0a0a;
             ">Choose Your Version</h2>
-            <p style="font-size:13px; color:#555; margin:0; font-weight:600;">Pick the best fit for your device</p>
+            <p style="font-size:14px; color:#555; margin:0; font-weight:600;">Pick the best fit for your device</p>
           </div>
 
-          <!-- Two cards side by side on desktop, stacked on mobile -->
-          <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <!-- Two cards side by side -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
 
             <!-- PWA Card -->
             <div style="
-              flex:1; min-width:180px; border:3px solid #0a0a0a; border-radius:12px;
-              padding:20px 16px; background:#fff; box-shadow:4px 4px 0 #0a0a0a;
-              display:flex; flex-direction:column; gap:10px;
+              border:3px solid #0a0a0a; border-radius:14px;
+              padding:24px 20px; background:#fff; box-shadow:5px 5px 0 #0a0a0a;
+              display:flex; flex-direction:column; gap:14px;
             ">
-              <div style="font-size:28px; text-align:center;">🌐</div>
+              <div style="font-size:32px; text-align:center;">🌐</div>
               <div style="text-align:center;">
                 <div style="
-                  font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:900;
-                  text-transform:uppercase; color:#0a0a0a;
+                  font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:900;
+                  text-transform:uppercase; color:#0a0a0a; margin-bottom:6px;
                 ">Web App (PWA)</div>
                 <div style="
-                  font-size:11px; font-weight:700; color:#fff; background:#0a0a0a;
-                  border-radius:20px; padding:2px 10px; display:inline-block; margin-top:4px;
+                  font-size:11px; font-weight:800; color:#fff; background:#0a0a0a;
+                  border-radius:20px; padding:3px 12px; display:inline-block;
                 ">LAPTOP &amp; DESKTOP</div>
               </div>
-              <ul style="font-size:12px; color:#333; margin:0; padding-left:16px; line-height:1.8; font-weight:600; flex:1;">
+              <ul style="font-size:13px; color:#333; margin:0; padding-left:18px; line-height:2; font-weight:600; flex:1;">
                 <li>✅ Full task &amp; streak tracking</li>
                 <li>✅ Canvas workflow builder</li>
                 <li>✅ AI summaries &amp; goals</li>
                 <li>✅ Leaderboard &amp; profiles</li>
-                <li style="color:#e57c00;">⚠️ Limited background notifications</li>
-                <li style="color:#e57c00;">⚠️ No custom alarms (OS restriction)</li>
-                <li style="color:#e57c00;">⚠️ Screen time tracking unavailable</li>
+                <li style="color:#c96a00;">⚠️ Limited background notifications</li>
+                <li style="color:#c96a00;">⚠️ No custom alarms (OS restriction)</li>
+                <li style="color:#c96a00;">⚠️ No screen time tracking</li>
               </ul>
-              <button id="pwa-install-choice-btn" onclick="triggerPwaFromModal()" style="
-                width:100%; padding:12px; font-family:'Space Grotesk',sans-serif;
-                font-weight:900; font-size:13px; text-transform:uppercase;
+              <button onclick="triggerPwaFromModal()" style="
+                width:100%; padding:14px; font-family:'Space Grotesk',sans-serif;
+                font-weight:900; font-size:14px; text-transform:uppercase;
                 background:#fff; color:#0a0a0a; border:2px solid #0a0a0a;
-                border-radius:8px; cursor:pointer; box-shadow:2px 2px 0 #0a0a0a;
+                border-radius:10px; cursor:pointer; box-shadow:3px 3px 0 #0a0a0a;
                 transition:all 0.15s;
-              " onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#fff'">
+              " onmouseover="this.style.background='#f0f0f0';this.style.transform='translate(-2px,-2px)';this.style.boxShadow='5px 5px 0 #0a0a0a'" onmouseout="this.style.background='#fff';this.style.transform='';this.style.boxShadow='3px 3px 0 #0a0a0a'">
                 Install PWA
               </button>
             </div>
 
             <!-- APK Card -->
             <div style="
-              flex:1; min-width:180px; border:3px solid #0a0a0a; border-radius:12px;
-              padding:20px 16px; background:#ffd60a; box-shadow:4px 4px 0 #0a0a0a;
-              display:flex; flex-direction:column; gap:10px;
+              border:3px solid #0a0a0a; border-radius:14px;
+              padding:24px 20px; background:#ffd60a; box-shadow:5px 5px 0 #0a0a0a;
+              display:flex; flex-direction:column; gap:14px;
             ">
-              <div style="font-size:28px; text-align:center;">🤖</div>
+              <div style="font-size:32px; text-align:center;">🤖</div>
               <div style="text-align:center;">
                 <div style="
-                  font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:900;
-                  text-transform:uppercase; color:#0a0a0a;
+                  font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:900;
+                  text-transform:uppercase; color:#0a0a0a; margin-bottom:6px;
                 ">Android APK</div>
                 <div style="
-                  font-size:11px; font-weight:700; color:#ffd60a; background:#0a0a0a;
-                  border-radius:20px; padding:2px 10px; display:inline-block; margin-top:4px;
+                  font-size:11px; font-weight:800; color:#ffd60a; background:#0a0a0a;
+                  border-radius:20px; padding:3px 12px; display:inline-block;
                 ">ALL FEATURES UNLOCKED</div>
               </div>
-              <ul style="font-size:12px; color:#0a0a0a; margin:0; padding-left:16px; line-height:1.8; font-weight:600; flex:1;">
+              <ul style="font-size:13px; color:#0a0a0a; margin:0; padding-left:18px; line-height:2; font-weight:600; flex:1;">
                 <li>✅ Everything in the web app</li>
                 <li>✅ Real push notifications</li>
                 <li>✅ Custom alarms &amp; reminders</li>
@@ -3364,20 +3377,19 @@
                 <li>✅ Works fully offline</li>
               </ul>
               <a href="${APK_URL}" download="Consistency.Daily.apk" onclick="document.getElementById('install-choice-modal').style.display='none'" style="
-                display:block; width:100%; padding:12px; font-family:'Space Grotesk',sans-serif;
-                font-weight:900; font-size:13px; text-transform:uppercase; text-align:center;
+                display:block; width:100%; padding:14px; font-family:'Space Grotesk',sans-serif;
+                font-weight:900; font-size:14px; text-transform:uppercase; text-align:center;
                 background:#ff3ea5; color:#fff; border:2px solid #0a0a0a;
-                border-radius:8px; cursor:pointer; box-shadow:2px 2px 0 #0a0a0a;
-                text-decoration:none; box-sizing:border-box;
-                transition:all 0.15s;
-              " onmouseover="this.style.background='#e0006e'" onmouseout="this.style.background='#ff3ea5'">
+                border-radius:10px; cursor:pointer; box-shadow:3px 3px 0 #0a0a0a;
+                text-decoration:none; box-sizing:border-box; transition:all 0.15s;
+              " onmouseover="this.style.background='#d4006a';this.style.transform='translate(-2px,-2px)';this.style.boxShadow='5px 5px 0 #0a0a0a'" onmouseout="this.style.background='#ff3ea5';this.style.transform='';this.style.boxShadow='3px 3px 0 #0a0a0a'">
                 ⬇ Download APK
               </a>
             </div>
 
           </div>
-          <p style="text-align:center; font-size:11px; color:#888; margin:18px 0 0; font-weight:600;">
-            APK is for Android phones only. PWA works on any browser.
+          <p style="text-align:center; font-size:12px; color:#888; margin:20px 0 0; font-weight:600;">
+            APK is for Android phones only &nbsp;·&nbsp; PWA works on any browser or laptop
           </p>
         </div>
       `;
@@ -3389,12 +3401,9 @@
       document.getElementById('install-choice-modal').style.display = 'none';
       if (typeof deferredPrompt !== 'undefined' && deferredPrompt) {
         deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(result => {
-          deferredPrompt = null;
-        });
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
       } else {
-        // Fallback: guide user
-        alert('To install: open your browser menu and tap "Add to Home Screen" or "Install App".');
+        alert('To install: open your browser menu and select "Install App" or "Add to Home Screen".');
       }
     }
 
