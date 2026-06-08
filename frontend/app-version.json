@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.7",
+  "latestVersion": "2.8",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.7:\n• 💳 Payment App Detection: Intercepts custom UPI schemes (GPay, PhonePe, Paytm) and alerts if an app is not installed, preventing crashes.\n• 💾 Canvas High-Quality Export Fix: Fully resolves connection label background and node card background black box rendering in exported images.\n• 📁 Native Downloads Support: Seamlessly intercepts and saves exported canvas PNG/JPG/PDF formats directly into device Downloads folder natively."
+  "releaseNotes": "✨ What's new in v2.8:\n• 🔔 Smarter Notifications: All selected tasks now appear individually in notifications — no more truncated messages, every task gets its own line.\n• 📋 Daily Reminder Redesign: Reminders now show tasks grouped inside styled category cards, making it easy to see and select tasks at a glance.\n• ✅ Category Quick-Select: Tap a category in the reminder to instantly select all tasks inside it.\n• 🏷️ Fixed Reminder Labels: Corrected the alert-type label shown in reminder settings (no more 'Standard Notif' text).\n• 🐛 Bug Fixes & Stability improvements."
 }
