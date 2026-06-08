@@ -91,25 +91,22 @@ public class AlarmReceiver extends BroadcastReceiver {
 
             // Decide message and trigger criteria
             String message = "";
+            String tasksJson = "[]";
             boolean shouldTrigger = false;
 
             if (!isListMade) {
                 message = "You haven't made your task list today! Write it down now to save your streak. 📝";
                 shouldTrigger = true;
             } else if (hasPendingTasks) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("You have ").append(pendingTasks.length()).append(" pending tasks today:\n");
-                for (int i = 0; i < pendingTasks.length(); i++) {
-                    sb.append("• ").append(pendingTasks.optString(i)).append("\n");
-                }
-                message = sb.toString();
+                message = pendingTasks.length() + " task(s) pending today";
+                tasksJson = pendingTasks.toString();
                 shouldTrigger = true;
             } else {
                 Log.d(TAG, "Global Streak Saver: Checklist is fully completed! No alarm necessary.");
             }
 
             if (shouldTrigger) {
-                triggerAlert(context, "global_streak_saver", alertType, "Streak Protection Alert", message);
+                triggerAlert(context, "global_streak_saver", alertType, "Streak Protection Alert", message, tasksJson);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error handling global streak alarm", e);
@@ -129,23 +126,21 @@ public class AlarmReceiver extends BroadcastReceiver {
             String alertType = alarmData.optString("type", "notification");
             JSONArray selectedTasks = alarmData.optJSONArray("selectedTasks");
 
-            StringBuilder sb = new StringBuilder();
+            String tasksJson = selectedTasks != null ? selectedTasks.toString() : "[]";
+            String message;
             if (selectedTasks != null && selectedTasks.length() > 0) {
-                sb.append("Pending items:\n");
-                for (int i = 0; i < selectedTasks.length(); i++) {
-                    sb.append("• ").append(selectedTasks.optString(i)).append("\n");
-                }
+                message = selectedTasks.length() + " task(s) selected";
             } else {
-                sb.append("Time to review your tasks for the day!");
+                message = "Time to review your tasks for the day!";
             }
 
-            triggerAlert(context, alarmId, alertType, title, sb.toString());
+            triggerAlert(context, alarmId, alertType, title, message, tasksJson);
         } catch (Exception e) {
             Log.e(TAG, "Error handling per-day alarm", e);
         }
     }
 
-    private void triggerAlert(Context context, String alarmId, String alertType, String title, String message) {
+    private void triggerAlert(Context context, String alarmId, String alertType, String title, String message, String tasksJson) {
         Log.d(TAG, "Triggering alert (" + alertType + ") for alarm: " + alarmId);
 
         if ("alarm".equalsIgnoreCase(alertType)) {
@@ -155,6 +150,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             serviceIntent.putExtra("title", title);
             serviceIntent.putExtra("message", message);
             serviceIntent.putExtra("alarm_id", alarmId);
+            serviceIntent.putExtra("tasks_json", tasksJson);
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent);
@@ -163,11 +159,11 @@ public class AlarmReceiver extends BroadcastReceiver {
             }
         } else {
             // Standard notification with single-play sound
-            showNotification(context, title, message);
+            showNotification(context, title, tasksJson);
         }
     }
 
-    private void showNotification(Context context, String title, String message) {
+    private void showNotification(Context context, String title, String tasksJson) {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) return;
 
@@ -182,12 +178,32 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, launchIntent, pendingFlags);
 
-        String collapsedText = getCollapsedSummary(message);
+        // Build InboxStyle — each task gets its own row, no truncation
+        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+        String collapsedSummary;
+
+        try {
+            JSONArray tasks = new JSONArray(tasksJson != null ? tasksJson : "[]");
+            if (tasks.length() > 0) {
+                collapsedSummary = tasks.length() + " task(s) pending";
+                inboxStyle.setBigContentTitle(title);
+                for (int i = 0; i < tasks.length(); i++) {
+                    inboxStyle.addLine("• " + tasks.getString(i));
+                }
+                inboxStyle.setSummaryText(tasks.length() + " task(s)");
+            } else {
+                collapsedSummary = "Time to review your tasks for the day!";
+                inboxStyle.addLine(collapsedSummary);
+            }
+        } catch (Exception e) {
+            collapsedSummary = "Tasks are pending!";
+            inboxStyle.addLine(collapsedSummary);
+        }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NOTIF_CHANNEL_ID)
                 .setContentTitle(title)
-                .setContentText(collapsedText)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setContentText(collapsedSummary)
+                .setStyle(inboxStyle)
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)

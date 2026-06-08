@@ -35,7 +35,8 @@ public class AlarmService extends Service {
                 String title = intent.getStringExtra("title");
                 String message = intent.getStringExtra("message");
                 String alarmId = intent.getStringExtra("alarm_id");
-                startAlarm(title, message, alarmId);
+                String tasksJson = intent.getStringExtra("tasks_json");
+                startAlarm(title, message, alarmId, tasksJson);
             } else if ("STOP_ALARM".equals(action)) {
                 stopAlarm();
             }
@@ -43,7 +44,7 @@ public class AlarmService extends Service {
         return START_NOT_STICKY;
     }
 
-    private void startAlarm(String title, String message, String alarmId) {
+    private void startAlarm(String title, String message, String alarmId, String tasksJson) {
         Log.d(TAG, "Starting alarm service playback...");
         
         // 1. Create Notification Channel for alarms (required on Android Oreo+)
@@ -70,12 +71,44 @@ public class AlarmService extends Service {
         }
         PendingIntent dismissPendingIntent = PendingIntent.getBroadcast(this, 1, dismissIntent, dismissFlags);
 
-        String collapsedText = getCollapsedSummary(message);
+        // 4. Build InboxStyle to show each task on its own guaranteed line
+        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+        String collapsedSummary;
+
+        if (tasksJson != null && !tasksJson.isEmpty()) {
+            try {
+                org.json.JSONArray tasksArray = new org.json.JSONArray(tasksJson);
+                collapsedSummary = tasksArray.length() + " task(s) pending";
+                inboxStyle.setBigContentTitle(title);
+                for (int i = 0; i < tasksArray.length(); i++) {
+                    inboxStyle.addLine("• " + tasksArray.getString(i));
+                }
+                inboxStyle.setSummaryText(tasksArray.length() + " task(s)");
+            } catch (Exception e) {
+                collapsedSummary = message != null ? message : "Tasks are pending!";
+                inboxStyle.addLine(collapsedSummary);
+            }
+        } else if (message != null && message.contains("\n")) {
+            String[] lines = message.split("\n");
+            String header = lines.length > 0 ? lines[0] : "Pending tasks";
+            collapsedSummary = header;
+            inboxStyle.setBigContentTitle(title);
+            for (int i = 1; i < lines.length; i++) {
+                String line = lines[i].trim();
+                if (!line.isEmpty()) {
+                    inboxStyle.addLine(line);
+                }
+            }
+            inboxStyle.setSummaryText("Tap to open app");
+        } else {
+            collapsedSummary = message != null ? message : "Tasks are pending!";
+            inboxStyle.addLine(collapsedSummary);
+        }
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
-                .setContentText(collapsedText)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setContentText(collapsedSummary)
+                .setStyle(inboxStyle)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
