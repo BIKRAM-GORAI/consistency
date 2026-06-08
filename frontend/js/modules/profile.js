@@ -1,4 +1,5 @@
 // ── Profile Module ───────────────────────────────────────────
+import { syncDeviceReminders } from './reminders.js';
 console.log("[Module] profile.js initializing...");
 
 // Local toast reference delegation to bypass strict module scope reference errors
@@ -96,6 +97,8 @@ async function openProfileModal() {
         }
         renderProfileData(res);
         setLeaderboardTogglesEnabled(true);
+        // Sync reminders with fresh settings
+        syncDeviceReminders(window.allDays || [], res);
         // Background-refresh app limits too (non-blocking)
         if (typeof loadAppLimits === 'function') loadAppLimits();
       } catch (err) {
@@ -188,6 +191,20 @@ function renderProfileData(user) {
   if (toggle) toggle.checked = user.emailNotifications;
   const publicToggle = document.getElementById('public-profile-toggle');
   if (publicToggle) publicToggle.checked = user.isPublicProfile !== false;
+
+  const globalReminderToggle = document.getElementById('global-streak-reminder-toggle');
+  if (globalReminderToggle) {
+    globalReminderToggle.checked = user.globalStreakReminderEnabled !== false;
+    toggleGlobalStreakTimeFields(user.globalStreakReminderEnabled !== false);
+  }
+  const globalReminderTime = document.getElementById('global-streak-reminder-time');
+  if (globalReminderTime) {
+    globalReminderTime.value = user.globalStreakReminderTime || '21:00';
+  }
+  const globalReminderTypeRadios = document.querySelectorAll('input[name="global-streak-reminder-type-radio"]');
+  globalReminderTypeRadios.forEach(rad => {
+    rad.checked = (rad.value === (user.globalStreakReminderType || 'notification'));
+  });
   
   const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
   if (showcaseToggle) {
@@ -254,6 +271,10 @@ async function submitProfileSettings() {
   const emailNotifications = document.getElementById('email-notif-toggle').checked;
   const isPublicProfile = document.getElementById('public-profile-toggle').checked;
   const showOnLeaderboard = document.getElementById('leaderboard-showcase-settings-toggle').checked;
+  
+  const globalStreakReminderEnabled = document.getElementById('global-streak-reminder-toggle').checked;
+  const globalStreakReminderTime = document.getElementById('global-streak-reminder-time').value || '21:00';
+  const globalStreakReminderType = document.querySelector('input[name="global-streak-reminder-type-radio"]:checked')?.value || 'notification';
 
   const currentSavedShowcase = localStorage.getItem('showOnLeaderboard') !== 'false';
   if (!navigator.onLine && showOnLeaderboard !== currentSavedShowcase) {
@@ -277,7 +298,14 @@ async function submitProfileSettings() {
 
   try {
     const profilePicture = document.getElementById('profile-pic-dataurl').value;
-    const payload = { emailNotifications, isPublicProfile, showOnLeaderboard };
+    const payload = { 
+      emailNotifications, 
+      isPublicProfile, 
+      showOnLeaderboard,
+      globalStreakReminderEnabled,
+      globalStreakReminderTime,
+      globalStreakReminderType
+    };
     if (!usernameInput.readOnly && username) {
       payload.username = username;
       localStorage.setItem('userUsername', username);
@@ -297,6 +325,13 @@ async function submitProfileSettings() {
       }
     }
     localStorage.setItem('showOnLeaderboard', showOnLeaderboard.toString());
+
+    // Sync device alerts with Capacitor Plugin
+    syncDeviceReminders(window.allDays || [], {
+      globalStreakReminderEnabled,
+      globalStreakReminderTime,
+      globalStreakReminderType
+    });
 
     // Commit temporary app limits if they exist
     if (window.tempAppLimits) {
@@ -1673,6 +1708,15 @@ window.previewMinimalProfile = previewMinimalProfile;
 window.renderContributionGraph = renderContributionGraph;
 window.buildReadOnlyDayCard = buildReadOnlyDayCard;
 window.buildReadOnlyAchievementCard = buildReadOnlyAchievementCard;
+
+function toggleGlobalStreakTimeFields(enabled) {
+  const fields = document.getElementById('global-streak-reminder-fields');
+  if (fields) {
+    fields.style.display = enabled ? 'flex' : 'none';
+  }
+}
+
+window.toggleGlobalStreakTimeFields = toggleGlobalStreakTimeFields;
 
 // Distraction limits bindings
 window.loadAppLimits = loadAppLimits;

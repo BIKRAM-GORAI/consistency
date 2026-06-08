@@ -294,7 +294,10 @@ async function getProfileSettings(req, res) {
       isPremium: isPremium,
       pointsBalance: user.pointsBalance || 0,
       referralCode: user.referralCode || '',
-      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed
+      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
+      globalStreakReminderEnabled: user.globalStreakReminderEnabled !== false,
+      globalStreakReminderTime: user.globalStreakReminderTime || "21:00",
+      globalStreakReminderType: user.globalStreakReminderType || "notification"
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }
@@ -302,9 +305,12 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username } = req.body;
+    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType } = req.body;
 
     if (typeof emailNotifications === 'boolean') user.emailNotifications = emailNotifications;
+    if (typeof globalStreakReminderEnabled === 'boolean') user.globalStreakReminderEnabled = globalStreakReminderEnabled;
+    if (globalStreakReminderTime !== undefined) user.globalStreakReminderTime = globalStreakReminderTime;
+    if (globalStreakReminderType !== undefined) user.globalStreakReminderType = globalStreakReminderType;
     if (typeof isPublicProfile === 'boolean') user.isPublicProfile = isPublicProfile;
     if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) user.theme = theme;
@@ -373,7 +379,10 @@ async function setProfileSettings(req, res) {
       isPremium: isPremium,
       pointsBalance: user.pointsBalance || 0,
       referralCode: user.referralCode || '',
-      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed
+      showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
+      globalStreakReminderEnabled: user.globalStreakReminderEnabled !== false,
+      globalStreakReminderTime: user.globalStreakReminderTime || "21:00",
+      globalStreakReminderType: user.globalStreakReminderType || "notification"
     });
   } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
 }

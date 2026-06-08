@@ -1,4 +1,5 @@
 // ── App Module ──────────────────────────────────────────────
+import { syncDeviceReminders } from './reminders.js';
 console.log("[Module] app.js initializing...");
 
 async function loadTemplates() {
@@ -511,6 +512,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof window.loadSubscriptionStatus === 'function') {
     window.loadSubscriptionStatus();
   }
+
+  // Trigger sync of all native reminders on startup
+  setTimeout(async () => {
+    try {
+      if (window.localDb) {
+        const cachedProfile = await window.localDb.userProfile.get(window.userId);
+        const days = await window.localDb.days.toArray();
+        if (cachedProfile) {
+          syncDeviceReminders(days, cachedProfile);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to sync reminders on startup:", err);
+    }
+  }, 1000);
 });
 
 function openLightbox(url) {

@@ -336,6 +336,19 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    globalStreakReminderEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    globalStreakReminderTime: {
+      type: String,
+      default: "21:00",
+    },
+    globalStreakReminderType: {
+      type: String,
+      enum: ['notification', 'alarm'],
+      default: 'notification',
+    },
   },
   { timestamps: true }
 );

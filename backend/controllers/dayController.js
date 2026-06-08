@@ -291,7 +291,7 @@ const getDayById = async (req, res) => {
 const createDay = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { date, categories, summary, aiSummary } = req.body;
+    const { date, categories, summary, aiSummary, reminder } = req.body;
     const clientDate = req.headers['x-client-date'];
 
     // Prevent duplicate dates per user
@@ -305,7 +305,8 @@ const createDay = async (req, res) => {
       date, 
       categories: categories || [], 
       summary: summary || '',
-      aiSummary: aiSummary || ''
+      aiSummary: aiSummary || '',
+      reminder: reminder || { enabled: false, time: "", type: "notification", selectedTasks: [] }
     });
     const saved = await day.save();
 

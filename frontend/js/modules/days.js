@@ -1,4 +1,5 @@
 // ── Days Module ────────────────────────────────────────────
+import { scheduleLocalReminder, cancelLocalReminder, updateTodayStatusCache } from './reminders.js';
 console.log("[Module] days.js initializing...");
 
 // ── Days ───────────────────────────────────────────────────
@@ -55,7 +56,29 @@ async function loadDays(page = 1) {
         window.allDays = cached;
         renderDays();
         updateStreak();
+        
+        // Cache today's status offline
+        const today = window.todayStr();
+        const todayCard = cached.find(d => (d.date || '').split('T')[0] === today);
+        if (todayCard) {
+          const pendingTasks = [];
+          if (todayCard.categories) {
+            todayCard.categories.forEach(cat => {
+              if (cat.tasks) {
+                cat.tasks.forEach(t => {
+                  if (!t.completed) pendingTasks.push(t.title);
+                });
+              }
+            });
+          }
+          updateTodayStatusCache(today, true, pendingTasks);
+        } else {
+          updateTodayStatusCache(today, false, []);
+        }
+
         if (loadingEl) loadingEl.innerHTML = '';
+      } else {
+        updateTodayStatusCache(window.todayStr(), false, []);
       }
     } catch (err) {
       console.warn('Dexie read error:', err);
@@ -156,6 +179,27 @@ async function loadDays(page = 1) {
     window.currentPage = page;
     renderDays(isLoadMore);
     updateStreak();
+    
+    if (page === 1) {
+      const today = window.todayStr();
+      const todayCard = window.allDays.find(d => (d.date || '').split('T')[0] === today);
+      if (todayCard) {
+        const pendingTasks = [];
+        if (todayCard.categories) {
+          todayCard.categories.forEach(cat => {
+            if (cat.tasks) {
+              cat.tasks.forEach(t => {
+                if (!t.completed) pendingTasks.push(t.title);
+              });
+            }
+          });
+        }
+        updateTodayStatusCache(today, true, pendingTasks);
+      } else {
+        updateTodayStatusCache(today, false, []);
+      }
+    }
+
     if (loadingEl) loadingEl.innerHTML = '';
     // Confirmed server reachable — enable the leaderboard toggles
     setLeaderboardTogglesEnabled(true);
@@ -569,6 +613,16 @@ function buildDayCard(day, preLoadedAchievements = null) {
     graceBadgeHTML = `<span class="card-badge ${isToday ? 'badge-today' : 'badge-future'}">${isToday ? '<i data-lucide="sparkles"></i> Today' : '<i data-lucide="clock"></i> Future'}</span>`;
   }
 
+  let reminderBtnHTML = '';
+  if (isEditable) {
+    const hasReminder = day.reminder && day.reminder.enabled;
+    reminderBtnHTML = `
+      <button class="card-reminder-btn ripple" onclick="openReminderModal('${day._id}')" title="Set Reminder / Alarm" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: ${hasReminder ? 'var(--pink)' : 'var(--text-muted)'}; margin-right: 4px;">
+        <i data-lucide="${hasReminder ? 'bell-ring' : 'bell'}"></i>
+      </button>
+    `;
+  }
+
   card.innerHTML = `
     <div class="card-header">
       <div class="card-date-wrap">
@@ -576,6 +630,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
         <span class="card-day-name">${window.getDayName(day.date)}</span>
       </div>
       <div class="card-header-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        ${reminderBtnHTML}
         ${scratchpadHeaderBtnHTML}
         ${graceBadgeHTML}
       </div>
@@ -794,6 +849,9 @@ async function toggleTask(dayId, catId, taskId, checked) {
     window.syncManager.addToQueue('PUT', 'days', day._id, { categories: day.categories });
     
     updateStreak();
+    
+    // Update offline cache for today's status if modified card is today's card
+    updateTodayCacheIfMatches(day);
   } catch (err) {
     console.error('Offline write error:', err);
     // Even if local write fails, we try to keep going
@@ -807,6 +865,13 @@ async function toggleTask(dayId, catId, taskId, checked) {
 // ── Delete Day Card Completely ──────────────────────────────
 async function deleteDayCard(dayId) {
   const day = window.allDays.find(d => d._id === dayId);
+  if (day) {
+    const today = window.todayStr();
+    const cardDate = (day.date || '').split('T')[0];
+    if (cardDate === today) {
+      updateTodayStatusCache(today, false, []);
+    }
+  }
   
   // 1. Memory update
   window.allDays = window.allDays.filter(d => d._id !== dayId);
@@ -942,6 +1007,9 @@ async function deleteTask(dayId, catId, taskId) {
 
   // 2. Queue for sync
   window.syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+
+  // Update today cache if matches today's card
+  updateTodayCacheIfMatches(day);
 
   const cardEl = document.getElementById(`day-card-${dayId}`);
   if (cardEl) cardEl.replaceWith(buildDayCard(day));
@@ -1414,6 +1482,18 @@ async function submitAddDay() {
     // 2. Queue for sync
     window.syncManager.addToQueue('POST', 'days', null, { date, categories, summary, aiSummary: '' }, tempId);
 
+    // Update today cache if it is today's card
+    const today = window.todayStr();
+    if (date.split('T')[0] === today) {
+      const pendingTasks = [];
+      categories.forEach(cat => {
+        cat.tasks.forEach(t => {
+          if (!t.completed) pendingTasks.push(t.title);
+        });
+      });
+      updateTodayStatusCache(today, true, pendingTasks);
+    }
+
     // Reset button
     btn.disabled = false;
     btn.textContent = 'Create Card';
@@ -1496,6 +1576,9 @@ async function submitAddCategory() {
     await window.localDb.days.put(day);
     // 2. Queue Sync
     window.syncManager.addToQueue('PUT', 'days', dayId, { categories: updatedCategories });
+
+    // Update today cache
+    updateTodayCacheIfMatches(day);
 
     closeModal('modal-add-category');
     const oldCard = document.getElementById(`day-card-${dayId}`);
@@ -1583,6 +1666,9 @@ async function submitEditCategory() {
     await window.localDb.days.put(day);
     // 2. Queue Sync
     window.syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
+
+    // Update today cache
+    updateTodayCacheIfMatches(day);
 
     closeModal('modal-edit-category');
     const oldCard = document.getElementById(`day-card-${dayId}`);
@@ -1691,6 +1777,139 @@ async function submitEditGoal() {
   }
 }
 
+function updateTodayCacheIfMatches(day) {
+  if (!day) return;
+  const today = window.todayStr();
+  const cardDate = (day.date || '').split('T')[0];
+  if (cardDate === today) {
+    const pendingTasks = [];
+    if (day.categories) {
+      day.categories.forEach(c => {
+        if (c.tasks) {
+          c.tasks.forEach(t => {
+            if (!t.completed) {
+              pendingTasks.push(t.title);
+            }
+          });
+        }
+      });
+    }
+    updateTodayStatusCache(today, true, pendingTasks);
+  }
+}
+
+function openReminderModal(dayId) {
+  const day = window.allDays.find(d => d._id === dayId);
+  if (!day) return;
+
+  document.getElementById("reminder-modal-day-id").value = dayId;
+  const r = day.reminder || { enabled: false, time: "20:00", type: "notification", selectedTasks: [] };
+  
+  const toggle = document.getElementById("reminder-enabled-toggle");
+  if (toggle) toggle.checked = r.enabled;
+  toggleReminderTimeFields(r.enabled);
+
+  const timeInput = document.getElementById("reminder-time-input");
+  if (timeInput) timeInput.value = r.time || "20:00";
+
+  const radios = document.querySelectorAll('input[name="reminder-type-radio"]');
+  radios.forEach(rad => {
+    rad.checked = (rad.value === (r.type || "notification"));
+  });
+
+  const checklistContainer = document.getElementById("reminder-tasks-checklist");
+  if (checklistContainer) {
+    checklistContainer.innerHTML = "";
+    if (!day.categories || day.categories.length === 0 || day.categories.every(c => c.tasks.length === 0)) {
+      checklistContainer.innerHTML = '<p style="color:var(--text-muted);font-size:12px;margin:0;">No tasks on this day card.</p>';
+    } else {
+      const selectedIds = new Set(r.selectedTasks || []);
+      day.categories.forEach(cat => {
+        cat.tasks.forEach(task => {
+          const checked = selectedIds.has(task._id) ? "checked" : "";
+          const itemDiv = document.createElement("div");
+          itemDiv.style.display = "flex";
+          itemDiv.style.alignItems = "center";
+          itemDiv.style.gap = "8px";
+          itemDiv.style.fontSize = "13px";
+          itemDiv.innerHTML = `
+            <input type="checkbox" class="reminder-task-chk" value="${task._id}" data-title="${window.escHtml(task.title)}" ${checked} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--black);" />
+            <span style="font-weight: 600;">[${window.escHtml(cat.name)}] ${window.escHtml(task.title)}</span>
+          `;
+          checklistContainer.appendChild(itemDiv);
+        });
+      });
+    }
+  }
+
+  window.openModal("modal-daily-reminder");
+}
+
+function toggleReminderTimeFields(enabled) {
+  const fields = document.getElementById("reminder-config-fields");
+  if (fields) {
+    fields.style.display = enabled ? "flex" : "none";
+  }
+}
+
+function selectAllReminderTasks(selectAll) {
+  const checkboxes = document.querySelectorAll("#reminder-tasks-checklist .reminder-task-chk");
+  checkboxes.forEach(chk => chk.checked = selectAll);
+}
+
+async function saveDailyReminderSettings() {
+  const dayId = document.getElementById("reminder-modal-day-id").value;
+  if (!dayId) return;
+
+  const enabled = document.getElementById("reminder-enabled-toggle").checked;
+  const time = document.getElementById("reminder-time-input").value;
+  const type = document.querySelector('input[name="reminder-type-radio"]:checked')?.value || "notification";
+  
+  const chkElements = document.querySelectorAll("#reminder-tasks-checklist .reminder-task-chk");
+  const selectedTasks = [];
+  const selectedTaskNames = [];
+  
+  chkElements.forEach(chk => {
+    if (chk.checked) {
+      selectedTasks.push(chk.value);
+      selectedTaskNames.push(chk.getAttribute("data-title"));
+    }
+  });
+
+  const day = window.allDays.find(d => d._id === dayId);
+  if (!day) return;
+
+  day.reminder = {
+    enabled,
+    time,
+    type,
+    selectedTasks
+  };
+
+  try {
+    // 1. Update Local DB immediately
+    await window.localDb.days.put(day);
+    
+    // 2. Add to Sync Queue (so it pushes to server/mongo)
+    window.syncManager.addToQueue('PUT', 'days', day._id, { reminder: day.reminder });
+
+    // 3. Schedule or cancel local device alerts via Capacitor/Plugin
+    if (enabled) {
+      await scheduleLocalReminder(dayId, time, type, "Daily Reminder", selectedTaskNames);
+    } else {
+      await cancelLocalReminder(dayId);
+    }
+
+    // Refresh UI to show updated bell icon status
+    window.renderDays();
+    window.closeModal("modal-daily-reminder");
+    window.showToast("Reminder settings saved successfully!", "success");
+  } catch (err) {
+    console.error("Error saving reminder settings:", err);
+    window.showToast("Failed to save reminder settings.", "error");
+  }
+}
+
 
 // ── Days Module Bindings ──────────────────────────────────
 window.loadDays = loadDays;
@@ -1708,6 +1927,10 @@ window.toggleSummary = toggleSummary;
 window.saveSummary = saveSummary;
 window.loadClaimedBadges = loadClaimedBadges;
 window.renderClaimedBadges = renderClaimedBadges;
+window.openReminderModal = openReminderModal;
+window.toggleReminderTimeFields = toggleReminderTimeFields;
+window.selectAllReminderTasks = selectAllReminderTasks;
+window.saveDailyReminderSettings = saveDailyReminderSettings;
 window.openBadgesModal = openBadgesModal;
 window.loadAllBadges = loadAllBadges;
 window.renderAllBadges = renderAllBadges;

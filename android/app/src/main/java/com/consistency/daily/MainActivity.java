@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(UsageStatsPlugin.class);
+        registerPlugin(CustomAlarmPlugin.class);
         
         // Intercept native notification click on cold start
         android.content.Intent intent = getIntent();

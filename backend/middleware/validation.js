@@ -73,6 +73,16 @@ const updateProfileValidation = [
   body('newPassword')
     .optional()
     .isLength({ min: 6 }).withMessage('New password must be at least 6 characters long'),
+  body('globalStreakReminderEnabled')
+    .optional()
+    .isBoolean().withMessage('globalStreakReminderEnabled must be a boolean'),
+  body('globalStreakReminderTime')
+    .optional()
+    .trim()
+    .matches(/^\d{2}:\d{2}$/).withMessage('globalStreakReminderTime must be in HH:MM format'),
+  body('globalStreakReminderType')
+    .optional()
+    .isIn(['notification', 'alarm']).withMessage('globalStreakReminderType must be notification or alarm'),
   validate
 ];
 
@@ -104,6 +114,30 @@ const createDayValidation = [
     .trim()
     .isLength({ max: 1000 }).withMessage('AI Insights must not exceed 1000 characters')
     .escape(),
+  body('reminder')
+    .optional()
+    .isObject().withMessage('Reminder must be an object'),
+  body('reminder.enabled')
+    .optional()
+    .isBoolean().withMessage('reminder.enabled must be a boolean'),
+  body('reminder.time')
+    .optional()
+    .trim()
+    .matches(/^$|^\d{2}:\d{2}$/).withMessage('reminder.time must be in HH:MM format'),
+  body('reminder.type')
+    .optional()
+    .isIn(['notification', 'alarm']).withMessage('reminder.type must be notification or alarm'),
+  body('reminder.selectedTasks')
+    .optional()
+    .isArray().withMessage('reminder.selectedTasks must be an array'),
+  body('reminder.selectedTasks.*')
+    .optional()
+    .custom(value => {
+      if (typeof value === 'string' && (value.startsWith('temp_task_') || /^[0-9a-fA-F]{24}$/.test(value))) {
+        return true;
+      }
+      throw new Error('reminder.selectedTasks must contain valid task IDs');
+    }),
   validate
 ];
 
@@ -126,6 +160,30 @@ const updateDayValidation = [
     .trim()
     .isLength({ max: 1000 }).withMessage('AI Insights must not exceed 1000 characters')
     .escape(),
+  body('reminder')
+    .optional()
+    .isObject().withMessage('Reminder must be an object'),
+  body('reminder.enabled')
+    .optional()
+    .isBoolean().withMessage('reminder.enabled must be a boolean'),
+  body('reminder.time')
+    .optional()
+    .trim()
+    .matches(/^$|^\d{2}:\d{2}$/).withMessage('reminder.time must be in HH:MM format'),
+  body('reminder.type')
+    .optional()
+    .isIn(['notification', 'alarm']).withMessage('reminder.type must be notification or alarm'),
+  body('reminder.selectedTasks')
+    .optional()
+    .isArray().withMessage('reminder.selectedTasks must be an array'),
+  body('reminder.selectedTasks.*')
+    .optional()
+    .custom(value => {
+      if (typeof value === 'string' && (value.startsWith('temp_task_') || /^[0-9a-fA-F]{24}$/.test(value))) {
+        return true;
+      }
+      throw new Error('reminder.selectedTasks must contain valid task IDs');
+    }),
   validate
 ];
 

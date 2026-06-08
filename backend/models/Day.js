@@ -63,6 +63,24 @@ const DaySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    reminder: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      time: {
+        type: String,
+        default: "",
+      },
+      type: {
+        type: String,
+        enum: ['notification', 'alarm'],
+        default: 'notification',
+      },
+      selectedTasks: [{
+        type: mongoose.Schema.Types.ObjectId,
+      }],
+    },
   },
   { timestamps: true }
 );
