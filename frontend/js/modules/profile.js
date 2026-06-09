@@ -371,6 +371,13 @@ async function submitProfileSettings() {
               method: 'PATCH',
               body: JSON.stringify({ theme: 'minimalistic' })
             });
+          } else if (selectedTheme === 'voxel') {
+            document.documentElement.setAttribute('data-theme', 'voxel');
+            localStorage.setItem('theme', 'voxel');
+            await apiFetch(`${window.API}/api/auth/settings`, {
+              method: 'PATCH',
+              body: JSON.stringify({ theme: 'voxel' })
+            });
           }
         }
       }
