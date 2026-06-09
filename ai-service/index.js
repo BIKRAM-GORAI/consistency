@@ -617,28 +617,12 @@ app.post('/api/ai/generate-canvas-flow', async (req, res) => {
  */
 app.post('/api/ai/moderate-group', async (req, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
-    }
+    const incomingSecret = req.headers['x-ai-service-secret'];
+    const expectedSecret = process.env.AI_SERVICE_SECRET;
 
-    const token = authHeader.split(' ')[1];
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('[AI-Service] JWT_SECRET is not set in environment.');
-      return res.status(500).json({ error: 'Internal Server Error: Shared secret missing.' });
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, jwtSecret);
-    } catch (verifyError) {
-      console.warn(`[AI-Service] JWT Verification failed: ${verifyError.message}`);
-      return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
-    }
-
-    if (decoded.action !== 'moderate-group-creation') {
-      return res.status(403).json({ error: 'Forbidden: Invalid action for this token' });
+    if (!expectedSecret || incomingSecret !== expectedSecret) {
+      console.warn(`[AI-Service] Unauthorized moderation attempt blocked. IP: ${req.ip}`);
+      return res.status(401).json({ error: 'Unauthorized: Invalid or missing API secret' });
     }
 
     const { name, description, icon } = req.body;

@@ -88,19 +88,12 @@ const moderateGroup = async (req, res) => {
     let reason = 'AI service error';
 
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
-    const jwtSecret = process.env.JWT_SECRET;
+    const aiServiceSecret = process.env.AI_SERVICE_SECRET;
     
-    if (!jwtSecret) {
-      console.error('[groupController] JWT_SECRET is missing from environment.');
+    if (!aiServiceSecret) {
+      console.error('[groupController] AI_SERVICE_SECRET is missing from environment.');
       return res.status(500).json({ message: 'AI configuration error on server.' });
     }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId, action: 'moderate-group-creation' },
-      jwtSecret,
-      { expiresIn: '5m' }
-    );
 
     try {
       const aiResponse = await axios.post(`${aiServiceUrl}/api/ai/moderate-group`, {
@@ -109,7 +102,7 @@ const moderateGroup = async (req, res) => {
         icon
       }, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'x-ai-service-secret': aiServiceSecret,
           'Content-Type': 'application/json'
         },
         timeout: 20000
