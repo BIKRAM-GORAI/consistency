@@ -809,22 +809,18 @@ async function submitCreateGroup() {
       finalizeBtn.style.display = 'none';
       showToast('Group creation blocked by AI safety moderation.', 'error');
     } else if (res.safetyStatus === 'unknown') {
-      // Style status box for unknown (Neo-brutalist gray fallback alert)
-      statusBox.style.background = '#f3f4f6';
-      statusBox.style.borderColor = 'var(--black)';
-      statusBox.style.color = 'var(--text)';
-      statusBox.style.boxShadow = '4px 4px 0 var(--black)';
-      
-      statusIcon.textContent = 'ℹ️';
-      statusTitle.textContent = 'AI Moderation Bypassed';
-      statusReason.textContent = 'The safety moderation service is currently offline or unreachable. You can still create this group, but it will not have an AI verification badge.';
+      // AI service was offline — block creation, do not allow bypass
+      statusBox.style.background = '#fee2e2';
+      statusBox.style.borderColor = '#ef4444';
+      statusBox.style.color = '#991b1b';
+      statusBox.style.boxShadow = '4px 4px 0 #ef4444';
 
-      // Save token in memory
-      window._pendingGroupCreation.token = res.creationToken;
-      
-      finalizeBtn.style.display = 'inline-block';
-      finalizeBtn.disabled = false;
-      finalizeBtn.textContent = 'Finalize & Create';
+      statusIcon.textContent = '⚠️';
+      statusTitle.textContent = 'Moderation Unavailable';
+      statusReason.textContent = 'The AI safety moderation service is currently unreachable. Group creation has been paused for security. Please try again in a moment.';
+
+      finalizeBtn.style.display = 'none';
+      showToast('AI moderation service unavailable. Please try again shortly.', 'error');
     } else {
       // Style status box for approval (Neo-brutalist green/yellow approval)
       const isWarn = res.safetyStatus === 'warning';

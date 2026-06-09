@@ -125,12 +125,16 @@ const moderateGroup = async (req, res) => {
       }
     } catch (aiErr) {
       console.error('[groupController] AI group moderation failed:', aiErr.message);
+      // Block group creation if AI service is unreachable — do NOT silently pass through
+      return res.status(503).json({
+        message: 'AI moderation service is temporarily unavailable. Please try again in a moment.',
+        error: aiErr.message
+      });
     }
 
-    if (apiSuccess) {
-      user.dailyGroupCreationsCount += 1;
-      await user.save();
-    }
+    // Only increment count if AI call succeeded
+    user.dailyGroupCreationsCount += 1;
+    await user.save();
 
     if (safetyStatus === 'rejected') {
       return res.json({
