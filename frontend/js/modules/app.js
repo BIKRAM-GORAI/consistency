@@ -695,13 +695,27 @@ if (searchInput) {
     searchTimeout = setTimeout(() => performSearch(query), 350);
   });
 
-  // Hide dropdown when clicking outside
+  // Hide dropdown and blur/collapse search when clicking outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.nav-search-container')) {
       if (searchDropdown) searchDropdown.style.display = 'none';
-      if (searchInput && !searchInput.value.trim() && window.collapseSearchInput) window.collapseSearchInput();
+      if (searchInput) {
+        searchInput.value = '';
+        if (window.collapseSearchInput) window.collapseSearchInput();
+      }
     }
   });
+
+  // Blur search on scroll to dismiss mobile keyboard and reset viewport
+  window.addEventListener('scroll', () => {
+    if (document.activeElement === searchInput) {
+      if (searchInput) {
+        searchInput.value = '';
+        if (window.collapseSearchInput) window.collapseSearchInput();
+      }
+      if (searchDropdown) searchDropdown.style.display = 'none';
+    }
+  }, { passive: true });
 }
 
 window.collapseSearchInput = function() {
