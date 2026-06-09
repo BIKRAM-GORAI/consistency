@@ -6,6 +6,8 @@ const { sendEmail } = require('../utils/email');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
+const jwtSecret = process.env.JWT_SECRET;
+
 // ── Helpers ────────────────────────────────────────────────
 
 /** Generates a random 6-character alphanumeric code, uppercase */
