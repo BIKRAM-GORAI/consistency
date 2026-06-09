@@ -462,3 +462,6 @@ window.openEditAchievementModal = openEditAchievementModal;
 window.submitEditAchievement = submitEditAchievement;
 window.deleteAchievement = deleteAchievement;
 console.log("[Module] achievements.js loaded and Achievements bound to window");
+
+
+// ...
