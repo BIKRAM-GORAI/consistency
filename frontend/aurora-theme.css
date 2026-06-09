@@ -597,6 +597,9 @@
 
 /* Round, minimal checkboxes */
 [data-theme="premium-aurora"] .task-checkbox {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   border: 2px solid rgba(139, 92, 246, 0.3) !important;
   background: rgba(255, 255, 255, 0.8) !important;
   border-radius: 50% !important;
@@ -612,6 +615,9 @@
 }
 
 [data-theme="premium-aurora"] .task-checkbox:checked {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   background: linear-gradient(135deg, #8b5cf6, #e879a0) !important;
   border-color: transparent !important;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
@@ -1225,8 +1231,7 @@
 }
 
 [data-theme="premium-aurora"] .profile-avatar-container.premium-avatar-ring div {
-  border-bottom-left-radius: 50px !important;
-  border-bottom-right-radius: 50px !important;
+  clip-path: circle(50px at 50% calc(100% - 50px)) !important;
 }
 
 [data-theme="premium-aurora"] .profile-avatar-container.premium-avatar-ring::before {
