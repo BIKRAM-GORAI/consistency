@@ -1067,6 +1067,9 @@ function openModal(id) {
 }
 
 function closeModal(id) {
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
   // Block closing the day card modal while an image scan is in progress
   if (window.isScanInProgress && id === 'modal-add-day') {
     const banner = document.getElementById('scan-lock-banner');

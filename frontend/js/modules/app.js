@@ -712,6 +712,7 @@ window.collapseSearchInput = function() {
     inp.style.textAlign = 'center';
     inp.style.cursor = 'pointer';
     inp.placeholder = '🔍';
+    inp.blur();
   }
 };
 
@@ -752,7 +753,10 @@ async function performSearch(query) {
         
         item.onclick = () => {
           searchDropdown.style.display = 'none';
-          if (searchInput) searchInput.value = '';
+          if (searchInput) {
+            searchInput.value = '';
+            searchInput.blur();
+          }
           if (window.collapseSearchInput) window.collapseSearchInput();
           openQuickView(u.username);
         };
