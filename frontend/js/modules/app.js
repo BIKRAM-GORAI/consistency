@@ -2095,5 +2095,71 @@ window.checkOnboardingReferral = checkOnboardingReferral;
 checkOnboardingReferral();
 document.addEventListener('DOMContentLoaded', checkOnboardingReferral);
 
+// ── Enter key helper to add new subtask dynamically ────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const input = e.target;
+    if (input && input.tagName === 'INPUT' && input.placeholder === 'Task title...') {
+      e.preventDefault();
+      
+      const builder = input.closest('#categories-builder, #new-cat-tasks-builder, #edit-cat-tasks-builder, #edit-template-categories-builder');
+      if (!builder) return;
+      
+      if (builder.id === 'categories-builder') {
+        const catItem = input.closest('.category-builder-item');
+        if (catItem) {
+          const match = catItem.id.match(/cat-build-(\d+)/);
+          if (match) {
+            const catIdx = parseInt(match[1]);
+            window.addTaskField(catIdx);
+            
+            const tasksBuilder = document.getElementById(`tasks-build-${catIdx}`);
+            if (tasksBuilder) {
+              const rows = tasksBuilder.querySelectorAll('.task-input-row');
+              if (rows.length > 0) {
+                const newInput = rows[rows.length - 1].querySelector('input');
+                if (newInput) newInput.focus();
+              }
+            }
+          }
+        }
+      } else if (builder.id === 'new-cat-tasks-builder') {
+        window.addNewCatTaskField();
+        const rows = builder.querySelectorAll('.task-input-row');
+        if (rows.length > 0) {
+          const newInput = rows[rows.length - 1].querySelector('input');
+          if (newInput) newInput.focus();
+        }
+      } else if (builder.id === 'edit-cat-tasks-builder') {
+        window.addEditCatTaskField();
+        const rows = builder.querySelectorAll('.task-input-row');
+        if (rows.length > 0) {
+          const newInput = rows[rows.length - 1].querySelector('input');
+          if (newInput) newInput.focus();
+        }
+      } else if (builder.id === 'edit-template-categories-builder') {
+        const catItem = input.closest('.category-builder-item');
+        if (catItem) {
+          const match = catItem.id.match(/edit-template-cat-build-(\d+)/);
+          if (match) {
+            const catIdx = parseInt(match[1]);
+            window.addEditTemplateTaskField(catIdx);
+            
+            const tasksBuilder = document.getElementById(`edit-template-tasks-build-${catIdx}`);
+            if (tasksBuilder) {
+              const rows = tasksBuilder.querySelectorAll('.task-input-row');
+              if (rows.length > 0) {
+                const newInput = rows[rows.length - 1].querySelector('input');
+                if (newInput) newInput.focus();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
 console.log("[Module] app.js loaded and App bound to window");
+
 
