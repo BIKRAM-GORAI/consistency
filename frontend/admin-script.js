@@ -72,6 +72,7 @@ function showSection(section) {
   if (section === 'payments') loadPayments();
   if (section === 'refunds') loadRefunds();
   if (section === 'reports') loadReports();
+  if (section === 'changelogs') loadChangelogs();
 }
 
 /**
@@ -2278,3 +2279,172 @@ window.loadReports = loadReports;
 window.updateReportStatus = updateReportStatus;
 window.deleteReport = deleteReport;
 
+// ============================================================
+// CHANGELOG MANAGEMENT
+// ============================================================
+
+let allChangelogs = [];
+const escapeHTML = (str) => {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+};
+
+async function loadChangelogs() {
+  const tbody = document.getElementById('changelogs-table-body');
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; font-weight:800; color:#666;">Loading changelogs...</td></tr>';
+  }
+  try {
+    const res = await fetch(`${API}/api/admin/changelogs`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      allChangelogs = await res.json();
+      renderChangelogs(allChangelogs);
+    } else {
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:red; font-weight:800;">Failed to load changelogs.</td></tr>';
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:red; font-weight:800;">Connection error loading changelogs.</td></tr>';
+    }
+  }
+}
+
+function renderChangelogs(changelogs) {
+  const tbody = document.getElementById('changelogs-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (changelogs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; font-weight:800; color:#666;">No changelogs found. Create one to notify users!</td></tr>';
+    return;
+  }
+
+  changelogs.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #eee';
+
+    const formattedDate = new Date(c.createdAt).toLocaleString();
+    const typeBadge = c.type === 'major' 
+      ? '<span class="badge" style="background: var(--blue); color: white; font-weight: 800; border-radius: 4px; padding: 2px 6px;">MAJOR</span>'
+      : '<span class="badge" style="background: #e2e8f0; color: #475569; font-weight: 800; border-radius: 4px; padding: 2px 6px;">MINOR</span>';
+
+    tr.innerHTML = `
+      <td style="padding: 12px; font-size: 13px; font-weight: 700; color: #555;">${formattedDate}</td>
+      <td style="padding: 12px; text-align: center;">${typeBadge}</td>
+      <td style="padding: 12px; font-size: 14px; font-weight: 600; color: #333; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(c.message)}</td>
+      <td style="padding: 12px; text-align: right; white-space: nowrap;">
+        <button class="btn-control" style="background: var(--yellow); color: var(--black); margin-right: 6px;" onclick="openEditChangelogModal('${c._id}')">Edit</button>
+        <button class="btn-control" style="background: #ef4444; color: white;" onclick="deleteChangelog('${c._id}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openAddChangelogModal() {
+  document.getElementById('changelog-modal-title').textContent = 'Add Feature Changelog';
+  document.getElementById('btn-save-changelog').textContent = 'Save Changelog';
+  document.getElementById('changelog-id').value = '';
+  document.getElementById('changelog-message').value = '';
+  document.getElementById('changelog-type').value = 'minor';
+  document.getElementById('changelog-date').value = formatForInput();
+  
+  document.getElementById('changelog-modal').style.display = 'flex';
+}
+
+function openEditChangelogModal(id) {
+  const c = allChangelogs.find(item => item._id === id);
+  if (!c) return;
+
+  document.getElementById('changelog-modal-title').textContent = 'Edit Feature Changelog';
+  document.getElementById('btn-save-changelog').textContent = 'Save Changes';
+  document.getElementById('changelog-id').value = c._id;
+  document.getElementById('changelog-message').value = c.message;
+  document.getElementById('changelog-type').value = c.type;
+  document.getElementById('changelog-date').value = formatForInput(c.createdAt);
+  
+  document.getElementById('changelog-modal').style.display = 'flex';
+}
+
+function closeChangelogModal() {
+  document.getElementById('changelog-modal').style.display = 'none';
+}
+
+async function deleteChangelog(id) {
+  if (!confirm('Are you sure you want to permanently delete this changelog?')) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/changelogs/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      loadChangelogs();
+    } else {
+      const data = await res.json();
+      alert(data.message || 'Failed to delete changelog.');
+    }
+  } catch (err) {
+    console.error('deleteChangelog error:', err);
+    alert('Connection error while deleting changelog.');
+  }
+}
+
+// Add event listener for changelog form submission
+// Wrapped in DOMContentLoaded because the changelog modal HTML appears AFTER the <script> tag
+document.addEventListener('DOMContentLoaded', () => {
+  const changelogForm = document.getElementById('changelog-form');
+  if (!changelogForm) return; // Guard: only runs on admin-dashboard.html
+
+  changelogForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('changelog-id').value;
+    const message = document.getElementById('changelog-message').value;
+    const type = document.getElementById('changelog-type').value;
+    const createdAt = document.getElementById('changelog-date').value;
+
+    const payload = { message, type, createdAt };
+
+    try {
+      const url = id ? `${API}/api/admin/changelogs/${id}` : `${API}/api/admin/changelogs`;
+      const method = id ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        closeChangelogModal();
+        loadChangelogs();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Action failed');
+      }
+    } catch (err) {
+      console.error('Submit changelog form error:', err);
+      alert('Connection error while saving changelog.');
+    }
+  });
+}); // end DOMContentLoaded
+
+// Bind functions to window
+window.loadChangelogs = loadChangelogs;
+window.openAddChangelogModal = openAddChangelogModal;
+window.openEditChangelogModal = openEditChangelogModal;
+window.closeChangelogModal = closeChangelogModal;
+window.deleteChangelog = deleteChangelog;

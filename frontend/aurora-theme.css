@@ -2507,3 +2507,63 @@
   }
 }
 
+/* ── Changelog Glassmorphic Overrides ── */
+[data-theme="premium-aurora"] .changelog-item {
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(31, 38, 135, 0.05), inset 0 1.5px 0.5px rgba(255, 255, 255, 1) !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="premium-aurora"] .changelog-item.major {
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.1), inset 0 1.5px 0.5px rgba(255, 255, 255, 1) !important;
+}
+
+[data-theme="premium-aurora"] .changelog-badge {
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  color: #1e1b2e !important;
+}
+
+[data-theme="premium-aurora"] .changelog-badge.major {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+[data-theme="premium-aurora"] .changelog-date {
+  color: #5d5a7a !important;
+}
+
+[data-theme="premium-aurora"] .changelog-message {
+  color: #1e1b2e !important;
+}
+
+/* ── Feature Changelog Button — Teal/Cyan Aurora accent ── */
+[data-theme="premium-aurora"] #btn-feature-changelog {
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s, background 0.2s !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+[data-theme="premium-aurora"] #btn-feature-changelog:hover {
+  transform: translateY(-2px) !important;
+  background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%) !important;
+  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-theme="premium-aurora"] #btn-feature-changelog:active {
+  transform: translateY(0.5px) !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2) !important;
+}
