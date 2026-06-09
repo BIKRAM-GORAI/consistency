@@ -83,68 +83,80 @@
   display: block;
   /* Gradient base layer: warm lavender-pink-white radial field */
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(216, 180, 254, 0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 70% at 80% 80%, rgba(251, 207, 232, 0.45) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(224, 231, 255, 0.4) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(216, 180, 254, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 70% at 80% 80%, rgba(251, 207, 232, 0.38) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(224, 231, 255, 0.35) 0%, transparent 70%),
     linear-gradient(160deg, #f3f0ff 0%, #fdf2f8 50%, #f0f9ff 100%);
+  /* GPU isolation: contain blobs inside their own layer */
+  contain: layout style;
 }
 
+/* ── Performance: blobs use a wrapper with the blur so the
+   animated element only touches transform (compositor-only). ── */
 .aurora-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.55;
+  /* Reduced blur radius — 45px still gives full frosted feel,
+     but is ~60% cheaper than 90px on mobile GPUs */
+  filter: blur(45px);
+  opacity: 0.5;
   mix-blend-mode: multiply;
   pointer-events: none;
+  /* Promote to its own GPU layer so blur doesn't cascade */
   will-change: transform;
+  transform: translateZ(0);
+  /* Prevent accidental layout interactions during animation */
+  isolation: isolate;
 }
 
 .blob-1 {
-  width: 55vw;
-  height: 55vw;
-  background: radial-gradient(circle, rgba(196, 148, 250, 0.7) 0%, transparent 70%);
-  top: -15vw;
-  left: -10vw;
-  animation: float-blob-1 28s infinite alternate ease-in-out;
+  width: 52vw;
+  height: 52vw;
+  background: radial-gradient(circle, rgba(196, 148, 250, 0.65) 0%, transparent 70%);
+  top: -12vw;
+  left: -8vw;
+  animation: float-blob-1 32s infinite alternate ease-in-out;
 }
 
 .blob-2 {
-  width: 50vw;
-  height: 50vw;
-  background: radial-gradient(circle, rgba(249, 168, 212, 0.65) 0%, transparent 70%);
-  bottom: -10vw;
-  right: -8vw;
-  animation: float-blob-2 22s infinite alternate ease-in-out;
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle, rgba(249, 168, 212, 0.58) 0%, transparent 70%);
+  bottom: -8vw;
+  right: -6vw;
+  animation: float-blob-2 26s infinite alternate ease-in-out;
 }
 
 .blob-3 {
-  width: 40vw;
-  height: 40vw;
-  background: radial-gradient(circle, rgba(147, 197, 253, 0.5) 0%, transparent 70%);
+  width: 38vw;
+  height: 38vw;
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.45) 0%, transparent 70%);
   top: 35%;
   left: 48%;
-  animation: float-blob-3 25s infinite alternate ease-in-out;
+  animation: float-blob-3 30s infinite alternate ease-in-out;
 }
 
+/* Pixel-based translations so the browser never re-evaluates vw/vh layout
+   during the animation loop — eliminates the biggest jitter source. */
 @keyframes float-blob-1 {
-  0%   { transform: translate(0, 0) scale(1); }
-  33%  { transform: translate(6vw, 8vh) scale(1.12); }
-  66%  { transform: translate(-3vw, 12vh) scale(0.95); }
-  100% { transform: translate(-5vw, 4vh) scale(1.05); }
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(48px, 56px, 0) scale(1.1); }
+  66%  { transform: translate3d(-24px, 80px, 0) scale(0.96); }
+  100% { transform: translate3d(-40px, 32px, 0) scale(1.04); }
 }
 
 @keyframes float-blob-2 {
-  0%   { transform: translate(0, 0) scale(1.05); }
-  33%  { transform: translate(-8vw, -6vh) scale(0.9); }
-  66%  { transform: translate(4vw, -10vh) scale(1.1); }
-  100% { transform: translate(5vw, 3vh) scale(0.95); }
+  0%   { transform: translate3d(0, 0, 0) scale(1.04); }
+  33%  { transform: translate3d(-56px, -40px, 0) scale(0.92); }
+  66%  { transform: translate3d(32px, -64px, 0) scale(1.08); }
+  100% { transform: translate3d(40px, 24px, 0) scale(0.96); }
 }
 
 @keyframes float-blob-3 {
-  0%   { transform: translate(-50%, -50%) scale(0.9); }
-  33%  { transform: translate(-50%, -50%) translate(8vw, -10vh) scale(1.1); }
-  66%  { transform: translate(-50%, -50%) translate(-4vw, 8vh) scale(0.85); }
-  100% { transform: translate(-50%, -50%) translate(3vw, -5vh) scale(1.0); }
+  0%   { transform: translate3d(-50%, -50%, 0) scale(0.9); }
+  33%  { transform: translate3d(calc(-50% + 56px), calc(-50% - 64px), 0) scale(1.08); }
+  66%  { transform: translate3d(calc(-50% - 28px), calc(-50% + 48px), 0) scale(0.86); }
+  100% { transform: translate3d(calc(-50% + 20px), calc(-50% - 32px), 0) scale(1.0); }
 }
 
 /* ============================================================
@@ -191,7 +203,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   color: #1e1b2e !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .nav-btn:hover {
@@ -246,8 +258,9 @@
   /* Core glass effect */
   background: rgba(255, 255, 255, 0.65) !important;
   background-image: none !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  /* GPU layer promotion is handled by the will-change rule at the bottom of this file */
 
   /* Crisp, layered border system */
   border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
@@ -260,7 +273,7 @@
     inset 0 -1.5px 1.5px rgba(139, 92, 246, 0.08) !important;
 
   border-radius: 20px !important;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.25s ease !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.25s ease !important;
 }
 
 [data-theme="premium-aurora"] .day-card:hover {
@@ -339,8 +352,8 @@
    ============================================================ */
 [data-theme="premium-aurora"] .goal-card {
   background: rgba(255, 255, 255, 0.65) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
   box-shadow:
     0 16px 40px rgba(109, 40, 217, 0.12),
@@ -348,7 +361,7 @@
     inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
     inset 0 -1.5px 1.5px rgba(139, 92, 246, 0.08) !important;
   border-radius: 20px !important;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
 }
 
 [data-theme="premium-aurora"] .goal-card:hover {
@@ -462,15 +475,15 @@
    ============================================================ */
 [data-theme="premium-aurora"] .group-card {
   background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  backdrop-filter: blur(12px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(130%) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
   box-shadow:
     0 8px 32px rgba(109, 40, 217, 0.08),
     0 2px 8px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 20px !important;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
 }
 
 [data-theme="premium-aurora"] .group-card:hover {
@@ -504,7 +517,7 @@
 
 [data-theme="premium-aurora"] .group-empty-card {
   background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px dashed rgba(139, 92, 246, 0.25) !important;
   border-radius: 20px !important;
 }
@@ -589,7 +602,7 @@
   border-radius: 50% !important;
   width: 18px !important;
   height: 18px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s, background 0.2s !important;
 }
 
 [data-theme="premium-aurora"] .task-checkbox:not(:disabled):hover {
@@ -637,7 +650,7 @@
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   border-radius: 12px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s, background 0.2s !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
 }
@@ -666,7 +679,7 @@
   font-weight: 600 !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 12px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
 }
@@ -695,7 +708,7 @@
   font-weight: 700 !important;
   box-shadow: none !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-delete:hover,
@@ -726,7 +739,7 @@
   border-radius: 10px !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-add-cat:hover,
@@ -749,7 +762,7 @@
   font-weight: 750 !important;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-edit-cat:hover,
@@ -767,7 +780,7 @@
   color: #3b1f73 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-group-admin:hover {
@@ -797,7 +810,7 @@
   text-transform: none !important;
   letter-spacing: 0 !important;
   font-weight: 600 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .summary-toggle:hover {
@@ -821,7 +834,7 @@
   font-weight: 750 !important;
   box-shadow: 0 2px 6px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-add-leetcode:hover,
@@ -840,7 +853,7 @@
   font-weight: 700 !important;
   box-shadow: none !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] #voice-record-btn:hover {
@@ -872,7 +885,7 @@
   color: #6d28d9 !important;
   border-radius: 16px !important;
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s, border-color 0.3s, box-shadow 0.3s !important;
 }
 
 [data-theme="premium-aurora"] .add-day-btn:hover {
@@ -891,7 +904,7 @@
   border-radius: 10px !important;
   font-weight: 700 !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
 }
@@ -913,7 +926,7 @@
   box-shadow: none !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 /* Private Team & Public Group header buttons */
@@ -926,7 +939,7 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] button[onclick^="openCreateGroupModal"]:hover {
@@ -946,7 +959,7 @@
   font-weight: 700 !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 /* Member View / Remove buttons */
@@ -955,7 +968,7 @@
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   color: #3b1f73 !important;
   border-radius: 8px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
   box-shadow: none !important;
 }
 
@@ -967,7 +980,7 @@
   border-radius: 6px !important;
   font-weight: 800 !important;
   box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] button[onclick^="applyGrace"]:hover {
@@ -1004,7 +1017,7 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 /* ============================================================
@@ -1052,14 +1065,14 @@
    ============================================================ */
 [data-theme="premium-aurora"] .modal-overlay {
   background: rgba(30, 20, 50, 0.3) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 [data-theme="premium-aurora"] .modal {
   background: rgba(255, 255, 255, 0.88) !important;
-  backdrop-filter: blur(32px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   box-shadow:
     0 24px 60px rgba(109, 40, 217, 0.14),
@@ -1094,7 +1107,7 @@
   color: #5b5674 !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
   border-radius: 10px !important;
-  transition: all 0.25s ease !important;
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease !important;
 }
 
 [data-theme="premium-aurora"] .modal-close:hover {
@@ -1123,7 +1136,7 @@
    ============================================================ */
 [data-theme="premium-aurora"] .toast {
   background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   color: #1e1b2e !important;
   box-shadow: 0 12px 36px rgba(109, 40, 217, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06) !important;
@@ -1142,11 +1155,11 @@
 
 [data-theme="premium-aurora"] .lb-card {
   background: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
   box-shadow: 0 4px 16px rgba(109, 40, 217, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 16px !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
 }
 
 [data-theme="premium-aurora"] .lb-card:hover {
@@ -1208,7 +1221,7 @@
   border-radius: 14px !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .profile-collapse-header:hover {
@@ -1228,7 +1241,7 @@
 [data-theme="premium-aurora"] .badge-section-card,
 [data-theme="premium-aurora"] .screentime-section-card {
   background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   box-shadow: 0 4px 16px rgba(109, 40, 217, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 14px !important;
@@ -1317,7 +1330,7 @@
 /* Empty state */
 [data-theme="premium-aurora"] .empty-state {
   background: rgba(255, 255, 255, 0.5) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px dashed rgba(139, 92, 246, 0.25) !important;
   border-radius: 20px !important;
 }
@@ -1332,7 +1345,7 @@
 /* FCM Notification Banner */
 [data-theme="premium-aurora"] #fcm-permission-banner {
   background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   border-radius: 16px !important;
   box-shadow: 0 4px 20px rgba(109, 40, 217, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
@@ -1346,7 +1359,7 @@
   color: #92400e !important;
   box-shadow: none !important;
   border-radius: 10px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 /* Join Group / Cancel Request buttons (inline) */
@@ -1360,7 +1373,7 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] button[onclick^="cancelJoinRequest"] {
@@ -1376,7 +1389,7 @@
   color: #3b1f73 !important;
   border-radius: 10px !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 /* Approve / Reject request buttons in modal */
@@ -1525,7 +1538,7 @@
 [data-theme="premium-aurora"] #modal-group-chat .modal-header,
 [data-theme="premium-aurora"] #modal-group-chat [style*="modal-header"] {
   background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
   border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
 }
 
@@ -1569,8 +1582,8 @@
 /* ── Chat Plus Menu Popup (Upload Image / Take Photo etc.) ── */
 [data-theme="premium-aurora"] .chat-plus-menu {
   background: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  backdrop-filter: blur(12px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(130%) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.25) !important;
   box-shadow:
     0 16px 40px rgba(109, 40, 217, 0.15),
@@ -1600,7 +1613,7 @@
   border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
   box-shadow: 0 2px 8px rgba(109, 40, 217, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 12px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .sticker-btn:hover,
@@ -1640,7 +1653,7 @@
 /* ── Chat modal footer ── */
 [data-theme="premium-aurora"] #modal-group-chat .modal-footer {
   background: rgba(248, 246, 255, 0.9) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border-top: 1px solid rgba(139, 92, 246, 0.12) !important;
   border-radius: 0 0 24px 24px !important;
 }
@@ -1671,7 +1684,7 @@
 [data-theme="premium-aurora"] .profile-settings-card,
 [data-theme="premium-aurora"] [id^="section-settings"] .profile-collapse-content {
   background: rgba(255, 255, 255, 0.65) !important;
-  backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(10px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.15) !important;
   border-radius: 16px !important;
 }
@@ -1746,7 +1759,7 @@
 [data-theme="premium-aurora"] .btn-brutal {
   border-radius: 12px !important;
   text-shadow: none !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-brutal:hover {
@@ -1829,7 +1842,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
   border-radius: 8px !important;
   color: #4c1d95 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 [data-theme="premium-aurora"] .btn-icon:hover {
   background: rgba(139, 92, 246, 0.08) !important;
@@ -1843,8 +1856,8 @@
 
 [data-theme="premium-aurora"] .designer-toolbar {
   background: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border-bottom: 1.5px solid rgba(139, 92, 246, 0.15) !important;
 }
 
@@ -1875,8 +1888,8 @@
 /* ── Designer Sidebar / Agent Chat ── */
 [data-theme="premium-aurora"] #canvas-sidebar-panel {
   background: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border-left: 1.5px solid rgba(139, 92, 246, 0.15) !important;
 }
 
@@ -1937,8 +1950,8 @@
 /* ── Node Toolbox ── */
 [data-theme="premium-aurora"] #canvas-node-toolbox {
   background: rgba(255, 255, 255, 0.65) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08) !important;
   border-radius: 16px !important;
@@ -1953,8 +1966,8 @@
 /* ── Canvas Flow Node Cards ── */
 [data-theme="premium-aurora"] .flow-node-card {
   background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.15) !important;
   box-shadow: 0 10px 30px rgba(139, 92, 246, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   border-radius: 16px !important;
@@ -2061,7 +2074,7 @@
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
   font-weight: 800 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   transform: none !important;
 }
 
@@ -2079,8 +2092,8 @@
    ============================================================ */
 [data-theme="premium-aurora"] #page-pomodoro .pomo-card {
   background: rgba(255, 255, 255, 0.65) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
   box-shadow:
     0 16px 40px rgba(109, 40, 217, 0.12),
@@ -2105,7 +2118,7 @@
   border: none !important;
   border-radius: 8px !important;
   font-weight: 700 !important;
-  transition: all 0.25s ease !important;
+  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease !important;
 }
 
 [data-theme="premium-aurora"] #page-pomodoro .pomo-tab-btn + .pomo-tab-btn {
@@ -2130,7 +2143,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   border-radius: 10px !important;
   font-weight: 800 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   background: rgba(255, 255, 255, 0.6) !important;
   color: #1e1b2e !important;
 }
@@ -2187,7 +2200,7 @@
   border-radius: 99px !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02) !important;
   font-weight: 700 !important;
-  transition: all 0.2s ease, transform 0.2s ease !important;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease !important;
   opacity: 0.85 !important;
   transform: none !important;
 }
@@ -2277,7 +2290,7 @@
   box-shadow: 0 2px 6px rgba(232, 121, 160, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   border-radius: 8px !important;
   font-weight: 800 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] #pomo-custom-panel .custom-apply-btn:hover {
@@ -2303,7 +2316,7 @@
   box-shadow: 0 2px 8px rgba(109, 40, 217, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   border-radius: 10px !important;
   color: #4c1d95 !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .wake-lock-container:hover {
@@ -2317,7 +2330,7 @@
   border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
   background: rgba(255, 255, 255, 0.8) !important;
   border-radius: 4px !important;
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .wake-lock-container input:checked ~ .custom-checkbox {
@@ -2333,16 +2346,23 @@
    19. SCROLLING PERFORMANCE & HARDWARE ACCELERATION
    ============================================================ */
 /* Promote heavy glassmorphism layers to GPU to prevent paint lag during scroll */
+/* Cards use will-change only — we can't set a static transform here
+   because hover effects use transform: translateY(-Xpx) which would override */
 [data-theme="premium-aurora"] .day-card,
 [data-theme="premium-aurora"] .goal-card,
 [data-theme="premium-aurora"] .group-card,
-[data-theme="premium-aurora"] #page-pomodoro .pomo-card,
+[data-theme="premium-aurora"] #page-pomodoro .pomo-card {
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+}
+
+/* Blobs and modal CAN have a static translateZ(0) since their hover
+   doesn't use transform or already sets translate3d */
 [data-theme="premium-aurora"] .modal,
 [data-theme="premium-aurora"] .aurora-blob {
   transform: translateZ(0) !important;
   backface-visibility: hidden !important;
-  perspective: 1000px !important;
-  will-change: transform, opacity !important;
+  will-change: transform !important;
 }
 
 /* Enable smooth scrolling natively */
@@ -2350,7 +2370,65 @@
 [data-theme="premium-aurora"] body {
   scroll-behavior: smooth !important;
 }
+/* ============================================================
+   MOBILE PERFORMANCE — Further reduce blur on small screens
+   Devices with low GPU memory (budget Android/iPhone) benefit
+   greatly from a reduced blur radius.
+   ============================================================ */
+@media (max-width: 768px) {
+  [data-theme="premium-aurora"] .aurora-blob {
+    filter: blur(30px) !important;
+    opacity: 0.42 !important;
+  }
+  /* Slightly reduce blob sizes on mobile so the GPU area is smaller */
+  [data-theme="premium-aurora"] .blob-1 { width: 80vw !important; height: 80vw !important; }
+  [data-theme="premium-aurora"] .blob-2 { width: 70vw !important; height: 70vw !important; }
+  [data-theme="premium-aurora"] .blob-3 { width: 60vw !important; height: 60vw !important; }
 
+  /* Reduce backdrop-filter on cards to 8px on mobile — still glassy but much cheaper */
+  [data-theme="premium-aurora"] .day-card,
+  [data-theme="premium-aurora"] .goal-card,
+  [data-theme="premium-aurora"] .group-card {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  [data-theme="premium-aurora"] .modal {
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+  }
+  [data-theme="premium-aurora"] .modal-overlay {
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+  }
+  [data-theme="premium-aurora"] .navbar {
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+  }
+  [data-theme="premium-aurora"] .bottom-nav-container {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+}
 
+/* On very small or low-DPR mobile screens, disable blobs entirely
+   to ensure smooth 60fps scrolling. The gradient background is
+   still beautiful without the animated blobs. */
+@media (max-width: 480px) and (max-resolution: 1.5dppx) {
+  [data-theme="premium-aurora"] .aurora-blob {
+    animation-play-state: paused !important;
+    opacity: 0 !important;
+  }
+}
 
+/* Respect user preference for reduced motion — pause all blob animations */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="premium-aurora"] .aurora-blob {
+    animation: none !important;
+  }
+  [data-theme="premium-aurora"] .day-card,
+  [data-theme="premium-aurora"] .goal-card,
+  [data-theme="premium-aurora"] .group-card {
+    transition: none !important;
+  }
+}
 
