@@ -364,6 +364,13 @@ async function submitProfileSettings() {
               method: 'PATCH',
               body: JSON.stringify({ theme: 'premium-aurora' })
             });
+          } else if (selectedTheme === 'minimalistic') {
+            document.documentElement.setAttribute('data-theme', 'minimalistic');
+            localStorage.setItem('theme', 'minimalistic');
+            await apiFetch(`${window.API}/api/auth/settings`, {
+              method: 'PATCH',
+              body: JSON.stringify({ theme: 'minimalistic' })
+            });
           }
         }
       }

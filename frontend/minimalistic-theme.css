@@ -1,0 +1,362 @@
+/* ============================================================
+   CONSISTENCY TRACKER — Minimalistic Theme Extension
+   Clean · Neutral · Modern · Low Contrast · Highly Optimized
+   ============================================================ */
+
+[data-theme="minimalistic"] {
+  /* ── Backgrounds ── */
+  --bg:        #f8fafc; /* Slate-50: Calming off-white background */
+  --bg-card:   #ffffff; /* Pure white cards */
+  --bg-input:  #ffffff;
+  --bg-muted:  #f1f5f9; /* Slate-100 */
+  --bg-readonly: #f8fafc;
+  --graph-empty: #e2e8f0; /* Slate-200 */
+  --chat-messages-bg: #f8fafc;
+
+  /* ── Text ── */
+  --text:      #0f172a; /* Slate-900: Soft dark slate */
+  --text-muted:#475569; /* Slate-600: Calm subtext */
+  --text-light:#94a3b8; /* Slate-400 */
+
+  /* ── Clean Accents (No retro harshness) ── */
+  --yellow:    #eab308; /* Soft Amber-500 */
+  --pink:      #ec4899; /* Soft Pink-500 */
+  --teal:      #14b8a6; /* Soft Teal-500 */
+  --coral:     #f43f5e; /* Soft Rose-500 */
+  --purple:    #6366f1; /* Soft Indigo-500 */
+  --lime:      #84cc16; /* Soft Lime-500 */
+  --blue:      #3b82f6; /* Soft Blue-500 */
+  --red:       #ef4444; /* Clean Red */
+  --green:     #10b981; /* Emerald Green */
+  --amber:     #f59e0b;
+  --orange:    #f97316;
+
+  /* ── Minimalist Core Borders & Shadows (Thin, subtle) ── */
+  --black:     #1e293b; /* Slate-800 */
+  --border:    1px solid #e2e8f0; /* Ultra-thin slate border */
+  --border-2:  1px solid #cbd5e1;
+  --shadow:    0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+
+  /* ── Rounded Corners (Smooth & modern) ── */
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-xl:  18px;
+
+  /* ── Extra Backgrounds ── */
+  --bg-goal-completed: #ecfdf5; /* Soft Emerald tint */
+  --bg-goal-completed-overdue: #fffbeb;
+  --bg-goal-overdue: #fef2f2;
+  --bg-cat-input:      #fef08a; /* Soft Yellow tint */
+  --bg-ach-section:    #fafafa;
+  --bg-ach-note:       #f4f4f5;
+
+  --distraction-green: #10b981;
+  --distraction-red: #ef4444;
+  --bg-distraction-green: rgba(16, 185, 129, 0.06);
+  --bg-distraction-red: rgba(239, 68, 68, 0.06);
+  --day-card-dot-color: rgba(15, 23, 42, 0.04);
+  --weekly-card-stripe-color: rgba(16, 185, 129, 0.04);
+  --weekly-btn-stripe-color: rgba(99, 102, 241, 0.04);
+  --monthly-grid-color: rgba(236, 72, 153, 0.04);
+}
+
+/* ============================================================
+   GLOBAL OVERRIDES FOR MINIMALISTIC THEME
+   ============================================================ */
+
+/* ── 1. General Spacing & Layout Reset ── */
+[data-theme="minimalistic"] * {
+  /* Override any hardcoded thick brutalist borders and flat shadows */
+  text-shadow: none !important;
+}
+
+/* ── 2. Cards & Containers ── */
+[data-theme="minimalistic"] .card,
+[data-theme="minimalistic"] .day-card,
+[data-theme="minimalistic"] .pomo-card,
+[data-theme="minimalistic"] .goal-card,
+[data-theme="minimalistic"] .achievement-card,
+[data-theme="minimalistic"] .leaderboard-card,
+[data-theme="minimalistic"] .group-card,
+[data-theme="minimalistic"] .limits-card,
+[data-theme="minimalistic"] .quick-view-card,
+[data-theme="minimalistic"] #ai-bio-card {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.01) !important;
+  border-radius: 12px !important;
+  transform: none !important;
+  background: #ffffff !important;
+}
+
+/* ── 3. Modals ── */
+[data-theme="minimalistic"] .modal {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.3) !important; /* Soft Slate overlay */
+  backdrop-filter: none !important; /* Disable performance-heavy blurs */
+}
+
+/* ── 4. Navbar & Navigation ── */
+[data-theme="minimalistic"] .navbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .navbar a,
+[data-theme="minimalistic"] .navbar span,
+[data-theme="minimalistic"] .navbar button,
+[data-theme="minimalistic"] .navbar div {
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .bottom-nav-container {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="minimalistic"] .bottom-nav-btn {
+  color: #64748b !important;
+}
+
+[data-theme="minimalistic"] .bottom-nav-btn.active {
+  color: #0ea5e9 !important; /* Sky-500 active color */
+}
+
+/* ── 5. Buttons (Clean, flat, rounded, no translation on hover) ── */
+[data-theme="minimalistic"] .btn,
+[data-theme="minimalistic"] .modal-header button,
+[data-theme="minimalistic"] .goal-card button,
+[data-theme="minimalistic"] .day-card button,
+[data-theme="minimalistic"] .pomo-card button {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  transform: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] .btn:hover,
+[data-theme="minimalistic"] button:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  transform: none !important;
+}
+
+[data-theme="minimalistic"] .btn-primary {
+  background: #0f172a !important; /* Primary dark slate */
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+}
+
+[data-theme="minimalistic"] .btn-primary:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .btn-secondary {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="minimalistic"] .btn-secondary:hover {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="minimalistic"] .btn-ghost {
+  border: 1px solid transparent !important;
+  background: transparent !important;
+}
+
+[data-theme="minimalistic"] .btn-ghost:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="minimalistic"] .modal-close {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ── 6. Inputs & Forms ── */
+[data-theme="minimalistic"] .form-control,
+[data-theme="minimalistic"] input[type="text"],
+[data-theme="minimalistic"] input[type="number"],
+[data-theme="minimalistic"] input[type="email"],
+[data-theme="minimalistic"] input[type="password"],
+[data-theme="minimalistic"] select,
+[data-theme="minimalistic"] textarea {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02) !important;
+  color: #0f172a !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] .form-control:focus,
+[data-theme="minimalistic"] input:focus,
+[data-theme="minimalistic"] select:focus,
+[data-theme="minimalistic"] textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 1px 2px rgba(0,0,0,0.02) !important;
+  outline: none !important;
+}
+
+/* ── 7. Checkboxes ── */
+[data-theme="minimalistic"] .task-checkbox {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  width: 18px !important;
+  height: 18px !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .task-checkbox:checked {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background: #10b981 !important; /* Emerald green check container */
+  border-color: #10b981 !important;
+}
+
+[data-theme="minimalistic"] .task-checkbox:checked::after {
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="minimalistic"] .task-checkbox:disabled {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  opacity: 0.5 !important;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="minimalistic"] .task-checkbox:checked:disabled {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background: #6b7280 !important; /* Muted gray for completed disabled */
+  border-color: #6b7280 !important;
+  opacity: 0.6 !important;
+}
+
+/* ── 8. Day Cards Details ── */
+[data-theme="minimalistic"] .day-card-header {
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding-bottom: 8px !important;
+}
+
+[data-theme="minimalistic"] .day-card-body {
+  background: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .category-title-container {
+  border-left: 3px solid #64748b !important;
+  padding-left: 8px !important;
+  background: #f8fafc !important;
+}
+
+[data-theme="minimalistic"] .streak-badge {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+  border: 1px solid #fde68a !important;
+  box-shadow: none !important;
+  border-radius: 9999px !important;
+}
+
+[data-theme="minimalistic"] .stat-pill {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  background: #f8fafc !important;
+}
+
+/* ── 9. Profile Avatar ── */
+[data-theme="minimalistic"] .profile-avatar-container {
+  border: 2px solid #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="minimalistic"] .profile-avatar-container.premium-avatar-ring {
+  border: 3px solid #10b981 !important; /* Minimal emerald green premium ring */
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25) !important;
+  animation: none !important; /* No performance-heavy animations */
+}
+
+[data-theme="minimalistic"] .profile-avatar-container.premium-avatar-ring::after {
+  content: '👑' !important;
+  font-size: 18px !important;
+  top: -8px !important;
+  right: -8px !important;
+}
+
+[data-theme="minimalistic"] .profile-collapse-header {
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  box-shadow: none !important;
+}
+
+/* ── 10. Chat & Group Elements ── */
+[data-theme="minimalistic"] .chat-bubble {
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .chat-bubble.sent {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="minimalistic"] .chat-bubble.received {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .chat-avatar.premium-glow {
+  border: 2px solid #10b981 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* ── 11. Pomodoro Clean Dial ── */
+[data-theme="minimalistic"] .pomo-dial-container {
+  border: 4px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .pomo-card.break-mode {
+  background: #f0fdf4 !important; /* Clean soft green break mode */
+}
+
+/* ── 12. Miscellaneous Brutalist Offsets ── */
+[data-theme="minimalistic"] .badge,
+[data-theme="minimalistic"] .tag,
+[data-theme="minimalistic"] .lb-rank {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
