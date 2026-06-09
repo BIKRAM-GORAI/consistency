@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit } = require('../controllers/authController');
+const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit, getChangelogList, markChangelogViewed } = require('../controllers/authController');
 const { uploadProfile, uploadChat } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { mediaUploadLimiter } = require('../middleware/rateLimit');
@@ -49,6 +49,10 @@ router.patch('/achievements-privacy', authenticateToken, achievementPrivacyValid
 router.get('/settings', authenticateToken, getProfileSettings);
 router.get('/me', authenticateToken, getProfileSettings); // Alias for /settings
 router.patch('/settings', authenticateToken, updateProfileValidation, setProfileSettings);
+
+// Public Changelog Routes
+router.get('/changelog', getChangelogList);
+router.post('/changelog/view', authenticateToken, markChangelogViewed);
 
 // DELETE account (requires authentication)
 router.delete('/account', authenticateToken, deleteAccount);

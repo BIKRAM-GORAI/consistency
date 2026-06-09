@@ -3,6 +3,7 @@ const Day = require('../models/Day');
 const Goal = require('../models/Goal');
 const Template = require('../models/Template');
 const Achievement = require('../models/Achievement');
+const Changelog = require('../models/Changelog');
 const Group = require('../models/Group');
 const Review = require('../models/Review');
 const { cloudinary } = require('../config/cloudinary');
@@ -274,6 +275,7 @@ async function getProfileSettings(req, res) {
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',
+      lastViewedChangelogAt: user.lastViewedChangelogAt || null,
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false,
       isPublicProfile: user.isPublicProfile !== false,
@@ -526,6 +528,29 @@ async function getMediaUploadLimit(req, res) {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }
 
+async function getChangelogList(req, res) {
+  try {
+    const changelogs = await Changelog.find().sort({ createdAt: -1 });
+    res.json(changelogs);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function markChangelogViewed(req, res) {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { lastViewedChangelogAt: new Date() },
+      { new: true }
+    );
+    res.json({ message: 'Changelog marked as viewed', lastViewedChangelogAt: user.lastViewedChangelogAt });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -540,5 +565,7 @@ module.exports = {
   resetPassword,
   deleteAccount,
   getFirebaseToken,
-  getMediaUploadLimit
+  getMediaUploadLimit,
+  getChangelogList,
+  markChangelogViewed
 };

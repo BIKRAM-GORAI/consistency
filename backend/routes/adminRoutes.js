@@ -90,4 +90,10 @@ router.get('/reports', authenticateAdmin, adminController.getAdminReports);
 router.patch('/reports/:id', authenticateAdmin, adminController.updateReportStatus);
 router.delete('/reports/:id', authenticateAdmin, adminController.deleteReport);
 
+// Changelog Management
+router.get('/changelogs', authenticateAdmin, adminController.getAdminChangelogs);
+router.post('/changelogs', authenticateAdmin, adminController.createAdminChangelog);
+router.put('/changelogs/:id', authenticateAdmin, adminController.updateAdminChangelog);
+router.delete('/changelogs/:id', authenticateAdmin, adminController.deleteAdminChangelog);
+
 module.exports = router;

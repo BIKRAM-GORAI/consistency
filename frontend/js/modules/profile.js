@@ -9,6 +9,13 @@ const showToast = (...args) => window.showToast(...args);
 async function openProfileModal() {
   document.getElementById('profile-pic-dataurl').value = '';
   openModal('modal-profile');
+  
+  if (latestChangelogDate) {
+    localStorage.setItem('dismissedOuterChangelogDot', latestChangelogDate);
+    const outerDot = document.getElementById('profile-red-dot');
+    if (outerDot) outerDot.style.display = 'none';
+  }
+
   // Clear sensitive fields
   document.getElementById('profile-old-password').value = '';
   document.getElementById('profile-new-password').value = '';
@@ -150,6 +157,10 @@ async function openProfileModal() {
 /** Helper to populate profile fields from a user object */
 function renderProfileData(user) {
   if (!user) return;
+
+  if (typeof checkChangelogNotifications === 'function') {
+    checkChangelogNotifications(user);
+  }
   
   if (user.profilePicture) {
     window.userProfilePicture = user.profilePicture;
@@ -2346,11 +2357,119 @@ async function submitUserIssueReport(event) {
   }
 }
 
+// Feature Changelog
+let latestChangelogDate = null;
+let allChangelogsList = [];
+
+async function checkChangelogNotifications(user) {
+  try {
+    const res = await fetch(`${window.API}/api/auth/changelog`);
+    if (!res.ok) return;
+    const changelogs = await res.json();
+    allChangelogsList = changelogs;
+    
+    const outerDot = document.getElementById('profile-red-dot');
+    const innerDot = document.getElementById('changelog-btn-red-dot');
+    
+    if (changelogs.length === 0) {
+      if (outerDot) outerDot.style.display = 'none';
+      if (innerDot) innerDot.style.display = 'none';
+      return;
+    }
+    
+    const latest = changelogs[0];
+    latestChangelogDate = latest.createdAt;
+    
+    const lastViewed = user.lastViewedChangelogAt ? new Date(user.lastViewedChangelogAt) : new Date(0);
+    const latestTime = new Date(latest.createdAt);
+    
+    if (latestTime > lastViewed) {
+      if (innerDot) innerDot.style.display = 'block';
+      
+      const dismissed = localStorage.getItem('dismissedOuterChangelogDot');
+      if (dismissed === latest.createdAt) {
+        if (outerDot) outerDot.style.display = 'none';
+      } else {
+        if (outerDot) outerDot.style.display = 'block';
+      }
+    } else {
+      if (outerDot) outerDot.style.display = 'none';
+      if (innerDot) innerDot.style.display = 'none';
+    }
+  } catch (err) {
+    console.error('Error checking changelog notifications:', err);
+  }
+}
+
+async function openChangelogModal() {
+  const outerDot = document.getElementById('profile-red-dot');
+  const innerDot = document.getElementById('changelog-btn-red-dot');
+  if (outerDot) outerDot.style.display = 'none';
+  if (innerDot) innerDot.style.display = 'none';
+  
+  if (latestChangelogDate) {
+    localStorage.setItem('dismissedOuterChangelogDot', latestChangelogDate);
+  }
+  
+  openModal('modal-changelog');
+  renderChangelogList(allChangelogsList);
+  
+  try {
+    const res = await apiFetch(`${window.API}/api/auth/changelog/view`, {
+      method: 'POST'
+    });
+    if (res.lastViewedChangelogAt && window.localDb) {
+      const cached = await window.localDb.userProfile.get(window.userId) || {};
+      cached.lastViewedChangelogAt = res.lastViewedChangelogAt;
+      await window.localDb.userProfile.put(cached);
+    }
+  } catch (err) {
+    console.error('Error marking changelog as viewed:', err);
+  }
+}
+
+function renderChangelogList(changelogs) {
+  const container = document.getElementById('changelog-modal-body');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  if (changelogs.length === 0) {
+    container.innerHTML = '<p style="text-align:center; padding:20px; font-weight:800; color:#666;">No updates available yet.</p>';
+    return;
+  }
+  
+  changelogs.forEach(item => {
+    const itemEl = document.createElement('div');
+    itemEl.className = `changelog-item ${item.type}`;
+    
+    const dateStr = new Date(item.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const badgeText = item.type === 'major' ? 'MAJOR UPDATE' : 'UPDATE';
+    const badgeClass = `changelog-badge ${item.type}`;
+    
+    itemEl.innerHTML = `
+      <div class="changelog-meta">
+        <span class="${badgeClass}">${badgeText}</span>
+        <span class="changelog-date">${dateStr}</span>
+      </div>
+      <div class="changelog-message">${window.escapeHTML(item.message)}</div>
+    `;
+    container.appendChild(itemEl);
+  });
+}
+
 window.openReportIssueModal = openReportIssueModal;
 window.updateReportCharCount = updateReportCharCount;
 window.submitUserIssueReport = submitUserIssueReport;
 
 window.toggleProfileCollapse = toggleProfileCollapse;
 window.loadProfileLimitsInline = loadProfileLimitsInline;
+
+window.checkChangelogNotifications = checkChangelogNotifications;
+window.openChangelogModal = openChangelogModal;
 
 console.log("[Module] profile.js loaded and Profile bound to window");

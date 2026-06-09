@@ -2778,6 +2778,10 @@ async function proactiveSync(force = false) {
       await cacheProfileImagesOffline(profile);
       await localDb.userProfile.put(profile);
       
+      if (typeof window.checkChangelogNotifications === 'function') {
+        window.checkChangelogNotifications(profile);
+      }
+      
       // Initialize FCM real-time chat push notifications
       initPushNotifications();
 

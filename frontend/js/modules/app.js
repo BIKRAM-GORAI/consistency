@@ -544,6 +544,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const days = await window.localDb.days.toArray();
         if (cachedProfile) {
           syncDeviceReminders(days, cachedProfile);
+          if (typeof window.checkChangelogNotifications === 'function') {
+            window.checkChangelogNotifications(cachedProfile);
+          }
         }
       }
     } catch (err) {

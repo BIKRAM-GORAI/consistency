@@ -198,6 +198,10 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
     }],
+    lastViewedChangelogAt: {
+      type: Date,
+      default: null,
+    },
     // AI Productivity Insights Bio (Public/Shared)
     productivityBio: {
       type: String,

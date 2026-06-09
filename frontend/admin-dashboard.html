@@ -773,6 +773,7 @@
         <button class="nav-link" id="nav-payments" onclick="showSection('payments')">Payments</button>
         <button class="nav-link" id="nav-refunds" onclick="showSection('refunds')">💸 Refunds</button>
         <button class="nav-link" id="nav-reports" onclick="showSection('reports')">🐞 Reports</button>
+        <button class="nav-link" id="nav-changelogs" onclick="showSection('changelogs')">🚀 Changelogs</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -1019,7 +1020,36 @@
       </div>
     </div>
 
+    <!-- Feature Changelogs Section -->
+    <div id="section-changelogs" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>🚀 Feature Changelogs</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Announce new major/minor features and manage app updates history.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-control" style="background: var(--blue); color: white;" onclick="openAddChangelogModal()"><i data-lucide="plus"></i> Add Changelog</button>
+          <button class="btn-control" onclick="loadChangelogs()" style="background: var(--black); color: var(--white);">↻ Refresh</button>
+        </div>
+      </div>
 
+      <!-- Changelogs Table -->
+      <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+          <thead style="background: #f0f0f0; border-bottom: var(--border);">
+            <tr>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; width: 180px;">Date & Time</th>
+              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase; width: 120px;">Type</th>
+              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Message</th>
+              <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase; width: 200px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="changelogs-table-body">
+            <tr><td colspan="4" style="text-align:center; padding:20px; font-weight:800; color:#666;">Loading changelogs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
   </div>
 
@@ -1162,6 +1192,39 @@
   <script>
     lucide.createIcons();
   </script>
+  <!-- Changelog Modal -->
+  <div id="changelog-modal" class="modal-overlay">
+    <div class="modal">
+      <h3 id="changelog-modal-title">Add Feature Changelog</h3>
+      <form id="changelog-form">
+        <input type="hidden" id="changelog-id">
+        
+        <div class="form-group">
+          <label>Changelog Message</label>
+          <textarea id="changelog-message" rows="4" required placeholder="Describe the new feature rolled out..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Changelog Type</label>
+          <select id="changelog-type" class="btn-control" style="width: 100%; background: white; border: var(--border);" required>
+            <option value="minor">Minor Feature</option>
+            <option value="major">Major Feature</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date &amp; Time (Local Time)</label>
+          <input type="datetime-local" id="changelog-date" required>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn-save" id="btn-save-changelog">Save Changelog</button>
+          <button type="button" class="btn-cancel" onclick="closeChangelogModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Image Preview Modal -->
   <div id="image-modal" onclick="this.style.display='none'">
     <img id="modal-img" src="" alt="Full size preview">

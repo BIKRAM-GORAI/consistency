@@ -363,6 +363,7 @@
         <div style="position: relative; width: 32px; height: 32px;">
           <span class="user-chip-avatar" id="user-chip-avatar" style="position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">?</span>
           <img class="user-chip-img" id="user-chip-img" src="" alt="Profile" style="position:absolute; display:none; width:100%; height:100%; border-radius:50%; object-fit:cover; z-index:1;" />
+          <div id="profile-red-dot" class="profile-red-dot" style="display: none;"></div>
         </div>
         <span class="user-chip-name" id="user-chip-name">User</span>
       </div>
@@ -1626,6 +1627,14 @@
           </button>
         </div>
 
+        <!-- FEATURE CHANGELOG BUTTON -->
+        <div style="margin-bottom: 20px; position: relative;">
+          <button class="btn-primary ripple" id="btn-feature-changelog" style="width: 100%; justify-content: center; background: #3b82f6; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: #fff; position: relative;" onclick="openChangelogModal()">
+            <span><i data-lucide="megaphone"></i> Feature Changelog</span>
+            <div id="changelog-btn-red-dot" class="changelog-btn-red-dot" style="display: none;"></div>
+          </button>
+        </div>
+
         <!-- 3. LEETCODE INTEGRATION (Always Shown) -->
         <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="target"></i> LeetCode Integration</h3>
@@ -2637,6 +2646,22 @@
       <div class="modal-footer" style="border-top: 2px solid var(--black); padding: 12px 16px;">
         <button class="btn-ghost ripple" onclick="closeModal('modal-daily-reminder')">Cancel</button>
         <button class="btn-primary ripple" id="btn-save-reminder" style="background: var(--teal); border-color: var(--black); color: var(--black); font-weight: 800;" onclick="saveDailyReminderSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Feature Changelog ===== -->
+  <div class="modal-overlay" id="modal-changelog" onclick="closeModalOnOverlay(event, 'modal-changelog')">
+    <div class="modal modal-wide" style="max-width: 550px;">
+      <div class="modal-header" style="background: var(--blue); color: #fff;">
+        <h2 style="color: #fff;"><i data-lucide="megaphone" class="no-theme"></i> Feature Changelog</h2>
+        <button class="modal-close" onclick="closeModal('modal-changelog')" style="color:#fff; background:transparent; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="changelog-modal-body" style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; max-height: 70dvh;">
+        <!-- Changelog items will be dynamically loaded here -->
+      </div>
+      <div class="modal-footer" style="padding: 12px 16px; border-top: var(--border-2); justify-content: flex-end; display: flex;">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-changelog')">Close</button>
       </div>
     </div>
   </div>

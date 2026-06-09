@@ -6,6 +6,7 @@ const Goal = require('../models/Goal');
 const Achievement = require('../models/Achievement');
 const Group = require('../models/Group');
 const Badge = require('../models/Badge');
+const Changelog = require('../models/Changelog');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
@@ -1373,6 +1374,56 @@ module.exports = {
     } catch (err) {
       console.error('[ADMIN ERROR] deleteReport:', err);
       res.status(500).json({ message: 'Server error deleting report.', error: err.message });
+    }
+  },
+  getAdminChangelogs: async (req, res) => {
+    try {
+      const changelogs = await Changelog.find().sort({ createdAt: -1 });
+      res.json(changelogs);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error fetching changelogs.', error: err.message });
+    }
+  },
+  createAdminChangelog: async (req, res) => {
+    try {
+      const { message, type, createdAt } = req.body;
+      if (!message || !type) {
+        return res.status(400).json({ message: 'Message and type are required.' });
+      }
+      const newChangelog = new Changelog({
+        message,
+        type,
+        createdAt: createdAt || new Date()
+      });
+      await newChangelog.save();
+      res.status(201).json(newChangelog);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error creating changelog.', error: err.message });
+    }
+  },
+  updateAdminChangelog: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { message, type, createdAt } = req.body;
+      const updated = await Changelog.findByIdAndUpdate(
+        id,
+        { message, type, createdAt: createdAt || new Date() },
+        { new: true }
+      );
+      if (!updated) return res.status(404).json({ message: 'Changelog not found.' });
+      res.json(updated);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error updating changelog.', error: err.message });
+    }
+  },
+  deleteAdminChangelog: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await Changelog.findByIdAndDelete(id);
+      if (!deleted) return res.status(404).json({ message: 'Changelog not found.' });
+      res.json({ message: 'Changelog deleted successfully.' });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error deleting changelog.', error: err.message });
     }
   }
 };

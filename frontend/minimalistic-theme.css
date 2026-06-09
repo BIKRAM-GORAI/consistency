@@ -787,3 +787,28 @@
   border-color: #cbd5e1 !important;
   border-radius: 4px !important;
 }
+
+/* ── Changelog Overrides ── */
+[data-theme="minimalistic"] .changelog-item {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff !important;
+  border-radius: 10px !important;
+}
+
+[data-theme="minimalistic"] .changelog-item.major {
+  border-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.02) !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.05) !important;
+}
+
+[data-theme="minimalistic"] .changelog-badge {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+}
+
+[data-theme="minimalistic"] .changelog-badge.major {
+  border-color: #3b82f6 !important;
+  background: #3b82f6 !important;
+}
+
