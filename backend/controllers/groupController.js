@@ -3,6 +3,8 @@ const User  = require('../models/User');
 const Day   = require('../models/Day');
 const { cloudinary } = require('../config/cloudinary');
 const { sendEmail } = require('../utils/email');
+const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -33,9 +35,13 @@ async function makeUniqueCode() {
  * Body: { name }
  * Creates a new group for the authenticated user. Each user may only own one group.
  */
-const createGroup = async (req, res) => {
+/**
+ * POST /api/groups/moderate
+ * Body: { name, isPublic, description, icon }
+ * Moderates the group details via AI service and returns safety details.
+ */
+const moderateGroup = async (req, res) => {
   try {
-    // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
     const { name, isPublic, description, icon } = req.body;
 
@@ -43,6 +49,153 @@ const createGroup = async (req, res) => {
       return res.status(400).json({ message: 'name is required.' });
     }
 
+    if (!icon || !icon.startsWith('data:image')) {
+      return res.status(400).json({ message: 'A group icon is mandatory.' });
+    }
+
+    // 1. Fetch user for daily limits check
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Reset daily count if day has changed
+    const now = new Date();
+    const lastReset = user.dailyGroupCreationsResetTime ? new Date(user.dailyGroupCreationsResetTime) : new Date(0);
+    if (now.toDateString() !== lastReset.toDateString()) {
+      user.dailyGroupCreationsCount = 0;
+      user.dailyGroupCreationsResetTime = now;
+      await user.save();
+    }
+
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+    const limit = isPremium
+      ? (parseInt(process.env.PREMIUM_DAILY_GROUP_LIMIT, 10) || 10)
+      : (parseInt(process.env.FREE_DAILY_GROUP_LIMIT, 10) || 5);
+
+    if (user.dailyGroupCreationsCount >= limit) {
+      return res.status(429).json({
+        message: `Daily group creation limit reached. You can create up to ${limit} groups per day.`
+      });
+    }
+
+    // 2. Call stand-alone AI Service to moderate group details
+    let safetyStatus = 'unknown';
+    let apiSuccess = false;
+    let score = undefined;
+    let reason = 'AI service error';
+
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const jwtSecret = process.env.JWT_SECRET;
+    
+    if (!jwtSecret) {
+      console.error('[groupController] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId, action: 'moderate-group-creation' },
+      jwtSecret,
+      { expiresIn: '5m' }
+    );
+
+    try {
+      const aiResponse = await axios.post(`${aiServiceUrl}/api/ai/moderate-group`, {
+        name,
+        description,
+        icon
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 20000
+      });
+
+      apiSuccess = true;
+      score = aiResponse.data.score;
+      reason = aiResponse.data.reason;
+
+      if (score !== undefined) {
+        if (score < 5) {
+          safetyStatus = 'rejected';
+        } else if (score < 8) {
+          safetyStatus = 'warning';
+        } else {
+          safetyStatus = 'safe';
+        }
+      }
+    } catch (aiErr) {
+      console.error('[groupController] AI group moderation failed:', aiErr.message);
+    }
+
+    if (apiSuccess) {
+      user.dailyGroupCreationsCount += 1;
+      await user.save();
+    }
+
+    if (safetyStatus === 'rejected') {
+      return res.json({
+        score,
+        reason,
+        safetyStatus,
+        dailyGroupCreationsCount: user.dailyGroupCreationsCount,
+        dailyGroupCreationsLimit: limit
+      });
+    }
+
+    // If safe, warning or unknown, generate creationToken
+    const creationToken = jwt.sign(
+      { userId, name, isPublic: !!isPublic, description: description || '', icon, safetyStatus },
+      jwtSecret,
+      { expiresIn: '15m' }
+    );
+
+    return res.json({
+      score,
+      reason,
+      safetyStatus,
+      creationToken,
+      dailyGroupCreationsCount: user.dailyGroupCreationsCount,
+      dailyGroupCreationsLimit: limit
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * POST /api/groups/create
+ * Body: { creationToken }
+ * Verifies the token and actually creates the group.
+ */
+const createGroup = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { creationToken } = req.body;
+
+    if (!creationToken) {
+      return res.status(400).json({ message: 'creationToken is required.' });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    let decoded;
+    try {
+      decoded = jwt.verify(creationToken, jwtSecret);
+    } catch (tokenErr) {
+      return res.status(400).json({ message: 'Invalid or expired group creation session. Please analyze again.' });
+    }
+
+    if (String(decoded.userId) !== String(userId)) {
+      return res.status(403).json({ message: 'Unauthorized session ownership.' });
+    }
+
+    const { name, isPublic, description, icon, safetyStatus } = decoded;
+
+    // Check ownership limits
     const publicLimit = parseInt(process.env.PUBLIC_GROUP_LIMIT) || 10;
     const privateLimit = parseInt(process.env.PRIVATE_GROUP_LIMIT) || 10;
 
@@ -58,14 +211,10 @@ const createGroup = async (req, res) => {
       }
     }
 
-    if (!icon || !icon.startsWith('data:image')) {
-      return res.status(400).json({ message: 'A group icon is mandatory.' });
-    }
-
     let iconUrl = '';
     let iconId = '';
 
-    // If icon is a base64 string, upload it
+    // Upload icon to Cloudinary
     if (icon && icon.startsWith('data:image')) {
       const result = await cloudinary.uploader.upload(icon, {
         folder: 'consistency_app_groups',
@@ -80,10 +229,11 @@ const createGroup = async (req, res) => {
       code,
       owner: userId,
       members: [userId],
-      isPublic: !!isPublic,
-      description: description || '',
+      isPublic,
+      description,
       icon: iconUrl,
       iconId: iconId,
+      safetyStatus
     });
 
     const saved = await group.save();
@@ -197,7 +347,7 @@ const publicGroups = async (req, res) => {
       isPublic: true,
       members: { $ne: userId }
     })
-    .select('name description isPublic icon members requests owner createdAt ownerBlacklistedAt') 
+    .select('name description isPublic icon members requests owner createdAt ownerBlacklistedAt safetyStatus') 
     .populate('owner', 'name username profilePicture isBlacklisted blacklistReason')
     .sort({ createdAt: -1 });
 
@@ -698,6 +848,39 @@ const getGroupMeeting = async (req, res) => {
   }
 };
 
+const getCreationLimits = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Reset daily count if day has changed
+    const now = new Date();
+    const lastReset = user.dailyGroupCreationsResetTime ? new Date(user.dailyGroupCreationsResetTime) : new Date(0);
+    if (now.toDateString() !== lastReset.toDateString()) {
+      user.dailyGroupCreationsCount = 0;
+      user.dailyGroupCreationsResetTime = now;
+      await user.save();
+    }
+
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+    const limit = isPremium
+      ? (parseInt(process.env.PREMIUM_DAILY_GROUP_LIMIT, 10) || 10)
+      : (parseInt(process.env.FREE_DAILY_GROUP_LIMIT, 10) || 5);
+
+    res.json({
+      dailyGroupCreationsCount: user.dailyGroupCreationsCount,
+      dailyGroupCreationsLimit: limit
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 module.exports = { 
   createGroup, 
   joinGroup, 
@@ -713,5 +896,7 @@ module.exports = {
   deleteGroup, 
   removeMember,
   uploadGroupIcon,
-  getGroupMeeting
+  getGroupMeeting,
+  getCreationLimits,
+  moderateGroup
 };

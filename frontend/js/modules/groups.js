@@ -48,9 +48,13 @@ async function loadGroups() {
   }
 
   try {
-    const [joined, publicGroupsList] = await Promise.all([
+    const [joined, publicGroupsList, limits] = await Promise.all([
       apiFetch(`${window.API}/api/groups/mine`),
-      apiFetch(`${window.API}/api/groups/public`)
+      apiFetch(`${window.API}/api/groups/public`),
+      apiFetch(`${window.API}/api/groups/creation-limits`).catch(err => {
+        console.warn('Failed to load group creation limits:', err);
+        return null;
+      })
     ]);
     
     if (joined && publicGroupsList) {
@@ -73,6 +77,7 @@ async function loadGroups() {
       const validGroups = (allJoinedGroups || []).filter(g => g && typeof g === 'object' && g._id);
       await localDb.groups.bulkPut(validGroups);
 
+      updateGroupQuotaUI(limits);
       renderGroups();
     }
   } catch (err) {
@@ -172,6 +177,23 @@ function renderGroups() {
         `;
       }
 
+      let safetyBannerHtml = '';
+      if (group.safetyStatus === 'warning') {
+        safetyBannerHtml = `
+          <div class="group-safety-banner warning" style="background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #991b1b; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 2px 2px 0 #ef4444; text-align: left;">
+            <span style="font-size: 16px; flex-shrink: 0;">⚠️</span>
+            <span>This group may be dangerous or promote explicit activities; join at your own risk.</span>
+          </div>
+        `;
+      } else if (group.safetyStatus === 'safe') {
+        safetyBannerHtml = `
+          <div class="group-safety-banner safe" style="background: #dcfce7; border: 2px solid #22c55e; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #166534; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 2px 2px 0 #22c55e; text-align: left;">
+            <span style="font-size: 16px; flex-shrink: 0;">🛡️</span>
+            <span>AI verified: This group seems safe (verify on your own).</span>
+          </div>
+        `;
+      }
+
       html += `
         <div class="group-card public-discovery-card" style="border-color: var(--green); box-shadow: 4px 4px 0 rgba(34, 197, 150, 0.15);">
           <div class="group-card-top">
@@ -183,6 +205,7 @@ function renderGroups() {
           </div>
           ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
           
+          ${safetyBannerHtml}
           ${warningHtml}
 
           <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.memberCount || 0} members</p>
@@ -327,6 +350,23 @@ function renderSingleGroupCard(group, emoji) {
     `;
   }
 
+  let safetyBannerHtml = '';
+  if (group.safetyStatus === 'warning') {
+    safetyBannerHtml = `
+      <div class="group-safety-banner warning" style="background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #991b1b; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 2px 2px 0 #ef4444; text-align: left;">
+        <span style="font-size: 16px; flex-shrink: 0;">⚠️</span>
+        <span>This group may be dangerous or promote explicit activities; join at your own risk.</span>
+      </div>
+    `;
+  } else if (group.safetyStatus === 'safe') {
+    safetyBannerHtml = `
+      <div class="group-safety-banner safe" style="background: #dcfce7; border: 2px solid #22c55e; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #166534; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 2px 2px 0 #22c55e; text-align: left;">
+        <span style="font-size: 16px; flex-shrink: 0;">🛡️</span>
+        <span>AI verified: This group seems safe (verify on your own).</span>
+      </div>
+    `;
+  }
+
   return `
     <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}">
       <div class="group-card-top">
@@ -372,6 +412,7 @@ function renderSingleGroupCard(group, emoji) {
       </div>
       ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
       
+      ${safetyBannerHtml}
       ${warningHtml}
 
       <!-- Core Chat & Mute Actions -->
@@ -697,7 +738,6 @@ async function submitCreateGroup() {
   const name = document.getElementById('group-name-input').value.trim();
   const description = document.getElementById('group-desc-input').value.trim();
   const isPublic = document.getElementById('group-is-public-hidden').value === 'true';
-
   const icon = document.getElementById('group-icon-url').value;
 
   if (name.length < 3 || name.length > 25) {
@@ -710,26 +750,143 @@ async function submitCreateGroup() {
     return;
   }
 
-  const btn = document.getElementById('submit-create-group-btn');
-  const originalText = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Creating...';
+  // Close creation modal, clear/setup and open analysis modal
+  closeModal('modal-create-group');
+  
+  // Set group preview details
+  document.getElementById('analysis-icon-img').src = icon;
+  document.getElementById('analysis-group-name').textContent = name;
+  document.getElementById('analysis-group-desc').textContent = description || 'No description provided.';
+  
+  // Reset Analysis UI
+  document.getElementById('analysis-loading-area').style.display = 'block';
+  document.getElementById('analysis-result-area').style.display = 'none';
+  document.getElementById('analysis-finalize-btn').style.display = 'none';
+  document.getElementById('analysis-quota-limit').textContent = 'Quota status: Checking...';
+
+  openModal('modal-group-analysis');
+
+  // Keep a reference to the pending group metadata
+  window._pendingGroupCreation = { name, isPublic, description, icon, token: null };
+
+  try {
+    const res = await apiFetch(`${window.API}/api/groups/moderate`, {
+      method: 'POST',
+      body: JSON.stringify({ name, isPublic, description, icon })
+    });
+
+    // Update dynamic quota indicators
+    if (res.dailyGroupCreationsCount !== undefined) {
+      const quotaLimits = {
+        dailyGroupCreationsCount: res.dailyGroupCreationsCount,
+        dailyGroupCreationsLimit: res.dailyGroupCreationsLimit
+      };
+      updateGroupQuotaUI(quotaLimits);
+      document.getElementById('analysis-quota-limit').textContent = `Daily Creations: ${res.dailyGroupCreationsCount} / ${res.dailyGroupCreationsLimit} used`;
+    }
+
+    document.getElementById('analysis-loading-area').style.display = 'none';
+    const resultArea = document.getElementById('analysis-result-area');
+    resultArea.style.display = 'block';
+
+    const statusBox = document.getElementById('analysis-status-box');
+    const statusIcon = document.getElementById('analysis-status-icon');
+    const statusTitle = document.getElementById('analysis-status-title');
+    const statusReason = document.getElementById('analysis-status-reason');
+    const finalizeBtn = document.getElementById('analysis-finalize-btn');
+
+    if (res.safetyStatus === 'rejected') {
+      // Style status box for rejection (Neo-brutalist red alert)
+      statusBox.style.background = '#fee2e2';
+      statusBox.style.borderColor = '#ef4444';
+      statusBox.style.color = '#991b1b';
+      statusBox.style.boxShadow = '4px 4px 0 #ef4444';
+      
+      statusIcon.textContent = '❌';
+      statusTitle.textContent = 'Group Creation Blocked';
+      statusReason.textContent = res.reason || 'Group name, description, or icon violated safety moderation rules.';
+      
+      finalizeBtn.style.display = 'none';
+      showToast('Group creation blocked by AI safety moderation.', 'error');
+    } else {
+      // Style status box for approval (Neo-brutalist green/yellow approval)
+      const isWarn = res.safetyStatus === 'warning';
+      statusBox.style.background = isWarn ? '#fef3c7' : '#dcfce7';
+      statusBox.style.borderColor = isWarn ? '#f59e0b' : '#22c55e';
+      statusBox.style.color = isWarn ? '#92400e' : '#166534';
+      statusBox.style.boxShadow = isWarn ? '4px 4px 0 #f59e0b' : '4px 4px 0 #22c55e';
+      
+      statusIcon.textContent = isWarn ? '⚠️' : '🛡️';
+      statusTitle.textContent = isWarn ? 'Moderation Warning' : 'AI Safety Approved';
+      statusReason.textContent = isWarn
+        ? 'Warning: This group content was flagged as borderline/moderate safety concern. You can still create it, but users will see a warning banner.'
+        : 'AI verified: This group content meets all safety compliance standards.';
+
+      // Save token in memory
+      window._pendingGroupCreation.token = res.creationToken;
+      
+      finalizeBtn.style.display = 'inline-block';
+      finalizeBtn.disabled = false;
+      finalizeBtn.textContent = 'Finalize & Create';
+    }
+  } catch (err) {
+    document.getElementById('analysis-loading-area').style.display = 'none';
+    const resultArea = document.getElementById('analysis-result-area');
+    resultArea.style.display = 'block';
+
+    const statusBox = document.getElementById('analysis-status-box');
+    const statusIcon = document.getElementById('analysis-status-icon');
+    const statusTitle = document.getElementById('analysis-status-title');
+    const statusReason = document.getElementById('analysis-status-reason');
+
+    statusBox.style.background = '#fee2e2';
+    statusBox.style.borderColor = '#ef4444';
+    statusBox.style.color = '#991b1b';
+    statusBox.style.boxShadow = '4px 4px 0 #ef4444';
+
+    statusIcon.textContent = '⚠️';
+    statusTitle.textContent = 'Moderation Check Failed';
+    statusReason.textContent = err.message || 'Server error during moderation check.';
+    
+    document.getElementById('analysis-finalize-btn').style.display = 'none';
+  }
+}
+
+async function finalizeGroupCreation() {
+  const pending = window._pendingGroupCreation;
+  if (!pending || !pending.token) {
+    showToast('No valid group session found. Please recheck moderation.', 'error');
+    return;
+  }
+
+  const finalizeBtn = document.getElementById('analysis-finalize-btn');
+  const cancelBtn = document.getElementById('analysis-cancel-btn');
+  const originalText = finalizeBtn.textContent;
+
+  finalizeBtn.disabled = true; finalizeBtn.textContent = 'Creating...';
+  cancelBtn.disabled = true;
 
   try {
     const group = await apiFetch(`${window.API}/api/groups/create`, {
       method: 'POST',
-      body: JSON.stringify({ userId: window.userId, name, isPublic, description, icon }),
+      body: JSON.stringify({ creationToken: pending.token })
     });
-    closeModal('modal-create-group');
-    if (isPublic) {
+
+    closeModal('modal-group-analysis');
+    
+    if (group.isPublic) {
       showToast(`Public Group "${group.name}" created!`, 'success');
     } else {
       showToast(`Team "${group.name}" created! Code: ${group.code}`, 'success');
     }
+    
+    // Reset in-memory reference
+    window._pendingGroupCreation = null;
     loadGroups(); // refresh
   } catch (err) {
     showToast(err.message, 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = originalText;
+    finalizeBtn.disabled = false; finalizeBtn.textContent = originalText;
+    cancelBtn.disabled = false;
   }
 }
 
@@ -1254,6 +1411,56 @@ function forceCloseModal(id) {
 
 // [PWA, Native Update, Feedback, Share, Leaderboard extracted to app.js]
 
+// ── Quota limit display helper ────────────────────────────
+function updateGroupQuotaUI(limits) {
+  const badge = document.getElementById('group-quota-badge');
+  const btnPrivate = document.getElementById('btn-create-private-team');
+  const btnPublic = document.getElementById('btn-create-public-group');
+  
+  if (!badge) return;
+
+  if (!limits) {
+    badge.style.display = 'none';
+    if (btnPrivate) { btnPrivate.disabled = false; btnPrivate.title = ''; btnPrivate.style.removeProperty('opacity'); btnPrivate.style.removeProperty('cursor'); }
+    if (btnPublic) { btnPublic.disabled = false; btnPublic.title = ''; btnPublic.style.removeProperty('opacity'); btnPublic.style.removeProperty('cursor'); }
+    return;
+  }
+
+  const current = limits.dailyGroupCreationsCount || 0;
+  const limit = limits.dailyGroupCreationsLimit || 5;
+
+  badge.textContent = `Creations Today: ${current} / ${limit}`;
+  badge.style.display = 'inline-block';
+
+  if (current >= limit) {
+    if (btnPrivate) {
+      btnPrivate.disabled = true;
+      btnPrivate.title = 'Daily group creation limit reached';
+      btnPrivate.style.opacity = '0.5';
+      btnPrivate.style.cursor = 'not-allowed';
+    }
+    if (btnPublic) {
+      btnPublic.disabled = true;
+      btnPublic.title = 'Daily group creation limit reached';
+      btnPublic.style.opacity = '0.5';
+      btnPublic.style.cursor = 'not-allowed';
+    }
+  } else {
+    if (btnPrivate) {
+      btnPrivate.disabled = false;
+      btnPrivate.title = '';
+      btnPrivate.style.removeProperty('opacity');
+      btnPrivate.style.removeProperty('cursor');
+    }
+    if (btnPublic) {
+      btnPublic.disabled = false;
+      btnPublic.title = '';
+      btnPublic.style.removeProperty('opacity');
+      btnPublic.style.removeProperty('cursor');
+    }
+  }
+}
+
 // ── Groups Module Bindings ───────────────────────────────
 window.openModal = openModal;
 window.closeModal = closeModal;
@@ -1286,4 +1493,6 @@ window.openMemberTasks = openMemberTasks;
 window.loadMemberDays = loadMemberDays;
 window.loadMoreMemberDays = loadMoreMemberDays;
 window.openMemberAllAchievements = openMemberAllAchievements;
+window.updateGroupQuotaUI = updateGroupQuotaUI;
+window.finalizeGroupCreation = finalizeGroupCreation;
 console.log("[Module] groups.js loaded and Groups functions bound to window");

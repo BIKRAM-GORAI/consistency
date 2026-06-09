@@ -445,13 +445,16 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Groups</h1>
-        <p class="page-subtitle">Collaborate with friends or join public communities</p>
+        <p class="page-subtitle">
+          Collaborate with friends or join public communities
+          <span id="group-quota-badge" style="display:none; margin-left: 8px; padding: 4px 10px; background: var(--yellow); border: 2px solid var(--black); border-radius: 8px; font-weight: 800; font-size: 12px; text-transform: uppercase; color: var(--black); box-shadow: 2px 2px 0 var(--black); font-family: 'Space Grotesk', sans-serif;"></span>
+        </p>
       </div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <button class="btn-primary ripple" onclick="openCreateGroupModal(false)" style="background:var(--purple); border-color:var(--black);">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items: center;">
+        <button id="btn-create-private-team" class="btn-primary ripple" onclick="openCreateGroupModal(false)" style="background:var(--purple); border-color:var(--black);">
           <span><i data-lucide="lock"></i></span> Private Team
         </button>
-        <button class="btn-primary ripple" onclick="openCreateGroupModal(true)" style="background:var(--green); border-color:var(--black); box-shadow: 2px 2px 0 var(--black);">
+        <button id="btn-create-public-group" class="btn-primary ripple" onclick="openCreateGroupModal(true)" style="background:var(--green); border-color:var(--black); box-shadow: 2px 2px 0 var(--black);">
           <span><i data-lucide="globe"></i></span> Public Group
         </button>
       </div>
@@ -1202,6 +1205,51 @@
       <div class="modal-footer">
         <button class="btn-ghost ripple" onclick="closeModal('modal-create-group')">Cancel</button>
         <button class="btn-primary ripple" onclick="submitCreateGroup()" id="submit-create-group-btn">Create Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Group Creation AI Analysis & Report ===== -->
+  <div class="modal-overlay" id="modal-group-analysis" onclick="closeModalOnOverlay(event, 'modal-group-analysis')">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2><i data-lucide="shield-alert"></i> AI Safety Moderation</h2>
+        <button class="modal-close" onclick="closeModal('modal-group-analysis')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        
+        <!-- Group Details Preview -->
+        <div style="display: flex; flex-direction: column; align-items: center; background: var(--bg-muted); border: 2px solid var(--black); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 4px 4px 0 var(--black);">
+          <img id="analysis-icon-img" src="" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--black); object-fit: cover; box-shadow: 2px 2px 0 var(--black);" />
+          <h3 id="analysis-group-name" style="margin: 12px 0 4px 0; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 900; color: var(--text);"></h3>
+          <p id="analysis-group-desc" style="margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 600; line-height: 1.4; max-width: 100%; word-break: break-word;"></p>
+        </div>
+
+        <!-- Dynamic Quota Limit Indicator -->
+        <p id="analysis-quota-limit" style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px;"></p>
+
+        <!-- Loading state -->
+        <div id="analysis-loading-area" style="padding: 20px 0;">
+          <div class="loading-spinner" style="margin: 0 auto 16px;"><div class="spinner-ring"></div></div>
+          <p style="font-weight: 700; font-size: 15px; color: var(--text);">AI is analyzing the contents...</p>
+          <p style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 4px;">Evaluating icon, name, and description safety compliance.</p>
+        </div>
+
+        <!-- Report Results state (hidden by default) -->
+        <div id="analysis-result-area" style="display: none;">
+          <div id="analysis-status-box" style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 4px 4px 0 var(--black); text-align: left;">
+            <div style="display: flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 16px; margin-bottom: 8px;">
+              <span id="analysis-status-icon" style="font-size: 20px;"></span>
+              <span id="analysis-status-title"></span>
+            </div>
+            <p id="analysis-status-reason" style="margin: 0; font-size: 13px; line-height: 1.5; font-weight: 600; word-break: break-word;"></p>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="justify-content: center; gap: 12px; display: flex;">
+        <button id="analysis-cancel-btn" class="btn-ghost ripple" style="margin: 0;" onclick="closeModal('modal-group-analysis')">Cancel</button>
+        <button id="analysis-finalize-btn" class="btn-primary ripple" style="margin: 0; display: none;" onclick="finalizeGroupCreation()">Finalize & Create</button>
       </div>
     </div>
   </div>

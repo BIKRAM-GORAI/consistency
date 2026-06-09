@@ -38,8 +38,11 @@ const cleanupExpiredGroups = async (req, res, next) => {
 
 router.use(cleanupExpiredGroups);
 
-// Create a new group (only one allowed per user as owner)
-router.post('/create', authenticateToken, createGroupValidation, ctrl.createGroup);
+// Create a new group using a verified creation token
+router.post('/create', authenticateToken, ctrl.createGroup);
+
+// Moderate group details (name, description, icon) before creation
+router.post('/moderate', authenticateToken, createGroupValidation, ctrl.moderateGroup);
 
 // Upload group icon
 router.post('/upload-icon', authenticateToken, uploadGroup.single('image'), ctrl.uploadGroupIcon);
@@ -52,6 +55,9 @@ router.get('/mine', authenticateToken, ctrl.myGroups);
 
 // Get all public groups the user is NOT a member of
 router.get('/public', authenticateToken, ctrl.publicGroups);
+
+// Get daily creations limit metadata
+router.get('/creation-limits', authenticateToken, ctrl.getCreationLimits);
 
 // Join a public group (creates a join request)
 router.post('/:groupId/join-public', authenticateToken, joinPublicGroupValidation, ctrl.joinPublicGroup);

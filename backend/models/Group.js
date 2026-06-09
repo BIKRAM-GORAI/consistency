@@ -60,6 +60,11 @@ const GroupSchema = new mongoose.Schema(
     ownerBlacklistedAt: {
       type: Date,
       default: null
+    },
+    safetyStatus: {
+      type: String,
+      enum: ['safe', 'warning', 'unknown'],
+      default: 'unknown'
     }
   },
   { timestamps: true }

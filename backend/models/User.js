@@ -268,6 +268,15 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Daily Group Creations limits tracking
+    dailyGroupCreationsCount: {
+      type: Number,
+      default: 0,
+    },
+    dailyGroupCreationsResetTime: {
+      type: Date,
+      default: Date.now,
+    },
     graceCount: {
       type: Number,
       default: 0,

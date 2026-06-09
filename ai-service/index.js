@@ -611,6 +611,138 @@ app.post('/api/ai/generate-canvas-flow', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/ai/moderate-group
+ * Verifies JWT signature token and uses Gemini to analyze the icon (image), name, and description.
+ */
+app.post('/api/ai/moderate-group', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[AI-Service] JWT_SECRET is not set in environment.');
+      return res.status(500).json({ error: 'Internal Server Error: Shared secret missing.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (verifyError) {
+      console.warn(`[AI-Service] JWT Verification failed: ${verifyError.message}`);
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+    }
+
+    if (decoded.action !== 'moderate-group-creation') {
+      return res.status(403).json({ error: 'Forbidden: Invalid action for this token' });
+    }
+
+    const { name, description, icon } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Bad Request: Group name is required' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+      console.error('[AI-Service] Configuration Error: GEMINI_API_KEY is not set.');
+      return res.status(500).json({ error: 'Internal Server Error: AI provider key missing.' });
+    }
+
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+    console.log(`[AI-Service] [Auth-Token Verified] Querying Gemini for group moderation (key suffix: ...${apiKey.slice(-5)})...`);
+
+    // Parse base64 icon and mime type if present
+    let imageBase64 = '';
+    let mimeType = 'image/png';
+    if (icon) {
+      if (icon.startsWith('data:image')) {
+        const parts = icon.split(';base64,');
+        mimeType = parts[0].replace('data:', '');
+        imageBase64 = parts[1];
+      } else {
+        imageBase64 = icon;
+      }
+    }
+
+    const systemInstruction = 
+      "You are a highly sophisticated and strict content moderation AI. Analyze the group's name, description, and the uploaded icon image.\n" +
+      "You must evaluate if the group name, description, or icon contains or promotes harmful topics, nudity, explicit/adult language, references to sex workers or pornstars, illegal drugs, weapons, hate speech, or dangerous activities.\n" +
+      "Context & Intent Rules:\n" +
+      "1. ALLOW recovery, support, prevention, and purely educational or safety training groups (e.g., drug addiction rehabilitation, historical warfare research, gun safety education, youth prevention campaigns) with high scores (8-10) or moderate warning scores (5-7) IF their intent is clearly helpful, peaceful, and safety-oriented.\n" +
+      "2. DETECT SNEAKY BYPASSES: If a group claims to be 'educational', 'scientific', or a 'discussion study' but its description or name actually describes or hints at trading, selling, distributing, or learning how to manufacture/obtain illegal substances, weapons, serial-number-free parts, adult dating/escort services, or self-harm/suicide instructions, you MUST flag it and score it strictly below 5 (1 to 4).\n" +
+      "3. Scoring Scale:\n" +
+      "   - Safe (8 to 10 out of 10): Content is safe, healthy, or clearly positive support/educational with no harmful intent.\n" +
+      "   - Warning (5 to 7 out of 10): Borderline content, mild themes, or positive groups discussing sensitive topics (e.g., weapon safety instruction, addiction recovery) where a warning label is appropriate but creation is allowed.\n" +
+      "   - Rejected (1 to 4 out of 10): Explicitly harmful, illegal, sexual, abusive, promoting dangerous acts, or attempting to mask illegal trade/distribution under educational terms.\n" +
+      "You MUST output a single valid JSON object following this schema:\n" +
+      "{\n" +
+      "  \"score\": 8,\n" +
+      "  \"reason\": \"Detailed reason for this evaluation score\"\n" +
+      "}\n" +
+      "Rules:\n" +
+      "1. Be extremely careful. If any single field is explicitly unsafe or a sneaky bypass attempt, the overall score must be below 5.\n" +
+      "2. Do not include markdown codeblocks or conversational filler. Output only raw valid JSON.";
+
+    const parts = [
+      { text: systemInstruction },
+      { text: `Group Details to Moderate:\nName: ${name}\nDescription: ${description || '(No description)'}` }
+    ];
+
+    if (imageBase64) {
+      parts.push({
+        inline_data: {
+          mime_type: mimeType,
+          data: imageBase64
+        }
+      });
+    }
+
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: {
+          response_mime_type: 'application/json'
+        }
+      })
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error(`[AI-Service] Gemini API returned status ${geminiResponse.status}:`, errorText);
+      return res.status(geminiResponse.status).json({ error: 'Gemini API error', details: errorText });
+    }
+
+    const data = await geminiResponse.json();
+    const resultText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+
+    if (!resultText) {
+      console.error('[AI-Service] Empty response from Gemini API:', JSON.stringify(data));
+      return res.status(502).json({ error: 'Bad Gateway: Empty response from AI provider' });
+    }
+
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(resultText.trim());
+    } catch (parseError) {
+      console.warn(`[AI-Service] Raw response text is not valid JSON:`, resultText);
+      return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: resultText });
+    }
+
+    res.status(200).json(parsedResult);
+  } catch (error) {
+    console.error('[AI-Service] Execution error in group moderation:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
 // Start listening
 app.listen(PORT, () => {
   console.log(`🤖 Standalone AI Microservice running on port ${PORT}`);
@@ -618,4 +750,5 @@ app.listen(PORT, () => {
   console.log(`👉 Generation endpoint active at POST http://localhost:${PORT}/api/ai/generate`);
   console.log(`👉 JWT Summary generation endpoint active at POST http://localhost:${PORT}/api/ai/generate-summary`);
   console.log(`👉 Voice parsing endpoint active at POST http://localhost:${PORT}/api/ai/voice-to-task`);
+  console.log(`👉 Group moderation endpoint active at POST http://localhost:${PORT}/api/ai/moderate-group`);
 });

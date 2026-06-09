@@ -507,7 +507,8 @@ document.addEventListener('DOMContentLoaded', async () => {
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
        'modal-edit-category', 'modal-edit-goal', 'modal-edit-group',
        'modal-add-achievement', 'modal-edit-achievement',
-       'modal-save-template', 'modal-manage-templates', 'modal-edit-template'].forEach(id => {
+       'modal-save-template', 'modal-manage-templates', 'modal-edit-template',
+       'modal-group-analysis'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.classList.contains('open')) closeModal(id);
       });
