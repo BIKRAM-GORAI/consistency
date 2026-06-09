@@ -2800,6 +2800,10 @@ async function proactiveSync(force = false) {
           document.documentElement.setAttribute('data-theme', 'premium-aurora');
           const themeToggle = document.getElementById('dark-theme-toggle');
           if (themeToggle) themeToggle.checked = false;
+        } else if (profile.theme === 'minimalistic') {
+          document.documentElement.setAttribute('data-theme', 'minimalistic');
+          const themeToggle = document.getElementById('dark-theme-toggle');
+          if (themeToggle) themeToggle.checked = false;
         } else {
           document.documentElement.removeAttribute('data-theme');
           const themeToggle = document.getElementById('dark-theme-toggle');

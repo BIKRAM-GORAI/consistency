@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v74'; // Bumped cache version
+const CACHE_NAME = 'consistency-cache-v73'; // Bumped cache version
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -35,7 +35,6 @@ const STATIC_ASSETS = [
   'style.css',
   'aurora-theme.css',
   'minimalistic-theme.css',
-  'voxel-theme.css',
   'manifest.json',
   'checklist.png',
   'icon-192.png',
@@ -118,7 +117,6 @@ self.addEventListener('fetch', (event) => {
                           url.pathname === '/style.css' ||
                           url.pathname === '/aurora-theme.css' ||
                           url.pathname === '/minimalistic-theme.css' ||
-                          url.pathname === '/voxel-theme.css' ||
                           url.pathname.startsWith('/js/modules/') ||
                           url.pathname === '/subscription.html' ||
                           url.pathname === '/donate.html' ||
