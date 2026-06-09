@@ -25,25 +25,6 @@ async function openProfileModal() {
   const themeSelect = document.getElementById('theme-select');
   if (themeSelect) {
     themeSelect.value = localStorage.getItem('theme') || 'light';
-    
-    // Bind inline select change to toggle the theme instantly in the DOM without closing the modal
-    themeSelect.onchange = async (e) => {
-      const selectedTheme = e.target.value;
-      const currentTheme = localStorage.getItem('theme') || 'light';
-      if (selectedTheme !== currentTheme) {
-        if (selectedTheme === 'premium-aurora') {
-          const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
-          if (!isPremium) {
-            themeSelect.value = currentTheme;
-            showToast('👑 Premium Theme. Upgrade to unlock Aurora Glass and other exclusive features!', 'warn');
-            return;
-          }
-        }
-        if (typeof window.toggleAppTheme === 'function') {
-          await window.toggleAppTheme(selectedTheme);
-        }
-      }
-    };
   }
 
   // Synchronous baseline population from localStorage to ensure instant loading of username, email, photo, showcase status, and LeetCode details on refresh/offline
@@ -369,20 +350,6 @@ async function submitProfileSettings() {
       const selectedTheme = themeSelect.value;
       const currentTheme = localStorage.getItem('theme') || 'light';
       if (selectedTheme !== currentTheme) {
-        if (selectedTheme === 'premium-aurora') {
-          const isPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
-          if (!isPremium) {
-            themeSelect.value = currentTheme;
-            showToast('👑 Premium Theme. Upgrade to unlock Aurora Glass and other exclusive features!', 'warn');
-            closeModal('modal-profile');
-            if (typeof window.handleManageSubscription === 'function') {
-              window.handleManageSubscription(new Event('click'));
-            } else {
-              window.location.href = 'subscription.html';
-            }
-            return;
-          }
-        }
         if (typeof window.toggleAppTheme === 'function') {
           await window.toggleAppTheme(selectedTheme);
         } else {

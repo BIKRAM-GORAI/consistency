@@ -244,33 +244,33 @@
    ============================================================ */
 [data-theme="premium-aurora"] .day-card {
   /* Core glass effect */
-  background: rgba(255, 255, 255, 0.55) !important;
+  background: rgba(255, 255, 255, 0.65) !important;
   background-image: none !important;
   backdrop-filter: blur(24px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
 
   /* Crisp, layered border system */
-  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
 
-  /* Rich multi-layer shadow for depth */
+  /* Rich multi-layer 3D shadow for depth */
   box-shadow:
-    0 8px 32px rgba(109, 40, 217, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(139, 92, 246, 0.06) !important;
+    0 16px 40px rgba(109, 40, 217, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 1.5px rgba(139, 92, 246, 0.08) !important;
 
   border-radius: 20px !important;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.25s ease !important;
 }
 
 [data-theme="premium-aurora"] .day-card:hover {
-  transform: translateY(-4px) scale(1.003) !important;
-  border-color: rgba(139, 92, 246, 0.4) !important;
+  transform: translateY(-6px) scale(1.005) !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
   box-shadow:
-    0 20px 50px rgba(109, 40, 217, 0.14),
-    0 8px 20px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 -1px 0 rgba(139, 92, 246, 0.1) !important;
+    0 28px 60px rgba(109, 40, 217, 0.18),
+    0 10px 24px rgba(0, 0, 0, 0.07),
+    inset 0 1.5px 0.5px rgba(255, 255, 255, 1),
+    inset 0 -2px 2px rgba(139, 92, 246, 0.12) !important;
 }
 
 /* Top gradient accent bar — replace vertical brutalist bar */
@@ -338,25 +338,27 @@
    7. GOAL CARDS — Glass with Status Colors
    ============================================================ */
 [data-theme="premium-aurora"] .goal-card {
-  background: rgba(255, 255, 255, 0.55) !important;
+  background: rgba(255, 255, 255, 0.65) !important;
   backdrop-filter: blur(24px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
   box-shadow:
-    0 8px 32px rgba(109, 40, 217, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    0 16px 40px rgba(109, 40, 217, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 1.5px rgba(139, 92, 246, 0.08) !important;
   border-radius: 20px !important;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease !important;
 }
 
 [data-theme="premium-aurora"] .goal-card:hover {
-  transform: translateY(-4px) scale(1.003) !important;
-  border-color: rgba(139, 92, 246, 0.4) !important;
+  transform: translateY(-6px) scale(1.005) !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
   box-shadow:
-    0 20px 50px rgba(109, 40, 217, 0.14),
-    0 8px 20px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 28px 60px rgba(109, 40, 217, 0.18),
+    0 10px 24px rgba(0, 0, 0, 0.07),
+    inset 0 1.5px 0.5px rgba(255, 255, 255, 1),
+    inset 0 -2px 2px rgba(139, 92, 246, 0.12) !important;
 }
 
 [data-theme="premium-aurora"] .goal-card::before {
@@ -716,11 +718,11 @@
 [data-theme="premium-aurora"] #add-new-cat-task-btn,
 [data-theme="premium-aurora"] #add-edit-cat-task-btn,
 [data-theme="premium-aurora"] #apply-template-btn {
-  background: rgba(13, 148, 136, 0.1) !important;
-  border: 1.5px solid rgba(13, 148, 136, 0.3) !important;
+  background: rgba(13, 148, 136, 0.14) !important;
+  border: 1.5px solid rgba(13, 148, 136, 0.38) !important;
   color: #0f766e !important;
-  font-weight: 700 !important;
-  box-shadow: none !important;
+  font-weight: 750 !important;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   border-radius: 10px !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
@@ -730,10 +732,10 @@
 [data-theme="premium-aurora"] .btn-add-cat:hover,
 [data-theme="premium-aurora"] .btn-add-ach:hover,
 [data-theme="premium-aurora"] #add-goal-header-btn:hover {
-  background: rgba(13, 148, 136, 0.16) !important;
-  border-color: rgba(13, 148, 136, 0.5) !important;
+  background: rgba(13, 148, 136, 0.22) !important;
+  border-color: rgba(13, 148, 136, 0.55) !important;
   transform: translateY(-1.5px) !important;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15) !important;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
 /* ── Edit Buttons (Blue Glass) ── */
@@ -741,21 +743,21 @@
 [data-theme="premium-aurora"] .btn-edit-ach,
 [data-theme="premium-aurora"] .btn-view-ach-all,
 [data-theme="premium-aurora"] .btn-save-template {
-  background: rgba(59, 130, 246, 0.08) !important;
-  border: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.38) !important;
   color: #1d4ed8 !important;
-  font-weight: 700 !important;
-  box-shadow: none !important;
+  font-weight: 750 !important;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   border-radius: 10px !important;
   transition: all 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-edit-cat:hover,
 [data-theme="premium-aurora"] .btn-edit-ach:hover {
-  background: rgba(59, 130, 246, 0.14) !important;
-  border-color: rgba(59, 130, 246, 0.5) !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.55) !important;
   transform: translateY(-1.5px) !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
 /* ── Group Admin Buttons ── */
@@ -787,10 +789,10 @@
 
 /* ── Summary & AI Insight Toggle Buttons ── */
 [data-theme="premium-aurora"] .summary-toggle {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
-  color: #5b5674 !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  color: #4c1d95 !important;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 10px !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
@@ -800,10 +802,10 @@
 
 [data-theme="premium-aurora"] .summary-toggle:hover {
   background: rgba(139, 92, 246, 0.08) !important;
-  border-color: rgba(139, 92, 246, 0.35) !important;
-  color: #4c1d95 !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  color: #3b0764 !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1) !important;
+  box-shadow: 0 6px 16px rgba(109, 40, 217, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 /* ── Sort / Special Actions (Gold Glass) ── */
@@ -813,21 +815,21 @@
 [data-theme="premium-aurora"] #confirm-grace-submit-btn,
 [data-theme="premium-aurora"] #btn-load-more-lb,
 [data-theme="premium-aurora"] #btn-load-more-goals {
-  background: rgba(245, 158, 11, 0.1) !important;
-  border: 1.5px solid rgba(245, 158, 11, 0.35) !important;
-  color: #92400e !important;
-  font-weight: 700 !important;
-  box-shadow: none !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.4) !important;
+  color: #b45309 !important;
+  font-weight: 750 !important;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   border-radius: 10px !important;
   transition: all 0.2s ease !important;
 }
 
 [data-theme="premium-aurora"] .btn-add-leetcode:hover,
 [data-theme="premium-aurora"] #confirm-grace-submit-btn:hover {
-  background: rgba(245, 158, 11, 0.16) !important;
-  border-color: rgba(245, 158, 11, 0.5) !important;
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: rgba(245, 158, 11, 0.6) !important;
   transform: translateY(-1.5px) !important;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
 /* ── Voice / Record Buttons (Emerald Glass) ── */
@@ -959,13 +961,20 @@
 
 /* Grace Day button */
 [data-theme="premium-aurora"] button[onclick^="applyGrace"] {
-  background: rgba(139, 92, 246, 0.1) !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
-  color: #4c1d95 !important;
+  background: rgba(139, 92, 246, 0.12) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.35) !important;
+  color: #6d28d9 !important;
   border-radius: 6px !important;
   font-weight: 800 !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] button[onclick^="applyGrace"]:hover {
+  background: rgba(139, 92, 246, 0.2) !important;
+  border-color: rgba(139, 92, 246, 0.55) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 /* PWA Install Buttons */
@@ -2038,4 +2047,310 @@
 [data-theme="premium-aurora"] .flow-edge-path.interactive:hover {
   stroke: #ef4444 !important;
 }
+
+/* ============================================================
+   17. ACHIEVEMENT PROOF LINKS — Glowing Glass
+   ============================================================ */
+[data-theme="premium-aurora"] .ach-page-link,
+[data-theme="premium-aurora"] .ach-link {
+  background: rgba(13, 148, 136, 0.12) !important;
+  border: 1.5px solid rgba(13, 148, 136, 0.35) !important;
+  color: #0d9488 !important;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 800 !important;
+  transition: all 0.2s ease !important;
+  transform: none !important;
+}
+
+[data-theme="premium-aurora"] .ach-page-link:hover,
+[data-theme="premium-aurora"] .ach-link:hover {
+  background: rgba(13, 148, 136, 0.2) !important;
+  border-color: rgba(13, 148, 136, 0.55) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 14px rgba(13, 148, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #0d9488 !important;
+}
+
+/* ============================================================
+   18. POMODORO PAGE — True Glassmorphism Override
+   ============================================================ */
+[data-theme="premium-aurora"] #page-pomodoro .pomo-card {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
+  box-shadow:
+    0 16px 40px rgba(109, 40, 217, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 1.5px rgba(139, 92, 246, 0.08) !important;
+  border-radius: 24px !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-tabs {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 3px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  overflow: hidden !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-tab-btn {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  transition: all 0.25s ease !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-tab-btn + .pomo-tab-btn {
+  border-left: none !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-tab-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #e879a0) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-time {
+  color: #1e1b2e !important;
+  text-shadow: none !important;
+  letter-spacing: -1.5px !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn {
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 10px !important;
+  font-weight: 800 !important;
+  transition: all 0.2s ease !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  color: #1e1b2e !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn:active {
+  transform: translateY(0.5px) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn-start {
+  background: rgba(13, 148, 136, 0.12) !important;
+  border-color: rgba(13, 148, 136, 0.35) !important;
+  color: #0d9488 !important;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn-start:hover {
+  background: rgba(13, 148, 136, 0.2) !important;
+  border-color: rgba(13, 148, 136, 0.55) !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn-start.paused {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border-color: rgba(249, 115, 22, 0.35) !important;
+  color: #ea580c !important;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn-start.paused:hover {
+  background: rgba(249, 115, 22, 0.2) !important;
+  border-color: rgba(249, 115, 22, 0.55) !important;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn-reset {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(139, 92, 246, 0.2) !important;
+  color: #5b5674 !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-btn-reset:hover {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  color: #4c1d95 !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.1) !important;
+}
+
+/* Mode Buttons capsule style */
+[data-theme="premium-aurora"] #page-pomodoro .pomo-mode-btn {
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  border-radius: 99px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02) !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease, transform 0.2s ease !important;
+  opacity: 0.85 !important;
+  transform: none !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-mode-btn.active {
+  opacity: 1 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.15) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro .pomo-mode-btn:hover {
+  opacity: 1 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Frosted pills styles for each mode */
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-work {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #b45309 !important;
+}
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-work.active {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.55) !important;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, 0.18) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-break {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #047857 !important;
+}
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-break.active {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.55) !important;
+  box-shadow: 0 6px 14px rgba(16, 185, 129, 0.18) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-long {
+  background: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  color: #6d28d9 !important;
+}
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-long.active {
+  background: rgba(139, 92, 246, 0.18) !important;
+  border-color: rgba(139, 92, 246, 0.55) !important;
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.18) !important;
+}
+
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-custom {
+  background: rgba(232, 121, 160, 0.12) !important;
+  border-color: rgba(232, 121, 160, 0.35) !important;
+  color: #be185d !important;
+}
+[data-theme="premium-aurora"] #page-pomodoro #pomo-mode-custom.active {
+  background: rgba(232, 121, 160, 0.18) !important;
+  border-color: rgba(232, 121, 160, 0.55) !important;
+  box-shadow: 0 6px 14px rgba(232, 121, 160, 0.18) !important;
+}
+
+/* Custom duration panel */
+[data-theme="premium-aurora"] #pomo-custom-panel {
+  background: rgba(248, 246, 255, 0.6) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="premium-aurora"] #pomo-custom-panel .custom-field input {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #1e1b2e !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+[data-theme="premium-aurora"] #pomo-custom-panel .custom-field input:focus {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="premium-aurora"] #pomo-custom-panel .custom-apply-btn {
+  background: rgba(232, 121, 160, 0.12) !important;
+  border: 1.5px solid rgba(232, 121, 160, 0.35) !important;
+  color: #be185d !important;
+  box-shadow: 0 2px 6px rgba(232, 121, 160, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] #pomo-custom-panel .custom-apply-btn:hover {
+  background: rgba(232, 121, 160, 0.2) !important;
+  border-color: rgba(232, 121, 160, 0.55) !important;
+  box-shadow: 0 4px 12px rgba(232, 121, 160, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-theme="premium-aurora"] #pomo-custom-panel .custom-apply-btn:active {
+  transform: translateY(0.5px) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Wake lock toggle container */
+[data-theme="premium-aurora"] .pomo-wake-lock {
+  border-top: 1px dashed rgba(139, 92, 246, 0.2) !important;
+}
+
+[data-theme="premium-aurora"] .wake-lock-container {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-radius: 10px !important;
+  color: #4c1d95 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .wake-lock-container:hover {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-theme="premium-aurora"] .wake-lock-container .custom-checkbox {
+  border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .wake-lock-container input:checked ~ .custom-checkbox {
+  background: rgba(139, 92, 246, 0.15) !important;
+  border-color: rgba(139, 92, 246, 0.6) !important;
+}
+
+[data-theme="premium-aurora"] .wake-lock-container .checkmark {
+  border-color: #6d28d9 !important;
+}
+
+/* ============================================================
+   19. SCROLLING PERFORMANCE & HARDWARE ACCELERATION
+   ============================================================ */
+/* Promote heavy glassmorphism layers to GPU to prevent paint lag during scroll */
+[data-theme="premium-aurora"] .day-card,
+[data-theme="premium-aurora"] .goal-card,
+[data-theme="premium-aurora"] .group-card,
+[data-theme="premium-aurora"] #page-pomodoro .pomo-card,
+[data-theme="premium-aurora"] .modal,
+[data-theme="premium-aurora"] .aurora-blob {
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  perspective: 1000px !important;
+  will-change: transform, opacity !important;
+}
+
+/* Enable smooth scrolling natively */
+[data-theme="premium-aurora"] html,
+[data-theme="premium-aurora"] body {
+  scroll-behavior: smooth !important;
+}
+
+
+
 

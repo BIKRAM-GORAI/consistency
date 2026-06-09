@@ -1040,17 +1040,23 @@ function openModal(id) {
   const overlay = document.getElementById(id);
   const modalEl = overlay.querySelector('.modal');
 
-  // Kill any in-flight tween on this modal to prevent opacity getting stuck
-  if (window.gsap) gsap.killTweensOf(modalEl);
-
-  // Ensure the modal starts fully visible (clear any stale inline styles)
-  if (window.gsap) gsap.set(modalEl, { clearProps: 'all' });
+  // Kill any in-flight tweens on both overlay and modal elements
+  if (window.gsap) {
+    gsap.killTweensOf([overlay, modalEl]);
+    gsap.set([overlay, modalEl], { clearProps: 'all' });
+  }
 
   overlay.classList.add('open');
 
-  // Defer the GSAP tween by one rAF so the browser finishes the
-  // display:flex paint before animating — prevents the "invisible flash" on mobile
   if (window.gsap) {
+    // Fade overlay in smoothly to prevent heavy layout thrashing with backdrop filters
+    gsap.fromTo(overlay,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.28, ease: 'power2.out' }
+    );
+
+    // Defer the GSAP tween by one rAF so the browser finishes the
+    // display:flex paint before animating — prevents the "invisible flash" on mobile
     requestAnimationFrame(() => {
       gsap.fromTo(modalEl,
         { opacity: 0, y: 28, scale: 0.94 },
@@ -1075,28 +1081,35 @@ function closeModal(id) {
   const modalEl = overlay.querySelector('.modal');
 
   if (window.gsap) {
-    // Kill any in-flight open tween before closing
-    gsap.killTweensOf(modalEl);
-    gsap.to(modalEl, {
+    // Kill any in-flight tweens before closing
+    gsap.killTweensOf([overlay, modalEl]);
+    
+    // Sync the fade out of overlay and transition of modal
+    const tl = gsap.timeline({
+      onComplete: () => {
+        overlay.classList.remove('open');
+        gsap.set([overlay, modalEl], { clearProps: 'all' });
+        if (id === 'modal-add-leetcode') {
+          resetLeetCodeModalState();
+        }
+      }
+    });
+
+    tl.to(modalEl, {
       opacity: 0,
       y: 16,
       scale: 0.96,
       duration: 0.22,
-      ease: 'power2.in',
-      onComplete: () => {
-        overlay.classList.remove('open');
-        gsap.set(modalEl, { clearProps: 'all' }); // clean up so next open starts fresh
+      ease: 'power2.in'
+    }, 0);
 
-        // Reset LeetCode modal state if closing LeetCode modal
-        if (id === 'modal-add-leetcode') {
-          resetLeetCodeModalState();
-        }
-      },
-    });
+    tl.to(overlay, {
+      opacity: 0,
+      duration: 0.22,
+      ease: 'power2.in'
+    }, 0);
   } else {
     overlay.classList.remove('open');
-
-    // Reset LeetCode modal state if closing LeetCode modal
     if (id === 'modal-add-leetcode') {
       resetLeetCodeModalState();
     }

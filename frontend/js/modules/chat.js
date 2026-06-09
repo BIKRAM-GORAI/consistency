@@ -2738,6 +2738,10 @@ async function reconcileAllData() {
 async function proactiveSync(force = false) {
   if (!navigator.onLine) return;
   
+  if (window.syncManager && window.syncManager.isProcessing) {
+    await window.syncManager.processQueue();
+  }
+  
   // Throttle: Only sync once every 5 minutes unless forced
   const now = Date.now();
   if (!force && (now - _lastSyncTime < 5 * 60 * 1000)) {
@@ -2945,19 +2949,7 @@ async function proactiveSync(force = false) {
 }
 
 
-/** Handle automatic sync when connection returns */
-window.addEventListener('online', async () => {
-  showToast('Back online! Syncing your progress...', 'info');
-  if (window.syncManager) {
-    // IMPORTANT: Wait for ALL queued offline changes to be pushed to the
-    // server before fetching fresh data back.  Without this await,
-    // proactiveSync would pull stale server data and overwrite local edits.
-    await window.syncManager.processQueue();
-  }
-  // Refresh data from server (Forced) — now safe because local changes
-  // have been pushed first.
-  proactiveSync(true); 
-});
+
 
 
 // ── Chat Module Bindings ─────────────────────────────────

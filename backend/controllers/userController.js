@@ -322,7 +322,7 @@ async function getLeaderboard(req, res) {
       const activeUser = await User.findById(req.user.userId);
       if (activeUser && activeUser.username && !activeUser.isBlacklisted) {
         // Recalculate active user's streak first to ensure their rank calculation is accurate!
-        const myDays = await Day.find({ userId: activeUser._id }).select('date categories');
+        const myDays = await Day.find({ userId: activeUser._id }).select('date categories graceApplied');
         myCurrentStreak = calculateCurrentStreak(myDays, clientDate);
         myHighestStreak = calculateHighestStreak(myDays);
         

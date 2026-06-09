@@ -4,6 +4,10 @@ console.log("[Module] days.js initializing...");
 
 // ── Days ───────────────────────────────────────────────────
 async function loadDays(page = 1) {
+  if (window.syncManager && window.syncManager.isProcessing) {
+    await window.syncManager.processQueue();
+  }
+
   const localDb = window.localDb;
   if (!localDb) {
     console.warn('Local database not initialized');

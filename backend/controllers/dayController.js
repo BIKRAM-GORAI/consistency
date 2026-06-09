@@ -24,7 +24,7 @@ function countCompletedTasks(categories) {
 function getUniqueDaysWithCompletions(days) {
   const dayMap = {};
   for (const d of days) {
-    const completed = countCompletedTasks(d.categories) > 0;
+    const completed = countCompletedTasks(d.categories) > 0 || !!d.graceApplied;
     if (dayMap[d.date] !== undefined) {
       dayMap[d.date] = dayMap[d.date] || completed;
     } else {
@@ -162,7 +162,7 @@ function calculateHighestStreak(days) {
  */
 async function updateUserStreakAndActivity(userId, clientDate) {
   // Fetch every day for this user (only fields needed for calculation)
-  const days = await Day.find({ userId }).select('date categories');
+  const days = await Day.find({ userId }).select('date categories graceApplied');
 
   const currentStreak = calculateCurrentStreak(days, clientDate);
   const highestStreak = calculateHighestStreak(days);
@@ -212,7 +212,7 @@ const getAllDays = async (req, res) => {
 
       // Fetch ALL days (for streak) and the current page (for display) in parallel
       const [allUserDays, paginatedDays, total] = await Promise.all([
-        Day.find({ userId }).select('date categories'),
+        Day.find({ userId }).select('date categories graceApplied'),
         Day.find({ userId }).sort({ date: -1 }).skip(skip).limit(limitNum),
         Day.countDocuments({ userId }),
       ]);

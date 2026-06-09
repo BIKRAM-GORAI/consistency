@@ -314,14 +314,6 @@ async function setProfileSettings(req, res) {
     if (typeof isPublicProfile === 'boolean') user.isPublicProfile = isPublicProfile;
     if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) {
-      if (theme === 'premium-aurora') {
-        const now = new Date();
-        const isPremium = user.subscriptionTier === 'premium' && 
-          (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
-        if (!isPremium) {
-          return res.status(403).json({ message: 'Premium themes require a premium subscription' });
-        }
-      }
       user.theme = theme;
     }
 

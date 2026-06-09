@@ -92,7 +92,7 @@ function calculateStreak(days) {
   // Group duplicate dates robustly to ensure multiple cards on same day don't disrupt calculations
   const dayMap = {};
   for (const d of days) {
-    const completed = countTasks(d.categories).completed > 0;
+    const completed = countTasks(d.categories).completed > 0 || !!d.graceApplied;
     if (dayMap[d.date] !== undefined) {
       dayMap[d.date] = dayMap[d.date] || completed;
     } else {

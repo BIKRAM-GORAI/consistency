@@ -74,6 +74,9 @@ window.apiFetch = apiFetch;
 
 // ── Offline Sync Queue Manager (syncManager) ────────────────
 const syncManager = {
+  isProcessing: false,
+  processingPromise: null,
+
   async addToQueue(method, entity, id, data, localId = null) {
     const db = window.localDb;
     if (!db) return;
@@ -124,106 +127,148 @@ const syncManager = {
   },
 
   async processQueue() {
+    if (this.isProcessing) {
+      return this.processingPromise;
+    }
     if (!navigator.onLine) return;
-    
-    const localDb = window.localDb;
-    if (!localDb) return;
-    const queue = await localDb.syncQueue.orderBy('timestamp').toArray();
-    if (queue.length === 0) return;
 
-    // Helper to strip temp IDs so MongoDB doesn't reject them
-    const stripTempIds = (data) => {
-      if (Array.isArray(data)) return data.map(stripTempIds);
-      if (data !== null && typeof data === 'object') {
-        const cleaned = {};
-        for (const key in data) {
-          if (key === '_id' && String(data[key]).startsWith('temp_')) continue;
-          cleaned[key] = stripTempIds(data[key]);
+    let resolveProcessing;
+    this.processingPromise = new Promise(resolve => {
+      resolveProcessing = resolve;
+    });
+    this.isProcessing = true;
+
+    try {
+      const localDb = window.localDb;
+      if (!localDb) return;
+
+      // Helper to strip temp IDs so MongoDB doesn't reject them
+      const stripTempIds = (data) => {
+        if (Array.isArray(data)) return data.map(stripTempIds);
+        if (data !== null && typeof data === 'object') {
+          const cleaned = {};
+          for (const key in data) {
+            if (key === '_id' && String(data[key]).startsWith('temp_')) continue;
+            cleaned[key] = stripTempIds(data[key]);
+          }
+          return cleaned;
         }
-        return cleaned;
-      }
-      return data;
-    };
+        return data;
+      };
 
-    for (const item of queue) {
-      try {
-        let url = '';
-        const API = window.API || '';
-        if (item.entity === 'days') url = `${API}/api/days/${item.targetId || ''}`;
-        else if (item.entity === 'goals') url = `${API}/api/goals/${item.targetId || ''}`;
-        else if (item.entity === 'achievements') url = `${API}/api/achievements/${item.targetId || ''}`;
-        else if (item.entity === 'groups') url = `${API}/api/groups/${item.targetId || ''}`;
-        else if (item.entity === 'auth/settings') url = `${API}/api/auth/settings`;
-        else if (item.entity === 'scratchpads') url = `${API}/api/days/${item.targetId || ''}/scratchpad`;
-        else if (item.entity === 'appLimits') url = `${API}/api/applimits`;
+      while (true) {
+        const queue = await localDb.syncQueue.orderBy('timestamp').toArray();
+        if (queue.length === 0) break;
 
-        const response = await apiFetch(url, {
-          method: item.method,
-          body: JSON.stringify(stripTempIds(item.data))
-        });
+        const item = queue[0];
+        try {
+          let url = '';
+          const API = window.API || '';
+          if (item.entity === 'days') url = `${API}/api/days/${item.targetId || ''}`;
+          else if (item.entity === 'goals') url = `${API}/api/goals/${item.targetId || ''}`;
+          else if (item.entity === 'achievements') url = `${API}/api/achievements/${item.targetId || ''}`;
+          else if (item.entity === 'groups') url = `${API}/api/groups/${item.targetId || ''}`;
+          else if (item.entity === 'auth/settings') url = `${API}/api/auth/settings`;
+          else if (item.entity === 'scratchpads') url = `${API}/api/days/${item.targetId || ''}/scratchpad`;
+          else if (item.entity === 'appLimits') url = `${API}/api/applimits`;
 
-        // SUCCESS: Remove from queue
-        await localDb.syncQueue.delete(item.id);
-        
-        const remainingForThis = await localDb.syncQueue
-          .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
-          .count();
+          const response = await apiFetch(url, {
+            method: item.method,
+            body: JSON.stringify(stripTempIds(item.data))
+          });
 
-        if (response && (response._id || response.dayId)) {
-          const mainId = response._id || response.dayId;
-          if (item.localId && item.localId !== mainId) {
-            await localDb[item.entity].delete(item.localId);
-            
-            if (item.entity === 'days') {
-              if (window.allDays) {
-                const idx = window.allDays.findIndex(d => d._id === item.localId);
-                if (idx !== -1) window.allDays[idx] = response;
+          // SUCCESS: Remove from queue
+          await localDb.syncQueue.delete(item.id);
+
+          const remainingForThis = await localDb.syncQueue
+            .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
+            .count();
+
+          if (response && (response._id || response.dayId)) {
+            const mainId = response._id || response.dayId;
+
+            // Sync streak from server response if available
+            if (typeof response.streak !== 'undefined') {
+              window.backendStreak = response.streak;
+              if (typeof window.updateStreak === 'function') {
+                window.updateStreak();
               }
-              
-              if (localDb.scratchpads) {
-                const cachedScratchpad = await localDb.scratchpads.get(item.localId);
-                if (cachedScratchpad) {
-                  await localDb.scratchpads.delete(item.localId);
-                  cachedScratchpad.dayId = response._id;
-                  await localDb.scratchpads.put(cachedScratchpad);
-                }
-              }
-              if (typeof window.renderDays === 'function') {
-                window.renderDays();
-              }
-            } else if (item.entity === 'goals') {
-              if (window.allGoals) {
-                const idx = window.allGoals.findIndex(g => g._id === item.localId);
-                if (idx !== -1) window.allGoals[idx] = response;
-              }
-              if (typeof window.sortGoals === 'function') window.sortGoals();
-              if (typeof window.renderGoals === 'function') window.renderGoals();
             }
 
-            await localDb.syncQueue
-              .where('targetId')
-              .equals(item.localId)
-              .modify({ targetId: response._id || mainId });
+            if (item.localId && item.localId !== mainId) {
+              await localDb[item.entity].delete(item.localId);
 
-            await localDb.syncQueue
-              .where('localId')
-              .equals(item.localId)
-              .modify({ localId: response._id || mainId });
+              if (item.entity === 'days') {
+                if (window.allDays) {
+                  const idx = window.allDays.findIndex(d => d._id === item.localId);
+                  if (idx !== -1) window.allDays[idx] = response;
+                }
+
+                if (localDb.scratchpads) {
+                  const cachedScratchpad = await localDb.scratchpads.get(item.localId);
+                  if (cachedScratchpad) {
+                    await localDb.scratchpads.delete(item.localId);
+                    cachedScratchpad.dayId = response._id;
+                    await localDb.scratchpads.put(cachedScratchpad);
+                  }
+                }
+                if (typeof window.renderDays === 'function') {
+                  window.renderDays();
+                }
+              } else if (item.entity === 'goals') {
+                if (window.allGoals) {
+                  const idx = window.allGoals.findIndex(g => g._id === item.localId);
+                  if (idx !== -1) window.allGoals[idx] = response;
+                }
+                if (typeof window.sortGoals === 'function') window.sortGoals();
+                if (typeof window.renderGoals === 'function') window.renderGoals();
+              }
+
+              await localDb.syncQueue
+                .where('targetId')
+                .equals(item.localId)
+                .modify({ targetId: response._id || mainId });
+
+              await localDb.syncQueue
+                .where('localId')
+                .equals(item.localId)
+                .modify({ localId: response._id || mainId });
+            } else if (!item.localId && item.entity === 'days' && window.allDays) {
+              // For existing days, update memory state and re-render if it's the last pending action
+              if (remainingForThis === 0) {
+                const idx = window.allDays.findIndex(d => d._id === item.targetId);
+                if (idx !== -1) {
+                  window.allDays[idx] = response;
+                  if (typeof window.renderDays === 'function') {
+                    window.renderDays();
+                  }
+                }
+              }
+            }
+
+            if (remainingForThis === 0) {
+              await localDb[item.entity].put(response);
+            }
           }
-
-          if (remainingForThis === 0) {
-            await localDb[item.entity].put(response);
+        } catch (err) {
+          console.warn('Sync failed for item:', item.id, err);
+          // Only delete if it is a permanent client/validation error (e.g. 400 Bad Request, 404 Not Found)
+          // Do NOT delete for transient errors (network errors, rate limits 429, or 5xx server errors)
+          if (err.status && err.status >= 400 && err.status < 500 && err.status !== 429) {
+            await localDb.syncQueue.delete(item.id);
+            if (item.entity === 'days' && typeof window.loadDays === 'function') window.loadDays();
+            else if (item.entity === 'goals' && typeof window.loadGoals === 'function') window.loadGoals();
+          } else {
+            // Transient error (network down, rate limit, 5xx server error) -> break out of the loop and keep in queue
+            break;
           }
         }
-      } catch (err) {
-        console.warn('Sync failed for item:', item.id, err);
-        if (err.message && !err.message.includes('fetch')) {
-          await localDb.syncQueue.delete(item.id);
-          if (item.entity === 'days' && typeof window.loadDays === 'function') window.loadDays();
-          else if (item.entity === 'goals' && typeof window.loadGoals === 'function') window.loadGoals();
-        }
-        break; 
       }
+    } finally {
+      this.isProcessing = false;
+      const resolveFn = resolveProcessing;
+      this.processingPromise = null;
+      if (resolveFn) resolveFn();
     }
   }
 };
@@ -232,15 +277,19 @@ window.syncManager = syncManager;
 // ── Online / Offline Listeners ─────────────────────────────
 window.addEventListener('online', async () => {
   window._wasOffline = false;
-  syncManager.processQueue();
+
+  if (typeof window.showToast === 'function') {
+    window.showToast('Back online! Syncing your progress...', 'info');
+  }
+
+  // 1. Process sync queue first and wait for completion
+  await syncManager.processQueue();
+
   if (typeof window.updateOfflineButtonState === 'function') {
     window.updateOfflineButtonState(false);
   }
   if (typeof window.setLeaderboardTogglesEnabled === 'function') {
     window.setLeaderboardTogglesEnabled(true);
-  }
-  if (typeof window.showToast === 'function') {
-    window.showToast('Back online! AI features enabled.', 'success');
   }
 
   // Re-authenticate Firebase Auth when connection is restored
@@ -267,14 +316,19 @@ window.addEventListener('online', async () => {
     }
   }
 
-  // Refresh AI badge count and reload data from server
-  if (typeof window.fetchAiLimit === 'function') {
-    window.fetchAiLimit();
-  }
-  if (typeof window.loadDays === 'function') {
-    window.loadDays(1);
+  // Refresh data from server
+  if (typeof window.proactiveSync === 'function') {
+    await window.proactiveSync(true);
+  } else {
+    if (typeof window.fetchAiLimit === 'function') {
+      window.fetchAiLimit();
+    }
+    if (typeof window.loadDays === 'function') {
+      await window.loadDays(1);
+    }
   }
 });
+
 
 window.addEventListener('offline', () => {
   window._wasOffline = true;
