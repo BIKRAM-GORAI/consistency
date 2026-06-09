@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v70'; // Bumped cache version
+const CACHE_NAME = 'consistency-cache-v71'; // Bumped cache version
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -33,6 +33,7 @@ const STATIC_ASSETS = [
   'subscription.html',
   'donate.html',
   'style.css',
+  'aurora-theme.css',
   'manifest.json',
   'checklist.png',
   'icon-192.png',
@@ -113,10 +114,16 @@ self.addEventListener('fetch', (event) => {
                           url.pathname === '/auth.html' || 
                           url.pathname === '/script.js' || 
                           url.pathname === '/style.css' ||
+                          url.pathname === '/aurora-theme.css' ||
                           url.pathname.startsWith('/js/modules/') ||
                           url.pathname === '/subscription.html' ||
                           url.pathname === '/donate.html' ||
-                          url.pathname === '/canvas.html';
+                          url.pathname === '/canvas.html' ||
+                          url.pathname === '/profile.html' ||
+                          url.pathname === '/profile-script.js' ||
+                          url.pathname === '/admin-dashboard.html' ||
+                          url.pathname === '/admin-login.html' ||
+                          url.pathname === '/admin-script.js';
 
   if (isCoreCodeAsset) {
     // Network-First for core application files
