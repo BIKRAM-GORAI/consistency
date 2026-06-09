@@ -36,7 +36,7 @@ async function apiFetch(url, options = {}) {
       }
       if (res.status === 403) {
         const body = await res.json().catch(() => ({}));
-        if (body.isBlacklisted || (body.message && body.message.toLowerCase().includes('blacklist'))) {
+        if (body.isBlacklisted === true) {
           localStorage.clear();
           const reason = encodeURIComponent(body.message || 'Your account is blacklisted.');
           window.location.replace(`auth.html?blacklisted=true&reason=${reason}`);
