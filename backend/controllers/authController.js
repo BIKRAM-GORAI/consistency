@@ -110,11 +110,14 @@ const login = async (req, res) => {
     if (!user) return res.status(401).json({ message: 'Invalid email or password' });
 
     if (user.isBlacklisted) {
-      if (!user.blacklistedUntil || user.blacklistedUntil > Date.now()) {
-        return res.status(403).json({ message: 'Account blacklisted' });
+      if (!user.blacklistedUntil || new Date(user.blacklistedUntil) > new Date()) {
+        const reasonStr = user.blacklistReason ? ` Reason: ${user.blacklistReason}` : '';
+        const expiryStr = user.blacklistedUntil ? ` until ${new Date(user.blacklistedUntil).toLocaleDateString()}` : ' permanently';
+        return res.status(403).json({ message: `Your account is blacklisted${expiryStr}.${reasonStr}`, isBlacklisted: true, blacklistReason: user.blacklistReason });
       }
       user.isBlacklisted = false;
       await user.save();
+      await Group.updateOwnerBlacklistStatus(user._id, false);
     }
 
     if (!user.password) return res.status(401).json({ message: 'Login via Social Provider instead' });
@@ -169,6 +172,17 @@ const oauthLogin = async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
     const googlePhotoUrl = decodedToken.picture;
+
+    if (user && user.isBlacklisted) {
+      if (!user.blacklistedUntil || new Date(user.blacklistedUntil) > new Date()) {
+        const reasonStr = user.blacklistReason ? ` Reason: ${user.blacklistReason}` : '';
+        const expiryStr = user.blacklistedUntil ? ` until ${new Date(user.blacklistedUntil).toLocaleDateString()}` : ' permanently';
+        return res.status(403).json({ message: `Your account is blacklisted${expiryStr}.${reasonStr}`, isBlacklisted: true, blacklistReason: user.blacklistReason });
+      }
+      user.isBlacklisted = false;
+      await user.save();
+      await Group.updateOwnerBlacklistStatus(user._id, false);
+    }
 
     if (user) {
       const providerExists = user.authProviders.some(p => p.provider === provider);

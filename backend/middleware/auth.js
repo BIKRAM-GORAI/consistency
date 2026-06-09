@@ -1,10 +1,12 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const Group = require('../models/Group');
 
 /**
  * JWT Authentication Middleware
  * Verifies JWT token from Authorization header and attaches user info to request
  */
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers['authorization'];
@@ -21,6 +23,21 @@ const authenticateToken = (req, res, next) => {
       return res.status(500).json({ message: 'Server configuration error' });
     }
     const decoded = jwt.verify(token, jwtSecret);
+
+    // Fetch user and check if blacklisted
+    const user = await User.findById(decoded.userId).select('isBlacklisted blacklistedUntil blacklistReason');
+    if (user && user.isBlacklisted) {
+      if (!user.blacklistedUntil || new Date(user.blacklistedUntil) > new Date()) {
+        const reasonStr = user.blacklistReason ? ` Reason: ${user.blacklistReason}` : '';
+        const expiryStr = user.blacklistedUntil ? ` until ${new Date(user.blacklistedUntil).toLocaleDateString()}` : ' permanently';
+        return res.status(403).json({ message: `Your account is blacklisted${expiryStr}.${reasonStr}`, isBlacklisted: true, blacklistReason: user.blacklistReason });
+      } else {
+        // Blacklist expired, unblacklist the user
+        user.isBlacklisted = false;
+        await user.save();
+        await Group.updateOwnerBlacklistStatus(user._id, false);
+      }
+    }
 
     // Attach user info to request object
     req.user = decoded;

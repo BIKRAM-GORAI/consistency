@@ -119,6 +119,16 @@ const joinGroup = async (req, res) => {
       return res.status(400).json({ message: 'You are already a member of this group.' });
     }
 
+    // Check if the owner is blacklisted
+    const owner = await User.findById(group.owner);
+    if (owner && owner.isBlacklisted) {
+      if (group.isPublic) {
+        return res.status(403).json({
+          message: `This group cannot be joined because the creator (${owner.name}) has been blacklisted. The group is scheduled for deletion.`
+        });
+      }
+    }
+
     // Auto-remove any pending join request if this is a public group and they are joining via code
     if (group.requests && group.requests.length > 0) {
       group.requests = group.requests.filter(req => String(req.user) !== String(userId));
@@ -145,9 +155,11 @@ const myGroups = async (req, res) => {
 
     const groupsRaw = await Group.find({ members: userId })
       .populate('members', 'name username profilePicture currentStreak highestStreak')
-      .populate('owner', 'name username profilePicture')
+      .populate('owner', 'name username profilePicture isBlacklisted blacklistReason')
       .populate('requests.user', 'name username profilePicture')
       .sort({ createdAt: -1 });
+
+    const expiryMinutes = parseInt(process.env.GROUP_EXPIRY_ON_OWNER_BLACKLIST_MINUTES, 10) || 60;
 
     // Filter sensitive data before sending
     const groups = groupsRaw.map(g => {
@@ -162,6 +174,7 @@ const myGroups = async (req, res) => {
       
       // Add memberCount for UI convenience
       groupObj.memberCount = g.members.length;
+      groupObj.groupExpiryMinutes = expiryMinutes;
       
       return groupObj;
     });
@@ -184,15 +197,18 @@ const publicGroups = async (req, res) => {
       isPublic: true,
       members: { $ne: userId }
     })
-    .select('name description isPublic icon members requests owner createdAt') 
-    .populate('owner', 'name username profilePicture')
+    .select('name description isPublic icon members requests owner createdAt ownerBlacklistedAt') 
+    .populate('owner', 'name username profilePicture isBlacklisted blacklistReason')
     .sort({ createdAt: -1 });
+
+    const expiryMinutes = parseInt(process.env.GROUP_EXPIRY_ON_OWNER_BLACKLIST_MINUTES, 10) || 60;
 
     // Filter to hide member list and only show count
     const groups = groupsRaw.map(g => {
       const groupObj = g.toObject();
       groupObj.memberCount = g.members ? g.members.length : 0;
       groupObj.hasRequested = g.requests ? g.requests.some(r => String(r.user) === String(userId)) : false;
+      groupObj.groupExpiryMinutes = expiryMinutes;
       delete groupObj.members; 
       delete groupObj.requests;
       return groupObj;
@@ -216,6 +232,14 @@ const joinPublicGroup = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
     if (!group.isPublic) return res.status(403).json({ message: 'This is not a public group.' });
+
+    // Check if the owner is blacklisted
+    const owner = await User.findById(group.owner);
+    if (owner && owner.isBlacklisted) {
+      return res.status(403).json({
+        message: `This group cannot be joined because the creator (${owner.name}) has been blacklisted. The group is scheduled for deletion.`
+      });
+    }
 
     if (group.members.map(String).includes(String(userId))) {
       return res.status(400).json({ message: 'You are already a member of this group.' });

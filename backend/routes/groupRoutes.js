@@ -1,9 +1,42 @@
 const express    = require('express');
 const router     = express.Router();
 const ctrl       = require('../controllers/groupController');
+const Group      = require('../models/Group');
 const { createGroupValidation, joinGroupValidation, editGroupValidation, removeMemberValidation, handleJoinRequestValidation, joinPublicGroupValidation } = require('../middleware/validation');
 const { uploadGroup } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
+
+// Cleanup expired groups middleware (runs on every group API request)
+const cleanupExpiredGroups = async (req, res, next) => {
+  try {
+    const expiryMinutes = parseInt(process.env.GROUP_EXPIRY_ON_OWNER_BLACKLIST_MINUTES, 10) || 60;
+    const thresholdDate = new Date(Date.now() - expiryMinutes * 60000);
+
+    const expiredGroups = await Group.find({
+      ownerBlacklistedAt: { $ne: null, $lte: thresholdDate }
+    });
+
+    if (expiredGroups.length > 0) {
+      const { cloudinary } = require('../config/cloudinary');
+      for (const group of expiredGroups) {
+        if (group.iconId) {
+          try {
+            await cloudinary.uploader.destroy(group.iconId);
+          } catch (e) {
+            console.error('Failed to delete group icon from Cloudinary:', e);
+          }
+        }
+        await Group.findByIdAndDelete(group._id);
+        console.log(`[Cleanup] Deleted expired group: ${group.name} (owner was blacklisted)`);
+      }
+    }
+  } catch (err) {
+    console.error('[Cleanup] Error in cleanupExpiredGroups middleware:', err);
+  }
+  next();
+};
+
+router.use(cleanupExpiredGroups);
 
 // Create a new group (only one allowed per user as owner)
 router.post('/create', authenticateToken, createGroupValidation, ctrl.createGroup);

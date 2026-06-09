@@ -317,6 +317,10 @@ async function toggleUserBlacklist(req, res) {
       { new: true }
     );
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Update blacklist status on all groups owned by this user
+    await Group.updateOwnerBlacklistStatus(user._id, isBlacklisted);
+
     res.json({ message: 'Blacklist status updated', user });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

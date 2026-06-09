@@ -34,6 +34,15 @@ async function apiFetch(url, options = {}) {
         window.location.replace('landing.html');
         throw new Error('Session expired. Please log in again.');
       }
+      if (res.status === 403) {
+        const body = await res.json().catch(() => ({}));
+        if (body.isBlacklisted || (body.message && body.message.toLowerCase().includes('blacklist'))) {
+          localStorage.clear();
+          const reason = encodeURIComponent(body.message || 'Your account is blacklisted.');
+          window.location.replace(`auth.html?blacklisted=true&reason=${reason}`);
+          throw new Error(body.message || 'Your account is blacklisted.');
+        }
+      }
       if (res.status === 429) {
         const body = await res.json().catch(() => ({}));
         const err = new Error(body.message || 'Too many requests. Please try again later.');

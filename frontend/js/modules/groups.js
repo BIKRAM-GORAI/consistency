@@ -151,6 +151,27 @@ function renderGroups() {
         ? `<img src="${group.icon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='8px'; this.style.background='var(--yellow)';" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
         : `<span class="group-emoji"><i data-lucide="globe"></i></span>`;
 
+      const isOwnerBlacklisted = group.owner && group.owner.isBlacklisted && group.ownerBlacklistedAt;
+      let warningHtml = '';
+      if (isOwnerBlacklisted) {
+        const expiryMs = new Date(group.ownerBlacklistedAt).getTime() + (group.groupExpiryMinutes || 60) * 60 * 1000;
+        warningHtml = `
+          <div class="group-blacklist-warning pulse-red-anim" style="background: rgba(239, 68, 68, 0.08); border: 2px dashed #ef4444; border-radius: 10px; padding: 12px; margin: 12px 0; box-shadow: 2px 2px 0 #ef4444; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #ef4444; font-weight: 900; font-size: 13px; text-transform: uppercase;">
+              <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+              <span>Group Creator Banned</span>
+            </div>
+            <p style="margin: 6px 0; font-size: 13px; color: var(--text-muted); font-weight: 500;">
+              The group owner <strong>${escHtml(group.owner.name)}</strong> has been blacklisted. Reason: <em>${escHtml(group.owner.blacklistReason || 'Violation of terms')}</em>
+            </p>
+            <div class="group-countdown-timer" id="group-countdown-${group._id}" data-expiry="${expiryMs}" style="font-size: 13px; font-weight: 800; color: #ef4444; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+              <span>This group will be deleted in: --:--:--</span>
+            </div>
+          </div>
+        `;
+      }
+
       html += `
         <div class="group-card public-discovery-card" style="border-color: var(--green); box-shadow: 4px 4px 0 rgba(34, 197, 150, 0.15);">
           <div class="group-card-top">
@@ -161,6 +182,9 @@ function renderGroups() {
             <span class="group-owner-badge" style="background: var(--bg-muted); border: 1px solid var(--green); color: var(--green); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 10px; text-transform: uppercase;">BY ${escHtml(group.owner.name || 'Admin')}</span>
           </div>
           ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
+          
+          ${warningHtml}
+
           <p class="group-meta" style="margin-bottom:16px; font-weight: 700; opacity: 0.9;">${group.memberCount || 0} members</p>
           <div style="display: flex; justify-content: center; width: 100%;">
             ${group.hasRequested ? 
@@ -191,6 +215,47 @@ function renderGroups() {
   // Dynamically render/update the FCM status banner whenever groups tab is drawn
   if (typeof renderFcmBannerState === 'function') {
     renderFcmBannerState();
+  }
+
+  // Clear any existing countdown interval to avoid memory leaks
+  if (window.groupCountdownInterval) {
+    clearInterval(window.groupCountdownInterval);
+    window.groupCountdownInterval = null;
+  }
+
+  // Setup live countdown updates for blacklisted owners' groups
+  const timers = document.querySelectorAll('.group-countdown-timer');
+  if (timers.length > 0) {
+    const updateTimers = () => {
+      let activeTimers = 0;
+      timers.forEach(timer => {
+        const expiryTime = parseInt(timer.getAttribute('data-expiry'), 10);
+        const remainingMs = expiryTime - Date.now();
+        
+        if (remainingMs <= 0) {
+          timer.querySelector('span').textContent = 'This group has expired and is scheduled for deletion.';
+          if (!timer.dataset.triggeredReload) {
+            timer.dataset.triggeredReload = 'true';
+            setTimeout(() => loadGroups(), 2000);
+          }
+        } else {
+          activeTimers++;
+          const seconds = Math.floor((remainingMs / 1000) % 60);
+          const minutes = Math.floor((remainingMs / (1000 * 60)) % 60);
+          const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+          
+          const pad = (num) => String(num).padStart(2, '0');
+          timer.querySelector('span').textContent = `This group will be deleted in: ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+      });
+      if (activeTimers === 0 && window.groupCountdownInterval) {
+        clearInterval(window.groupCountdownInterval);
+        window.groupCountdownInterval = null;
+      }
+    };
+    
+    updateTimers(); // Run once immediately
+    window.groupCountdownInterval = setInterval(updateTimers, 1000);
   }
 }
 
@@ -241,6 +306,27 @@ function renderSingleGroupCard(group, emoji) {
     ? `<img src="${group.icon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='8px'; this.style.background='var(--yellow)';" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--black);object-fit:cover;box-shadow:2px 2px 0 var(--black);cursor:pointer;" onclick="openLightbox(this.src)" />`
     : `<span class="group-emoji"><i data-lucide="${emoji}"></i></span>`;
 
+  const isOwnerBlacklisted = group.owner && group.owner.isBlacklisted && group.ownerBlacklistedAt;
+  let warningHtml = '';
+  if (isOwnerBlacklisted) {
+    const expiryMs = new Date(group.ownerBlacklistedAt).getTime() + (group.groupExpiryMinutes || 60) * 60 * 1000;
+    warningHtml = `
+      <div class="group-blacklist-warning pulse-red-anim" style="background: rgba(239, 68, 68, 0.08); border: 2px dashed #ef4444; border-radius: 10px; padding: 12px; margin: 12px 0; box-shadow: 2px 2px 0 #ef4444;">
+        <div style="display: flex; align-items: center; gap: 8px; color: #ef4444; font-weight: 900; font-size: 13px; text-transform: uppercase;">
+          <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+          <span>Group Creator Banned</span>
+        </div>
+        <p style="margin: 6px 0; font-size: 13px; color: var(--text-muted); font-weight: 500;">
+          The group owner <strong>${escHtml(group.owner.name)}</strong> has been blacklisted. Reason: <em>${escHtml(group.owner.blacklistReason || 'Violation of terms')}</em>
+        </p>
+        <div class="group-countdown-timer" id="group-countdown-${group._id}" data-expiry="${expiryMs}" style="font-size: 13px; font-weight: 800; color: #ef4444; display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+          <span>This group will be deleted in: --:--:--</span>
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}">
       <div class="group-card-top">
@@ -286,6 +372,8 @@ function renderSingleGroupCard(group, emoji) {
       </div>
       ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
       
+      ${warningHtml}
+
       <!-- Core Chat & Mute Actions -->
       <div style="margin: 12px 0; display: flex; gap: 10px;">
         <button class="btn-primary ripple" style="flex: 1; justify-content: center; background: var(--pink); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 4px 4px 0 var(--black); margin: 0;" onclick="openGroupChat('${group._id}', '${escJs(group.name)}', '${group.icon || ''}')">

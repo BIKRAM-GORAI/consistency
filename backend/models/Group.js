@@ -56,9 +56,28 @@ const GroupSchema = new mongoose.Schema(
     activeMeeting: {
       roomId: { type: String, default: null },
       createdAt: { type: Date, default: null }
+    },
+    ownerBlacklistedAt: {
+      type: Date,
+      default: null
     }
   },
   { timestamps: true }
 );
+
+GroupSchema.statics.updateOwnerBlacklistStatus = async function(ownerId, isBlacklisted) {
+  if (isBlacklisted) {
+    // Only set ownerBlacklistedAt if it is not already set
+    await this.updateMany(
+      { owner: ownerId, ownerBlacklistedAt: null },
+      { $set: { ownerBlacklistedAt: new Date() } }
+    );
+  } else {
+    await this.updateMany(
+      { owner: ownerId },
+      { $set: { ownerBlacklistedAt: null } }
+    );
+  }
+};
 
 module.exports = mongoose.model('Group', GroupSchema);

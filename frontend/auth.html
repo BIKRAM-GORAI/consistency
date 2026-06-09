@@ -328,6 +328,8 @@
       margin-bottom: 16px;
       font-weight: 700;
       box-shadow: 3px 3px 0 var(--black);
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .auth-error.visible { display: flex; }
@@ -345,6 +347,8 @@
       margin-bottom: 16px;
       font-weight: 700;
       box-shadow: 3px 3px 0 var(--black);
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .auth-success.visible { display: flex; }
@@ -1197,6 +1201,11 @@
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab');
       switchTab(tab === 'register' ? 'register' : 'login');
+
+      if (params.get('blacklisted') === 'true') {
+        const reason = params.get('reason') || 'Your account is blacklisted.';
+        showError('login', reason);
+      }
     })();
 
     // Security: If admin logs in another tab, logout user here
