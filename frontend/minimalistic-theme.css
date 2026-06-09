@@ -171,6 +171,13 @@
   stroke: #ffffff !important;
 }
 
+/* Ensure active hover buttons keep white text and icons */
+[data-theme="minimalistic"] .nav-btn.active:hover i,
+[data-theme="minimalistic"] .nav-btn.active:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 [data-theme="minimalistic"] .nav-btn:hover i,
 [data-theme="minimalistic"] .nav-btn:hover svg {
   color: #0f172a !important;
@@ -578,9 +585,205 @@
 
 /* ── 12. Miscellaneous Brutalist Offsets ── */
 [data-theme="minimalistic"] .badge,
-[data-theme="minimalistic"] .tag,
+[data-theme="minimalistic"] .tag {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+/* ── 13. Rankings (Leaderboard) Page Minimalism ── */
+[data-theme="minimalistic"] .lb-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.01) !important;
+  color: #0f172a !important;
+  transform: none !important;
+}
+
+[data-theme="minimalistic"] .lb-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+  transform: none !important;
+}
+
+[data-theme="minimalistic"] .lb-card.card-rank-1,
+[data-theme="minimalistic"] .lb-card.card-rank-2,
+[data-theme="minimalistic"] .lb-card.card-rank-3 {
+  background: #ffffff !important;
+}
+
 [data-theme="minimalistic"] .lb-rank {
   border: 1px solid #cbd5e1 !important;
   box-shadow: none !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+}
+
+[data-theme="minimalistic"] .lb-rank.rank-1 {
+  background: #fef3c7 !important; /* Soft gold tint */
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+[data-theme="minimalistic"] .lb-rank.rank-2 {
+  background: #f1f5f9 !important; /* Soft silver tint */
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="minimalistic"] .lb-rank.rank-3 {
+  background: #fff5f5 !important; /* Soft bronze tint */
+  color: #c53030 !important;
+  border-color: #feb2b2 !important;
+}
+
+[data-theme="minimalistic"] .lb-streak-box {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] .lb-streak-box.current {
+  color: #0d9488 !important; /* Teal for current */
+}
+
+[data-theme="minimalistic"] .lb-streak-box.highest {
+  color: #4f46e5 !important; /* Indigo for highest */
+}
+
+[data-theme="minimalistic"] .lb-streak-val {
+  color: inherit !important;
+}
+
+[data-theme="minimalistic"] .lb-streak-label {
+  color: #64748b !important;
+}
+
+[data-theme="minimalistic"] .lb-sort-buttons {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+  background: #ffffff !important;
+}
+
+/* ── 14. Pomodoro Page Minimalism ── */
+[data-theme="minimalistic"] #page-pomodoro .pomo-tabs {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-tab-btn {
+  background: transparent !important;
+  color: #64748b !important;
+  border: none !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-tab-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-tab-btn + .pomo-tab-btn {
+  border-left: none !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-start {
+  background: #0d9488 !important; /* Premium Teal */
+  color: #ffffff !important;
+  border-color: #0d9488 !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-start:hover {
+  background: #0f766e !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-start.paused {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-start.paused:hover {
+  background: #fee2e2 !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-start i,
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-start svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-reset {
+  background: #ffffff !important;
+  color: #475569 !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-btn-reset:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-mode-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  transform: none !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-mode-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro .pomo-mode-btn.active {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] #page-pomodoro #pomo-custom-panel {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+
+[data-theme="minimalistic"] .pomo-wake-lock {
+  border-top-style: solid !important;
+  border-top-width: 1px !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="minimalistic"] .wake-lock-container {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] .wake-lock-container:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="minimalistic"] .wake-lock-container .custom-checkbox {
+  border-width: 1px !important;
+  border-color: #cbd5e1 !important;
   border-radius: 4px !important;
 }
