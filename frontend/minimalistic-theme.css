@@ -5,13 +5,13 @@
 
 [data-theme="minimalistic"] {
   /* ── Backgrounds ── */
-  --bg:        #f8fafc; /* Slate-50: Calming off-white background */
+  --bg:        #f1f5f9; /* Slate-100: Soft cool gray background */
   --bg-card:   #ffffff; /* Pure white cards */
   --bg-input:  #ffffff;
-  --bg-muted:  #f1f5f9; /* Slate-100 */
-  --bg-readonly: #f8fafc;
-  --graph-empty: #e2e8f0; /* Slate-200 */
-  --chat-messages-bg: #f8fafc;
+  --bg-muted:  #f8fafc; /* Slate-50 for subtle container backgrounds */
+  --bg-readonly: #f1f5f9;
+  --graph-empty: #cbd5e1; /* Slate-300 */
+  --chat-messages-bg: #f1f5f9;
 
   /* ── Text ── */
   --text:      #0f172a; /* Slate-900: Soft dark slate */
@@ -105,6 +105,22 @@
   backdrop-filter: none !important; /* Disable performance-heavy blurs */
 }
 
+[data-theme="minimalistic"] .modal-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  padding: 16px 20px !important;
+}
+
+[data-theme="minimalistic"] .modal-header h2,
+[data-theme="minimalistic"] .modal-header h3,
+[data-theme="minimalistic"] .modal-header span,
+[data-theme="minimalistic"] .modal-header i,
+[data-theme="minimalistic"] .modal-header svg {
+  color: #0f172a !important;
+  stroke: #0f172a !important;
+}
+
 /* ── 4. Navbar & Navigation ── */
 [data-theme="minimalistic"] .navbar {
   background: #ffffff !important;
@@ -113,11 +129,58 @@
   color: #0f172a !important;
 }
 
-[data-theme="minimalistic"] .navbar a,
-[data-theme="minimalistic"] .navbar span,
-[data-theme="minimalistic"] .navbar button,
-[data-theme="minimalistic"] .navbar div {
+[data-theme="minimalistic"] .navbar .brand-name {
   color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .nav-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] .nav-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .nav-btn.active {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .nav-btn.active:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* Ensure icons inside nav buttons inherit correct color */
+[data-theme="minimalistic"] .nav-btn.active i,
+[data-theme="minimalistic"] .nav-btn.active svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .nav-btn:hover i,
+[data-theme="minimalistic"] .nav-btn:hover svg {
+  color: #0f172a !important;
+  stroke: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .nav-btn i,
+[data-theme="minimalistic"] .nav-btn svg {
+  color: #475569 !important;
+  stroke: #475569 !important;
 }
 
 [data-theme="minimalistic"] .bottom-nav-container {
@@ -131,19 +194,25 @@
 }
 
 [data-theme="minimalistic"] .bottom-nav-btn.active {
-  color: #0ea5e9 !important; /* Sky-500 active color */
+  color: #0f172a !important; /* Premium active color */
 }
 
 /* ── 5. Buttons (Clean, flat, rounded, no translation on hover) ── */
 [data-theme="minimalistic"] .btn,
-[data-theme="minimalistic"] .modal-header button,
-[data-theme="minimalistic"] .goal-card button,
-[data-theme="minimalistic"] .day-card button,
-[data-theme="minimalistic"] .pomo-card button {
-  border: 1px solid #cbd5e1 !important;
+[data-theme="minimalistic"] button,
+[data-theme="minimalistic"] .btn-primary,
+[data-theme="minimalistic"] .btn-secondary,
+[data-theme="minimalistic"] .btn-ghost {
   box-shadow: none !important;
-  border-radius: 8px !important;
   transform: none !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+[data-theme="minimalistic"] .btn,
+[data-theme="minimalistic"] button {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
   transition: background 0.15s ease, border-color 0.15s ease !important;
 }
 
@@ -151,11 +220,10 @@
 [data-theme="minimalistic"] button:hover {
   background: #f8fafc !important;
   border-color: #cbd5e1 !important;
-  transform: none !important;
 }
 
 [data-theme="minimalistic"] .btn-primary {
-  background: #0f172a !important; /* Primary dark slate */
+  background: #0f172a; /* Slate-900 (No !important to allow inline backgrounds to take effect) */
   color: #ffffff !important;
   border: 1px solid #0f172a !important;
 }
@@ -186,9 +254,165 @@
   background: #f1f5f9 !important;
 }
 
-[data-theme="minimalistic"] .modal-close {
+/* ── 5.1 Special Modal Action Buttons (Pastel & Clean) ── */
+[data-theme="minimalistic"] #scan-list-btn,
+[data-theme="minimalistic"] #scan-camera-btn {
+  background: #fdf2f8 !important; /* Soft rose/pink tint */
+  border: 1px solid #fbcfe8 !important;
+  color: #9d174d !important; /* Premium dark rose */
+}
+
+[data-theme="minimalistic"] #scan-list-btn:hover,
+[data-theme="minimalistic"] #scan-camera-btn:hover {
+  background: #fce7f3 !important;
+  border-color: #f9a8d4 !important;
+}
+
+[data-theme="minimalistic"] #scan-list-btn i,
+[data-theme="minimalistic"] #scan-list-btn svg,
+[data-theme="minimalistic"] #scan-camera-btn i,
+[data-theme="minimalistic"] #scan-camera-btn svg {
+  color: #9d174d !important;
+  stroke: #9d174d !important;
+}
+
+[data-theme="minimalistic"] #scan-credits-badge {
+  background: #9d174d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="minimalistic"] #voice-record-btn {
+  background: #ecfdf5 !important; /* Soft emerald/green tint */
+  border: 1px solid #a7f3d0 !important;
+  color: #065f46 !important; /* Premium dark emerald */
+  margin-top: 8px !important;
+}
+
+[data-theme="minimalistic"] #voice-record-btn:hover {
+  background: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+}
+
+[data-theme="minimalistic"] #voice-record-btn i,
+[data-theme="minimalistic"] #voice-record-btn svg {
+  color: #065f46 !important;
+  stroke: #065f46 !important;
+}
+
+[data-theme="minimalistic"] #voice-credits-badge {
+  background: #065f46 !important;
+  color: #ffffff !important;
+}
+
+/* ── 5.2 Attribute Selectors for Inline Style Overrides ── */
+[data-theme="minimalistic"] button[style*="var(--purple)"],
+[data-theme="minimalistic"] .btn[style*="var(--purple)"] {
+  background: #eef2ff !important; /* Soft indigo */
+  color: #3730a3 !important;
+  border-color: #c7d2fe !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--green)"],
+[data-theme="minimalistic"] .btn[style*="var(--green)"] {
+  background: #ecfdf5 !important; /* Soft emerald */
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--pink)"],
+[data-theme="minimalistic"] .btn[style*="var(--pink)"] {
+  background: #fdf2f8 !important; /* Soft rose */
+  color: #9d174d !important;
+  border-color: #fbcfe8 !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--yellow)"],
+[data-theme="minimalistic"] .btn[style*="var(--yellow)"] {
+  background: #fffbeb !important; /* Soft amber */
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--red)"],
+[data-theme="minimalistic"] .btn[style*="var(--red)"] {
+  background: #fef2f2 !important; /* Soft red */
+  color: #991b1b !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Ensure correct text/icon coloring inside status/attribute buttons */
+[data-theme="minimalistic"] button[style*="var(--purple)"] i,
+[data-theme="minimalistic"] button[style*="var(--purple)"] svg,
+[data-theme="minimalistic"] .btn[style*="var(--purple)"] i,
+[data-theme="minimalistic"] .btn[style*="var(--purple)"] svg {
+  color: #3730a3 !important;
+  stroke: #3730a3 !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--green)"] i,
+[data-theme="minimalistic"] button[style*="var(--green)"] svg,
+[data-theme="minimalistic"] .btn[style*="var(--green)"] i,
+[data-theme="minimalistic"] .btn[style*="var(--green)"] svg {
+  color: #065f46 !important;
+  stroke: #065f46 !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--pink)"] i,
+[data-theme="minimalistic"] button[style*="var(--pink)"] svg,
+[data-theme="minimalistic"] .btn[style*="var(--pink)"] i,
+[data-theme="minimalistic"] .btn[style*="var(--pink)"] svg {
+  color: #9d174d !important;
+  stroke: #9d174d !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--yellow)"] i,
+[data-theme="minimalistic"] button[style*="var(--yellow)"] svg,
+[data-theme="minimalistic"] .btn[style*="var(--yellow)"] i,
+[data-theme="minimalistic"] .btn[style*="var(--yellow)"] svg {
+  color: #92400e !important;
+  stroke: #92400e !important;
+}
+
+[data-theme="minimalistic"] button[style*="var(--red)"] i,
+[data-theme="minimalistic"] button[style*="var(--red)"] svg,
+[data-theme="minimalistic"] .btn[style*="var(--red)"] i,
+[data-theme="minimalistic"] .btn[style*="var(--red)"] svg {
+  color: #991b1b !important;
+  stroke: #991b1b !important;
+}
+
+/* ── 5.3 Close Button Reset (Modern Circle Hover Style) ── */
+[data-theme="minimalistic"] .modal-close,
+[data-theme="minimalistic"] .modal-header .modal-close {
+  background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  color: #64748b !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] .modal-close:hover,
+[data-theme="minimalistic"] .modal-header .modal-close:hover {
+  background: rgba(15, 23, 42, 0.08) !important;
+  color: #ef4444 !important;
+  transform: none !important;
+}
+
+[data-theme="minimalistic"] .modal-close i,
+[data-theme="minimalistic"] .modal-close svg,
+[data-theme="minimalistic"] .modal-header .modal-close i,
+[data-theme="minimalistic"] .modal-header .modal-close svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+  width: 18px !important;
+  height: 18px !important;
 }
 
 /* ── 6. Inputs & Forms ── */
