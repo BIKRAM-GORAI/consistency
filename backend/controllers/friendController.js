@@ -1,3 +1,4 @@
+const admin = require('../config/firebase');
 const User = require('../models/User');
 
 // 1. Send Friend / Follow Request
@@ -50,6 +51,48 @@ exports.sendFriendRequest = async (req, res) => {
 
     targetUser.friendRequests.push(senderId);
     await targetUser.save();
+
+    // Trigger FCM Push Notification for Friend Request
+    const tokens = targetUser.fcmTokens || [];
+    if (tokens.length > 0) {
+      const payload = {
+        notification: {
+          title: 'New Friend Request',
+          body: `${senderUser.name} sent you a friend request.`
+        },
+        data: {
+          type: 'friend_request',
+          senderName: String(senderUser.name)
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'consistency_chime_channel_v2',
+            sound: 'notificationsound'
+          }
+        },
+        webpush: {
+          headers: {
+            Urgency: 'high'
+          },
+          fcmOptions: {
+            link: `/?openTab=messages&t=${Date.now()}`
+          }
+        }
+      };
+
+      admin.messaging().sendEachForMulticast({
+        tokens,
+        notification: payload.notification,
+        data: payload.data,
+        android: payload.android,
+        webpush: payload.webpush
+      }).then(response => {
+        console.log(`[FCM Friend Request] Sent to ${response.successCount} devices.`);
+      }).catch(err => {
+        console.error('Error sending friend request push notification:', err);
+      });
+    }
 
     res.json({ success: true, status: 'requested_sent', message: 'Friend request sent successfully.' });
   } catch (err) {

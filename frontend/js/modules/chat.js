@@ -1799,10 +1799,20 @@ async function initPushNotifications(forcePrompt = false) {
           console.log('[Native FCM] Foreground push received:', notification);
           const groupId = notification.data?.groupId || notification.groupId || notification.data?.group_id || notification.group_id;
           const senderId = notification.data?.senderId || notification.senderId || notification.data?.sender_id || notification.sender_id;
+          const type = notification.data?.type || notification.type;
           const title = notification.title || notification.data?.title || 'New Message';
           const body = notification.body || notification.data?.body || '';
           
-          if (groupId) {
+          if (type === 'friend_request') {
+            showPushBanner(title, body, null, null, 'friend_request');
+            const mDot = document.getElementById('messages-notif-dot');
+            const bDot = document.getElementById('bnav-messages-notif-dot');
+            if (mDot) mDot.style.display = 'block';
+            if (bDot) bDot.style.display = 'block';
+            if (typeof window.DM?.fetchFriendRequests === 'function') {
+              window.DM.fetchFriendRequests();
+            }
+          } else if (groupId) {
             const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
             if (!activeId || String(activeId) !== String(groupId)) {
               showPushBanner(title, body, groupId);
@@ -1833,7 +1843,10 @@ async function initPushNotifications(forcePrompt = false) {
         PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('[Native FCM] Action performed on push:', action);
           const groupId = action.notification?.data?.groupId;
-          if (groupId) {
+          const type = action.notification?.data?.type || action.notification?.type;
+          if (type === 'friend_request') {
+            showPage('messages');
+          } else if (groupId) {
             // Navigate directly to the chat
             showPage('groups');
             openGroupChatFromDeepLink(groupId);
@@ -1917,8 +1930,18 @@ async function initPushNotifications(forcePrompt = false) {
               const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
               const groupId = payload.data?.groupId || payload.groupId || payload.data?.group_id || payload.group_id;
               const senderId = payload.data?.senderId || payload.senderId || payload.data?.sender_id || payload.sender_id;
+              const type = payload.data?.type || payload.type;
               
-              if (groupId) {
+              if (type === 'friend_request') {
+                showPushBanner(payload.notification?.title || 'Friend Request', payload.notification?.body || '', null, null, 'friend_request');
+                const mDot = document.getElementById('messages-notif-dot');
+                const bDot = document.getElementById('bnav-messages-notif-dot');
+                if (mDot) mDot.style.display = 'block';
+                if (bDot) bDot.style.display = 'block';
+                if (typeof window.DM?.fetchFriendRequests === 'function') {
+                  window.DM.fetchFriendRequests();
+                }
+              } else if (groupId) {
                 if (!activeId || String(activeId) !== String(groupId)) {
                   showPushBanner(payload.notification?.title || 'New Message', payload.notification?.body || '', groupId);
                   const gDot = document.getElementById('groups-notif-dot');

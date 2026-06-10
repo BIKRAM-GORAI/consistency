@@ -163,13 +163,19 @@ window.showToast = showToast;
 
 /** Slim push notification banner — used instead of showToast for foreground FCM messages */
 let _pushBannerTimer = null;
-function showPushBanner(title, body, groupId, senderId) {
+function showPushBanner(title, body, groupId, senderId, type) {
   const banner = document.getElementById('push-banner');
   if (!banner) return;
   const titleEl = document.getElementById('push-banner-title');
   const bodyEl  = document.getElementById('push-banner-body');
   if (titleEl) titleEl.textContent = title || 'New Message';
   if (bodyEl)  bodyEl.textContent  = body  || '';
+
+  if (type) {
+    banner.dataset.type = type;
+  } else {
+    delete banner.dataset.type;
+  }
 
   if (groupId) {
     banner.dataset.groupId = groupId;
@@ -178,6 +184,10 @@ function showPushBanner(title, body, groupId, senderId) {
   } else if (senderId) {
     banner.dataset.senderId = senderId;
     delete banner.dataset.groupId;
+    banner.style.cursor = 'pointer';
+  } else if (type === 'friend_request') {
+    delete banner.dataset.groupId;
+    delete banner.dataset.senderId;
     banner.style.cursor = 'pointer';
   } else {
     delete banner.dataset.groupId;
@@ -206,7 +216,10 @@ function handlePushBannerClick(event) {
   const banner = document.getElementById('push-banner');
   if (!banner) return;
 
-  if (banner.dataset.groupId) {
+  if (banner.dataset.type === 'friend_request') {
+    closePushBanner();
+    showPage('messages');
+  } else if (banner.dataset.groupId) {
     const groupId = banner.dataset.groupId;
     closePushBanner();
     showPage('groups');
