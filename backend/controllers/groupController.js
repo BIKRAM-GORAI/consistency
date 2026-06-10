@@ -380,6 +380,7 @@ const createGroup = async (req, res) => {
         name: saved.name,
         description: saved.description || '',
         icon: saved.icon || '',
+        members: saved.members.map(m => m.toString()),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
       console.log(`[Firestore] Synced new group: ${saved.name}`);
@@ -436,6 +437,17 @@ const joinGroup = async (req, res) => {
 
     group.members.push(userId);
     await group.save();
+
+    // Sync to Firestore (to allow members-based rules to work)
+    try {
+      const db = admin.firestore();
+      await db.collection('group_chats').doc(group._id.toString()).set({
+        members: group.members.map(m => m.toString()),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (fsErr) {
+      console.error('[Firestore] Failed to sync group members on join:', fsErr);
+    }
 
     const populated = await Group.findById(group._id).populate('members', 'name username profilePicture');
     res.json(populated);
@@ -611,6 +623,19 @@ const handleJoinRequest = async (req, res) => {
     }
 
     await group.save();
+
+    // Sync to Firestore (to allow members-based rules to work)
+    if (action === 'approve') {
+      try {
+        const db = admin.firestore();
+        await db.collection('group_chats').doc(group._id.toString()).set({
+          members: group.members.map(m => m.toString()),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      } catch (fsErr) {
+        console.error('[Firestore] Failed to sync group members on join request approval:', fsErr);
+      }
+    }
 
     // Send Email Notification
     const siteUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -901,6 +926,7 @@ const editGroup = async (req, res) => {
         name: group.name,
         description: group.description || '',
         icon: group.icon || '',
+        members: group.members.map(m => m.toString()),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
       console.log(`[Firestore] Synced edited group: ${group.name}`);
@@ -973,6 +999,17 @@ const removeMember = async (req, res) => {
 
     group.members = group.members.filter(m => String(m) !== String(targetUserId));
     await group.save();
+
+    // Sync to Firestore (to allow members-based rules to work)
+    try {
+      const db = admin.firestore();
+      await db.collection('group_chats').doc(group._id.toString()).set({
+        members: group.members.map(m => m.toString()),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (fsErr) {
+      console.error('[Firestore] Failed to sync group members on removal:', fsErr);
+    }
 
     const populated = await Group.findById(group._id).populate('members', 'name username profilePicture').populate('owner', 'name username profilePicture');
     res.json(populated);
