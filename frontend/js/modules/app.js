@@ -461,6 +461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setLeaderboardTogglesEnabled(true);
     const sel = document.getElementById('goals-sort-select');
     if (sel) sel.disabled = false;
+    if (typeof window.updateGroupsOfflineState === 'function') window.updateGroupsOfflineState();
   });
   window.addEventListener('offline', () => {
     setLeaderboardTogglesEnabled(false);
@@ -474,6 +475,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       sortGoals();
       renderGoals();
     }
+    if (typeof window.updateGroupsOfflineState === 'function') window.updateGroupsOfflineState();
   });
 
   // Load badges into memory immediately for offline access

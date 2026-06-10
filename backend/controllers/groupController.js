@@ -5,6 +5,7 @@ const { cloudinary } = require('../config/cloudinary');
 const { sendEmail } = require('../utils/email');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const admin = require('../config/firebase');
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -167,6 +168,141 @@ const moderateGroup = async (req, res) => {
 };
 
 /**
+ * POST /api/groups/:groupId/moderate-edit
+ * Body: { name, description, icon }
+ * Moderates the edited group details via AI service and returns an edit token.
+ */
+const moderateEditGroup = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { name, description, icon } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'name is required.' });
+    }
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    if (String(group.owner) !== String(userId)) {
+      return res.status(403).json({ message: 'Only the owner can edit the group.' });
+    }
+
+    // 1. Fetch user for daily limits check
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Reset daily count if day has changed
+    const now = new Date();
+    const lastReset = user.dailyGroupCreationsResetTime ? new Date(user.dailyGroupCreationsResetTime) : new Date(0);
+    if (now.toDateString() !== lastReset.toDateString()) {
+      user.dailyGroupCreationsCount = 0;
+      user.dailyGroupCreationsResetTime = now;
+      await user.save();
+    }
+
+    const isPremium = user.subscriptionTier === 'premium' && 
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
+
+    const limit = isPremium
+      ? (parseInt(process.env.PREMIUM_DAILY_GROUP_LIMIT, 10) || 10)
+      : (parseInt(process.env.FREE_DAILY_GROUP_LIMIT, 10) || 5);
+
+    if (user.dailyGroupCreationsCount >= limit) {
+      return res.status(429).json({
+        message: `Daily group creation/edit limit reached. You can create/edit up to ${limit} groups per day.`
+      });
+    }
+
+    // 2. Call stand-alone AI Service to moderate group details
+    let safetyStatus = 'unknown';
+    let apiSuccess = false;
+    let score = undefined;
+    let reason = 'AI service error';
+
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceSecret = process.env.AI_SERVICE_SECRET;
+    
+    if (!aiServiceSecret) {
+      console.error('[groupController] AI_SERVICE_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    // Send only new base64 icons to Gemini. If it's a URL, Gemini cannot analyze it directly as base64.
+    const iconToModerate = (icon && icon.startsWith('data:image')) ? icon : '';
+
+    try {
+      const aiResponse = await axios.post(`${aiServiceUrl}/api/ai/moderate-group`, {
+        name,
+        description,
+        icon: iconToModerate
+      }, {
+        headers: {
+          'x-ai-service-secret': aiServiceSecret,
+          'Content-Type': 'application/json'
+        },
+        timeout: 20000
+      });
+
+      apiSuccess = true;
+      score = aiResponse.data.score;
+      reason = aiResponse.data.reason;
+
+      if (score !== undefined) {
+        if (score < 5) {
+          safetyStatus = 'rejected';
+        } else if (score < 8) {
+          safetyStatus = 'warning';
+        } else {
+          safetyStatus = 'safe';
+        }
+      }
+    } catch (aiErr) {
+      console.error('[groupController] AI group edit moderation failed:', aiErr.message);
+      // Block group editing if AI service is unreachable — do NOT silently pass through
+      return res.status(503).json({
+        message: 'AI moderation service is temporarily unavailable. Please try again in a moment.',
+        error: aiErr.message
+      });
+    }
+
+    // Only increment count if AI call succeeded
+    user.dailyGroupCreationsCount += 1;
+    await user.save();
+
+    if (safetyStatus === 'rejected') {
+      return res.json({
+        score,
+        reason,
+        safetyStatus,
+        dailyGroupCreationsCount: user.dailyGroupCreationsCount,
+        dailyGroupCreationsLimit: limit
+      });
+    }
+
+    // If safe or warning, generate editToken
+    const editToken = jwt.sign(
+      { userId, groupId: group._id.toString(), name, description: description || '', icon, safetyStatus },
+      jwtSecret,
+      { expiresIn: '15m' }
+    );
+
+    return res.json({
+      score,
+      reason,
+      safetyStatus,
+      editToken,
+      dailyGroupCreationsCount: user.dailyGroupCreationsCount,
+      dailyGroupCreationsLimit: limit
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
  * POST /api/groups/create
  * Body: { creationToken }
  * Verifies the token and actually creates the group.
@@ -236,6 +372,21 @@ const createGroup = async (req, res) => {
     });
 
     const saved = await group.save();
+
+    // ── SYNC TO FIRESTORE (REAL-TIME INSTANT UPDATES) ──
+    try {
+      const db = admin.firestore();
+      await db.collection('group_chats').doc(saved._id.toString()).set({
+        name: saved.name,
+        description: saved.description || '',
+        icon: saved.icon || '',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      console.log(`[Firestore] Synced new group: ${saved.name}`);
+    } catch (fsErr) {
+      console.error('[Firestore] Failed to sync group creation:', fsErr);
+    }
+
     const populated = await Group.findById(saved._id).populate('members', 'name username profilePicture');
     res.status(201).json(populated);
   } catch (err) {
@@ -680,14 +831,34 @@ const memberDays = async (req, res) => {
 
 /**
  * PUT /api/groups/:groupId
- * Body: { name }
- * Edits the group name (owner only).
+ * Body: { editToken }
+ * Edits the group details (owner only, verified by editToken).
  */
 const editGroup = async (req, res) => {
   try {
-    // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
-    const { name, description, icon } = req.body;
+    const { editToken } = req.body;
+
+    if (!editToken) {
+      return res.status(400).json({ message: 'editToken is required.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(editToken, jwtSecret);
+    } catch (tokenErr) {
+      return res.status(400).json({ message: 'Invalid or expired edit session. Please analyze again.' });
+    }
+
+    if (String(decoded.userId) !== String(userId)) {
+      return res.status(403).json({ message: 'Unauthorized edit session ownership.' });
+    }
+
+    if (String(decoded.groupId) !== String(req.params.groupId)) {
+      return res.status(400).json({ message: 'Unauthorized session group mismatch.' });
+    }
+
+    const { name, description, icon, safetyStatus } = decoded;
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
@@ -698,6 +869,7 @@ const editGroup = async (req, res) => {
 
     if (name) group.name = name;
     if (description !== undefined) group.description = description;
+    group.safetyStatus = safetyStatus;
     
     // If icon is a base64 string, upload it and delete old one
     if (icon && icon.startsWith('data:image')) {
@@ -721,6 +893,20 @@ const editGroup = async (req, res) => {
     }
     
     await group.save();
+
+    // ── SYNC TO FIRESTORE (REAL-TIME INSTANT UPDATES) ──
+    try {
+      const db = admin.firestore();
+      await db.collection('group_chats').doc(group._id.toString()).set({
+        name: group.name,
+        description: group.description || '',
+        icon: group.icon || '',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      console.log(`[Firestore] Synced edited group: ${group.name}`);
+    } catch (fsErr) {
+      console.error('[Firestore] Failed to sync group edit:', fsErr);
+    }
     
     const populated = await Group.findById(group._id).populate('members', 'name username profilePicture').populate('owner', 'name username profilePicture');
     res.json(populated);
@@ -897,5 +1083,6 @@ module.exports = {
   uploadGroupIcon,
   getGroupMeeting,
   getCreationLimits,
-  moderateGroup
+  moderateGroup,
+  moderateEditGroup
 };

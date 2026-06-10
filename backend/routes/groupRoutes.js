@@ -44,6 +44,9 @@ router.post('/create', authenticateToken, ctrl.createGroup);
 // Moderate group details (name, description, icon) before creation
 router.post('/moderate', authenticateToken, createGroupValidation, ctrl.moderateGroup);
 
+// Moderate group details (name, description, icon) before editing
+router.post('/:groupId/moderate-edit', authenticateToken, editGroupValidation, ctrl.moderateEditGroup);
+
 // Upload group icon
 router.post('/upload-icon', authenticateToken, uploadGroup.single('image'), ctrl.uploadGroupIcon);
 

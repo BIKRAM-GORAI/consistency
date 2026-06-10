@@ -24,6 +24,7 @@ async function loadGroups() {
     if (cached.length > 0) {
       allJoinedGroups = cached; window.allJoinedGroups = allJoinedGroups;
       renderGroups();
+      subscribeToGroupsRealtime(allJoinedGroups);
     } else {
       container.innerHTML = `
         <div style="text-align:center; padding:40px; color:var(--text-muted);">
@@ -79,6 +80,7 @@ async function loadGroups() {
 
       updateGroupQuotaUI(limits);
       renderGroups();
+      subscribeToGroupsRealtime(allJoinedGroups);
     }
   } catch (err) {
     console.warn('Background groups refresh failed:', err);
@@ -279,6 +281,10 @@ function renderGroups() {
     
     updateTimers(); // Run once immediately
     window.groupCountdownInterval = setInterval(updateTimers, 1000);
+  }
+  
+  if (typeof updateGroupsOfflineState === 'function') {
+    updateGroupsOfflineState();
   }
 }
 
@@ -761,7 +767,10 @@ async function submitCreateGroup() {
   // Reset Analysis UI
   document.getElementById('analysis-loading-area').style.display = 'block';
   document.getElementById('analysis-result-area').style.display = 'none';
-  document.getElementById('analysis-finalize-btn').style.display = 'none';
+  const finalizeBtn = document.getElementById('analysis-finalize-btn');
+  finalizeBtn.style.display = 'none';
+  finalizeBtn.textContent = 'Finalize & Create';
+  finalizeBtn.onclick = finalizeGroupCreation;
   document.getElementById('analysis-quota-limit').textContent = 'Quota status: Checking...';
 
   openModal('modal-group-analysis');
@@ -934,28 +943,87 @@ async function submitJoinGroup() {
 // ── Manage Groups ──────────────────────────────────────────
 let editingGroupId = null;
 
-function openEditGroupModal(id, name, icon, description) {
-  editingGroupId = id;
-  document.getElementById('edit-group-name-input').value = name;
-  document.getElementById('edit-group-desc-input').value = description || '';
-  
-  // Set Icon
-  document.getElementById('edit-group-icon-url').value = icon;
-  const iconImg = document.getElementById('edit-group-icon-img');
-  const iconPlaceholder = document.getElementById('edit-group-icon-placeholder');
-  
-  if (icon) {
-    iconImg.src = icon;
-    iconImg.style.display = 'block';
-    iconPlaceholder.style.display = 'none';
-  } else {
-    iconImg.src = '';
-    iconImg.style.display = 'none';
-    iconPlaceholder.style.display = 'block';
-  }
+// Real-time Firestore sync & offline state helpers
+let groupSubscriptions = {};
 
-  openModal('modal-edit-group');
+function subscribeToGroupsRealtime(groups) {
+  const { firebaseDb, firestore } = window;
+  if (!firebaseDb || !firestore) return;
+  
+  const activeIds = new Set(groups.map(g => g._id));
+  for (const id of Object.keys(groupSubscriptions)) {
+    if (!activeIds.has(id)) {
+      if (typeof groupSubscriptions[id] === 'function') {
+        groupSubscriptions[id]();
+      }
+      delete groupSubscriptions[id];
+    }
+  }
+  
+  groups.forEach(group => {
+    if (groupSubscriptions[group._id]) return;
+    
+    const docRef = firestore.doc(firebaseDb, 'group_chats', group._id);
+    groupSubscriptions[group._id] = firestore.onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        let changed = false;
+        
+        if (data.name && group.name !== data.name) {
+          group.name = data.name;
+          changed = true;
+        }
+        if (data.description !== undefined && group.description !== data.description) {
+          group.description = data.description;
+          changed = true;
+        }
+        if (data.icon !== undefined && group.icon !== data.icon) {
+          group.icon = data.icon;
+          changed = true;
+        }
+        
+        if (changed) {
+          window.localDb.groups.put(group).catch(console.error);
+          renderGroups();
+          
+          if (window.activeChatGroupId === group._id) {
+            const nameEl = document.getElementById('chat-group-name');
+            if (nameEl) nameEl.textContent = group.name;
+            const iconWrap = document.getElementById('chat-group-icon-wrap');
+            if (iconWrap) {
+              iconWrap.innerHTML = group.icon 
+                ? `<img src="${group.icon}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='4px'; this.style.background='var(--yellow)';" style="width:100%;height:100%;object-fit:cover;" />`
+                : `<i data-lucide="users" style="width:24px;height:24px;color:var(--black);"></i>`;
+              if (window.lucide) lucide.createIcons({ root: iconWrap });
+            }
+          }
+        }
+      }
+    });
+  });
 }
+window.subscribeToGroupsRealtime = subscribeToGroupsRealtime;
+
+function updateGroupsOfflineState() {
+  const isOffline = !navigator.onLine;
+  
+  const createPrivateBtn = document.getElementById('btn-create-private-team');
+  const createPublicBtn = document.getElementById('btn-create-public-group');
+  
+  if (createPrivateBtn) createPrivateBtn.disabled = isOffline;
+  if (createPublicBtn) createPublicBtn.disabled = isOffline;
+  
+  const adminButtons = document.querySelectorAll('.btn-group-admin');
+  adminButtons.forEach(btn => {
+    btn.disabled = isOffline;
+  });
+
+  const joinButtons = document.querySelectorAll('.groups-join-btn');
+  joinButtons.forEach(btn => {
+    btn.disabled = isOffline;
+  });
+}
+window.updateGroupsOfflineState = updateGroupsOfflineState;
 
 async function submitEditGroup() {
   const name = document.getElementById('edit-group-name-input').value.trim();
@@ -967,21 +1035,150 @@ async function submitEditGroup() {
     return;
   }
 
-  const btn = document.getElementById('submit-edit-group-btn');
-  btn.disabled = true; btn.textContent = 'Saving...';
+  // Close edit modal, setup and open analysis modal
+  closeModal('modal-edit-group');
+  
+  // Set group preview details
+  document.getElementById('analysis-icon-img').src = icon || '/checklist.png';
+  document.getElementById('analysis-group-name').textContent = name;
+  document.getElementById('analysis-group-desc').textContent = description || 'No description provided.';
+  
+  // Reset Analysis UI
+  document.getElementById('analysis-loading-area').style.display = 'block';
+  document.getElementById('analysis-result-area').style.display = 'none';
+  const finalizeBtn = document.getElementById('analysis-finalize-btn');
+  finalizeBtn.style.display = 'none';
+  finalizeBtn.textContent = 'Finalize & Save';
+  finalizeBtn.onclick = finalizeGroupEdit; // Bind to edit finalize
+  document.getElementById('analysis-quota-limit').textContent = 'Quota status: Checking...';
+
+  openModal('modal-group-analysis');
+
+  // Keep a reference to the pending group edit metadata
+  window._pendingGroupEdit = { groupId: editingGroupId, name, description, icon, token: null };
 
   try {
-    await apiFetch(`${window.API}/api/groups/${editingGroupId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ userId: window.userId, name, description, icon }),
+    const res = await apiFetch(`${window.API}/api/groups/${editingGroupId}/moderate-edit`, {
+      method: 'POST',
+      body: JSON.stringify({ name, description, icon })
     });
-    closeModal('modal-edit-group');
+
+    // Update dynamic quota indicators
+    if (res.dailyGroupCreationsCount !== undefined) {
+      const quotaLimits = {
+        dailyGroupCreationsCount: res.dailyGroupCreationsCount,
+        dailyGroupCreationsLimit: res.dailyGroupCreationsLimit
+      };
+      updateGroupQuotaUI(quotaLimits);
+      document.getElementById('analysis-quota-limit').textContent = `Daily Creations: ${res.dailyGroupCreationsCount} / ${res.dailyGroupCreationsLimit} used`;
+    }
+
+    document.getElementById('analysis-loading-area').style.display = 'none';
+    const resultArea = document.getElementById('analysis-result-area');
+    resultArea.style.display = 'block';
+
+    const statusBox = document.getElementById('analysis-status-box');
+    const statusIcon = document.getElementById('analysis-status-icon');
+    const statusTitle = document.getElementById('analysis-status-title');
+    const statusReason = document.getElementById('analysis-status-reason');
+
+    if (res.safetyStatus === 'rejected') {
+      statusBox.style.background = '#fee2e2';
+      statusBox.style.borderColor = '#ef4444';
+      statusBox.style.color = '#991b1b';
+      statusBox.style.boxShadow = '4px 4px 0 #ef4444';
+      
+      statusIcon.textContent = '❌';
+      statusTitle.textContent = 'Group Edit Blocked';
+      statusReason.textContent = res.reason || 'Group name, description, or icon violated safety moderation rules.';
+      
+      finalizeBtn.style.display = 'none';
+      showToast('Group edit blocked by AI safety moderation.', 'error');
+    } else if (res.safetyStatus === 'unknown') {
+      statusBox.style.background = '#fee2e2';
+      statusBox.style.borderColor = '#ef4444';
+      statusBox.style.color = '#991b1b';
+      statusBox.style.boxShadow = '4px 4px 0 #ef4444';
+
+      statusIcon.textContent = '⚠️';
+      statusTitle.textContent = 'Moderation Unavailable';
+      statusReason.textContent = 'The AI safety moderation service is currently unreachable. Group editing has been paused for security. Please try again in a moment.';
+
+      finalizeBtn.style.display = 'none';
+      showToast('AI moderation service unavailable. Please try again shortly.', 'error');
+    } else {
+      const isWarn = res.safetyStatus === 'warning';
+      statusBox.style.background = isWarn ? '#fef3c7' : '#dcfce7';
+      statusBox.style.borderColor = isWarn ? '#f59e0b' : '#22c55e';
+      statusBox.style.color = isWarn ? '#92400e' : '#166534';
+      statusBox.style.boxShadow = isWarn ? '4px 4px 0 #f59e0b' : '4px 4px 0 #22c55e';
+      
+      statusIcon.textContent = isWarn ? '⚠️' : '🛡️';
+      statusTitle.textContent = isWarn ? 'Moderation Warning' : 'AI Safety Approved';
+      statusReason.textContent = isWarn
+        ? 'Warning: This group content was flagged as borderline/moderate safety concern. You can still save it, but users will see a warning banner.'
+        : 'AI verified: This group content meets all safety compliance standards.';
+
+      // Save token in memory
+      window._pendingGroupEdit.token = res.editToken;
+      
+      finalizeBtn.style.display = 'inline-block';
+      finalizeBtn.disabled = false;
+      finalizeBtn.textContent = 'Finalize & Save';
+    }
+  } catch (err) {
+    document.getElementById('analysis-loading-area').style.display = 'none';
+    const resultArea = document.getElementById('analysis-result-area');
+    resultArea.style.display = 'block';
+
+    const statusBox = document.getElementById('analysis-status-box');
+    const statusIcon = document.getElementById('analysis-status-icon');
+    const statusTitle = document.getElementById('analysis-status-title');
+    const statusReason = document.getElementById('analysis-status-reason');
+
+    statusBox.style.background = '#fee2e2';
+    statusBox.style.borderColor = '#ef4444';
+    statusBox.style.color = '#991b1b';
+    statusBox.style.boxShadow = '4px 4px 0 #ef4444';
+
+    statusIcon.textContent = '⚠️';
+    statusTitle.textContent = 'Moderation Check Failed';
+    statusReason.textContent = err.message || 'Server error during moderation check.';
+    
+    finalizeBtn.style.display = 'none';
+  }
+}
+
+async function finalizeGroupEdit() {
+  const pending = window._pendingGroupEdit;
+  if (!pending || !pending.token) {
+    showToast('No valid group edit session found. Please recheck moderation.', 'error');
+    return;
+  }
+
+  const finalizeBtn = document.getElementById('analysis-finalize-btn');
+  const cancelBtn = document.getElementById('analysis-cancel-btn');
+  const originalText = finalizeBtn.textContent;
+
+  finalizeBtn.disabled = true; finalizeBtn.textContent = 'Saving...';
+  cancelBtn.disabled = true;
+
+  try {
+    await apiFetch(`${window.API}/api/groups/${pending.groupId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ editToken: pending.token })
+    });
+
+    closeModal('modal-group-analysis');
     showToast('Team updated!', 'success');
-    loadGroups();
+    
+    // Reset in-memory reference
+    window._pendingGroupEdit = null;
+    loadGroups(); // refresh
   } catch (err) {
     showToast(err.message, 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Save Changes';
+    finalizeBtn.disabled = false; finalizeBtn.textContent = originalText;
+    cancelBtn.disabled = false;
   }
 }
 
@@ -1508,4 +1705,6 @@ window.loadMoreMemberDays = loadMoreMemberDays;
 window.openMemberAllAchievements = openMemberAllAchievements;
 window.updateGroupQuotaUI = updateGroupQuotaUI;
 window.finalizeGroupCreation = finalizeGroupCreation;
+window.finalizeGroupEdit = finalizeGroupEdit;
+window.updateGroupsOfflineState = updateGroupsOfflineState;
 console.log("[Module] groups.js loaded and Groups functions bound to window");
