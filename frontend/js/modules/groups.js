@@ -388,7 +388,7 @@ function renderSingleGroupCard(group, emoji) {
           
           ${isMyOwned ? `
             <div style="display: flex; gap: 8px; align-items: center;">
-              <button class="btn-group-admin" onclick="openEditGroupModal('${group._id}', '${escJs(group.name)}', '${group.icon || ''}', '${escJs(group.description || '')}')">
+              <button class="btn-group-admin" onclick="openEditGroupModal('${group._id}')">
                 <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Edit
               </button>
               <button class="btn-group-admin delete" onclick="deleteGroup('${group._id}')">
@@ -943,12 +943,18 @@ async function submitJoinGroup() {
 // ── Manage Groups ──────────────────────────────────────────
 let editingGroupId = null;
 
-function openEditGroupModal(id, name, icon, description) {
+function openEditGroupModal(id) {
+  const group = (allJoinedGroups || []).find(g => String(g._id) === String(id));
+  if (!group) {
+    showToast('Failed to find group details.', 'error');
+    return;
+  }
   editingGroupId = id;
-  document.getElementById('edit-group-name-input').value = name;
-  document.getElementById('edit-group-desc-input').value = description || '';
+  document.getElementById('edit-group-name-input').value = group.name;
+  document.getElementById('edit-group-desc-input').value = group.description || '';
   
   // Set Icon
+  const icon = group.icon || '';
   document.getElementById('edit-group-icon-url').value = icon;
   const iconImg = document.getElementById('edit-group-icon-img');
   const iconPlaceholder = document.getElementById('edit-group-icon-placeholder');
@@ -1022,6 +1028,8 @@ function subscribeToGroupsRealtime(groups) {
           }
         }
       }
+    }, (error) => {
+      console.warn(`[Firestore Realtime Sync] Error listening to group ${group._id}:`, error.message);
     });
   });
 }
