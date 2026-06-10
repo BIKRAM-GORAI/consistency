@@ -943,6 +943,29 @@ async function submitJoinGroup() {
 // ── Manage Groups ──────────────────────────────────────────
 let editingGroupId = null;
 
+function openEditGroupModal(id, name, icon, description) {
+  editingGroupId = id;
+  document.getElementById('edit-group-name-input').value = name;
+  document.getElementById('edit-group-desc-input').value = description || '';
+  
+  // Set Icon
+  document.getElementById('edit-group-icon-url').value = icon;
+  const iconImg = document.getElementById('edit-group-icon-img');
+  const iconPlaceholder = document.getElementById('edit-group-icon-placeholder');
+  
+  if (icon) {
+    iconImg.src = icon;
+    iconImg.style.display = 'block';
+    iconPlaceholder.style.display = 'none';
+  } else {
+    iconImg.src = '';
+    iconImg.style.display = 'none';
+    iconPlaceholder.style.display = 'block';
+  }
+
+  openModal('modal-edit-group');
+}
+
 // Real-time Firestore sync & offline state helpers
 let groupSubscriptions = {};
 
