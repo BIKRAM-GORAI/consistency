@@ -25,6 +25,7 @@ const appLimitRoutes    = require('./routes/appLimitRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const reportRoutes       = require('./routes/reportRoutes');
 const canvasWorkflowRoutes = require('./routes/canvasWorkflowRoutes');
+const friendRoutes       = require('./routes/friendRoutes');
 
 
 // ── App setup ──────────────────────────────────────────────
@@ -214,6 +215,7 @@ app.use('/api/applimits',    authenticateToken, dataModificationLimiter, appLimi
 app.use('/api/subscriptions', authenticateToken, dataModificationLimiter, subscriptionRoutes);
 app.use('/api/reports',       authenticateToken, dataModificationLimiter, reportRoutes);
 app.use('/api/canvas-workflows', canvasWorkflowRoutes);
+app.use('/api/friends',       authenticateToken, dataModificationLimiter, friendRoutes);
 
 
 // ── Serve static frontend files ────────────────────────────

@@ -113,6 +113,7 @@ async function getPublicProfile(req, res) {
       (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
 
     res.json({
+      _id: user._id,
       username: user.username,
       name: user.name,
       profilePicture: user.profilePicture,

@@ -163,7 +163,7 @@ window.showToast = showToast;
 
 /** Slim push notification banner — used instead of showToast for foreground FCM messages */
 let _pushBannerTimer = null;
-function showPushBanner(title, body, groupId) {
+function showPushBanner(title, body, groupId, senderId) {
   const banner = document.getElementById('push-banner');
   if (!banner) return;
   const titleEl = document.getElementById('push-banner-title');
@@ -173,9 +173,15 @@ function showPushBanner(title, body, groupId) {
 
   if (groupId) {
     banner.dataset.groupId = groupId;
+    delete banner.dataset.senderId;
+    banner.style.cursor = 'pointer';
+  } else if (senderId) {
+    banner.dataset.senderId = senderId;
+    delete banner.dataset.groupId;
     banner.style.cursor = 'pointer';
   } else {
     delete banner.dataset.groupId;
+    delete banner.dataset.senderId;
     banner.style.cursor = 'default';
   }
 
@@ -198,11 +204,33 @@ function handlePushBannerClick(event) {
     return;
   }
   const banner = document.getElementById('push-banner');
-  if (banner && banner.dataset.groupId) {
+  if (!banner) return;
+
+  if (banner.dataset.groupId) {
     const groupId = banner.dataset.groupId;
     closePushBanner();
     showPage('groups');
-    openGroupChatFromDeepLink(groupId);
+    if (typeof openGroupChatFromDeepLink === 'function') {
+      openGroupChatFromDeepLink(groupId);
+    }
+  } else if (banner.dataset.senderId) {
+    const senderId = banner.dataset.senderId;
+    closePushBanner();
+    showPage('messages');
+    
+    if (window.localDb && window.DM) {
+      window.localDb.friends.get(senderId).then(friend => {
+        if (friend) {
+          window.DM.openDMChat(senderId, friend.name, friend.profilePicture || '');
+        } else {
+          const senderName = document.getElementById('push-banner-title')?.textContent || 'Friend';
+          window.DM.openDMChat(senderId, senderName, '');
+        }
+      }).catch(() => {
+        const senderName = document.getElementById('push-banner-title')?.textContent || 'Friend';
+        window.DM.openDMChat(senderId, senderName, '');
+      });
+    }
   }
 }
 window.handlePushBannerClick = handlePushBannerClick;
@@ -298,7 +326,15 @@ window.escHtml = escHtml;
 
 function escJs(str) {
   if (!str) return '';
-  return String(str)
+  let decoded = str;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(str, 'text/html');
+    decoded = doc.documentElement.textContent || str;
+  } catch (e) {
+    // fallback if DOMParser fails
+  }
+  return String(decoded)
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
     .replace(/"/g, '&quot;')
@@ -330,6 +366,14 @@ function showPage(page) {
     const gDot = document.getElementById('groups-notif-dot');
     const bDot = document.getElementById('bnav-groups-notif-dot');
     if (gDot) gDot.style.display = 'none';
+    if (bDot) bDot.style.display = 'none';
+  }
+  if (page === 'messages') {
+    if (typeof window.DM?.fetchFriends === 'function') window.DM.fetchFriends();
+    if (typeof window.DM?.fetchFriendRequests === 'function') window.DM.fetchFriendRequests();
+    const mDot = document.getElementById('messages-notif-dot');
+    const bDot = document.getElementById('bnav-messages-notif-dot');
+    if (mDot) mDot.style.display = 'none';
     if (bDot) bDot.style.display = 'none';
   }
   if (page === 'achievements' && typeof window.loadAchievements === 'function') window.loadAchievements();

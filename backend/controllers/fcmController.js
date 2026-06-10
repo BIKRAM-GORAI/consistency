@@ -432,3 +432,172 @@ exports.notifyVideoCallStart = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
+/**
+ * Send push notifications to a friend when a direct message is sent
+ * POST /api/fcm/notify-dm
+ */
+exports.notifyDirectMessage = async (req, res) => {
+  const { recipientId, senderName, text, hasMedia, mediaType } = req.body;
+
+  if (!recipientId || !senderName) {
+    return res.status(400).json({ message: 'Recipient ID and Sender Name are required' });
+  }
+
+  try {
+    const senderId = req.user.userId;
+
+    // 1. Fetch sender and verify friendship
+    const sender = await User.findById(senderId);
+    if (!sender.friends.map(String).includes(String(recipientId))) {
+      return res.status(403).json({ message: 'Access denied: You must be friends to message this user.' });
+    }
+
+    const recipient = await User.findById(recipientId);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    // 2. Collect recipient's active FCM tokens
+    const tokens = recipient.fcmTokens || [];
+    if (tokens.length === 0) {
+      return res.json({ success: true, message: 'Recipient has no registered FCM tokens' });
+    }
+
+    // 3. Formulate body text
+    let bodyText = '';
+    if (hasMedia) {
+      let typeText = 'an attachment';
+      if (mediaType === 'image') typeText = 'a photo';
+      else if (mediaType === 'audio') typeText = 'a voice recording';
+      else if (mediaType === 'video') typeText = 'a video';
+      
+      bodyText = `Sent ${typeText}`;
+      if (text) {
+        bodyText += `: "${text}"`;
+      }
+    } else {
+      bodyText = text || '';
+    }
+
+    // 4. Smart WhatsApp-style Rate-Limiter logic for DMs
+    const dmKey = `dm_${senderId}_${recipientId}`;
+    const now = Date.now();
+    let state = groupNotifCooldowns.get(dmKey);
+    if (!state) {
+      state = {
+        lastNotificationSentAt: 0,
+        lastNoisyNotificationSentAt: 0,
+        pendingCount: 0,
+        pendingList: [],
+        timeoutId: null
+      };
+      groupNotifCooldowns.set(dmKey, state);
+    }
+
+    const elapsedSinceLastNotif = now - state.lastNotificationSentAt;
+
+    const sendDmPush = async (body, isSilent) => {
+      const payload = {
+        notification: {
+          title: senderName,
+          body: body
+        },
+        data: {
+          senderId: String(senderId)
+        },
+        android: {
+          priority: isSilent ? 'normal' : 'high',
+          notification: {
+            channelId: isSilent ? 'default' : 'consistency_chime_channel_v2',
+            sound: isSilent ? null : 'notificationsound'
+          }
+        },
+        webpush: {
+          headers: {
+            Urgency: isSilent ? 'normal' : 'high'
+          },
+          fcmOptions: {
+            link: `/?openDM=${senderId}&t=${Date.now()}`
+          }
+        },
+        collapseKey: `dm_${senderId}`
+      };
+
+      return admin.messaging().sendEachForMulticast({
+        tokens,
+        notification: payload.notification,
+        data: payload.data,
+        android: payload.android,
+        webpush: payload.webpush,
+        collapseKey: payload.collapseKey
+      });
+    };
+
+    // SCENARIO A: Quiet direct chat (10+ seconds of silence) - Send instantly and noisy
+    if (elapsedSinceLastNotif >= 10000) {
+      state.lastNotificationSentAt = now;
+      state.lastNoisyNotificationSentAt = now;
+      state.pendingCount = 0;
+      state.pendingList = [];
+
+      console.log(`[FCM DM Throttle] Quiet DM. Sending instant noisy push from ${senderName}`);
+      const response = await sendDmPush(bodyText, false);
+
+      return res.json({ 
+        success: true, 
+        sentCount: response.successCount, 
+        failedCount: response.failureCount 
+      });
+    }
+    // SCENARIO B: Burst mode - Debounce and send silently after 10s
+    else {
+      state.pendingCount++;
+      state.pendingList.push({ text: bodyText });
+
+      if (!state.timeoutId) {
+        state.timeoutId = setTimeout(async () => {
+          try {
+            const currentState = groupNotifCooldowns.get(dmKey);
+            if (!currentState || currentState.pendingCount === 0) return;
+
+            const currentNow = Date.now();
+            const elapsedSinceLastNoisy = currentNow - currentState.lastNoisyNotificationSentAt;
+
+            let isSilent = true;
+            if (elapsedSinceLastNoisy >= 30000) {
+              isSilent = false;
+              currentState.lastNoisyNotificationSentAt = currentNow;
+            }
+
+            currentState.lastNotificationSentAt = currentNow;
+            
+            const lastMsg = currentState.pendingList[currentState.pendingList.length - 1];
+            const finalBodyText = currentState.pendingCount > 1 
+              ? `${lastMsg.text} (+${currentState.pendingCount} new messages)`
+              : lastMsg.text;
+
+            currentState.pendingCount = 0;
+            currentState.pendingList = [];
+            currentState.timeoutId = null;
+
+            console.log(`[FCM DM Throttle] Delivering stacked DMs from ${senderName} (Silent: ${isSilent})`);
+            await sendDmPush(finalBodyText, isSilent);
+          } catch (e) {
+            console.error('[FCM DM Throttle] Background delivery timer failed:', e);
+          }
+        }, 10000);
+      }
+
+      console.log(`[FCM DM Throttle] Burst DM mode. Queueing message from ${senderName} (Total pending: ${state.pendingCount})`);
+      return res.json({ 
+        success: true, 
+        throttled: true, 
+        message: 'Direct message notification throttled and queued.' 
+      });
+    }
+  } catch (error) {
+    console.error('Error sending direct message push notification:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};

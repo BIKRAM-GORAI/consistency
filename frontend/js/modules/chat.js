@@ -23,6 +23,7 @@ let imageLimitMax = 20;
 let audioLimitMax = 20;
 let audioFileLimitMax = 5;
 let lastMessageSentAt = 0; // For anti-spam cooldown
+let isChatSending = false;
 
 // --- VOICE MESSAGE STATE ---
 let mediaRecorder = null;
@@ -82,7 +83,7 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   const group = (typeof window.allJoinedGroups !== 'undefined' && window.allJoinedGroups) 
     ? window.allJoinedGroups.find(g => g._id === groupId) 
     : null;
-  const myUserId = localStorage.getItem('window.userId');
+  const myUserId = window.userId;
   
   // The group.owner can be an object with _id or just an ID string
   const isOwner = group && String(group.owner._id || group.owner) === String(myUserId);
@@ -310,7 +311,7 @@ function getFriendlyDate(date) {
 }
 
 function renderChatMessage(msg, container, animate = false, isPending = false) {
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const isSelf = String(msg.senderId) === String(window.userId);
   const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
   const time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -455,12 +456,15 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
   `;
   if (window.lucide) lucide.createIcons({ root: bubble });
   
+  const actionsEl = buttonsHtmlToElement(buttonsHtml);
+  if (window.lucide) lucide.createIcons({ root: actionsEl });
+
   if (isSelf) {
-    wrapper.appendChild(buttonsHtmlToElement(buttonsHtml));
+    wrapper.appendChild(actionsEl);
     wrapper.appendChild(bubble);
   } else {
     wrapper.appendChild(bubble);
-    wrapper.appendChild(buttonsHtmlToElement(buttonsHtml));
+    wrapper.appendChild(actionsEl);
   }
   
   insertMessageSorted(container, wrapper);
@@ -605,7 +609,7 @@ async function startGroupVideoCall() {
     return showToast('Video calls are not available offline.', 'warn');
   }
 
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const userName = localStorage.getItem('window.userName');
   const userPhoto = localStorage.getItem('window.userProfilePicture');
 
@@ -814,7 +818,7 @@ function closeVideoCall() {
   if (activeChatGroupId) {
     const { firebaseRtdb, rtdb } = window;
     if (firebaseRtdb && rtdb) {
-      const userId = localStorage.getItem('window.userId');
+      const userId = window.userId;
       const participantRef = rtdb.ref(firebaseRtdb, `video_calls/${activeChatGroupId}/participants/${window.userId}`);
       rtdb.remove(participantRef);
     }
@@ -934,6 +938,8 @@ function updateExistingMessage(msg, el) {
 
 async function handleChatSubmit(e) {
   e.preventDefault();
+  if (isChatSending) return;
+  
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text && selectedMediaBlobs.length === 0) return;
@@ -952,20 +958,23 @@ async function handleChatSubmit(e) {
 
   const form = document.getElementById('chat-form');
   const btn = form.querySelector('button[type="submit"]');
-  const originalHtml = btn.innerHTML;
   
   // Only block the button if uploading media (needs wait)
   if (selectedMediaBlobs.length > 0) {
-    btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="upload-cloud" class="loading-bounce"></i>';
-    if (window.lucide) lucide.createIcons({ root: btn });
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="upload-cloud" class="loading-bounce"></i>';
+      if (window.lucide) lucide.createIcons({ root: btn });
+    }
   }
 
   const { firebaseDb, firestore } = window;
   if (!firebaseDb || !firestore) {
     return showToast('Chat is currently offline.', 'error');
   }
-  const userId = localStorage.getItem('window.userId');
+  
+  isChatSending = true;
+  const userId = window.userId;
   const userName = localStorage.getItem('window.userName');
   const userPhoto = localStorage.getItem('window.userProfilePicture');
   
@@ -1046,10 +1055,13 @@ async function handleChatSubmit(e) {
       fetchMediaLimit();
     }
   } finally {
+    isChatSending = false;
     clearMediaPreview(); // Always clear preview: success, partial, or error
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-    if (window.lucide) lucide.createIcons({ root: btn });
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="send" style="width: 20px; height: 20px; color: #fff;"></i>';
+      if (window.lucide) lucide.createIcons({ root: btn });
+    }
   }
 }
 
@@ -1103,7 +1115,7 @@ async function submitEditChatMessage(docId) {
 async function toggleReaction(docId, emoji = '❤️') {
   const { firebaseDb, firestore } = window;
   if (!firebaseDb || !firestore) return;
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   if (!activeChatGroupId) return;
   const docRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'messages', docId);
   
@@ -1161,7 +1173,7 @@ async function deleteChatMessage(docId) {
 
 function renderReactionsHTML(reactions, docId) {
   if (!reactions || Object.keys(reactions).length === 0) return '';
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   let html = '<div class="chat-reactions">';
   for (const [emoji, users] of Object.entries(reactions)) {
     const isActive = users.includes(window.userId);
@@ -1259,7 +1271,7 @@ async function showReactionUsers(e, targetEl, docId, emoji) {
     if (userIds.length === 0) return;
 
     // Get current user ID
-    const myUserId = localStorage.getItem('window.userId');
+    const myUserId = window.userId;
     const hasReacted = userIds.includes(myUserId);
 
     // Create popup
@@ -1420,7 +1432,7 @@ function initReadTracker() {
   }
   
   // Observe all messages that are NOT from the current user
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   document.querySelectorAll('.chat-bubble-wrapper.other').forEach(m => readObserver.observe(m));
 }
 
@@ -1467,7 +1479,7 @@ function throttledUpdateReadStatus() {
     
     const { firebaseDb, firestore } = window;
     if (!firebaseDb || !firestore) return;
-    const userId = localStorage.getItem('window.userId');
+    const userId = window.userId;
     const readRef = firestore.doc(firebaseDb, 'group_chats', activeChatGroupId, 'last_reads', window.userId);
     
     try {
@@ -1485,7 +1497,7 @@ function subscribeToReadStatuses(groupId) {
   
   const { firebaseDb, firestore } = window;
   if (!firebaseDb || !firestore) return;
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const readsRef = firestore.collection(firebaseDb, 'group_chats', groupId, 'last_reads');
   
   readStatusUnsubscribe = firestore.onSnapshot(readsRef, (snapshot) => {
@@ -1530,7 +1542,7 @@ function updateMessageInDOM(msg, isPending = false) {
   const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
   el.dataset.ts = timestamp.getTime().toString();
   
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const isSelf = String(msg.senderId) === String(window.userId);
   
   // Proactively update timestamp text in UI once saved to server
@@ -1602,13 +1614,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Shift+Enter sends, Enter new line
+    // Enter sends, Shift+Enter inserts newline
     chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.isAndroidNative;
         if (!isMobile) {
           if (e.shiftKey) {
-            e.preventDefault(); // Prevent newline insertion
+            // Shift+Enter: allow default (insert newline)
+            return;
+          } else {
+            // Plain Enter: send message
+            e.preventDefault();
             handleChatSubmit(e);
           }
         }
@@ -1645,7 +1661,7 @@ async function updateTypingStatus(isTyping) {
   if (!activeChatGroupId) return;
   const { firebaseRtdb, rtdb } = window;
   if (!firebaseRtdb || !rtdb) return;
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const userName = localStorage.getItem('window.userName');
   
   const typingRef = rtdb.ref(firebaseRtdb, `typing/${activeChatGroupId}/${window.userId}`);
@@ -1673,7 +1689,7 @@ function listenForTyping() {
 
   const { firebaseRtdb, rtdb } = window;
   if (!firebaseRtdb || !rtdb) return;
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const typingRef = rtdb.ref(firebaseRtdb, `typing/${activeChatGroupId}`);
   
   typingUnsubscribe = rtdb.onValue(typingRef, (snapshot) => {
@@ -1714,7 +1730,7 @@ function renderTypingIndicator(typers) {
 }
 
 async function initFirebaseChat() {
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const token = localStorage.getItem('token');
   if (!window.userId || !token) return;
 
@@ -1781,16 +1797,35 @@ async function initPushNotifications(forcePrompt = false) {
         // Foreground Push Handler: shows premium slim banner when messages arrive in other rooms
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('[Native FCM] Foreground push received:', notification);
-          const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
-          const groupId = notification.data?.groupId;
-          if (!activeId || activeId !== groupId) {
-            // Show slim top banner instead of the intrusive full-screen toast
-            showPushBanner(notification.title, notification.body, groupId);
-            // Also light up the Groups nav badge to give a persistent visual cue
-            const gDot = document.getElementById('groups-notif-dot');
-            const bDot = document.getElementById('bnav-groups-notif-dot');
-            if (gDot) gDot.style.display = 'block';
-            if (bDot) bDot.style.display = 'block';
+          const groupId = notification.data?.groupId || notification.groupId || notification.data?.group_id || notification.group_id;
+          const senderId = notification.data?.senderId || notification.senderId || notification.data?.sender_id || notification.sender_id;
+          const title = notification.title || notification.data?.title || 'New Message';
+          const body = notification.body || notification.data?.body || '';
+          
+          if (groupId) {
+            const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
+            if (!activeId || String(activeId) !== String(groupId)) {
+              showPushBanner(title, body, groupId);
+              const gDot = document.getElementById('groups-notif-dot');
+              const bDot = document.getElementById('bnav-groups-notif-dot');
+              if (gDot) gDot.style.display = 'block';
+              if (bDot) bDot.style.display = 'block';
+            }
+          } else if (senderId) {
+            const activeDMRecipientId = window.DM?.activeChatRecipientId;
+            const hasActiveDM = activeDMRecipientId && String(activeDMRecipientId) === String(senderId);
+            if (!hasActiveDM) {
+              showPushBanner(title, body, null, senderId);
+              const mDot = document.getElementById('messages-notif-dot');
+              const bDot = document.getElementById('bnav-messages-notif-dot');
+              if (mDot) mDot.style.display = 'block';
+              if (bDot) bDot.style.display = 'block';
+
+              const activePage = document.querySelector('.page-container.active')?.id || '';
+              if (activePage === 'page-messages' && typeof window.DM?.fetchFriends === 'function') {
+                window.DM.fetchFriends();
+              }
+            }
           }
         });
 
@@ -1880,15 +1915,36 @@ async function initPushNotifications(forcePrompt = false) {
             window.onFcmMessage(window.firebaseMessaging, (payload) => {
               console.log('[PWA FCM] Foreground push received:', payload);
               const activeId = typeof activeChatGroupId !== 'undefined' ? activeChatGroupId : null;
-              const groupId = payload.data?.groupId;
-              if (!activeId || activeId !== groupId) {
-                showPushBanner(payload.notification?.title || 'New Message', payload.notification?.body || '', groupId);
-                
-                // Show notification dots on groups tab
-                const gDot = document.getElementById('groups-notif-dot');
-                const bDot = document.getElementById('bnav-groups-notif-dot');
-                if (gDot) gDot.style.display = 'block';
-                if (bDot) bDot.style.display = 'block';
+              const groupId = payload.data?.groupId || payload.groupId || payload.data?.group_id || payload.group_id;
+              const senderId = payload.data?.senderId || payload.senderId || payload.data?.sender_id || payload.sender_id;
+              
+              if (groupId) {
+                if (!activeId || String(activeId) !== String(groupId)) {
+                  showPushBanner(payload.notification?.title || 'New Message', payload.notification?.body || '', groupId);
+                  const gDot = document.getElementById('groups-notif-dot');
+                  const bDot = document.getElementById('bnav-groups-notif-dot');
+                  if (gDot) gDot.style.display = 'block';
+                  if (bDot) bDot.style.display = 'block';
+                }
+              } else if (senderId) {
+                const activeDMRecipientId = window.DM?.activeChatRecipientId;
+                const hasActiveDM = activeDMRecipientId && String(activeDMRecipientId) === String(senderId);
+                if (!hasActiveDM) {
+                  showPushBanner(payload.notification?.title || 'New DM', payload.notification?.body || '', null, senderId);
+                  const mDot = document.getElementById('messages-notif-dot');
+                  const bDot = document.getElementById('bnav-messages-notif-dot');
+                  if (mDot) mDot.style.display = 'block';
+                  if (bDot) bDot.style.display = 'block';
+                  
+                  const activePage = document.querySelector('.page-container.active')?.id || '';
+                  if (activePage === 'page-messages' && typeof window.DM?.fetchFriends === 'function') {
+                    window.DM.fetchFriends();
+                  }
+
+                  if (payload.notification?.title?.toLowerCase().includes('request') && typeof window.DM?.fetchFriendRequests === 'function') {
+                    window.DM.fetchFriendRequests();
+                  }
+                }
               }
             });
           }
@@ -2074,7 +2130,7 @@ function triggerChatPushNotification(text, hasMedia, mediaType) {
 
 async function openQuickViewByMemberId(memberId, memberName) {
   try {
-    const userId = localStorage.getItem('window.userId');
+    const userId = window.userId;
     if (memberId === window.userId) {
       const myUsername = localStorage.getItem('userUsername');
       if (myUsername) return openQuickView(myUsername);
@@ -2186,7 +2242,16 @@ async function handleAudioSelect(e) {
   }
 
   const duration = await getAudioDuration(file).catch(() => null);
-  selectedMediaBlobs.push({ blob: file, type: 'audio', duration, source: 'upload' });
+
+  showToast('Compressing audio file...', 'info');
+  try {
+    const compressedBlob = await compressAudioFile(file);
+    selectedMediaBlobs.push({ blob: compressedBlob, type: 'audio', duration, source: 'upload' });
+    showToast('Audio file compressed!', 'success');
+  } catch (err) {
+    console.error('Audio compression failed, falling back to original:', err);
+    selectedMediaBlobs.push({ blob: file, type: 'audio', duration, source: 'upload' });
+  }
   renderMediaPreviews();
 }
 
@@ -2567,7 +2632,7 @@ async function updatePresence(groupId, isOnline) {
   if (!groupId) return;
   const { firebaseRtdb, rtdb } = window;
   if (!firebaseRtdb || !rtdb) return;
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const userName = localStorage.getItem('window.userName');
   const userPic = localStorage.getItem('window.userProfilePicture');
   
@@ -2607,7 +2672,7 @@ function subscribeToPresence(groupId) {
   const { firebaseRtdb, rtdb } = window;
   if (!firebaseRtdb || !rtdb) return;
   const presenceRef = rtdb.ref(firebaseRtdb, `presence/${groupId}`);
-  const myId = localStorage.getItem('window.userId');
+  const myId = window.userId;
   
   presenceUnsubscribe = rtdb.onValue(presenceRef, (snapshot) => {
     const now = Date.now();
@@ -2681,7 +2746,7 @@ let _lastSyncTime = parseInt(localStorage.getItem('lastProactiveSyncTime') || '0
  */
 async function reconcileAllData() {
   if (!navigator.onLine) return false;
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   if (!window.userId) return false;
 
   console.log('🔄 Starting full sync reconciliation...');
@@ -2750,7 +2815,7 @@ async function proactiveSync(force = false) {
   _lastSyncTime = now;
   localStorage.setItem('lastProactiveSyncTime', now.toString());
 
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   if (!window.userId) return;
 
   try {

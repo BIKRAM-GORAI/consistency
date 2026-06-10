@@ -320,7 +320,7 @@ async function toggleLeaderboardShowcase(checked) {
   if (mainToggle) mainToggle.checked = checked;
 
   const payload = { showOnLeaderboard: checked };
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
 
   try {
     if (window.localDb) {
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load showcase toggles' checked state from cached localStorage instantly.
   // Toggles are disabled by default in HTML — they get enabled only after a confirmed window.API success.
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   if (window.userId) {
     const savedShowOnLeaderboard = localStorage.getItem('showOnLeaderboard');
     const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
@@ -1383,6 +1383,7 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
 setTimeout(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const openChatGroupId = urlParams.get('openChat');
+  const openDMUserId = urlParams.get('openDM');
   const deepLinkTimeId = urlParams.get('t');
   
   if (openChatGroupId) {
@@ -1410,6 +1411,42 @@ setTimeout(() => {
     // Clean up the URL search params so reloading doesn't open it again
     const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.pushState({ path: newUrl }, '', newUrl);
+  } else if (openDMUserId) {
+    if (deepLinkTimeId) {
+      const alreadyConsumed = localStorage.getItem('deeplink_consumed_' + deepLinkTimeId);
+      if (alreadyConsumed) {
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        return;
+      }
+      localStorage.setItem('deeplink_consumed_' + deepLinkTimeId, 'true');
+    }
+
+    console.log('[Startup Deep-Link] Detected openDM parameter after startup delay:', openDMUserId);
+    
+    showPage('messages');
+    
+    if (window.localDb && window.DM) {
+      window.localDb.friends.get(openDMUserId).then(friend => {
+        if (friend) {
+          window.DM.openDMChat(openDMUserId, friend.name, friend.profilePicture || '');
+        } else {
+          window.DM.openDMChat(openDMUserId, 'Friend', '');
+        }
+      }).catch(() => {
+        window.DM.openDMChat(openDMUserId, 'Friend', '');
+      });
+    }
+
+    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+  }
+  // Fetch friends and friend requests on startup to light up notif dots if any are pending/unread
+  if (window.DM && typeof window.DM.fetchFriends === 'function') {
+    window.DM.fetchFriends();
+  }
+  if (window.DM && typeof window.DM.fetchFriendRequests === 'function') {
+    window.DM.fetchFriendRequests();
   }
   
   // Check for native app updates after deep-link check completes

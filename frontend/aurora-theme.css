@@ -920,7 +920,8 @@
 
 /* ── Groups Page — Inline Button Overrides ── */
 /* Live Chat button */
-[data-theme="premium-aurora"] button[onclick^="openGroupChat"] {
+[data-theme="premium-aurora"] button[onclick^="openGroupChat"],
+[data-theme="premium-aurora"] .group-open-chat-btn {
   background: rgba(139, 92, 246, 0.1) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.3) !important;
   color: #4c1d95 !important;
@@ -932,7 +933,8 @@
   letter-spacing: 0 !important;
 }
 
-[data-theme="premium-aurora"] button[onclick^="openGroupChat"]:hover {
+[data-theme="premium-aurora"] button[onclick^="openGroupChat"]:hover,
+[data-theme="premium-aurora"] .group-open-chat-btn:hover {
   background: rgba(139, 92, 246, 0.18) !important;
   border-color: rgba(139, 92, 246, 0.5) !important;
   transform: translateY(-1.5px) !important;
@@ -1611,14 +1613,16 @@
 
 /* Chat modal header — clear frosted glass, not dark or var(--bg-card) */
 [data-theme="premium-aurora"] #modal-group-chat .modal-header,
-[data-theme="premium-aurora"] #modal-group-chat [style*="modal-header"] {
+[data-theme="premium-aurora"] #modal-group-chat [style*="modal-header"],
+[data-theme="premium-aurora"] #modal-direct-chat .modal-header {
   background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(12px) !important;
   border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
 }
 
 /* Chat close button (X) — ensure it is fully visible */
-[data-theme="premium-aurora"] #modal-group-chat button.modal-close {
+[data-theme="premium-aurora"] #modal-group-chat button.modal-close,
+[data-theme="premium-aurora"] #modal-direct-chat button.modal-close {
   background: rgba(239, 68, 68, 0.85) !important;
   border: 2px solid rgba(239, 68, 68, 0.6) !important;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
@@ -1626,13 +1630,18 @@
   opacity: 1 !important;
 }
 
-[data-theme="premium-aurora"] #modal-group-chat button.modal-close i {
+[data-theme="premium-aurora"] #modal-group-chat button.modal-close i,
+[data-theme="premium-aurora"] #modal-direct-chat button.modal-close i,
+[data-theme="premium-aurora"] #modal-group-chat button.modal-close svg,
+[data-theme="premium-aurora"] #modal-direct-chat button.modal-close svg {
   color: #ffffff !important;
+  stroke: #ffffff !important;
   opacity: 1 !important;
 }
 
 /* Inline close button override matching the HTML's style= */
-[data-theme="premium-aurora"] #modal-group-chat [onclick="closeChatModal()"] {
+[data-theme="premium-aurora"] #modal-group-chat [onclick="closeChatModal()"],
+[data-theme="premium-aurora"] #modal-direct-chat [onclick*="closeDMChat"] {
   background: rgba(239, 68, 68, 0.9) !important;
   border: 2px solid rgba(239, 68, 68, 0.5) !important;
   box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25) !important;
@@ -1699,12 +1708,42 @@
   box-shadow: 0 6px 16px rgba(109, 40, 217, 0.18) !important;
 }
 
-[data-theme="premium-aurora"] #chat-plus-icon {
+[data-theme="premium-aurora"] #chat-plus-icon,
+[data-theme="premium-aurora"] #dm-plus-icon {
   color: #6d28d9 !important;
 }
 
+/* ── DM mic button icon color in aurora theme ── */
+[data-theme="premium-aurora"] #dm-chat-mic-btn i,
+[data-theme="premium-aurora"] #dm-chat-mic-btn svg {
+  color: #6d28d9 !important;
+  stroke: #6d28d9 !important;
+}
+
+/* ── DM avatar border in aurora theme ── */
+[data-theme="premium-aurora"] #dm-chat-avatar-wrap {
+  border: 2px solid rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.12) !important;
+}
+
+/* ── DM chat title in aurora theme ── */
+[data-theme="premium-aurora"] #dm-chat-title {
+  color: #1e1b2e !important;
+  text-transform: none !important;
+  font-size: 17px !important;
+}
+
+/* ── DM clear chat button in aurora theme ── */
+[data-theme="premium-aurora"] #dm-chat-clear-btn {
+  background: rgba(239, 68, 68, 0.85) !important;
+  border: 2px solid rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+  border-radius: 10px !important;
+}
+
 /* ── Chat submit button ── */
-[data-theme="premium-aurora"] #chat-form button[type="submit"] {
+[data-theme="premium-aurora"] #chat-form button[type="submit"],
+[data-theme="premium-aurora"] #dm-chat-form button[type="submit"] {
   background: linear-gradient(135deg, #8b5cf6 0%, #e879a0 100%) !important;
   border: none !important;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
@@ -1712,7 +1751,8 @@
 }
 
 /* ── Chat text input ── */
-[data-theme="premium-aurora"] #chat-input {
+[data-theme="premium-aurora"] #chat-input,
+[data-theme="premium-aurora"] #dm-chat-input {
   background: rgba(255, 255, 255, 0.85) !important;
   border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
   border-radius: 14px !important;
@@ -1720,13 +1760,15 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
-[data-theme="premium-aurora"] #chat-input:focus {
+[data-theme="premium-aurora"] #chat-input:focus,
+[data-theme="premium-aurora"] #dm-chat-input:focus {
   border-color: rgba(139, 92, 246, 0.45) !important;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* ── Chat modal footer ── */
-[data-theme="premium-aurora"] #modal-group-chat .modal-footer {
+[data-theme="premium-aurora"] #modal-group-chat .modal-footer,
+[data-theme="premium-aurora"] #modal-direct-chat .modal-footer {
   background: rgba(248, 246, 255, 0.9) !important;
   backdrop-filter: blur(10px) !important;
   border-top: 1px solid rgba(139, 92, 246, 0.12) !important;

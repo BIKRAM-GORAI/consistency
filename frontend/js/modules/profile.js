@@ -332,7 +332,7 @@ async function submitProfileSettings() {
 
     // 1. Update Locally First (Offline-First) - This is INSTANT
     if (window.localDb) {
-      const userId = localStorage.getItem('window.userId');
+      const userId = window.userId;
       await window.localDb.userProfile.put({ ...payload, userId: window.userId });
       
       // 2. Queue for Sync ONLY if offline to avoid duplicate concurrent uploads online
@@ -837,7 +837,7 @@ async function openQuickView(username) {
   }
 
   const myUsername = localStorage.getItem('userUsername');
-  const myId = localStorage.getItem('window.userId');
+  const myId = window.userId;
   const isMe = (username === myUsername);
 
   // 1. OFFLINE HANDLING
@@ -962,6 +962,28 @@ async function openQuickView(username) {
     window._currentMemberId = u._id;
     window._currentMemberName = u.name;
     window._currentMemberUsername = u.username;
+
+    // Check friendship status and render actions if not me
+    const actionsContainer = document.getElementById('qp-actions-container');
+    if (actionsContainer) {
+      if (isMe) {
+        actionsContainer.style.display = 'none';
+        actionsContainer.innerHTML = '';
+      } else {
+        actionsContainer.style.display = 'flex';
+        actionsContainer.innerHTML = '<div class="loading-spinner-small" style="margin:0 auto; width:20px; height:20px; border:3px solid var(--black); border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div>';
+        
+        // Fetch status in background and render actions
+        apiFetch(`${window.API}/api/friends/status/${u._id}`)
+          .then(statusRes => {
+            renderProfileActions(u, statusRes.status);
+          })
+          .catch(err => {
+            console.error('Failed to load friendship status:', err);
+            actionsContainer.innerHTML = '';
+          });
+      }
+    }
     
     // 1. Identity
     const qpName = document.getElementById('qp-name');
@@ -2471,5 +2493,48 @@ window.loadProfileLimitsInline = loadProfileLimitsInline;
 
 window.checkChangelogNotifications = checkChangelogNotifications;
 window.openChangelogModal = openChangelogModal;
+
+function renderProfileActions(u, status) {
+  const container = document.getElementById('qp-actions-container');
+  if (!container) return;
+
+  let btnHtml = '';
+  if (status === 'none') {
+    btnHtml = `
+      <button class="btn ripple" onclick="window.DM.sendFriendRequest('${u._id}', '${window.escJs(u.username)}')" style="background:var(--purple); color:#fff; border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 20px; border-radius:8px; font-weight:800; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; font-size:12px; display:flex; align-items:center; gap:8px;">
+        <i data-lucide="user-plus" style="width:16px; height:16px;"></i> Add Friend
+      </button>
+    `;
+  } else if (status === 'requested_sent') {
+    btnHtml = `
+      <button class="btn ripple" onclick="window.DM.cancelFriendRequest('${u._id}', '${window.escJs(u.username)}')" style="background:var(--bg-muted); color:var(--text); border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 20px; border-radius:8px; font-weight:800; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; font-size:12px; display:flex; align-items:center; gap:8px;">
+        <i data-lucide="x" style="width:16px; height:16px;"></i> Cancel Request
+      </button>
+    `;
+  } else if (status === 'requested_received') {
+    btnHtml = `
+      <button class="btn ripple" onclick="window.DM.acceptFriendRequest('${u._id}', '${window.escJs(u.username)}')" style="background:var(--green); color:#000; border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 20px; border-radius:8px; font-weight:800; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; font-size:12px; display:flex; align-items:center; gap:8px; margin-right:8px;">
+        <i data-lucide="user-check" style="width:16px; height:16px;"></i> Accept
+      </button>
+      <button class="btn ripple" onclick="window.DM.declineFriendRequest('${u._id}', '${window.escJs(u.username)}')" style="background:var(--red); color:#fff; border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 20px; border-radius:8px; font-weight:800; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; font-size:12px; display:flex; align-items:center; gap:8px;">
+        <i data-lucide="user-x" style="width:16px; height:16px;"></i> Decline
+      </button>
+    `;
+  } else if (status === 'friends') {
+    btnHtml = `
+      <button class="btn ripple" onclick="window.DM.openDMChat('${u._id}', '${window.escJs(u.name)}', '${u.profilePicture || ''}')" style="background:var(--yellow); color:#000; border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 20px; border-radius:8px; font-weight:800; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; font-size:12px; display:flex; align-items:center; gap:8px; margin-right:8px;">
+        <i data-lucide="message-square" style="width:16px; height:16px;"></i> Message
+      </button>
+      <button class="btn ripple" onclick="window.DM.removeFriend('${u._id}', '${window.escJs(u.username)}')" style="background:var(--red); color:#fff; border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 20px; border-radius:8px; font-weight:800; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; font-size:12px; display:flex; align-items:center; gap:8px;">
+        <i data-lucide="user-minus" style="width:16px; height:16px;"></i> Unfollow
+      </button>
+    `;
+  }
+
+  container.innerHTML = btnHtml;
+  if (window.lucide) lucide.createIcons({ root: container });
+}
+
+window.renderProfileActions = renderProfileActions;
 
 console.log("[Module] profile.js loaded and Profile bound to window");

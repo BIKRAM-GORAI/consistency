@@ -163,7 +163,7 @@ async function verifyLeetCodeProfile() {
 
     // Sync settings locally and fetch profile picture for offline cache
     try {
-      const userId = localStorage.getItem('window.userId');
+      const userId = window.userId;
       const res = await apiFetch(`${window.API}/api/auth/settings`);
       res.userId = window.userId;
       await cacheProfileImagesOffline(res);
@@ -550,7 +550,7 @@ async function loadLeetCodeProfileStatus(user = null) {
     }
 
     // 1. STALE: Try cache first
-    const userId = localStorage.getItem('window.userId');
+    const userId = window.userId;
     if (window.userId && window.localDb) {
       const cached = await window.localDb.userProfile.get(window.userId);
       if (cached) renderLeetCodeUI(cached);

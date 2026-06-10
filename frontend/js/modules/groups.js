@@ -318,7 +318,7 @@ function renderGroupSection(container, title, groups, isOwnerSection, emoji, emp
 }
 
 function renderSingleGroupCard(group, emoji) {
-  const userId = localStorage.getItem('window.userId');
+  const userId = window.userId;
   const isMyOwned = String(group.owner._id || group.owner) === String(window.userId);
   const isPublic = group.isPublic;
   
@@ -423,7 +423,7 @@ function renderSingleGroupCard(group, emoji) {
 
       <!-- Core Chat & Mute Actions -->
       <div style="margin: 12px 0; display: flex; gap: 10px;">
-        <button class="btn-primary ripple" style="flex: 1; justify-content: center; background: var(--pink); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 4px 4px 0 var(--black); margin: 0;" onclick="openGroupChat('${group._id}', '${escJs(group.name)}', '${group.icon || ''}')">
+        <button class="btn-primary ripple group-open-chat-btn" data-group-id="${group._id}" data-group-name="${escHtml(group.name)}" data-group-icon="${escHtml(group.icon || '')}" style="flex: 1; justify-content: center; background: var(--pink); border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 4px 4px 0 var(--black); margin: 0;">
           <i data-lucide="message-square" style="width: 18px; height: 18px;"></i> Live Chat
         </button>
         <button class="btn-primary ripple" id="mute-btn-${group._id}" style="width: 48px; min-width: 48px; justify-content: center; background: ${isMuted ? 'var(--red)' : 'var(--bg-card)'}; border-radius: 8px; font-weight: 800; box-shadow: 4px 4px 0 var(--black); margin: 0; padding: 0; display: flex; align-items: center;" onclick="toggleGroupMuteStatus('${group._id}')" title="${isMuted ? 'Unmute notifications' : 'Mute notifications'}">
@@ -1525,30 +1525,52 @@ async function openMemberAllAchievements() {
 function openModal(id) {
   const overlay = document.getElementById(id);
   const modalEl = overlay.querySelector('.modal');
+  const isMobile = window.innerWidth <= 768;
 
   // Kill any in-flight tweens on both overlay and modal elements
   if (window.gsap) {
     gsap.killTweensOf([overlay, modalEl]);
-    gsap.set([overlay, modalEl], { clearProps: 'all' });
+    
+    // Set initial states synchronously using vanilla JS to prevent any 1-frame flash
+    overlay.style.opacity = '0';
+    if (modalEl) {
+      if (isMobile) {
+        modalEl.style.opacity = '1';
+        modalEl.style.transform = 'translateY(100%) scale(1)';
+      } else {
+        modalEl.style.opacity = '0';
+        modalEl.style.transform = 'translateY(16px) scale(0.96)';
+      }
+    }
   }
 
   overlay.classList.add('open');
 
   if (window.gsap) {
-    // Fade overlay in smoothly to prevent heavy layout thrashing with backdrop filters
-    gsap.fromTo(overlay,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.28, ease: 'power2.out' }
-    );
+    // Fade overlay in smoothly
+    gsap.to(overlay, { opacity: 1, duration: 0.24, ease: 'power2.out' });
 
-    // Defer the GSAP tween by one rAF so the browser finishes the
-    // display:flex paint before animating — prevents the "invisible flash" on mobile
-    requestAnimationFrame(() => {
-      gsap.fromTo(modalEl,
-        { opacity: 0, y: 28, scale: 0.94 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: 'back.out(1.4)', clearProps: 'all' }
-      );
-    });
+    if (modalEl) {
+      if (isMobile) {
+        // Slide up on mobile
+        gsap.to(modalEl, {
+          y: '0%',
+          duration: 0.32,
+          ease: 'power3.out',
+          clearProps: 'transform'
+        });
+      } else {
+        // Zoom in from center on desktop
+        gsap.to(modalEl, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.3,
+          ease: 'back.out(1.15)',
+          clearProps: 'transform,opacity'
+        });
+      }
+    }
   }
 }
 
@@ -1568,6 +1590,7 @@ function closeModal(id) {
   }
   const overlay = document.getElementById(id);
   const modalEl = overlay.querySelector('.modal');
+  const isMobile = window.innerWidth <= 768;
 
   if (window.gsap) {
     // Kill any in-flight tweens before closing
@@ -1577,26 +1600,38 @@ function closeModal(id) {
     const tl = gsap.timeline({
       onComplete: () => {
         overlay.classList.remove('open');
-        gsap.set([overlay, modalEl], { clearProps: 'all' });
+        gsap.set([overlay, modalEl], { clearProps: 'transform,opacity' });
         if (id === 'modal-add-leetcode') {
           resetLeetCodeModalState();
         }
       }
     });
 
-    tl.to(modalEl, {
-      opacity: 0,
-      y: 16,
-      scale: 0.96,
-      duration: 0.22,
-      ease: 'power2.in'
-    }, 0);
-
     tl.to(overlay, {
       opacity: 0,
       duration: 0.22,
       ease: 'power2.in'
     }, 0);
+
+    if (modalEl) {
+      if (isMobile) {
+        // Slide down off the screen on mobile
+        tl.to(modalEl, {
+          y: '100%',
+          duration: 0.26,
+          ease: 'power3.in'
+        }, 0);
+      } else {
+        // Zoom/fade out on desktop
+        tl.to(modalEl, {
+          opacity: 0,
+          y: 12,
+          scale: 0.97,
+          duration: 0.22,
+          ease: 'power2.in'
+        }, 0);
+      }
+    }
   } else {
     overlay.classList.remove('open');
     if (id === 'modal-add-leetcode') {
@@ -1738,4 +1773,17 @@ window.updateGroupQuotaUI = updateGroupQuotaUI;
 window.finalizeGroupCreation = finalizeGroupCreation;
 window.finalizeGroupEdit = finalizeGroupEdit;
 window.updateGroupsOfflineState = updateGroupsOfflineState;
+
+// Delegated click handler for Live Chat buttons (avoids inline JS string injection)
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.group-open-chat-btn');
+  if (!btn) return;
+  const groupId   = btn.dataset.groupId;
+  const groupName = btn.dataset.groupName;
+  const groupIcon = btn.dataset.groupIcon || '';
+  if (typeof window.openGroupChat === 'function') {
+    window.openGroupChat(groupId, groupName, groupIcon);
+  }
+});
+
 console.log("[Module] groups.js loaded and Groups functions bound to window");
