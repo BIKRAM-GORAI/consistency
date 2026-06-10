@@ -18,6 +18,27 @@ app.use(express.json());
 const startTime = Date.now();
 
 /**
+ * Clean LLM response text that might contain markdown wrapper ticks or noise
+ */
+function cleanJsonResponse(text) {
+  if (!text) return '';
+  let cleaned = text.trim();
+  
+  // Remove markdown code block wrappers if present
+  if (cleaned.startsWith('```')) {
+    const match = cleaned.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if (match) {
+      cleaned = match[1].trim();
+    }
+  }
+  
+  // Remove any trailing backticks or formatting
+  cleaned = cleaned.replace(/^`+|`+$/g, '').trim();
+  
+  return cleaned;
+}
+
+/**
  * GET /health
  * Lightweight health check endpoint to prevent Render scaling-down (for Uptime Robot)
  */
@@ -324,7 +345,7 @@ app.post('/api/ai/extract-tasks', upload.single('image'), async (req, res) => {
 
     let parsedResult;
     try {
-      parsedResult = JSON.parse(resultText.trim());
+      parsedResult = JSON.parse(cleanJsonResponse(resultText));
     } catch (parseError) {
       console.warn(`[AI-Service] Raw response text is not valid JSON:`, resultText);
       return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: resultText });
@@ -714,7 +735,7 @@ app.post('/api/ai/moderate-group', async (req, res) => {
 
     let parsedResult;
     try {
-      parsedResult = JSON.parse(resultText.trim());
+      parsedResult = JSON.parse(cleanJsonResponse(resultText));
     } catch (parseError) {
       console.warn(`[AI-Service] Raw response text is not valid JSON:`, resultText);
       return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: resultText });
