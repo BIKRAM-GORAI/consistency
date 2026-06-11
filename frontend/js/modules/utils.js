@@ -907,7 +907,7 @@ window.checkEmailGraceExpired = checkEmailGraceExpired;
 function checkEmailVerificationBlocked() {
   if (checkEmailGraceExpired()) {
     if (typeof window.showToast === 'function') {
-      window.showToast('Action blocked: Your email verification grace period has expired. Please verify your email in settings.', 'error');
+      window.showToast('Action blocked: Your email verification grace period has expired. Please verify your email in settings (check your spam folder also).', 'error');
     }
     if (typeof window.openProfileModal === 'function') {
       window.openProfileModal();

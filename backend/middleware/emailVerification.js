@@ -29,7 +29,7 @@ const checkEmailVerified = async (req, res, next) => {
 
     if (new Date() > expiryTime) {
       return res.status(403).json({
-        message: 'Email verification required. Your grace period has expired. Please verify your email in settings.',
+        message: 'Email verification required. Your grace period has expired. Please verify your email in settings (check your spam folder also).',
         isEmailUnverified: true
       });
     }
