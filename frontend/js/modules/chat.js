@@ -86,7 +86,7 @@ function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
   const myUserId = window.userId;
   
   // The group.owner can be an object with _id or just an ID string
-  const isOwner = group && String(group.owner._id || group.owner) === String(myUserId);
+  const isOwner = group && group.owner && String(group.owner._id || group.owner) === String(myUserId);
   
   const bulkDeleteBtn = document.getElementById('chat-bulk-delete-btn');
   if (bulkDeleteBtn) {

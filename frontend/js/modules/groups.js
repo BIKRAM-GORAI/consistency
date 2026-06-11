@@ -96,9 +96,9 @@ function renderGroups() {
   container.innerHTML = '';
 
   // 1. My Private Teams (owned by me)
-  const myPrivateTeams = allJoinedGroups.filter(g => !g.isPublic && String(g.owner._id || g.owner) === String(window.userId));
+  const myPrivateTeams = allJoinedGroups.filter(g => !g.isPublic && g.owner && String(g.owner._id || g.owner) === String(window.userId));
   // 2. Joined Private Groups (owned by others)
-  const joinedPrivate = allJoinedGroups.filter(g => !g.isPublic && String(g.owner._id || g.owner) !== String(window.userId));
+  const joinedPrivate = allJoinedGroups.filter(g => !g.isPublic && (!g.owner || String(g.owner._id || g.owner) !== String(window.userId)));
   // 3. Joined Public Groups
   const joinedPublic = allJoinedGroups.filter(g => g.isPublic);
 
@@ -203,7 +203,7 @@ function renderGroups() {
               ${iconHtml}
               <span class="group-name" style="font-size: 1.25rem;">${escHtml(group.name)}</span>
             </div>
-            <span class="group-owner-badge" style="background: var(--bg-muted); border: 1px solid var(--green); color: var(--green); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 10px; text-transform: uppercase;">BY ${escHtml(group.owner.name || 'Admin')}</span>
+            <span class="group-owner-badge" style="background: var(--bg-muted); border: 1px solid var(--green); color: var(--green); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 10px; text-transform: uppercase;">BY ${escHtml((group.owner && group.owner.name) || 'Admin')}</span>
           </div>
           ${group.description ? `<p class="group-description" style="font-size:15px; color:var(--text-muted); margin:8px 0; line-height:1.4;">${escHtml(group.description)}</p>` : ''}
           
@@ -319,7 +319,7 @@ function renderGroupSection(container, title, groups, isOwnerSection, emoji, emp
 
 function renderSingleGroupCard(group, emoji) {
   const userId = window.userId;
-  const isMyOwned = String(group.owner._id || group.owner) === String(window.userId);
+  const isMyOwned = group.owner && String(group.owner._id || group.owner) === String(window.userId);
   const isPublic = group.isPublic;
   
   const mutedGroupsStr = localStorage.getItem('userMutedGroups') || '[]';
@@ -382,7 +382,7 @@ function renderSingleGroupCard(group, emoji) {
             ${iconHtml}
             <div style="min-width: 0;">
               <span class="group-name" style="font-size: 1.15rem; font-weight: 800;">${escHtml(group.name)}</span>
-              ${!isMyOwned ? `<span class="group-owner-badge" style="border: 1px solid var(--text-muted); padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 9px; text-transform: uppercase;">by ${escHtml(group.owner.name || 'Unknown')}</span>` : ''}
+              ${!isMyOwned ? `<span class="group-owner-badge" style="border: 1px solid var(--text-muted); padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 9px; text-transform: uppercase;">by ${escHtml((group.owner && group.owner.name) || 'Unknown')}</span>` : ''}
             </div>
           </div>
           
@@ -588,7 +588,7 @@ async function loadMoreMembers(groupId) {
     
     // Check if we are the owner to show remove buttons
     const group = allJoinedGroups.find(g => g._id === groupId);
-    const isOwner = group && String(group.owner._id || group.owner) === String(window.userId);
+    const isOwner = group && group.owner && String(group.owner._id || group.owner) === String(window.userId);
     
     const newMembersHtml = buildMembersHTML(data.members, groupId, isOwner);
     row.insertAdjacentHTML('beforeend', newMembersHtml);
