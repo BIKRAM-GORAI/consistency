@@ -584,7 +584,9 @@ async function verifyAndDeleteAccount() {
     });
     
     // Clear all local data
+    const adminToken = localStorage.getItem('adminToken');
     localStorage.clear();
+    if (adminToken) localStorage.setItem('adminToken', adminToken);
     
     if (window.localDb) {
       window.localDb.delete().then(() => {

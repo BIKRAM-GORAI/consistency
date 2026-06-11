@@ -31,13 +31,17 @@ async function apiFetch(url, options = {}) {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) {
+        const adminToken = localStorage.getItem('adminToken');
         localStorage.clear();
+        if (adminToken) localStorage.setItem('adminToken', adminToken);
         window.location.replace('landing.html');
         throw new Error('Session expired. Please log in again.');
       }
       if (res.status === 403) {
         if (body.isBlacklisted === true) {
+          const adminToken = localStorage.getItem('adminToken');
           localStorage.clear();
+          if (adminToken) localStorage.setItem('adminToken', adminToken);
           const reason = encodeURIComponent(body.message || 'Your account is blacklisted.');
           window.location.replace(`auth.html?blacklisted=true&reason=${reason}`);
           throw new Error(body.message || 'Your account is blacklisted.');

@@ -331,9 +331,13 @@ function logout() {
     }).catch(err => console.warn('FCM unregister failed on logout:', err));
   }
   const fcmDisabled = localStorage.getItem('fcmNotificationsDisabled');
+  const adminToken = localStorage.getItem('adminToken');
   localStorage.clear();
   if (fcmDisabled !== null) {
     localStorage.setItem('fcmNotificationsDisabled', fcmDisabled);
+  }
+  if (adminToken) {
+    localStorage.setItem('adminToken', adminToken);
   }
   if (window.localDb) {
     window.localDb.delete().then(() => {

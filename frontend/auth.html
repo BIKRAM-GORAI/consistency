@@ -1211,7 +1211,9 @@
     // Security: If admin logs in another tab, logout user here
     window.addEventListener('storage', (e) => {
       if (e.key === 'adminToken' && e.newValue) {
+        const adminToken = e.newValue;
         localStorage.clear();
+        localStorage.setItem('adminToken', adminToken);
         window.location.reload();
       }
     });
