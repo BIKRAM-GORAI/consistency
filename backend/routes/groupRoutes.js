@@ -80,7 +80,7 @@ router.get('/:groupId/members', authenticateToken, ctrl.groupMembers);
 router.get('/member-days', authenticateToken, ctrl.memberDays);
 
 // Edit a group (owner only)
-router.put('/:groupId', authenticateToken, checkEmailVerified, editGroupValidation, ctrl.editGroup);
+router.put('/:groupId', authenticateToken, checkEmailVerified, ctrl.editGroup);
 
 // Delete a group (owner only)
 router.delete('/:groupId', authenticateToken, checkEmailVerified, ctrl.deleteGroup);
