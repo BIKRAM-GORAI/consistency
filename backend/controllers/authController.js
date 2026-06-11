@@ -292,6 +292,8 @@ async function getProfileSettings(req, res) {
       profilePicture: user.profilePicture || '',
       isEmailVerified: user.isEmailVerified === true,
       createdAt: user.createdAt,
+      emailVerificationGraceDays: isNaN(parseInt(process.env.EMAIL_VERIFICATION_GRACE_DAYS, 10)) ? 2 : parseInt(process.env.EMAIL_VERIFICATION_GRACE_DAYS, 10),
+      emailVerificationFeatureDeploymentDate: process.env.EMAIL_VERIFICATION_FEATURE_DEPLOYMENT_DATE || '2026-06-11',
       lastViewedChangelogAt: user.lastViewedChangelogAt || null,
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false,
@@ -579,10 +581,10 @@ async function markChangelogViewed(req, res) {
 async function sendVerificationOtp(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(200).json({ success: false, message: 'User not found' });
 
     if (user.isEmailVerified) {
-      return res.status(400).json({ message: 'Email is already verified' });
+      return res.status(200).json({ success: false, message: 'Email is already verified' });
     }
 
     // Server-side rate limit: 60 seconds
@@ -624,7 +626,7 @@ async function sendVerificationOtp(req, res) {
           </div>
         `
       });
-      res.json({ message: 'Verification OTP sent successfully' });
+      res.json({ success: true, message: 'Verification OTP sent successfully' });
     } catch (emailErr) {
       console.error('Email sending failed:', emailErr);
       res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
@@ -637,21 +639,21 @@ async function sendVerificationOtp(req, res) {
 async function verifyEmail(req, res) {
   try {
     const { otp } = req.body;
-    if (!otp) return res.status(400).json({ message: 'OTP is required' });
+    if (!otp) return res.status(200).json({ success: false, message: 'OTP is required' });
 
     const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(200).json({ success: false, message: 'User not found' });
 
     if (user.isEmailVerified) {
-      return res.status(400).json({ message: 'Email is already verified' });
+      return res.status(200).json({ success: false, message: 'Email is already verified' });
     }
 
     if (!user.emailVerificationOtp || user.emailVerificationOtp !== otp.trim()) {
-      return res.status(400).json({ message: 'Invalid verification code' });
+      return res.status(200).json({ success: false, message: 'Invalid verification code' });
     }
 
     if (new Date() > new Date(user.emailVerificationOtpExpiresAt)) {
-      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
+      return res.status(200).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
     }
 
     user.isEmailVerified = true;
@@ -660,7 +662,7 @@ async function verifyEmail(req, res) {
     user.emailVerificationOtpSentAt = null;
     await user.save();
 
-    res.json({ message: 'Email verified successfully!' });
+    res.json({ success: true, message: 'Email verified successfully!' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

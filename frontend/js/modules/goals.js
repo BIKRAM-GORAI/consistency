@@ -287,6 +287,11 @@ function buildGoalCard(goal) {
 }
 
 async function toggleGoalTask(goalId, taskId, checked) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    const chk = document.getElementById(`gtask-${taskId}`);
+    if (chk) chk.checked = !checked;
+    return;
+  }
   const goal = window.allGoals.find(g => g._id === goalId);
   if (!goal) return;
   const task = goal.tasks.find(t => t._id === taskId);
@@ -372,6 +377,9 @@ function updateGoalProgressBar(goalId, tasks) {
 }
 
 async function deleteGoal(goalId) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   if (!confirm('Are you sure you want to delete this goal? This will permanently delete the entire goal card and all of its tasks.')) return;
   try {
     // 1. Update UI and Local DB instantly
@@ -419,6 +427,9 @@ function addGoalTaskField() {
 }
 
 async function submitAddGoal() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const title    = document.getElementById('goal-title-input').value.trim();
   const deadline = document.getElementById('goal-deadline-input').value.trim();
   if (!title)    { window.showToast('Goal title is required.', 'warn'); return; }

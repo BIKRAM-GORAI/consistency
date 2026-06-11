@@ -586,8 +586,15 @@ async function verifyAndDeleteAccount() {
     // Clear all local data
     localStorage.clear();
     
-    // Redirect to landing
-    window.location.replace('landing.html');
+    if (window.localDb) {
+      window.localDb.delete().then(() => {
+        window.location.replace('landing.html');
+      }).catch(() => {
+        window.location.replace('landing.html');
+      });
+    } else {
+      window.location.replace('landing.html');
+    }
   } catch (err) {
     showToast(err.message || 'Failed to delete account', 'error');
     // Restore UI if it failed so they can try again or cancel
@@ -2550,6 +2557,13 @@ function updateEmailVerificationUI(user) {
   const isVerified = user.isEmailVerified === true;
   localStorage.setItem('isEmailVerified', isVerified.toString());
   if (user.createdAt) localStorage.setItem('userCreatedAt', user.createdAt);
+  
+  if (typeof user.emailVerificationGraceDays === 'number') {
+    localStorage.setItem('emailVerificationGraceDays', user.emailVerificationGraceDays.toString());
+  }
+  if (user.emailVerificationFeatureDeploymentDate) {
+    localStorage.setItem('emailVerificationFeatureDeploymentDate', user.emailVerificationFeatureDeploymentDate);
+  }
 
   // Toggle warning dot on nav chip
   if (warningDot) {
@@ -2569,8 +2583,9 @@ function updateEmailVerificationUI(user) {
   }
 
   // Calculate Grace Period
-  const graceDays = 2;
-  const deploymentDate = new Date('2026-06-11');
+  const graceDays = typeof user.emailVerificationGraceDays === 'number' ? user.emailVerificationGraceDays : 2;
+  const deploymentDateStr = user.emailVerificationFeatureDeploymentDate || '2026-06-11';
+  const deploymentDate = new Date(deploymentDateStr);
   const userCreatedAt = user.createdAt ? new Date(user.createdAt) : new Date();
   const graceStartTime = userCreatedAt > deploymentDate ? userCreatedAt : deploymentDate;
   const expiryTime = new Date(graceStartTime.getTime() + graceDays * 24 * 60 * 60 * 1000);
@@ -2635,10 +2650,19 @@ function updateEmailVerificationUI(user) {
 
 async function sendEmailVerificationOtp() {
   const btn = document.getElementById('btn-email-verify-resend') || document.querySelector('[onclick="sendEmailVerificationOtp()"]');
-  if (btn) btn.disabled = true;
+  let originalHtml = '';
+  if (btn) {
+    btn.disabled = true;
+    originalHtml = btn.innerHTML;
+    const isResend = btn.id === 'btn-email-verify-resend';
+    btn.innerHTML = `<span class="spinner-ring" style="width: 12px; height: 12px; border-width: 2px; border-color: var(--black) transparent transparent transparent; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> ${isResend ? 'Resending...' : 'Sending OTP...'}`;
+  }
 
   try {
     const res = await apiFetch(`${window.API}/api/auth/send-verification-otp`, { method: 'POST' });
+    if (res && res.success === false) {
+      throw new Error(res.message || 'Failed to send verification code.');
+    }
     showToast(res.message || 'Verification code sent!', 'success');
     
     localStorage.setItem('emailOtpRequested', 'true');
@@ -2657,7 +2681,10 @@ async function sendEmailVerificationOtp() {
       if (cached) updateEmailVerificationUI(cached);
     } else {
       showToast(err.message || 'Failed to send verification code.', 'error');
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
     }
   }
 }
@@ -2670,7 +2697,12 @@ async function confirmEmailVerification() {
     return;
   }
   
-  if (btn) btn.disabled = true;
+  let originalHtml = '';
+  if (btn) {
+    btn.disabled = true;
+    originalHtml = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-ring" style="width: 12px; height: 12px; border-width: 2px; border-color: var(--black) transparent transparent transparent; display: inline-block; vertical-align: middle; margin-right: 6px;"></span> Verifying...`;
+  }
 
   try {
     const otp = input.value.trim();
@@ -2678,6 +2710,10 @@ async function confirmEmailVerification() {
       method: 'POST',
       body: JSON.stringify({ otp })
     });
+    
+    if (res && res.success === false) {
+      throw new Error(res.message || 'Verification failed. Please check the code.');
+    }
     
     showToast(res.message || 'Email verified successfully!', 'success');
     
@@ -2699,7 +2735,10 @@ async function confirmEmailVerification() {
     }
   } catch (err) {
     showToast(err.message || 'Verification failed. Please check the code.', 'error');
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
   }
 }
 

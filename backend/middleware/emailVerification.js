@@ -13,7 +13,8 @@ const checkEmailVerified = async (req, res, next) => {
     }
 
     // Email is unverified. Check if grace period has expired.
-    const graceDays = parseInt(process.env.EMAIL_VERIFICATION_GRACE_DAYS, 10) || 2;
+    const parsedGrace = parseInt(process.env.EMAIL_VERIFICATION_GRACE_DAYS, 10);
+    const graceDays = isNaN(parsedGrace) ? 2 : parsedGrace;
     
     // Feature deployment date: default to June 11, 2026 (today)
     const deploymentDateStr = process.env.EMAIL_VERIFICATION_FEATURE_DEPLOYMENT_DATE || '2026-06-11';

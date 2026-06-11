@@ -97,6 +97,9 @@ const syncManager = {
   processingPromise: null,
 
   async addToQueue(method, entity, id, data, localId = null) {
+    if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+      return;
+    }
     const db = window.localDb;
     if (!db) return;
     try {
@@ -273,7 +276,7 @@ const syncManager = {
           console.warn('Sync failed for item:', item.id, err);
           // Only delete if it is a permanent client/validation error (e.g. 400 Bad Request, 404 Not Found)
           // Do NOT delete for transient errors (network errors, rate limits 429, or 5xx server errors)
-          if (err.status && err.status >= 400 && err.status < 500 && err.status !== 429 && (!err.data || !err.data.isEmailUnverified)) {
+          if (err.status && err.status >= 400 && err.status < 500 && err.status !== 429) {
             await localDb.syncQueue.delete(item.id);
             if (item.entity === 'days' && typeof window.loadDays === 'function') window.loadDays();
             else if (item.entity === 'goals' && typeof window.loadGoals === 'function') window.loadGoals();

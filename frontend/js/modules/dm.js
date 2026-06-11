@@ -1245,91 +1245,180 @@ function scrollToDMMessage(docId) {
 // ── Clear Chat History (Local & Firestore) ──
 
 async function clearDMChatHistory() {
-  if (!activeChatId) return;
-  if (!confirm('Are you sure you want to permanently delete your entire conversation history with this user? This cannot be undone.')) return;
+  if (!activeChatId || !activeChatRecipientId) return;
 
-  const msgsList = document.getElementById('dm-messages-list');
-  const myUserId = window.userId;
-  const now = Date.now();
+  if (isFriendActive) {
+    if (!confirm('Are you sure you want to permanently delete your entire conversation history with this user? This cannot be undone.')) return;
 
-  try {
-    // 1. Delete locally from IndexedDB
-    await window.localDb.directMessages.where('chatId').equals(activeChatId).delete();
-    
-    // 2. Set the delete timestamp in the chat metadata document
-    const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
-    await firestore.setDoc(metaRef, {
-      deletedAt: {
-        [myUserId]: now
+    const msgsList = document.getElementById('dm-messages-list');
+    const myUserId = window.userId;
+    const now = Date.now();
+
+    try {
+      // 1. Delete locally from IndexedDB
+      await window.localDb.directMessages.where('chatId').equals(activeChatId).delete();
+      
+      // 2. Set the delete timestamp in the chat metadata document
+      const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
+      await firestore.setDoc(metaRef, {
+        deletedAt: {
+          [myUserId]: now
+        }
+      }, { merge: true });
+
+      // Update local state
+      myDeletedAt = now;
+      localStorage.setItem('deletedAt_' + activeChatId, now.toString());
+
+      // Restart real-time listener to apply new start timestamp filter
+      subscribeToDMMessages(0);
+
+      if (msgsList) {
+        msgsList.innerHTML = `
+          <div id="dm-empty-state" style="text-align:center; padding:60px 20px; color:var(--text-light);">
+            <div style="font-size:40px; margin-bottom:16px;">🧹</div>
+            <h3 style="font-family:'Space Grotesk', sans-serif; font-weight:900; text-transform:uppercase;">Chat Cleared</h3>
+            <p style="font-size:13px; font-weight:600; opacity:0.7;">All messages were deleted permanently.</p>
+          </div>
+        `;
       }
-    }, { merge: true });
+      showToast('Chat history cleared.', 'success');
 
-    // Update local state
-    myDeletedAt = now;
-    localStorage.setItem('deletedAt_' + activeChatId, now.toString());
+      // 3. Check if both users have cleared this chat to trigger hard deletion
+      const metaSnap = await firestore.getDoc(metaRef);
+      if (metaSnap.exists()) {
+        const metaData = metaSnap.data();
+        const deletedAt = metaData.deletedAt || {};
 
-    // Restart real-time listener to apply new start timestamp filter
-    subscribeToDMMessages(0);
+        const userIds = activeChatId.split('_');
+        const user1 = userIds[0];
+        const user2 = userIds[1];
 
-    if (msgsList) {
-      msgsList.innerHTML = `
-        <div id="dm-empty-state" style="text-align:center; padding:60px 20px; color:var(--text-light);">
-          <div style="font-size:40px; margin-bottom:16px;">🧹</div>
-          <h3 style="font-family:'Space Grotesk', sans-serif; font-weight:900; text-transform:uppercase;">Chat Cleared</h3>
-          <p style="font-size:13px; font-weight:600; opacity:0.7;">All messages were deleted permanently.</p>
-        </div>
-      `;
-    }
-    showToast('Chat history cleared.', 'success');
+        if (deletedAt[user1] && deletedAt[user2]) {
+          // Find the older of the delete times: messages older than both are invisible to both
+          const cutoff = Math.min(deletedAt[user1], deletedAt[user2]);
 
-    // 3. Check if both users have cleared this chat to trigger hard deletion
-    const metaSnap = await firestore.getDoc(metaRef);
-    if (metaSnap.exists()) {
-      const metaData = metaSnap.data();
-      const deletedAt = metaData.deletedAt || {};
+          const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
+          const q = firestore.query(msgsRef, firestore.where('timestamp', '<=', new Date(cutoff)));
+          const snap = await firestore.getDocs(q);
 
-      const userIds = activeChatId.split('_');
-      const user1 = userIds[0];
-      const user2 = userIds[1];
+          if (!snap.empty) {
+            const mediaUrls = [];
+            const deletePromises = [];
 
-      if (deletedAt[user1] && deletedAt[user2]) {
-        // Find the older of the delete times: messages older than both are invisible to both
-        const cutoff = Math.min(deletedAt[user1], deletedAt[user2]);
+            snap.docs.forEach(doc => {
+              if (doc.id === 'metadata') return;
+              const msgData = doc.data();
+              if (msgData.mediaUrl) {
+                mediaUrls.push(msgData.mediaUrl);
+              }
+              deletePromises.push(firestore.deleteDoc(doc.ref));
+            });
 
-        const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
-        const q = firestore.query(msgsRef, firestore.where('timestamp', '<=', new Date(cutoff)));
-        const snap = await firestore.getDocs(q);
-
-        if (!snap.empty) {
-          const mediaUrls = [];
-          const deletePromises = [];
-
-          snap.docs.forEach(doc => {
-            if (doc.id === 'metadata') return;
-            const msgData = doc.data();
-            if (msgData.mediaUrl) {
-              mediaUrls.push(msgData.mediaUrl);
+            // Delete media from Cloudinary
+            if (mediaUrls.length > 0) {
+              await window.apiFetch(`${window.API}/api/auth/chat-media`, {
+                method: 'DELETE',
+                body: JSON.stringify({ urls: mediaUrls })
+              }).catch(e => console.warn('Cloudinary DM media deletion failed:', e));
             }
-            deletePromises.push(firestore.deleteDoc(doc.ref));
-          });
 
-          // Delete media from Cloudinary
-          if (mediaUrls.length > 0) {
-            await window.apiFetch(`${window.API}/api/auth/chat-media`, {
-              method: 'DELETE',
-              body: JSON.stringify({ urls: mediaUrls })
-            }).catch(e => console.warn('Cloudinary DM media deletion failed:', e));
+            // Delete messages from Firestore
+            await Promise.all(deletePromises);
+            console.log(`Hard-deleted ${snap.size} messages and their Cloudinary media.`);
           }
-
-          // Delete messages from Firestore
-          await Promise.all(deletePromises);
-          console.log(`Hard-deleted ${snap.size} messages and their Cloudinary media.`);
         }
       }
+    } catch (err) {
+      console.error('Failed to clear DM history:', err);
+      showToast('Error clearing chat history.', 'error');
     }
-  } catch (err) {
-    console.error('Failed to clear DM history:', err);
-    showToast('Error clearing chat history.', 'error');
+  } else {
+    // Unfollowed user: delete permanently and remove contact
+    if (!confirm(`Are you sure you want to permanently delete your entire conversation history with ${activeChatRecipientName} and remove this contact? This cannot be undone.`)) return;
+
+    const msgsList = document.getElementById('dm-messages-list');
+    const myUserId = window.userId;
+    const now = Date.now();
+    const recipientId = activeChatRecipientId;
+    const recipientName = activeChatRecipientName;
+
+    try {
+      // 1. Delete locally from IndexedDB
+      await window.localDb.directMessages.where('chatId').equals(activeChatId).delete();
+      
+      // 2. Set the delete timestamp in the chat metadata document
+      const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
+      await firestore.setDoc(metaRef, {
+        deletedAt: {
+          [myUserId]: now
+        }
+      }, { merge: true });
+
+      // 3. Remove from Firestore friendships
+      const docRef = firestore.doc(firebaseDb, 'friendships', myUserId);
+      const docSnap = await firestore.getDoc(docRef);
+      if (docSnap.exists()) {
+        const friendsList = docSnap.data().friends || [];
+        const updatedFriends = friendsList.filter(id => String(id) !== recipientId);
+        await firestore.updateDoc(docRef, { friends: updatedFriends });
+      }
+
+      // 4. Remove local storage keys
+      localStorage.removeItem('activeContact_' + recipientId);
+      localStorage.removeItem('contact_details_' + recipientId);
+      localStorage.removeItem('deletedAt_' + activeChatId);
+      localStorage.removeItem('lastRead_' + activeChatId);
+
+      closeDMChat();
+      showToast(`Permanently deleted chat with ${recipientName}.`, 'success');
+      fetchFriends();
+
+      // 5. Trigger hard deletion if both have deleted
+      const metaSnap = await firestore.getDoc(metaRef);
+      if (metaSnap.exists()) {
+        const metaData = metaSnap.data();
+        const deletedAt = metaData.deletedAt || {};
+
+        const userIds = activeChatId.split('_');
+        const user1 = userIds[0];
+        const user2 = userIds[1];
+
+        if (deletedAt[user1] && deletedAt[user2]) {
+          const cutoff = Math.min(deletedAt[user1], deletedAt[user2]);
+          const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
+          const q = firestore.query(msgsRef, firestore.where('timestamp', '<=', new Date(cutoff)));
+          const snap = await firestore.getDocs(q);
+
+          if (!snap.empty) {
+            const mediaUrls = [];
+            const deletePromises = [];
+
+            snap.docs.forEach(doc => {
+              if (doc.id === 'metadata') return;
+              const msgData = doc.data();
+              if (msgData.mediaUrl) {
+                mediaUrls.push(msgData.mediaUrl);
+              }
+              deletePromises.push(firestore.deleteDoc(doc.ref));
+            });
+
+            if (mediaUrls.length > 0) {
+              await window.apiFetch(`${window.API}/api/auth/chat-media`, {
+                method: 'DELETE',
+                body: JSON.stringify({ urls: mediaUrls })
+              }).catch(e => console.warn('Cloudinary DM media deletion failed:', e));
+            }
+
+            await Promise.all(deletePromises);
+            console.log(`Hard-deleted ${snap.size} messages and their Cloudinary media.`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to permanently clear DM history:', err);
+      showToast('Error deleting chat.', 'error');
+    }
   }
 }
 
@@ -2058,13 +2147,127 @@ async function renderContactsList(friends, forceCache = false) {
   }
 }
 
-function deleteContact(friendId, name) {
-  if (!confirm(`Are you sure you want to remove the contact card for ${name}? This will hide them from your messages tab, but will NOT delete your message history.`)) {
-    return;
+async function deleteContact(friendId, name) {
+  if (!friendId) return;
+  friendId = String(friendId).trim();
+
+  // Check if they are an active friend (in local IndexedDB cache)
+  let isActiveFriend = false;
+  if (window.localDb) {
+    try {
+      const cachedFriend = await window.localDb.friends.get(friendId);
+      isActiveFriend = !!cachedFriend;
+    } catch (e) {
+      console.warn('Failed to check friend cache in deleteContact:', e);
+    }
   }
-  localStorage.removeItem('activeContact_' + friendId);
-  showToast(`Removed ${name} from contacts.`, 'info');
-  fetchFriends();
+
+  if (isActiveFriend) {
+    // ── ACTIVE FRIEND: unfriend via backend, then clear DM history locally ──
+    if (!confirm(`Are you sure you want to unfriend ${name} and hide this conversation? This will remove them from your contacts.`)) {
+      return;
+    }
+
+    try {
+      // Call the real backend unfriend endpoint — this updates MongoDB AND syncs Firestore
+      const res = await window.apiFetch(`${window.API}/api/friends/${friendId}`, {
+        method: 'DELETE'
+      });
+
+      // Also clear the local DM cache so the chat disappears immediately
+      const chatId = getChatId(window.userId, friendId);
+      if (window.localDb) {
+        await window.localDb.directMessages.where('chatId').equals(chatId).delete().catch(() => {});
+      }
+      localStorage.removeItem('activeContact_' + friendId);
+      localStorage.removeItem('contact_details_' + friendId);
+      localStorage.removeItem('deletedAt_' + chatId);
+      localStorage.removeItem('lastRead_' + chatId);
+
+      showToast(res?.message || `Unfriended ${name} and removed from contacts.`, 'info');
+      fetchFriends();
+    } catch (err) {
+      console.error('Failed to unfriend contact:', err);
+      showToast(err.message || 'Failed to remove contact.', 'error');
+    }
+  } else {
+    // ── UNFOLLOWED / DELETED USER: permanently wipe local history ──
+    if (!confirm(`Are you sure you want to permanently delete your entire conversation history with ${name} and remove this contact? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const chatId = getChatId(window.userId, friendId);
+      const now = Date.now();
+      const myUserId = String(window.userId);
+
+      // 1. Delete locally from IndexedDB
+      if (window.localDb) {
+        await window.localDb.directMessages.where('chatId').equals(chatId).delete();
+      }
+
+      // 2. Set the delete timestamp in the chat metadata document in Firestore
+      const { firebaseDb, firestore } = window;
+      if (firebaseDb && firestore) {
+        const metaRef = firestore.doc(firebaseDb, 'direct_messages', chatId, 'messages', 'metadata');
+        await firestore.setDoc(metaRef, {
+          deletedAt: { [myUserId]: now }
+        }, { merge: true });
+
+        // 3. Trigger hard deletion if both sides have deleted
+        const metaSnap = await firestore.getDoc(metaRef);
+        if (metaSnap.exists()) {
+          const metaData = metaSnap.data();
+          const deletedAt = metaData.deletedAt || {};
+
+          const userIds = chatId.split('_');
+          const user1 = userIds[0];
+          const user2 = userIds[1];
+
+          if (deletedAt[user1] && deletedAt[user2]) {
+            const cutoff = Math.min(deletedAt[user1], deletedAt[user2]);
+            const msgsRef = firestore.collection(firebaseDb, 'direct_messages', chatId, 'messages');
+            const q = firestore.query(msgsRef, firestore.where('timestamp', '<=', new Date(cutoff)));
+            const snap = await firestore.getDocs(q);
+
+            if (!snap.empty) {
+              const mediaUrls = [];
+              const deletePromises = [];
+
+              snap.docs.forEach(doc => {
+                if (doc.id === 'metadata') return;
+                const msgData = doc.data();
+                if (msgData.mediaUrl) mediaUrls.push(msgData.mediaUrl);
+                deletePromises.push(firestore.deleteDoc(doc.ref));
+              });
+
+              if (mediaUrls.length > 0) {
+                await window.apiFetch(`${window.API}/api/auth/chat-media`, {
+                  method: 'DELETE',
+                  body: JSON.stringify({ urls: mediaUrls })
+                }).catch(e => console.warn('Cloudinary DM media deletion failed:', e));
+              }
+
+              await Promise.all(deletePromises);
+              console.log(`Hard-deleted ${snap.size} messages and their Cloudinary media.`);
+            }
+          }
+        }
+      }
+
+      // 4. Remove local storage keys
+      localStorage.removeItem('activeContact_' + friendId);
+      localStorage.removeItem('contact_details_' + friendId);
+      localStorage.removeItem('deletedAt_' + chatId);
+      localStorage.removeItem('lastRead_' + chatId);
+
+      showToast(`Permanently deleted chat with ${name}.`, 'success');
+      fetchFriends();
+    } catch (err) {
+      console.error('Failed to permanently delete unfollowed contact:', err);
+      showToast('Error deleting chat.', 'error');
+    }
+  }
 }
 
 function renderFriendRequestsList(requests) {

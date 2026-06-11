@@ -887,5 +887,35 @@ function fallbackToFileInput(onSuccess) {
   };
   tempInput.click();
 }
+function checkEmailGraceExpired() {
+  const isVerified = localStorage.getItem('isEmailVerified') === 'true';
+  if (isVerified) return false;
+
+  const graceDays = parseInt(localStorage.getItem('emailVerificationGraceDays') || '2', 10);
+  const deploymentDateStr = localStorage.getItem('emailVerificationFeatureDeploymentDate') || '2026-06-11';
+  const deploymentDate = new Date(deploymentDateStr);
+  const userCreatedAtStr = localStorage.getItem('userCreatedAt');
+  const userCreatedAt = userCreatedAtStr ? new Date(userCreatedAtStr) : new Date();
+  
+  const graceStartTime = userCreatedAt > deploymentDate ? userCreatedAt : deploymentDate;
+  const expiryTime = new Date(graceStartTime.getTime() + graceDays * 24 * 60 * 60 * 1000);
+  
+  return Date.now() > expiryTime.getTime();
+}
+window.checkEmailGraceExpired = checkEmailGraceExpired;
+
+function checkEmailVerificationBlocked() {
+  if (checkEmailGraceExpired()) {
+    if (typeof window.showToast === 'function') {
+      window.showToast('Action blocked: Your email verification grace period has expired. Please verify your email in settings.', 'error');
+    }
+    if (typeof window.openProfileModal === 'function') {
+      window.openProfileModal();
+    }
+    return true;
+  }
+  return false;
+}
+window.checkEmailVerificationBlocked = checkEmailVerificationBlocked;
 
 console.log("[Module] utils.js loaded and utility helpers bound to window");

@@ -108,7 +108,7 @@ router.delete('/chat-media', authenticateToken, async (req, res) => {
   }
 });
 
-const { checkEmailVerified } = require('../middleware/emailVerification');
+
 
 // POST /api/auth/send-verification-otp
 router.post('/send-verification-otp', authenticateToken, sendVerificationOtp);
@@ -116,7 +116,9 @@ router.post('/send-verification-otp', authenticateToken, sendVerificationOtp);
 // POST /api/auth/verify-email
 router.post('/verify-email', authenticateToken, verifyEmail);
 
-// GET firebase token for chat authentication (requires authentication)
-router.get('/firebase-token', authenticateToken, checkEmailVerified, getFirebaseToken);
+// GET firebase token for chat authentication (requires authentication only, NOT email verification)
+// Email verification must NOT block Firebase token issuance — without it, Firestore rules
+// reject all reads/writes causing "Missing or insufficient permissions" errors for ALL users.
+router.get('/firebase-token', authenticateToken, getFirebaseToken);
 
 module.exports = router;

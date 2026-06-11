@@ -445,6 +445,9 @@ function filterCanvases(query) {
 }
 
 function openCreateModal() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   if (!checkPremiumStatus()) return;
   if (canvasesList.length >= canvasLimit) {
     showToast(`Limit reached. You can only create up to ${canvasLimit} canvases in your lifetime.`, 'warn');
@@ -486,6 +489,9 @@ async function submitCreateCanvas() {
 }
 
 async function deleteCanvas(id, name) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   if (!checkPremiumStatus()) return;
   if (!confirm(`Are you sure you want to permanently delete "${name}"?`)) return;
 
@@ -508,6 +514,10 @@ async function deleteCanvas(id, name) {
  */
 
 async function loadCanvasDetails(id) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    navigateTo('canvas.html');
+    return;
+  }
   if (id === 'demo-preview-canvas') {
     activeCanvasId = 'demo-preview-canvas';
     document.getElementById('canvas-dashboard-view').style.display = 'none';

@@ -725,6 +725,11 @@ function animateProgressBar(fillId, targetPct) {
 }
 
 async function toggleTask(dayId, catId, taskId, checked) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    const chk = document.getElementById(`chk-${taskId}`);
+    if (chk) chk.checked = !checked;
+    return;
+  }
   let day = window.allDays.find(d => d._id === dayId);
   let cat, task;
 
@@ -868,6 +873,9 @@ async function toggleTask(dayId, catId, taskId, checked) {
 
 // ── Delete Day Card Completely ──────────────────────────────
 async function deleteDayCard(dayId) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const day = window.allDays.find(d => d._id === dayId);
   if (day) {
     const today = window.todayStr();
@@ -1398,6 +1406,9 @@ function addTaskField(catIdx) {
 }
 
 async function submitAddDay() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const date    = document.getElementById('day-date-input').value.trim();
   const summary = document.getElementById('day-summary-input').value.trim();
   if (!date) { window.showToast('Please select a date.', 'warn'); return; }
@@ -1554,6 +1565,9 @@ function addNewCatTaskField() {
 }
 
 async function submitAddCategory() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const dayId   = window.activeDayIdForCategory;
   const catName = document.getElementById('new-cat-name').value.trim();
   if (!catName) { window.showToast('Category name is required.', 'warn'); return; }
@@ -1639,6 +1653,9 @@ function addEditCatTaskField(title = '', taskId = '', completed = false) {
 }
 
 async function submitEditCategory() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const dayId   = window.editingDayId;
   const catId   = window.editingCatId;
   const catName = document.getElementById('edit-cat-name').value.trim();

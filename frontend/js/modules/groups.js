@@ -699,6 +699,9 @@ function copyTeamCode(code) {
 
 // ── Create Group Modal ─────────────────────────────────────
 function openCreateGroupModal(isPublic = false) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   document.getElementById('group-name-input').value = '';
   document.getElementById('group-desc-input').value = '';
   document.getElementById('group-is-public-hidden').value = isPublic;
@@ -944,6 +947,9 @@ async function submitJoinGroup() {
 let editingGroupId = null;
 
 function openEditGroupModal(id) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const group = (allJoinedGroups || []).find(g => String(g._id) === String(id));
   if (!group) {
     showToast('Failed to find group details.', 'error');

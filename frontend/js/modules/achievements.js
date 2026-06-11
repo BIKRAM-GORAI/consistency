@@ -295,6 +295,9 @@ function openAddAchievementModal(dayId) {
 }
 
 async function submitAddAchievement() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   const title = document.getElementById('ach-title-input').value.trim();
   const desc  = document.getElementById('ach-desc-input').value.trim();
   const links = getLinksFromBuilder('ach-links-builder');
@@ -418,6 +421,9 @@ async function submitEditAchievement() {
 
 // ── Delete Achievement ─────────────────────────────────────
 async function deleteAchievement(achId, dayId) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
+    return;
+  }
   if (!confirm('Delete this achievement? This cannot be undone.')) return;
   try {
     const knownDayId = dayId || window.allAchievements.find(x => x._id === achId)?.dayId;
