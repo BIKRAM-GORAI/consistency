@@ -267,6 +267,9 @@ function renderProfileData(user) {
   if (themeSelect && user.theme) {
     themeSelect.value = user.theme;
   }
+
+  // Update Email Verification UI
+  updateEmailVerificationUI(user);
 }
 
 function togglePasswordSection() {
@@ -2536,5 +2539,214 @@ function renderProfileActions(u, status) {
 }
 
 window.renderProfileActions = renderProfileActions;
+
+// ── Email Verification UI & Actions ───────────────────────────
+function updateEmailVerificationUI(user) {
+  const warningDot = document.getElementById('email-verify-warning-dot');
+  const section = document.getElementById('email-verification-section');
+
+  if (!user) return;
+
+  const isVerified = user.isEmailVerified === true;
+  localStorage.setItem('isEmailVerified', isVerified.toString());
+  if (user.createdAt) localStorage.setItem('userCreatedAt', user.createdAt);
+
+  // Toggle warning dot on nav chip
+  if (warningDot) {
+    warningDot.style.display = isVerified ? 'none' : 'block';
+  }
+
+  if (!section) return;
+
+  if (isVerified) {
+    section.innerHTML = `
+      <div style="background: #f0fdf4; border: 2.5px solid var(--black); padding: 8px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; color: #16a34a; box-shadow: 2px 2px 0 var(--black); text-transform: uppercase;">
+        <i data-lucide="check-circle" style="width: 15px; height: 15px;"></i> Email Verified
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: section });
+    return;
+  }
+
+  // Calculate Grace Period
+  const graceDays = 2;
+  const deploymentDate = new Date('2026-06-11');
+  const userCreatedAt = user.createdAt ? new Date(user.createdAt) : new Date();
+  const graceStartTime = userCreatedAt > deploymentDate ? userCreatedAt : deploymentDate;
+  const expiryTime = new Date(graceStartTime.getTime() + graceDays * 24 * 60 * 60 * 1000);
+  const timeDiff = expiryTime.getTime() - Date.now();
+
+  let statusHtml = '';
+  if (timeDiff <= 0) {
+    statusHtml = `
+      <div style="background: #fdf2f2; border: 2.5px solid var(--black); padding: 10px 14px; border-radius: 8px; font-weight: 800; font-size: 12px; color: var(--red); box-shadow: 2px 2px 0 var(--black); margin-bottom: 12px; line-height: 1.4;">
+        <i data-lucide="alert-triangle" style="width: 15px; height: 15px; vertical-align: middle; margin-right: 4px;"></i> 
+        GRACE PERIOD EXPIRED. Please verify your email to unlock all features (creating cards, goals, and chatting).
+      </div>
+    `;
+  } else {
+    // Format remaining time
+    const totalHours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+    const remainingText = days > 0 ? `${days}d ${hours}h` : `${hours}h`;
+
+    statusHtml = `
+      <div style="background: #fffbeb; border: 2.5px solid var(--black); padding: 10px 14px; border-radius: 8px; font-weight: 800; font-size: 12px; color: #d97706; box-shadow: 2px 2px 0 var(--black); margin-bottom: 12px; line-height: 1.4;">
+        <i data-lucide="clock" style="width: 15px; height: 15px; vertical-align: middle; margin-right: 4px;"></i> 
+        UNVERIFIED: You have ${remainingText} remaining to verify your email before access is restricted.
+      </div>
+    `;
+  }
+
+  // Render OTP controls
+  const isOtpActive = localStorage.getItem('emailOtpRequested') === 'true';
+
+  let otpControlsHtml = '';
+  if (isOtpActive) {
+    otpControlsHtml = `
+      <div style="border: 2px dashed var(--black); padding: 12px; border-radius: 8px; background: var(--bg-card); margin-top: 10px;">
+        <label style="font-weight: 800; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 6px;">Enter 6-Digit Code</label>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" id="email-verification-otp-input" class="form-control" placeholder="123456" maxlength="6" style="height: 38px; font-weight: 900; letter-spacing: 2px; text-align: center; font-size: 16px; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); width: 120px;" />
+          <button class="btn-primary ripple" id="btn-email-verify-confirm" onclick="confirmEmailVerification()" style="height: 38px; padding: 0 16px; background: var(--lime); color: var(--black); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); font-size: 12px; font-weight: 800; text-transform: uppercase;">Verify</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button class="btn-ghost ripple" id="btn-email-verify-resend" onclick="sendEmailVerificationOtp()" style="height: 32px; padding: 0 12px; font-size: 11px; font-weight: 700; border-width: 2px; box-shadow: 2px 2px 0 var(--black); text-transform: uppercase;">Resend OTP</button>
+          <span id="email-verify-resend-countdown" style="font-size: 11px; font-weight: 800; color: var(--text-muted);"></span>
+        </div>
+      </div>
+    `;
+  } else {
+    otpControlsHtml = `
+      <button class="btn-primary ripple" onclick="sendEmailVerificationOtp()" style="padding: 8px 16px; background: var(--yellow); color: var(--black); border-color: var(--black); box-shadow: 3px 3px 0 var(--black); font-size: 12px; font-weight: 800; text-transform: uppercase; width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="mail"></i> Verify Email Address
+      </button>
+    `;
+  }
+
+  section.innerHTML = statusHtml + otpControlsHtml;
+  if (window.lucide) lucide.createIcons({ root: section });
+
+  if (isOtpActive) {
+    updateOtpResendTimer();
+  }
+}
+
+async function sendEmailVerificationOtp() {
+  const btn = document.getElementById('btn-email-verify-resend') || document.querySelector('[onclick="sendEmailVerificationOtp()"]');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await apiFetch(`${window.API}/api/auth/send-verification-otp`, { method: 'POST' });
+    showToast(res.message || 'Verification code sent!', 'success');
+    
+    localStorage.setItem('emailOtpRequested', 'true');
+    localStorage.setItem('emailOtpSentAt', Date.now().toString());
+    
+    const cached = await window.localDb.userProfile.get(window.userId);
+    if (cached) updateEmailVerificationUI(cached);
+  } catch (err) {
+    console.error('Send OTP error:', err);
+    if (err.status === 429 && err.data && err.data.retryAfter) {
+      localStorage.setItem('emailOtpRequested', 'true');
+      const timeRemaining = err.data.retryAfter * 1000;
+      localStorage.setItem('emailOtpSentAt', (Date.now() - (60000 - timeRemaining)).toString());
+      
+      const cached = await window.localDb.userProfile.get(window.userId);
+      if (cached) updateEmailVerificationUI(cached);
+    } else {
+      showToast(err.message || 'Failed to send verification code.', 'error');
+      if (btn) btn.disabled = false;
+    }
+  }
+}
+
+async function confirmEmailVerification() {
+  const input = document.getElementById('email-verification-otp-input');
+  const btn = document.getElementById('btn-email-verify-confirm');
+  if (!input || !input.value.trim()) {
+    showToast('Please enter the 6-digit verification code.', 'warn');
+    return;
+  }
+  
+  if (btn) btn.disabled = true;
+
+  try {
+    const otp = input.value.trim();
+    const res = await apiFetch(`${window.API}/api/auth/verify-email`, {
+      method: 'POST',
+      body: JSON.stringify({ otp })
+    });
+    
+    showToast(res.message || 'Email verified successfully!', 'success');
+    
+    localStorage.removeItem('emailOtpRequested');
+    localStorage.removeItem('emailOtpSentAt');
+    localStorage.setItem('isEmailVerified', 'true');
+    
+    if (window.otpCountdownInterval) {
+      clearInterval(window.otpCountdownInterval);
+      window.otpCountdownInterval = null;
+    }
+
+    if (navigator.onLine) {
+      const freshUser = await apiFetch(`${window.API}/api/auth/settings`);
+      freshUser.userId = window.userId;
+      await window.localDb.userProfile.put(freshUser);
+      renderProfileData(freshUser);
+      if (typeof loadLeaderboard === 'function') loadLeaderboard(true);
+    }
+  } catch (err) {
+    showToast(err.message || 'Verification failed. Please check the code.', 'error');
+    if (btn) btn.disabled = false;
+  }
+}
+
+function updateOtpResendTimer() {
+  const resendBtn = document.getElementById('btn-email-verify-resend');
+  const countdownText = document.getElementById('email-verify-resend-countdown');
+  if (!resendBtn) return;
+
+  const sentAt = parseInt(localStorage.getItem('emailOtpSentAt') || '0', 10);
+  const now = Date.now();
+  const timePassed = now - sentAt;
+  const timeRemaining = Math.max(0, Math.ceil((60 * 1000 - timePassed) / 1000));
+
+  if (timeRemaining > 0) {
+    resendBtn.disabled = true;
+    resendBtn.style.opacity = '0.5';
+    resendBtn.style.cursor = 'not-allowed';
+    if (countdownText) countdownText.textContent = `Resend available in ${timeRemaining}s`;
+    
+    if (window.otpCountdownInterval) clearInterval(window.otpCountdownInterval);
+    window.otpCountdownInterval = setInterval(() => {
+      const currentSentAt = parseInt(localStorage.getItem('emailOtpSentAt') || '0', 10);
+      const currentNow = Date.now();
+      const currentPassed = currentNow - currentSentAt;
+      const currentRemaining = Math.max(0, Math.ceil((60 * 1000 - currentPassed) / 1000));
+      
+      if (currentRemaining > 0) {
+        if (countdownText) countdownText.textContent = `Resend available in ${currentRemaining}s`;
+      } else {
+        clearInterval(window.otpCountdownInterval);
+        window.otpCountdownInterval = null;
+        resendBtn.disabled = false;
+        resendBtn.style.opacity = '1';
+        resendBtn.style.cursor = 'pointer';
+        if (countdownText) countdownText.textContent = '';
+      }
+    }, 1000);
+  } else {
+    resendBtn.disabled = false;
+    resendBtn.style.opacity = '1';
+    resendBtn.style.cursor = 'pointer';
+    if (countdownText) countdownText.textContent = '';
+  }
+}
+
+window.sendEmailVerificationOtp = sendEmailVerificationOtp;
+window.confirmEmailVerification = confirmEmailVerification;
+window.updateEmailVerificationUI = updateEmailVerificationUI;
 
 console.log("[Module] profile.js loaded and Profile bound to window");

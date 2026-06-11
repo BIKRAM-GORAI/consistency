@@ -367,10 +367,11 @@
       </div>
 
       <div class="nav-user-chip" id="nav-user-chip" onclick="openProfileModal()" style="cursor: pointer;" title="Profile & Settings">
-        <div style="position: relative; width: 32px; height: 32px;">
-          <span class="user-chip-avatar" id="user-chip-avatar" style="position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">?</span>
+        <div style="width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid var(--black); background: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; position: relative;">
+          <span id="user-chip-avatar">U</span>
           <img class="user-chip-img" id="user-chip-img" src="" alt="Profile" style="position:absolute; display:none; width:100%; height:100%; border-radius:50%; object-fit:cover; z-index:1;" />
           <div id="profile-red-dot" class="profile-red-dot" style="display: none;"></div>
+          <div id="email-verify-warning-dot" class="email-verify-warning-dot" style="display: none;"></div>
         </div>
         <span class="user-chip-name" id="user-chip-name">User</span>
       </div>
@@ -576,6 +577,15 @@
         <button class="btn-lb-sort" id="btn-sort-highest" onclick="setLeaderboardSort('highest')">
           <i data-lucide="trending-up"></i> All-Time Highest
         </button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Email Verification Warning Banner -->
+    <div id="leaderboard-verification-banner" style="display: none; margin-bottom: 24px; padding: 16px; background: var(--bg-muted); border: 3px solid var(--black); box-shadow: 4px 4px 0 var(--black); border-radius: var(--r-md); align-items: center; gap: 12px;">
+      <span style="font-size: 24px;">⚠️</span>
+      <div>
+        <h4 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; text-transform: uppercase; color: var(--red);">Email Verification Required</h4>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); font-weight: 600;">Please verify your email address in Settings to display your name and rank on the leaderboard.</p>
       </div>
     </div>
 
@@ -1715,6 +1725,7 @@
           <div class="form-group" style="margin-bottom: 16px;">
             <label for="profile-email" style="font-weight: 600;">Email (Read Only)</label>
             <input type="email" id="profile-email" class="form-control" readonly />
+            <div id="email-verification-section" style="margin-top: 8px;"></div>
           </div>
 
           <div class="form-group" style="margin-bottom: 0;">

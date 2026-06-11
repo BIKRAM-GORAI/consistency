@@ -189,6 +189,7 @@ const oauthLogin = async (req, res) => {
       if (!providerExists) {
         user.authProviders.push({ provider, uid });
       }
+      user.isEmailVerified = true;
       
       // If the existing user doesn't have a profile picture set yet, import and compress it from Google
       if (!user.profilePicture && googlePhotoUrl) {
@@ -209,7 +210,7 @@ const oauthLogin = async (req, res) => {
       }
       await user.save();
     } else {
-      user = new User({ name: name || 'User', email: normalizedEmail, authProviders: [{ provider, uid }] });
+      user = new User({ name: name || 'User', email: normalizedEmail, authProviders: [{ provider, uid }], isEmailVerified: true });
       
       const { generateUniqueReferralCode } = require('../utils/pointsHelper');
       user.referralCode = await generateUniqueReferralCode();
@@ -289,6 +290,8 @@ async function getProfileSettings(req, res) {
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',
+      isEmailVerified: user.isEmailVerified === true,
+      createdAt: user.createdAt,
       lastViewedChangelogAt: user.lastViewedChangelogAt || null,
       emailNotifications: user.emailNotifications !== false,
       achievementsPublic: user.achievementsPublic !== false,
@@ -565,6 +568,96 @@ async function markChangelogViewed(req, res) {
   }
 }
 
+async function sendVerificationOtp(req, res) {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    // Server-side rate limit: 60 seconds
+    const now = new Date();
+    if (user.emailVerificationOtpSentAt) {
+      const timePassed = now.getTime() - new Date(user.emailVerificationOtpSentAt).getTime();
+      if (timePassed < 60 * 1000) {
+        const remainingSeconds = Math.ceil((60 * 1000 - timePassed) / 1000);
+        return res.status(429).json({ 
+          message: `Please wait ${remainingSeconds} seconds before requesting a new OTP.`,
+          retryAfter: remainingSeconds
+        });
+      }
+    }
+
+    // Generate 6-digit numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(now.getTime() + 15 * 60 * 1000); // 15 mins expiry
+
+    user.emailVerificationOtp = otp;
+    user.emailVerificationOtpExpiresAt = expiry;
+    user.emailVerificationOtpSentAt = now;
+    await user.save();
+
+    // Send email
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Consistency Tracker - Email Verification Code',
+        html: `
+          <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 6px 6px 0 #000;">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; font-weight: 900; margin-top: 0; border-bottom: 3px solid #000; padding-bottom: 12px;">Email Verification Code</h2>
+            <p style="font-weight: 800; font-size: 16px;">Hey ${user.name || 'there'},</p>
+            <p style="font-weight: 600; line-height: 1.6; color: #333;">Please use the verification code below to verify your email address. This code will expire in 15 minutes.</p>
+            <div style="margin: 24px 0; padding: 16px; background: #FFD60A; border: 3px solid #000; border-radius: 8px; font-family: monospace; font-size: 32px; font-weight: 900; text-align: center; letter-spacing: 4px; box-shadow: 4px 4px 0 #000;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; font-weight: 700; color: #666; margin-bottom: 0; text-transform: uppercase;">If you did not request this verification, please ignore this email.</p>
+          </div>
+        `
+      });
+      res.json({ message: 'Verification OTP sent successfully' });
+    } catch (emailErr) {
+      console.error('Email sending failed:', emailErr);
+      res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function verifyEmail(req, res) {
+  try {
+    const { otp } = req.body;
+    if (!otp) return res.status(400).json({ message: 'OTP is required' });
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    if (!user.emailVerificationOtp || user.emailVerificationOtp !== otp.trim()) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    if (new Date() > new Date(user.emailVerificationOtpExpiresAt)) {
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationOtp = null;
+    user.emailVerificationOtpExpiresAt = null;
+    user.emailVerificationOtpSentAt = null;
+    await user.save();
+
+    res.json({ message: 'Email verified successfully!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -581,5 +674,7 @@ module.exports = {
   getFirebaseToken,
   getMediaUploadLimit,
   getChangelogList,
-  markChangelogViewed
+  markChangelogViewed,
+  sendVerificationOtp,
+  verifyEmail
 };

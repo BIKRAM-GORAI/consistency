@@ -6626,6 +6626,25 @@ body.is-offline [data-requires-network="true"] {
   z-index: 10;
 }
 
+@keyframes email-blink {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.email-verify-warning-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  background-color: var(--red) !important;
+  border: 2px solid var(--black) !important;
+  border-radius: 50%;
+  z-index: 15;
+  animation: email-blink 1.2s infinite ease-in-out;
+}
+
 .changelog-btn-red-dot {
   position: absolute;
   top: -4px;

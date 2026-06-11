@@ -3,6 +3,7 @@ const router = express.Router();
 const { getAllDays, getDayByDate, getDayById, createDay, updateDay, deleteDay, getScratchpad, saveScratchpad, getGraceLimits, applyGrace } = require('../controllers/dayController');
 const { createDayValidation, updateDayValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
+const { checkEmailVerified } = require('../middleware/emailVerification');
 
 // GET all days
 router.get('/', authenticateToken, getAllDays);
@@ -14,7 +15,7 @@ router.get('/grace-limits', authenticateToken, getGraceLimits);
 router.get('/:id/scratchpad', authenticateToken, getScratchpad);
 
 // PUT scratchpad
-router.put('/:id/scratchpad', authenticateToken, saveScratchpad);
+router.put('/:id/scratchpad', authenticateToken, checkEmailVerified, saveScratchpad);
 
 // GET a specific day by MongoDB _id
 router.get('/id/:id', authenticateToken, getDayById);
@@ -23,15 +24,15 @@ router.get('/id/:id', authenticateToken, getDayById);
 router.get('/:date', authenticateToken, getDayByDate);
 
 // POST create a new day
-router.post('/', authenticateToken, createDayValidation, createDay);
+router.post('/', authenticateToken, checkEmailVerified, createDayValidation, createDay);
 
 // POST apply Grace Day streak protection
-router.post('/:id/apply-grace', authenticateToken, applyGrace);
+router.post('/:id/apply-grace', authenticateToken, checkEmailVerified, applyGrace);
 
 // PUT update a day by MongoDB _id
-router.put('/:id', authenticateToken, updateDayValidation, updateDay);
+router.put('/:id', authenticateToken, checkEmailVerified, updateDayValidation, updateDay);
 
 // DELETE a day by MongoDB _id
-router.delete('/:id', authenticateToken, deleteDay);
+router.delete('/:id', authenticateToken, checkEmailVerified, deleteDay);
 
 module.exports = router;

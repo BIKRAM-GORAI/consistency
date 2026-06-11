@@ -281,7 +281,8 @@ async function getLeaderboard(req, res) {
     const query = {
       showOnLeaderboard: { $ne: false },
       username: { $exists: true, $ne: null },
-      isBlacklisted: { $ne: true }
+      isBlacklisted: { $ne: true },
+      isEmailVerified: true
     };
 
     const usersRaw = await User.find(query)
@@ -351,6 +352,7 @@ async function getLeaderboard(req, res) {
           showOnLeaderboard: { $ne: false },
           username: { $exists: true, $ne: null },
           isBlacklisted: { $ne: true },
+          isEmailVerified: true,
           $or: [
             { [sortField]: { $gt: scoreVal } },
             {

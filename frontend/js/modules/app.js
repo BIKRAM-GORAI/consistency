@@ -1233,6 +1233,12 @@ function renderLeaderboardData(users, reset) {
 }
 
 async function loadLeaderboard(reset = false) {
+  const isEmailVerified = localStorage.getItem('isEmailVerified') !== 'false';
+  const lbBanner = document.getElementById('leaderboard-verification-banner');
+  if (lbBanner) {
+    lbBanner.style.display = isEmailVerified ? 'none' : 'flex';
+  }
+
   if (window.lbIsLoading) return;
   if (reset) {
     const now = Date.now();

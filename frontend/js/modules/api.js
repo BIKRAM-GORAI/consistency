@@ -42,6 +42,18 @@ async function apiFetch(url, options = {}) {
           window.location.replace(`auth.html?blacklisted=true&reason=${reason}`);
           throw new Error(body.message || 'Your account is blacklisted.');
         }
+        if (body.isEmailUnverified === true) {
+          if (typeof window.showToast === 'function') {
+            window.showToast(body.message || 'Email verification is required.', 'error');
+          }
+          if (typeof window.openProfileModal === 'function') {
+            window.openProfileModal();
+          }
+          const err = new Error(body.message || 'Email verification required.');
+          err.status = 403;
+          err.data = body;
+          throw err;
+        }
       }
       if (res.status === 429) {
         const err = new Error(body.message || 'Too many requests. Please try again later.');
@@ -261,7 +273,7 @@ const syncManager = {
           console.warn('Sync failed for item:', item.id, err);
           // Only delete if it is a permanent client/validation error (e.g. 400 Bad Request, 404 Not Found)
           // Do NOT delete for transient errors (network errors, rate limits 429, or 5xx server errors)
-          if (err.status && err.status >= 400 && err.status < 500 && err.status !== 429) {
+          if (err.status && err.status >= 400 && err.status < 500 && err.status !== 429 && (!err.data || !err.data.isEmailUnverified)) {
             await localDb.syncQueue.delete(item.id);
             if (item.entity === 'days' && typeof window.loadDays === 'function') window.loadDays();
             else if (item.entity === 'goals' && typeof window.loadGoals === 'function') window.loadGoals();

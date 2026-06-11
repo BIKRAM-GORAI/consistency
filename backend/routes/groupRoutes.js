@@ -5,6 +5,7 @@ const Group      = require('../models/Group');
 const { createGroupValidation, joinGroupValidation, editGroupValidation, removeMemberValidation, handleJoinRequestValidation, joinPublicGroupValidation } = require('../middleware/validation');
 const { uploadGroup } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
+const { checkEmailVerified } = require('../middleware/emailVerification');
 
 // Cleanup expired groups middleware (runs on every group API request)
 const cleanupExpiredGroups = async (req, res, next) => {
@@ -39,19 +40,19 @@ const cleanupExpiredGroups = async (req, res, next) => {
 router.use(cleanupExpiredGroups);
 
 // Create a new group using a verified creation token
-router.post('/create', authenticateToken, ctrl.createGroup);
+router.post('/create', authenticateToken, checkEmailVerified, ctrl.createGroup);
 
 // Moderate group details (name, description, icon) before creation
-router.post('/moderate', authenticateToken, createGroupValidation, ctrl.moderateGroup);
+router.post('/moderate', authenticateToken, checkEmailVerified, createGroupValidation, ctrl.moderateGroup);
 
 // Moderate group details (name, description, icon) before editing
-router.post('/:groupId/moderate-edit', authenticateToken, editGroupValidation, ctrl.moderateEditGroup);
+router.post('/:groupId/moderate-edit', authenticateToken, checkEmailVerified, editGroupValidation, ctrl.moderateEditGroup);
 
 // Upload group icon
-router.post('/upload-icon', authenticateToken, uploadGroup.single('image'), ctrl.uploadGroupIcon);
+router.post('/upload-icon', authenticateToken, checkEmailVerified, uploadGroup.single('image'), ctrl.uploadGroupIcon);
 
 // Join an existing group via its join code
-router.post('/join', authenticateToken, joinGroupValidation, ctrl.joinGroup);
+router.post('/join', authenticateToken, checkEmailVerified, joinGroupValidation, ctrl.joinGroup);
 
 // Get all groups the authenticated user is a member of
 router.get('/mine', authenticateToken, ctrl.myGroups);
@@ -63,14 +64,14 @@ router.get('/public', authenticateToken, ctrl.publicGroups);
 router.get('/creation-limits', authenticateToken, ctrl.getCreationLimits);
 
 // Join a public group (creates a join request)
-router.post('/:groupId/join-public', authenticateToken, joinPublicGroupValidation, ctrl.joinPublicGroup);
+router.post('/:groupId/join-public', authenticateToken, checkEmailVerified, joinPublicGroupValidation, ctrl.joinPublicGroup);
 
 // Manage join requests (owner only)
 router.get('/:groupId/requests', authenticateToken, ctrl.getRequests);
-router.post('/:groupId/requests/:targetUserId', authenticateToken, handleJoinRequestValidation, ctrl.handleJoinRequest);
+router.post('/:groupId/requests/:targetUserId', authenticateToken, checkEmailVerified, handleJoinRequestValidation, ctrl.handleJoinRequest);
 
 // Cancel own join request
-router.delete('/:groupId/requests', authenticateToken, ctrl.cancelJoinRequest);
+router.delete('/:groupId/requests', authenticateToken, checkEmailVerified, ctrl.cancelJoinRequest);
 
 // Get all members in a group with their basic info
 router.get('/:groupId/members', authenticateToken, ctrl.groupMembers);
@@ -79,13 +80,13 @@ router.get('/:groupId/members', authenticateToken, ctrl.groupMembers);
 router.get('/member-days', authenticateToken, ctrl.memberDays);
 
 // Edit a group (owner only)
-router.put('/:groupId', authenticateToken, editGroupValidation, ctrl.editGroup);
+router.put('/:groupId', authenticateToken, checkEmailVerified, editGroupValidation, ctrl.editGroup);
 
 // Delete a group (owner only)
-router.delete('/:groupId', authenticateToken, ctrl.deleteGroup);
+router.delete('/:groupId', authenticateToken, checkEmailVerified, ctrl.deleteGroup);
 
 // Remove a member or leave a group
-router.post('/:groupId/remove-member', authenticateToken, removeMemberValidation, ctrl.removeMember);
+router.post('/:groupId/remove-member', authenticateToken, checkEmailVerified, removeMemberValidation, ctrl.removeMember);
 
 // Get or generate meeting link
 router.get('/:groupId/meeting', authenticateToken, ctrl.getGroupMeeting);

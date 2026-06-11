@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit, getChangelogList, markChangelogViewed } = require('../controllers/authController');
+const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit, getChangelogList, markChangelogViewed, sendVerificationOtp, verifyEmail } = require('../controllers/authController');
 const { uploadProfile, uploadChat } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { mediaUploadLimiter } = require('../middleware/rateLimit');
@@ -108,7 +108,15 @@ router.delete('/chat-media', authenticateToken, async (req, res) => {
   }
 });
 
+const { checkEmailVerified } = require('../middleware/emailVerification');
+
+// POST /api/auth/send-verification-otp
+router.post('/send-verification-otp', authenticateToken, sendVerificationOtp);
+
+// POST /api/auth/verify-email
+router.post('/verify-email', authenticateToken, verifyEmail);
+
 // GET firebase token for chat authentication (requires authentication)
-router.get('/firebase-token', authenticateToken, getFirebaseToken);
+router.get('/firebase-token', authenticateToken, checkEmailVerified, getFirebaseToken);
 
 module.exports = router;
