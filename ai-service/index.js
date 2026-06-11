@@ -674,23 +674,26 @@ app.post('/api/ai/moderate-group', async (req, res) => {
     }
 
     const systemInstruction = 
-      "You are a highly sophisticated and strict content moderation AI. Analyze the group's name, description, and the uploaded icon image.\n" +
-      "You must evaluate if the group name, description, or icon contains or promotes harmful topics, nudity, explicit/adult language, references to sex workers or pornstars, illegal drugs, weapons, hate speech, or dangerous activities.\n" +
+      "You are a highly sophisticated, multilingual, and extremely strict content moderation AI. Analyze the group's name, description, and the uploaded icon image.\n" +
+      "You must evaluate if the group name, description, or icon contains or promotes harmful topics, nudity, explicit/suggestive/adult content, references to sex workers, pornstars, or adult entertainment, illegal drugs, weapons, hate speech, or dangerous activities.\n" +
       "Context & Intent Rules:\n" +
       "1. ALLOW recovery, support, prevention, and purely educational or safety training groups (e.g., drug addiction rehabilitation, historical warfare research, gun safety education, youth prevention campaigns) with high scores (8-10) or moderate warning scores (5-7) IF their intent is clearly helpful, peaceful, and safety-oriented.\n" +
       "2. DETECT SNEAKY BYPASSES: If a group claims to be 'educational', 'scientific', or a 'discussion study' but its description or name actually describes or hints at trading, selling, distributing, or learning how to manufacture/obtain illegal substances, weapons, serial-number-free parts, adult dating/escort services, or self-harm/suicide instructions, you MUST flag it and score it strictly below 5 (1 to 4).\n" +
-      "3. Scoring Scale:\n" +
+      "3. DOUBLE MEANINGS & EUPHEMISMS: Actively detect wordplay, innuendos, and slang terms used to bypass moderation (e.g., 'corn' or 'corny' used in place of 'porn' / 'pornography', or phrases like 'corn digging videos in hd and 4k quality' describing adult videos). If double meaning/suggestive context is found, reject immediately with a score below 5 (1 to 4).\n" +
+      "4. MULTILINGUAL PROFANITY & TRANSLITERATED SLANG (CRITICAL): Detect offensive, vulgar, abusive, sexual, or explicit terms in languages other than English, particularly South Asian/Indian languages (such as Hindi, Bengali, Tamil, Telugu, etc.). This includes phonetic/transliterated spellings using English alphabets (e.g., 'xhude dibo', 'xude', 'chode', 'bhod', 'banchod', 'madarchod', 'gand', 'gandu', 'lund', 'loda', 'chut', 'choot', 'fudi', 'kela', etc.). If any such term or its close phonetic variation is used, reject it immediately (score 1 to 4).\n" +
+      "5. Scoring Scale:\n" +
       "   - Safe (8 to 10 out of 10): Content is safe, healthy, or clearly positive support/educational with no harmful intent.\n" +
       "   - Warning (5 to 7 out of 10): Borderline content, mild themes, or positive groups discussing sensitive topics (e.g., weapon safety instruction, addiction recovery) where a warning label is appropriate but creation is allowed.\n" +
-      "   - Rejected (1 to 4 out of 10): Explicitly harmful, illegal, sexual, abusive, promoting dangerous acts, or attempting to mask illegal trade/distribution under educational terms.\n" +
+      "   - Rejected (1 to 4 out of 10): Explicitly harmful, illegal, sexual, abusive, promoting dangerous acts, containing multilingual profanity, double meanings, or attempting to mask illegal trade/distribution under educational/innocuous terms.\n" +
       "You MUST output a single valid JSON object following this schema:\n" +
       "{\n" +
       "  \"score\": 8,\n" +
       "  \"reason\": \"Detailed reason for this evaluation score\"\n" +
       "}\n" +
       "Rules:\n" +
-      "1. Be extremely careful. If any single field is explicitly unsafe or a sneaky bypass attempt, the overall score must be below 5.\n" +
-      "2. Do not include markdown codeblocks or conversational filler. Output only raw valid JSON.";
+      "1. Be extremely careful. If any single field is explicitly unsafe, contains multilingual profanity/slang, or is a sneaky/double-meaning bypass attempt, the overall score must be below 5.\n" +
+      "2. The 'reason' field must clearly identify and explain the specific term, slang, double-meaning bypass, or image feature that was flagged (e.g., 'The name \"Xhude dibo admin\" contains a vulgar Bengali slang word.', or 'The description uses \"corn\" as a euphemism for \"porn\").'\n" +
+      "3. Do not include markdown codeblocks or conversational filler. Output only raw valid JSON.";
 
     const parts = [
       { text: systemInstruction },
