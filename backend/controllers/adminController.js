@@ -368,6 +368,11 @@ async function updateAdminUser(req, res) {
 async function deleteUser(req, res) {
   try {
     const userId = req.params.id;
+
+    // Cleanup social data (friendships, requests) and DMs in Firestore before account deletion
+    const { cleanupUserSocialData } = require('../utils/firestoreSync');
+    await cleanupUserSocialData(userId);
+
     // Similar to authController.deleteAccount but for any user
     await Day.deleteMany({ userId });
     await Goal.deleteMany({ userId });

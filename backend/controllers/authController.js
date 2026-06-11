@@ -482,15 +482,23 @@ async function resetPassword(req, res) {
 async function deleteAccount(req, res) {
   try {
     const userId = req.user.userId;
+    
+    // Cleanup social data (friendships, requests) and DMs in Firestore before account deletion
+    const { cleanupUserSocialData } = require('../utils/firestoreSync');
+    await cleanupUserSocialData(userId);
+
     await Day.deleteMany({ userId });
     await Goal.deleteMany({ userId });
     await Template.deleteMany({ userId });
     await Achievement.deleteMany({ userId });
     await Group.updateMany({ members: userId }, { $pull: { members: userId } });
     const user = await User.findByIdAndDelete(userId);
-    if (user.profilePictureId) await cloudinary.uploader.destroy(user.profilePictureId);
+    if (user && user.profilePictureId) await cloudinary.uploader.destroy(user.profilePictureId);
     res.json({ message: 'Account deleted' });
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) { 
+    console.error('Error deleting account:', err);
+    res.status(500).json({ message: 'Server error' }); 
+  }
 }
 
 async function getFirebaseToken(req, res) {
