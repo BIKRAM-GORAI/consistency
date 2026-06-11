@@ -317,7 +317,7 @@ exports.generateDailySummary = async (req, res) => {
       `Tasks Accomplished & Pending:\n${taskListStr}\n` +
       `${distractionStatsStr}`;
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     const aiServiceSecret = process.env.AI_SERVICE_SECRET;
 
     if (!aiServiceSecret) {
@@ -438,7 +438,7 @@ exports.generateProductivityBio = async (req, res) => {
       `Current Active Streak: ${user.currentStreak || 0} days\n` +
       `Highest Historical Streak: ${user.highestStreak || 0} days`;
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     const aiServiceSecret = process.env.AI_SERVICE_SECRET;
 
     if (!aiServiceSecret) {
@@ -653,7 +653,7 @@ exports.generateWeeklySummary = async (req, res) => {
       `Historical Logs:\n${taskListStr}\n` +
       `${distractionStatsStr}`;
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     const aiServiceSecret = process.env.AI_SERVICE_SECRET;
 
     if (!aiServiceSecret) {
@@ -920,7 +920,7 @@ exports.generateMonthlySummary = async (req, res) => {
       `Historical Logs:\n${taskListStr}\n` +
       `${distractionStatsStr}`;
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     const aiServiceSecret = process.env.AI_SERVICE_SECRET;
 
     if (!aiServiceSecret) {
@@ -1124,7 +1124,7 @@ exports.authorizeDailySummary = async (req, res) => {
       generationToken,
       systemPrompt,
       userPrompt,
-      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002'
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002'
     });
 
   } catch (error) {
@@ -1311,7 +1311,7 @@ exports.authorizeTaskExtraction = async (req, res) => {
 
     res.status(200).json({
       generationToken,
-      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002',
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002',
       generationsLeft: remaining
     });
 
@@ -1431,7 +1431,7 @@ exports.authorizeVoiceToTask = async (req, res) => {
 
     res.status(200).json({
       generationToken,
-      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002',
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002',
       generationsLeft: remaining
     });
 
@@ -1547,7 +1547,7 @@ exports.authorizeCanvasFlow = async (req, res) => {
 
     res.status(200).json({
       generationToken,
-      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5002',
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002',
       msgsLeft,
       limit
     });

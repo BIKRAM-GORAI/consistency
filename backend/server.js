@@ -143,7 +143,13 @@ app.use((req, res, next) => {
       "http://localhost:5002",
       "ws://localhost:5000",
       "ws://localhost:5001",
-      "ws://localhost:5002"
+      "ws://localhost:5002",
+      "http://127.0.0.1:5000",
+      "http://127.0.0.1:5001",
+      "http://127.0.0.1:5002",
+      "ws://127.0.0.1:5000",
+      "ws://127.0.0.1:5001",
+      "ws://127.0.0.1:5002"
     );
   }
 

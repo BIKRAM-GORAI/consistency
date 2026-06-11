@@ -90,7 +90,7 @@ const moderateGroup = async (req, res) => {
     let score = undefined;
     let reason = 'AI service error';
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     const aiServiceSecret = process.env.AI_SERVICE_SECRET;
     
     if (!aiServiceSecret) {
@@ -222,7 +222,7 @@ const moderateEditGroup = async (req, res) => {
     let score = undefined;
     let reason = 'AI service error';
 
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     const aiServiceSecret = process.env.AI_SERVICE_SECRET;
     
     if (!aiServiceSecret) {
