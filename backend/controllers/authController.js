@@ -615,15 +615,10 @@ async function sendVerificationOtp(req, res) {
         to: user.email,
         subject: 'Consistency Tracker - Email Verification Code',
         html: `
-          <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 6px 6px 0 #000;">
-            <h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; font-weight: 900; margin-top: 0; border-bottom: 3px solid #000; padding-bottom: 12px;">Email Verification Code</h2>
-            <p style="font-weight: 800; font-size: 16px;">Hey ${user.name || 'there'},</p>
-            <p style="font-weight: 600; line-height: 1.6; color: #333;">Please use the verification code below to verify your email address. This code will expire in 15 minutes.</p>
-            <div style="margin: 24px 0; padding: 16px; background: #FFD60A; border: 3px solid #000; border-radius: 8px; font-family: monospace; font-size: 32px; font-weight: 900; text-align: center; letter-spacing: 4px; box-shadow: 4px 4px 0 #000;">
-              ${otp}
-            </div>
-            <p style="font-size: 12px; font-weight: 700; color: #666; margin-bottom: 0; text-transform: uppercase;">If you did not request this verification, please ignore this email.</p>
-          </div>
+          <p>Hello ${user.name || 'there'},</p>
+          <p>Please use the verification code below to verify your email address. This code is valid for 15 minutes.</p>
+          <p style="font-size: 24px; font-weight: bold; font-family: monospace; letter-spacing: 2px; background: #f4f4f4; padding: 10px 20px; width: fit-content; border: 1px solid #ccc; margin: 18px 0;">${otp}</p>
+          <p>If you did not request this verification, please ignore this email.</p>
         `
       });
       res.json({ success: true, message: 'Verification OTP sent successfully' });
