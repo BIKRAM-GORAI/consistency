@@ -200,8 +200,12 @@
   color: #64748b !important;
 }
 
-[data-theme="minimalistic"] .bottom-nav-btn.active {
-  color: #0f172a !important; /* Premium active color */
+[data-theme="minimalistic"] .bottom-nav-btn.active,
+[data-theme="minimalistic"] .bottom-nav-btn.active:hover {
+  color: var(--black) !important;
+  background: var(--lime) !important;
+  border: var(--border-2) !important;
+  box-shadow: 2px 2px 0 var(--black) !important;
 }
 
 /* ── 5. Buttons (Clean, flat, rounded, no translation on hover) ── */
@@ -525,18 +529,22 @@
 }
 
 /* ── 9. Profile Avatar ── */
-[data-theme="minimalistic"] .profile-avatar-container {
+[data-theme="minimalistic"] .profile-avatar-container,
+[data-theme="minimalistic"] .profile-avatar-wrap {
   border: 2px solid #e2e8f0 !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
-[data-theme="minimalistic"] .profile-avatar-container.premium-avatar-ring {
-  border: 3px solid #10b981 !important; /* Minimal emerald green premium ring */
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25) !important;
-  animation: none !important; /* No performance-heavy animations */
+[data-theme="minimalistic"] .profile-avatar-container.premium-avatar-ring,
+[data-theme="minimalistic"] .profile-avatar-wrap.premium-profile-ring {
+  border: 3.5px solid #fbbf24 !important; /* Gold yellow premium ring */
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5) !important;
+  animation: premium-glow-pulse 2s infinite ease-in-out !important; /* Yellow glowing pulse */
+  overflow: visible !important; /* Allow crown to be visible */
 }
 
-[data-theme="minimalistic"] .profile-avatar-container.premium-avatar-ring::after {
+[data-theme="minimalistic"] .profile-avatar-container.premium-avatar-ring::after,
+[data-theme="minimalistic"] .profile-avatar-wrap.premium-profile-ring::after {
   content: '👑' !important;
   font-size: 18px !important;
   top: -8px !important;

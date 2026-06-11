@@ -12,7 +12,7 @@ import java.util.Calendar;
 public class AlarmScheduler {
     private static final String TAG = "AlarmScheduler";
 
-    public static void schedule(Context context, String id, String time) {
+    public static void schedule(Context context, String id, String time, String date) {
         try {
             String[] parts = time.split(":");
             int hour = Integer.parseInt(parts[0]);
@@ -35,15 +35,40 @@ public class AlarmScheduler {
 
             PendingIntent pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags);
 
+            int year = -1;
+            int month = -1;
+            int day = -1;
+            if (date != null && !date.isEmpty()) {
+                String[] dateParts = date.split("-");
+                if (dateParts.length == 3) {
+                    year = Integer.parseInt(dateParts[0]);
+                    month = Integer.parseInt(dateParts[1]) - 1; // Calendar month is 0-indexed!
+                    day = Integer.parseInt(dateParts[2]);
+                }
+            }
+
             Calendar calendar = Calendar.getInstance();
+            if (year != -1 && month != -1 && day != -1) {
+                calendar.set(Calendar.YEAR, year);
+                calendar.set(Calendar.MONTH, month);
+                calendar.set(Calendar.DAY_OF_MONTH, day);
+            }
             calendar.set(Calendar.HOUR_OF_DAY, hour);
             calendar.set(Calendar.MINUTE, minute);
             calendar.set(Calendar.SECOND, 0);
             calendar.set(Calendar.MILLISECOND, 0);
 
-            // If the time has already passed today, schedule it for tomorrow
-            if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
-                calendar.add(Calendar.DAY_OF_YEAR, 1);
+            if (date == null || date.isEmpty()) {
+                // If the time has already passed today, schedule it for tomorrow
+                if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+                    calendar.add(Calendar.DAY_OF_YEAR, 1);
+                }
+            } else {
+                // If it is scheduled for a specific date, and that date+time has already passed, DO NOT schedule it!
+                if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+                    Log.d(TAG, "Not scheduling alarm " + id + " because the scheduled time " + calendar.getTime().toString() + " has already passed.");
+                    return;
+                }
             }
 
             long triggerAtMillis = calendar.getTimeInMillis();

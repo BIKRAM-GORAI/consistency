@@ -1822,6 +1822,7 @@ async function initPushNotifications(forcePrompt = false) {
               if (bDot) bDot.style.display = 'block';
             }
           } else if (senderId) {
+            localStorage.setItem('activeContact_' + senderId, 'true');
             const activeDMRecipientId = window.DM?.activeChatRecipientId;
             const hasActiveDM = activeDMRecipientId && String(activeDMRecipientId) === String(senderId);
             if (!hasActiveDM) {
@@ -1843,13 +1844,21 @@ async function initPushNotifications(forcePrompt = false) {
         PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('[Native FCM] Action performed on push:', action);
           const groupId = action.notification?.data?.groupId;
+          const senderId = action.notification?.data?.senderId || action.notification?.senderId || action.notification?.data?.sender_id || action.notification?.sender_id;
           const type = action.notification?.data?.type || action.notification?.type;
+          
+          if (senderId) {
+            localStorage.setItem('activeContact_' + senderId, 'true');
+          }
+          
           if (type === 'friend_request') {
             showPage('messages');
           } else if (groupId) {
             // Navigate directly to the chat
             showPage('groups');
             openGroupChatFromDeepLink(groupId);
+          } else if (senderId) {
+            showPage('messages');
           }
         });
       } else {
@@ -1950,6 +1959,7 @@ async function initPushNotifications(forcePrompt = false) {
                   if (bDot) bDot.style.display = 'block';
                 }
               } else if (senderId) {
+                localStorage.setItem('activeContact_' + senderId, 'true');
                 const activeDMRecipientId = window.DM?.activeChatRecipientId;
                 const hasActiveDM = activeDMRecipientId && String(activeDMRecipientId) === String(senderId);
                 if (!hasActiveDM) {

@@ -63,8 +63,25 @@ router.get('/media-upload-limit', authenticateToken, getMediaUploadLimit);
 // POST upload profile picture (requires authentication)
 router.post('/profile-picture', authenticateToken, dbMediaRateLimiter, uploadProfile.single('image'), uploadProfilePicture);
 
-// POST upload chat media (requires authentication)
-router.post('/chat-media', authenticateToken, dbMediaRateLimiter, (req, res, next) => {
+// POST upload chat media (requires authentication & friendship verification)
+router.post('/chat-media', authenticateToken, dbMediaRateLimiter, async (req, res, next) => {
+  const recipientId = req.headers['x-recipient-id'];
+  const senderId = req.user.userId;
+
+  if (recipientId) {
+    try {
+      const User = require('../models/User');
+      const { isFriendsCached } = require('../utils/friendshipCache');
+      const isFriend = await isFriendsCached(senderId, recipientId, User);
+      if (!isFriend) {
+        return res.status(403).json({ message: 'Access denied: You must be friends to upload media for this user.' });
+      }
+    } catch (err) {
+      console.error('Friendship verification check failed in /chat-media:', err);
+      return res.status(500).json({ message: 'Error checking friendship status', error: err.message });
+    }
+  }
+
   uploadChat.single('file')(req, res, (err) => {
     if (err) {
       console.error('Upload error in /chat-media:', err);

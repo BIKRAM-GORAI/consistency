@@ -1962,7 +1962,8 @@ async function saveDailyReminderSettings() {
 
     // 3. Schedule or cancel local device alerts via Capacitor/Plugin
     if (enabled) {
-      await scheduleLocalReminder(dayId, time, type, "Daily Reminder", selectedTaskNames);
+      const cardDate = (day.date || '').split('T')[0];
+      await scheduleLocalReminder(dayId, time, type, "Daily Reminder", selectedTaskNames, cardDate);
     } else {
       await cancelLocalReminder(dayId);
     }

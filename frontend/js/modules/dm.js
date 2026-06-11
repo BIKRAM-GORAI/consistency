@@ -16,6 +16,7 @@ let activeDMReplyTo = null;
 let isFriendActive = false;
 let myDeletedAt = 0;
 let isDMSending = false;
+let renderContactsListId = 0;
 
 // Cooldown / limits
 let lastDMMessageSentAt = 0;
@@ -44,29 +45,47 @@ async function fetchFriends() {
   const localDb = window.localDb;
   if (!localDb) return [];
 
-  if (!navigator.onLine) {
-    try {
-      const cached = await localDb.friends.toArray();
-      renderContactsList(cached);
-      return cached;
-    } catch (err) {
-      console.warn('Failed to read cached friends:', err);
-      return [];
+  // 1. Try to load and render cached contacts instantly first (forceCache = true)
+  let cached = [];
+  try {
+    cached = await localDb.friends.toArray();
+    if (cached && cached.length > 0) {
+      cached.forEach(f => {
+        localStorage.setItem('activeContact_' + f._id, 'true');
+      });
+      // Render instantly using cached data (messages, unread indicators)
+      await renderContactsList(cached, true);
     }
+  } catch (err) {
+    console.warn('Failed to read cached friends during instant load:', err);
   }
 
+  // 2. If offline, we're done (we already rendered cached above)
+  if (!navigator.onLine) {
+    return cached;
+  }
+
+  // 3. If online, fetch fresh friends list in the background
   try {
     const data = await window.apiFetch(`${window.API}/api/friends/list`);
     if (data) {
       await localDb.friends.clear();
       await localDb.friends.bulkPut(data);
-      renderContactsList(data);
+      data.forEach(f => {
+        localStorage.setItem('activeContact_' + f._id, 'true');
+      });
+      // Render again with latest data and sync with Firestore normally
+      await renderContactsList(data, false);
       return data;
     }
   } catch (err) {
     console.warn('Failed to fetch friends from server:', err);
-    const cached = await localDb.friends.toArray();
-    renderContactsList(cached);
+    // If the server fetch failed and we didn't render cache yet (e.g., cached was empty), return cached anyway
+    if (!cached || cached.length === 0) {
+      const fallbackCached = await localDb.friends.toArray();
+      await renderContactsList(fallbackCached, true);
+      return fallbackCached;
+    }
     return cached;
   }
 }
@@ -147,6 +166,53 @@ async function removeFriend(targetUserId, username) {
   }
 }
 
+async function unfriendActiveUser() {
+  if (!activeChatRecipientId) return;
+  const targetId = activeChatRecipientId;
+  const name = activeChatRecipientName;
+  const photo = activeChatRecipientPhoto;
+  
+  await removeFriend(targetId, name);
+  
+  // Refresh the chat UI to instantly trigger read-only view
+  if (activeChatRecipientId === targetId) {
+    await openDMChat(targetId, name, photo);
+  }
+}
+
+async function followActiveUser() {
+  if (!activeChatRecipientId) return;
+  const targetId = activeChatRecipientId;
+  const name = activeChatRecipientName;
+  const photo = activeChatRecipientPhoto;
+
+  try {
+    const statusRes = await window.apiFetch(`${window.API}/api/friends/status/${targetId}`);
+    if (statusRes.status === 'requested_received') {
+      const res = await window.apiFetch(`${window.API}/api/friends/accept/${targetId}`, {
+        method: 'POST'
+      });
+      showToast(res.message || 'Request accepted!', 'success');
+      refreshProfileActionsIfOpen(targetId, res.status);
+      fetchFriends();
+      if (activeChatRecipientId === targetId) {
+        await openDMChat(targetId, name, photo);
+      }
+    } else if (statusRes.status === 'none') {
+      const res = await window.apiFetch(`${window.API}/api/friends/request/${targetId}`, {
+        method: 'POST'
+      });
+      showToast(res.message || 'Follow request sent!', 'success');
+      refreshProfileActionsIfOpen(targetId, res.status);
+      if (activeChatRecipientId === targetId) {
+        await openDMChat(targetId, name, photo);
+      }
+    }
+  } catch (err) {
+    showToast(err.message || 'Failed to follow user.', 'error');
+  }
+}
+
 function refreshProfileActionsIfOpen(userId, status) {
   const profileModal = document.getElementById('modal-public-profile');
   if (profileModal && profileModal.style.display !== 'none' && window._currentMemberId === userId) {
@@ -195,12 +261,21 @@ function updateDMMediaLimitDisplay() {
 // ── Open DM Chat Modal & Load Cached Messages ──
 
 async function openDMChat(recipientId, recipientName, recipientPhoto) {
+  if (!recipientId) return;
+  recipientId = String(recipientId).toLowerCase().trim();
+
   const profileModal = document.getElementById('modal-public-profile');
   if (profileModal) closeModal('modal-public-profile');
   
   activeChatRecipientId = recipientId;
   activeChatRecipientName = recipientName;
   activeChatRecipientPhoto = recipientPhoto;
+
+  localStorage.setItem('activeContact_' + recipientId, 'true');
+  localStorage.setItem('contact_details_' + recipientId, JSON.stringify({
+    name: recipientName,
+    profilePicture: recipientPhoto || ''
+  }));
   
   const myUserId = window.userId;
   activeChatId = getChatId(myUserId, recipientId);
@@ -237,19 +312,41 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     msgsList.innerHTML = '<div class="dm-chat-loader" style="text-align:center; padding:40px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; animation: pulse 1.5s infinite;">Loading chat history...</div>';
   }
 
-  myDeletedAt = 0;
+  myDeletedAt = parseInt(localStorage.getItem('deletedAt_' + activeChatId) || '0');
   const { firebaseDb, firestore } = window;
-  if (firebaseDb && firestore) {
-    try {
-      const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
-      const metaSnap = await firestore.getDoc(metaRef);
+  if (firebaseDb && firestore && navigator.onLine) {
+    const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
+    firestore.getDoc(metaRef).then(metaSnap => {
       if (metaSnap.exists()) {
-        myDeletedAt = metaSnap.data()?.deletedAt?.[myUserId] || 0;
-        localStorage.setItem('deletedAt_' + activeChatId, myDeletedAt.toString());
+        const newDeletedAt = metaSnap.data()?.deletedAt?.[myUserId] || 0;
+        if (newDeletedAt !== myDeletedAt) {
+          localStorage.setItem('deletedAt_' + activeChatId, newDeletedAt.toString());
+          myDeletedAt = newDeletedAt;
+          if (activeChatId) {
+            window.localDb.directMessages
+              .where('chatId').equals(activeChatId)
+              .and(msg => msg.timestamp <= newDeletedAt)
+              .delete()
+              .then(() => {
+                if (activeChatId) {
+                  window.localDb.directMessages
+                    .where('chatId').equals(activeChatId)
+                    .sortBy('timestamp')
+                    .then(cached => {
+                      const msgsList = document.getElementById('dm-messages-list');
+                      if (msgsList && activeChatId) {
+                        msgsList.innerHTML = '';
+                        cached.forEach(msg => renderDMMessage(msg, msgsList, false));
+                        rebuildDMDateSeparators(msgsList);
+                        scrollToBottom('dm-messages-container');
+                      }
+                    });
+                }
+              });
+          }
+        }
       }
-    } catch (err) {
-      console.warn('Failed to fetch DM chat metadata:', err);
-    }
+    }).catch(err => console.warn('Failed to fetch DM chat metadata in background:', err));
   }
 
   let lastTimestamp = 0;
@@ -272,19 +369,10 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     if (msgsList) msgsList.innerHTML = '';
     
     if (cached.length > 0) {
-      let lastDateLabel = '';
       cached.forEach(msg => {
-        const timestamp = new Date(msg.timestamp);
-        const dateLabel = timestamp.toLocaleDateString();
-        if (dateLabel !== lastDateLabel) {
-          const sep = document.createElement('div');
-          sep.className = 'chat-date-separator';
-          sep.textContent = getFriendlyDate(timestamp);
-          msgsList.appendChild(sep);
-          lastDateLabel = dateLabel;
-        }
         renderDMMessage(msg, msgsList, false);
       });
+      rebuildDMDateSeparators(msgsList);
       lastTimestamp = cached[cached.length - 1].timestamp;
       scrollToBottom('dm-messages-container');
       if (window.initLazyLoading) {
@@ -297,6 +385,7 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
 
   // Check friendship status to see if chat is read-only
   isFriendActive = false;
+  let relationshipStatus = 'none';
   const input = document.getElementById('dm-chat-input');
   const sendBtn = document.getElementById('dm-chat-send-btn');
   const footerInputBar = document.getElementById('dm-chat-input-bar');
@@ -308,14 +397,23 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     try {
       const statusRes = await window.apiFetch(`${window.API}/api/friends/status/${recipientId}`);
       isFriendActive = (statusRes.status === 'friends');
+      relationshipStatus = statusRes.status;
     } catch (err) {
       console.warn('Failed to check friendship status for DM:', err);
     }
   } else {
-    const cachedFriend = await window.localDb.friends.get(recipientId);
+    let cachedFriend = await window.localDb.friends.get(recipientId);
+    if (!cachedFriend && recipientId) {
+      const allFriends = await window.localDb.friends.toArray();
+      cachedFriend = allFriends.find(f => String(f._id).toLowerCase() === recipientId);
+    }
     isFriendActive = !!cachedFriend;
+    relationshipStatus = isFriendActive ? 'friends' : 'none';
   }
 
+  const unfriendBtn = document.getElementById('dm-chat-unfriend-btn');
+  const followBtn = document.getElementById('dm-chat-follow-btn');
+  
   if (isFriendActive) {
     if (readOnlyBanner) readOnlyBanner.style.display = 'none';
     if (footerInputBar) footerInputBar.style.display = 'flex';
@@ -323,6 +421,8 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     if (sendBtn) sendBtn.disabled = false;
     if (attachBtn) attachBtn.style.display = 'flex';
     if (micBtn) micBtn.style.display = 'flex';
+    if (unfriendBtn) unfriendBtn.style.display = 'flex';
+    if (followBtn) followBtn.style.display = 'none';
     fetchDMMediaLimit();
   } else {
     if (readOnlyBanner) {
@@ -334,16 +434,39 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     if (sendBtn) sendBtn.disabled = true;
     if (attachBtn) attachBtn.style.display = 'none';
     if (micBtn) micBtn.style.display = 'none';
+    if (unfriendBtn) unfriendBtn.style.display = 'none';
+    
+    if (followBtn) {
+      followBtn.style.display = 'flex';
+      if (relationshipStatus === 'requested_sent') {
+        followBtn.style.background = 'var(--bg-muted)';
+        followBtn.title = "Follow Request Pending";
+        followBtn.disabled = true;
+        followBtn.innerHTML = '<i data-lucide="clock" style="width: 18px; height: 18px; color: var(--text-muted);"></i>';
+      } else if (relationshipStatus === 'requested_received') {
+        followBtn.style.background = 'var(--yellow)';
+        followBtn.title = "Follow Back / Accept Request";
+        followBtn.disabled = false;
+        followBtn.innerHTML = '<i data-lucide="user-check" style="width: 18px; height: 18px; color: #000;"></i>';
+      } else { // 'none'
+        followBtn.style.background = 'var(--yellow)';
+        followBtn.title = "Follow User";
+        followBtn.disabled = false;
+        followBtn.innerHTML = '<i data-lucide="user-plus" style="width: 18px; height: 18px; color: #000;"></i>';
+      }
+      if (window.lucide) lucide.createIcons({ root: followBtn });
+    }
+    
     const limitDisplay = document.getElementById('dm-media-limit-text');
     if (limitDisplay) limitDisplay.style.display = 'none';
   }
 
-  subscribeToDMMessages(lastTimestamp);
+  subscribeToDMMessages();
 }
 
 // ── Firestore Subscription for DMs ──
 
-function subscribeToDMMessages(lastTimestamp) {
+function subscribeToDMMessages() {
   if (dmUnsubscribe) {
     dmUnsubscribe();
     dmUnsubscribe = null;
@@ -354,24 +477,10 @@ function subscribeToDMMessages(lastTimestamp) {
 
   const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
   
-  let startTimestamp = lastTimestamp || 0;
-  if (myDeletedAt && myDeletedAt > startTimestamp) {
-    startTimestamp = myDeletedAt;
-  }
-
-  let q;
-  if (startTimestamp) {
-    q = firestore.query(
-      msgsRef,
-      firestore.orderBy('timestamp', 'asc'),
-      firestore.where('timestamp', '>', new Date(startTimestamp))
-    );
-  } else {
-    q = firestore.query(
-      msgsRef,
-      firestore.orderBy('timestamp', 'asc')
-    );
-  }
+  const q = firestore.query(
+    msgsRef,
+    firestore.orderBy('timestamp', 'asc')
+  );
 
   const msgsList = document.getElementById('dm-messages-list');
 
@@ -398,17 +507,12 @@ function subscribeToDMMessages(lastTimestamp) {
     const container = document.getElementById('dm-messages-container');
     const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
 
-    let lastDateLabel = '';
-    // Find last rendered date separator if any
-    const existingSeps = msgsList.querySelectorAll('.chat-date-separator');
-    if (existingSeps.length > 0) {
-      lastDateLabel = existingSeps[existingSeps.length - 1].textContent;
-    }
-
     for (const change of snapshot.docChanges()) {
       const doc = change.doc;
+      if (doc.id === 'metadata') continue;
       const data = doc.data();
       const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date();
+      const isPending = doc.metadata?.hasPendingWrites || false;
       const msg = {
         ...data,
         _id: doc.id,
@@ -416,28 +520,27 @@ function subscribeToDMMessages(lastTimestamp) {
         timestamp: timestampDate.getTime()
       };
 
+      // Client-side soft-delete filter
+      if (myDeletedAt && msg.timestamp <= myDeletedAt) {
+        continue;
+      }
+
       if (change.type === 'added') {
         // Double check it's not already rendered
         if (!document.getElementById(`dm-msg-${doc.id}`)) {
-          const dateLabel = getFriendlyDate(timestampDate);
-          if (dateLabel !== lastDateLabel) {
-            const sep = document.createElement('div');
-            sep.className = 'chat-date-separator';
-            sep.textContent = dateLabel;
-            msgsList.appendChild(sep);
-            lastDateLabel = dateLabel;
-          }
           await window.localDb.directMessages.put(msg);
-          renderDMMessage(msg, msgsList, true);
+          renderDMMessage(msg, msgsList, true, isPending);
         }
       } else if (change.type === 'modified') {
         await window.localDb.directMessages.put(msg);
         updateDMMessageInUI(msg);
+        updateDMMessageInDOM(msg, isPending);
       } else if (change.type === 'removed') {
         await window.localDb.directMessages.delete(doc.id);
         removeDMMessageFromUI(doc.id);
       }
     }
+    rebuildDMDateSeparators(msgsList);
 
     if (wasAtBottom) {
       scrollToBottom('dm-messages-container');
@@ -469,7 +572,7 @@ function closeDMChat() {
 
 // ── Render Message Bubble in UI ──
 
-function renderDMMessage(msg, container, animate = false) {
+function renderDMMessage(msg, container, animate = false, isPending = false) {
   const userId = window.userId;
   const isSelf = String(msg.senderId) === String(userId);
   const timestamp = new Date(msg.timestamp);
@@ -581,8 +684,8 @@ function renderDMMessage(msg, container, animate = false) {
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
       <span class="chat-time">${time}</span>
       ${isSelf ? `
-        <span class="chat-tick blue" id="dm-tick-${docId}">
-          <i data-lucide="check-check" style="width:14px;height:14px;"></i>
+        <span class="chat-tick blue ${isPending ? 'pending' : ''}" id="dm-tick-${docId}">
+          <i data-lucide="${isPending ? 'clock' : 'check-check'}" style="width:14px;height:14px;"></i>
         </span>
       ` : ''}
     </div>
@@ -668,6 +771,62 @@ function updateDMMessageInUI(msg) {
   if (window.lucide) lucide.createIcons({ root: bubble });
 }
 
+function updateDMMessageInDOM(msg, isPending = false) {
+  const el = document.getElementById(`dm-msg-${msg._id}`);
+  if (!el) return;
+
+  const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date();
+  el.dataset.ts = timestamp.getTime().toString();
+
+  const isSelf = String(msg.senderId) === String(window.userId);
+
+  const timeEl = el.querySelector('.chat-time');
+  if (timeEl && msg.timestamp) {
+    const time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    timeEl.textContent = time;
+  }
+
+  if (isSelf) {
+    const tick = el.querySelector('.chat-tick');
+    if (tick) {
+      if (isPending) {
+        tick.classList.add('pending');
+        tick.innerHTML = '<i data-lucide="clock" style="width:14px;height:14px;"></i>';
+      } else {
+        tick.classList.remove('pending');
+        tick.className = 'chat-tick blue';
+        tick.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;"></i>';
+      }
+      if (window.lucide) lucide.createIcons({ root: tick });
+    }
+  }
+}
+
+function rebuildDMDateSeparators(container) {
+  if (!container) return;
+
+  const seps = container.querySelectorAll('.chat-date-separator');
+  seps.forEach(el => el.remove());
+
+  const wrappers = Array.from(container.children).filter(el => el.classList.contains('chat-bubble-wrapper'));
+  wrappers.sort((a, b) => parseFloat(a.dataset.ts) - parseFloat(b.dataset.ts));
+  wrappers.forEach(el => container.appendChild(el));
+
+  let lastDateLabel = '';
+  wrappers.forEach(wrapper => {
+    const ts = parseFloat(wrapper.dataset.ts);
+    if (!ts) return;
+    const dateLabel = getFriendlyDate(new Date(ts));
+    if (dateLabel !== lastDateLabel) {
+      const sep = document.createElement('div');
+      sep.className = 'chat-date-separator';
+      sep.textContent = dateLabel;
+      wrapper.before(sep);
+      lastDateLabel = dateLabel;
+    }
+  });
+}
+
 function removeDMMessageFromUI(docId) {
   const bubble = document.getElementById(`dm-msg-${docId}`);
   if (bubble) {
@@ -744,6 +903,10 @@ async function sendDMMessage() {
     }
   }
 
+  if (!navigator.onLine && selectedDMMediaBlobs.length > 0) {
+    return showToast('Uploading media attachments requires an internet connection.', 'error');
+  }
+
   const { firebaseDb, firestore } = window;
   if (!firebaseDb || !firestore) {
     return showToast('Chat is currently offline.', 'error');
@@ -755,30 +918,10 @@ async function sendDMMessage() {
   try {
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="upload-cloud" class="loading-bounce"></i>';
-      if (window.lucide) lucide.createIcons({ root: btn });
-    }
-
-    const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
-    const userPhoto = localStorage.getItem('window.userProfilePicture');
-    const baseMsgData = {
-      senderId: window.userId || '',
-      senderName: window.userName || 'User',
-      senderUsername: localStorage.getItem('userUsername') || '',
-      senderPhoto: userPhoto || null,
-      senderIsPremium: localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium',
-      timestamp: firestore.serverTimestamp()
-    };
-
-    if (activeDMReplyTo) {
-      baseMsgData.replyTo = {
-        docId: activeDMReplyTo.docId || '',
-        text: activeDMReplyTo.text || '',
-        senderName: activeDMReplyTo.senderName || '',
-        mediaUrl: activeDMReplyTo.mediaUrl || null,
-        mediaType: activeDMReplyTo.mediaType || null,
-        audioDuration: activeDMReplyTo.audioDuration || null
-      };
+      if (selectedDMMediaBlobs.length > 0) {
+        btn.innerHTML = '<i data-lucide="upload-cloud" class="loading-bounce"></i>';
+        if (window.lucide) lucide.createIcons({ root: btn });
+      }
     }
 
     // Clear input bar instantly
@@ -789,8 +932,44 @@ async function sendDMMessage() {
     activeDMReplyTo = null;
     clearDMReply();
 
+    const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
+    
+    // Build message metadata (similar to backend format)
+    const myUserId = window.userId;
+    const myName = localStorage.getItem('window.userName') || 'Friend';
+    const myUsername = localStorage.getItem('userUsername') || '';
+    const myPhoto = localStorage.getItem('window.userProfilePicture') || '';
+    const myIsPremium = localStorage.getItem('isPremium') === 'true' || localStorage.getItem('subscriptionTier') === 'premium';
+    
+    const baseMsgData = {
+      senderId: String(myUserId),
+      senderName: myName,
+      senderUsername: myUsername,
+      senderPhoto: myPhoto || null,
+      senderIsPremium: myIsPremium,
+      timestamp: firestore.serverTimestamp()
+    };
+
     if (selectedDMMediaBlobs.length === 0) {
-      await firestore.addDoc(msgsRef, { ...baseMsgData, text });
+      const msgData = {
+        ...baseMsgData,
+        text
+      };
+      if (replyCopy) {
+        msgData.replyTo = {
+          docId: replyCopy.docId || '',
+          text: replyCopy.text || '',
+          senderName: replyCopy.senderName || '',
+          mediaUrl: replyCopy.mediaUrl || null,
+          mediaType: replyCopy.mediaType || null,
+          audioDuration: replyCopy.audioDuration || null
+        };
+      }
+      if (navigator.onLine) {
+        await firestore.addDoc(msgsRef, msgData);
+      } else {
+        firestore.addDoc(msgsRef, msgData).catch(err => console.error('Offline DM write error:', err));
+      }
       triggerDMPushNotification(text, false, null);
     } else {
       let isFirst = true;
@@ -802,9 +981,19 @@ async function sendDMMessage() {
           text: isFirst ? text : '',
           mediaUrl,
           mediaType: item.type,
-          audioDuration: item.duration || null,
-          replyTo: isFirst ? replyCopy : null
+          audioDuration: item.duration || null
         };
+        
+        if (isFirst && replyCopy) {
+          msgData.replyTo = {
+            docId: replyCopy.docId || '',
+            text: replyCopy.text || '',
+            senderName: replyCopy.senderName || '',
+            mediaUrl: replyCopy.mediaUrl || null,
+            mediaType: replyCopy.mediaType || null,
+            audioDuration: replyCopy.audioDuration || null
+          };
+        }
         
         await firestore.addDoc(msgsRef, msgData);
         if (isFirst) {
@@ -849,7 +1038,8 @@ async function uploadMediaToCloudinary(blob, type, source = 'recording') {
     method: 'POST',
     headers: {
       'X-Media-Type': type,
-      'X-Media-Source': source || 'recording'
+      'X-Media-Source': source || 'recording',
+      'X-Recipient-Id': activeChatRecipientId || ''
     },
     body: formData,
     timeout: 120000
@@ -1560,23 +1750,71 @@ function clearDMMediaPreview() {
 
 // ── Contact List & Request List Renderers ──
 
-async function renderContactsList(friends) {
+async function renderContactsList(friends, forceCache = false) {
   const container = document.getElementById('dm-contacts-list');
   if (!container) return;
 
-  container.innerHTML = '';
-  if (!friends || friends.length === 0) {
-    container.innerHTML = `
-      <div style="text-align:center; padding:32px 16px; color:var(--text-muted); font-size:13px; font-weight:600; line-height:1.5;">
-        No connections yet.<br>
-        Search for users and add them as friends to start messaging!
-      </div>
-    `;
+  const currentRenderId = ++renderContactsListId;
+  const myUserId = window.userId;
+  const { firebaseDb, firestore } = window;
+
+  const friendsMap = new Map((friends || []).map(f => [String(f._id).toLowerCase(), f]));
+  const activeIdsSet = new Set();
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('activeContact_')) {
+      activeIdsSet.add(key.substring('activeContact_'.length).toLowerCase());
+    }
+  }
+  
+  // Also ensure all current friends are in the active set
+  if (friends) {
+    friends.forEach(f => activeIdsSet.add(String(f._id).toLowerCase()));
+  }
+
+  if (activeIdsSet.size === 0) {
+    if (currentRenderId === renderContactsListId) {
+      container.innerHTML = `
+        <div style="text-align:center; padding:32px 16px; color:var(--text-muted); font-size:13px; font-weight:600; line-height:1.5;">
+          No connections yet.<br>
+          Search for users and add them as friends to start messaging!
+        </div>
+      `;
+    }
     return;
   }
 
-  const myUserId = window.userId;
-  const { firebaseDb, firestore } = window;
+  const contactList = [];
+  activeIdsSet.forEach(id => {
+    const friend = friendsMap.get(String(id).toLowerCase());
+    if (friend) {
+      contactList.push({
+        _id: friend._id,
+        name: friend.name,
+        username: friend.username,
+        profilePicture: friend.profilePicture,
+        currentStreak: friend.currentStreak || 0,
+        isFriend: true
+      });
+    } else {
+      let cachedDetails = null;
+      try {
+        const detailsStr = localStorage.getItem('contact_details_' + id);
+        if (detailsStr) cachedDetails = JSON.parse(detailsStr);
+      } catch (err) {
+        console.warn('Failed to parse cached details for', id, err);
+      }
+      contactList.push({
+        _id: id,
+        name: cachedDetails?.name || 'Unfollowed User',
+        username: cachedDetails?.username || 'unfollowed',
+        profilePicture: cachedDetails?.profilePicture || '',
+        currentStreak: 0,
+        isFriend: false
+      });
+    }
+  });
 
   const getTimestampMs = (ts) => {
     if (!ts) return Date.now();
@@ -1588,7 +1826,7 @@ async function renderContactsList(friends) {
     return isNaN(d.getTime()) ? Date.now() : d.getTime();
   };
 
-  const promises = friends.map(async (f) => {
+  const promises = contactList.map(async (f) => {
     const chatId = getChatId(myUserId, f._id);
     let lastMsgText = '';
     let unreadCount = 0;
@@ -1598,7 +1836,7 @@ async function renderContactsList(friends) {
 
     let loadedFromFirestore = false;
 
-    if (navigator.onLine && firebaseDb && firestore) {
+    if (!forceCache && navigator.onLine && firebaseDb && firestore) {
       try {
         const metaRef = firestore.doc(firebaseDb, 'direct_messages', chatId, 'messages', 'metadata');
         const lastMsgQuery = firestore.query(
@@ -1670,7 +1908,7 @@ async function renderContactsList(friends) {
           }
         }
       } catch (err) {
-        console.warn('Failed to fetch real-time DM info from Firestore for friend:', f._id, err);
+        console.warn('Failed to fetch real-time DM info from Firestore for contact:', f._id, err);
       }
     }
 
@@ -1711,7 +1949,7 @@ async function renderContactsList(friends) {
           }
         }
       } catch (err) {
-        console.warn('Failed local DB fallback for friend:', f._id, err);
+        console.warn('Failed local DB fallback for contact:', f._id, err);
       }
     }
 
@@ -1720,6 +1958,11 @@ async function renderContactsList(friends) {
 
   const results = await Promise.all(promises);
 
+  if (currentRenderId !== renderContactsListId) {
+    return;
+  }
+
+  container.innerHTML = '';
   let totalUnread = 0;
 
   for (const res of results) {
@@ -1757,6 +2000,21 @@ async function renderContactsList(friends) {
       ? `<span class="dm-unread-badge" style="background:#ff3b30; color:#fff; font-size:10px; font-weight:900; padding:2px 6px; border-radius:10px; min-width:14px; text-align:center; box-shadow: 2px 2px 0 var(--black); border:1.5px solid var(--black);">${displayUnread}</span>`
       : '';
 
+    let badgeHtml = '';
+    if (f.isFriend) {
+      badgeHtml = `
+        <div style="display:flex; align-items:center; gap:4px; background:rgba(255,214,10,0.15); border:1.5px solid var(--yellow); padding:3px 8px; border-radius:20px;">
+          <span style="font-size:11px; font-weight:900; color:var(--yellow);">${f.currentStreak || 0} 🔥</span>
+        </div>
+      `;
+    } else {
+      badgeHtml = `
+        <div style="display:flex; align-items:center; gap:4px; background:rgba(239,68,68,0.15); border:1.5px solid var(--red); padding:3px 8px; border-radius:20px;">
+          <span style="font-size:11px; font-weight:900; color:var(--red); text-transform:uppercase; font-family:'Space Grotesk',sans-serif;">Unfollowed</span>
+        </div>
+      `;
+    }
+
     card.innerHTML = `
       <div style="width:48px; height:48px; border:2px solid var(--black); border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--bg-muted);">
         ${avatarHtml}
@@ -1767,13 +2025,18 @@ async function renderContactsList(friends) {
       </div>
       <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
         ${unreadHtml}
-        <div style="display:flex; align-items:center; gap:4px; background:rgba(255,214,10,0.15); border:1.5px solid var(--yellow); padding:3px 8px; border-radius:20px;">
-          <span style="font-size:11px; font-weight:900; color:var(--yellow);">${f.currentStreak || 0} 🔥</span>
-        </div>
+        ${badgeHtml}
+        <button class="contact-delete-btn" onclick="event.stopPropagation(); window.DM.deleteContact('${f._id}', '${window.escJs(f.name)}')" title="Remove Contact Card" style="background:var(--red); border:2.5px solid var(--black); border-radius:8px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; box-shadow:2px 2px 0 var(--black); padding:0; cursor:pointer; flex-shrink:0; margin-left:4px;">
+          <i data-lucide="trash-2" style="width:16px; height:16px; color:#fff;"></i>
+        </button>
       </div>
     `;
 
     container.appendChild(card);
+  }
+
+  if (window.lucide) {
+    lucide.createIcons({ root: container });
   }
 
   // Update notification dots if we are not on the messages page
@@ -1793,6 +2056,15 @@ async function renderContactsList(friends) {
       }
     }
   }
+}
+
+function deleteContact(friendId, name) {
+  if (!confirm(`Are you sure you want to remove the contact card for ${name}? This will hide them from your messages tab, but will NOT delete your message history.`)) {
+    return;
+  }
+  localStorage.removeItem('activeContact_' + friendId);
+  showToast(`Removed ${name} from contacts.`, 'info');
+  fetchFriends();
 }
 
 function renderFriendRequestsList(requests) {
@@ -2073,6 +2345,9 @@ window.DM = {
   declineFriendRequest,
   cancelFriendRequest,
   removeFriend,
+  unfriendActiveUser,
+  followActiveUser,
+  deleteContact,
   openDMChat,
   closeDMChat,
   sendDMMessage,

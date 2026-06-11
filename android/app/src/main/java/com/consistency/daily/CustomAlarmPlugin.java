@@ -27,6 +27,7 @@ public class CustomAlarmPlugin extends Plugin {
             String type = call.getString("type", "notification"); // notification or alarm
             String title = call.getString("title", "Consistency Reminder");
             JSArray selectedTasks = call.getArray("selectedTasks", new JSArray());
+            String date = call.getString("date"); // YYYY-MM-DD
 
             if (id == null || time == null) {
                 call.reject("id and time are required");
@@ -44,12 +45,15 @@ public class CustomAlarmPlugin extends Plugin {
             alarmData.put("type", type);
             alarmData.put("title", title);
             alarmData.put("selectedTasks", selectedTasks);
+            if (date != null) {
+                alarmData.put("date", date);
+            }
 
             editor.putString("alarm_" + id, alarmData.toString());
             editor.apply();
 
             // Register with the native AlarmManager system helper
-            AlarmScheduler.schedule(context, id, time);
+            AlarmScheduler.schedule(context, id, time, date);
 
             JSObject ret = new JSObject();
             ret.put("status", "success");

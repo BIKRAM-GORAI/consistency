@@ -15,7 +15,7 @@ const activeWebTimers = {};
  * @param {string} title - Alarm title
  * @param {Array<string>} selectedTasks - List of task titles selected for this reminder
  */
-export async function scheduleLocalReminder(dayId, time, type, title, selectedTasks = []) {
+export async function scheduleLocalReminder(dayId, time, type, title, selectedTasks = [], date = null) {
   const id = `day_${dayId}`;
   
   if (isAndroidNative && window.Capacitor && window.Capacitor.Plugins.CustomAlarmPlugin) {
@@ -25,16 +25,17 @@ export async function scheduleLocalReminder(dayId, time, type, title, selectedTa
         time,
         type,
         title,
-        selectedTasks
+        selectedTasks,
+        date
       });
-      console.log(`[Native Reminder] Scheduled alarm ${id} for ${time} (${type})`);
+      console.log(`[Native Reminder] Scheduled alarm ${id} for ${time} on ${date} (${type})`);
     } catch (err) {
       console.error("[Native Reminder] Error scheduling alarm:", err);
     }
   } else {
     // Web Fallback
     cancelLocalReminder(dayId);
-    scheduleWebNotificationFallback(id, time, title, selectedTasks);
+    scheduleWebNotificationFallback(id, time, title, selectedTasks, date);
   }
 }
 
@@ -114,8 +115,10 @@ export async function syncDeviceReminders(daysList, globalSettings) {
   }
 
   // 2. Sync individual day cards
+  const todayStr = new Date().toISOString().split('T')[0];
   for (const day of daysList) {
-    if (day.reminder && day.reminder.enabled) {
+    const cardDate = (day.date || '').split('T')[0];
+    if (day.reminder && day.reminder.enabled && cardDate >= todayStr) {
       // Collect selected tasks names from mongoose categories
       const selectedTaskNames = [];
       const selectedIds = new Set(day.reminder.selectedTasks || []);
@@ -135,7 +138,8 @@ export async function syncDeviceReminders(daysList, globalSettings) {
         day.reminder.time,
         day.reminder.type,
         "Daily Reminder",
-        selectedTaskNames
+        selectedTaskNames,
+        cardDate
       );
     } else {
       await cancelLocalReminder(day._id);
@@ -146,14 +150,25 @@ export async function syncDeviceReminders(daysList, globalSettings) {
 /**
  * Web Fallback scheduling using Client-side setTimeout
  */
-function scheduleWebNotificationFallback(id, time, title, tasks) {
+function scheduleWebNotificationFallback(id, time, title, tasks, date = null) {
   try {
     const [hours, minutes] = time.split(":").map(Number);
     const target = new Date();
+    
+    if (date) {
+      const [year, month, day] = date.split("-").map(Number);
+      target.setFullYear(year, month - 1, day);
+    }
+    
     target.setHours(hours, minutes, 0, 0);
 
     if (target.getTime() <= Date.now()) {
-      target.setDate(target.getDate() + 1); // tomorrow
+      if (!date) {
+        target.setDate(target.getDate() + 1); // tomorrow
+      } else {
+        console.log(`[Web Reminder] Not scheduling ${id} because the target date/time ${date} has passed.`);
+        return;
+      }
     }
 
     const delay = target.getTime() - Date.now();

@@ -1700,10 +1700,12 @@
           <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;"><i data-lucide="user"></i> Personal Information</h3>
           
           <div class="profile-picture-section" style="text-align:center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed var(--border-color, #ccc);">
-            <div class="profile-avatar-container" onclick="document.getElementById('profile-pic-upload').click()" title="Click to upload profile picture" style="width:100px; height:100px; border-radius:50%; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; cursor:pointer; overflow:hidden; border:2px solid var(--black); position:relative; box-shadow: 4px 4px 0 var(--black); margin: 0 auto;">
-              <span id="profile-avatar-initial">?</span>
-              <img id="profile-avatar-img" src="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
-              <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.6); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
+            <div class="profile-avatar-container" onclick="document.getElementById('profile-pic-upload').click()" title="Click to upload profile picture" style="width:100px; height:100px; border-radius:50%; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; font-size:40px; color:#fff; font-weight:bold; cursor:pointer; overflow:visible; border:2px solid var(--black); position:relative; box-shadow: 4px 4px 0 var(--black); margin: 0 auto;">
+              <div class="profile-avatar-inner-wrap" style="width:100%; height:100%; border-radius:50%; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; z-index:1;">
+                <span id="profile-avatar-initial">?</span>
+                <img id="profile-avatar-img" src="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
+                <div style="position:absolute; bottom:0; left:0; background:rgba(0,0,0,0.6); width:100%; font-size:12px; color:#fff; padding:4px 0; z-index:2;">Edit</div>
+              </div>
             </div>
             <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePictureSelect(event)" />
             <input type="hidden" id="profile-pic-dataurl" value="" />
@@ -3004,6 +3006,14 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
+          <!-- Unfriend / Unfollow button -->
+          <button id="dm-chat-unfriend-btn" onclick="window.DM.unfriendActiveUser()" title="Unfollow Friend" style="background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0; cursor: pointer;">
+            <i data-lucide="user-minus" style="width: 18px; height: 18px; color: #fff;"></i>
+          </button>
+          <!-- Follow / Follow Back button -->
+          <button id="dm-chat-follow-btn" onclick="window.DM.followActiveUser()" title="Follow User" style="display: none; background: var(--yellow); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0; cursor: pointer;">
+            <i data-lucide="user-plus" style="width: 18px; height: 18px; color: #000;"></i>
+          </button>
           <!-- Clear Chat history button -->
           <button id="dm-chat-clear-btn" onclick="window.DM.clearDMChatHistory()" title="Clear Chat History" style="background: var(--red); border: 2px solid var(--black); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 var(--black); padding: 0; cursor: pointer;">
             <i data-lucide="trash-2" style="width: 20px; height: 20px; color: #fff;"></i>
@@ -3062,6 +3072,10 @@
           <button type="button" class="btn-recorder-stop ripple" onclick="window.DM.stopDMVoiceRecord()">
             <i data-lucide="square" style="width: 18px; height: 18px;"></i>
           </button>
+        </div>
+        
+        <div id="dm-not-friends-warning" style="display: none; text-align: center; padding: 12px; background: var(--bg-card); border: 3px solid var(--black); border-radius: 12px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; font-size: 12px; color: var(--text-muted); width: 100%; box-shadow: 4px 4px 0 var(--black); box-sizing: border-box; margin-bottom: 4px;">
+          You must follow each other to send messages.
         </div>
         
         <form id="dm-chat-form" onsubmit="event.preventDefault(); window.DM.sendDMMessage();" style="display: flex; gap: 10px; width: 100%; align-items: center; box-sizing: border-box;">

@@ -1,5 +1,7 @@
 const admin = require('../config/firebase');
 const User = require('../models/User');
+const { setFriendshipCache, invalidateFriendshipCache, isFriendsCached } = require('../utils/friendshipCache');
+const { syncFriendsToFirestore } = require('../utils/firestoreSync');
 
 // 1. Send Friend / Follow Request
 exports.sendFriendRequest = async (req, res) => {
@@ -37,6 +39,10 @@ exports.sendFriendRequest = async (req, res) => {
       targetUser.friends.push(senderId);
       targetUser.sentRequests = targetUser.sentRequests.filter(id => String(id) !== String(senderId));
       await targetUser.save();
+
+      setFriendshipCache(senderId, targetUserId, true);
+      await syncFriendsToFirestore(senderId);
+      await syncFriendsToFirestore(targetUserId);
 
       return res.json({ 
         success: true, 
@@ -129,6 +135,10 @@ exports.acceptFriendRequest = async (req, res) => {
 
     await me.save();
     await target.save();
+
+    setFriendshipCache(myId, targetUserId, true);
+    await syncFriendsToFirestore(myId);
+    await syncFriendsToFirestore(targetUserId);
 
     res.json({ success: true, status: 'friends', message: 'Friend request accepted.' });
   } catch (err) {
@@ -231,11 +241,15 @@ exports.removeFriend = async (req, res) => {
     if (me) {
       me.friends = me.friends.filter(id => String(id) !== String(targetUserId));
       await me.save();
+      await syncFriendsToFirestore(myId);
     }
     if (target) {
       target.friends = target.friends.filter(id => String(id) !== String(myId));
       await target.save();
+      await syncFriendsToFirestore(targetUserId);
     }
+
+    invalidateFriendshipCache(myId, targetUserId);
 
     res.json({ success: true, status: 'none', message: 'Friend removed successfully.' });
   } catch (err) {
@@ -267,3 +281,4 @@ exports.getFriendshipStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
