@@ -1742,6 +1742,13 @@ async function initFirebaseChat(retryCount = 0) {
       if (firebaseAuth && signInWithFirebase) {
         await signInWithFirebase(firebaseAuth, data.token);
         console.log('[Firebase] Chat auth signed in successfully.');
+
+        // Contacts list renders before auth completes — refresh it now
+        // so it can fetch real-time last-message/unread counts from Firestore.
+        if (typeof window.DM?.fetchFriends === 'function') {
+          window.DM.fetchFriends();
+        }
+
       }
     }
   } catch (err) {

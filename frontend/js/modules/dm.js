@@ -1935,7 +1935,12 @@ async function renderContactsList(friends, forceCache = false) {
 
     let loadedFromFirestore = false;
 
-    if (!forceCache && navigator.onLine && firebaseDb && firestore) {
+    // Only attempt Firestore reads if Firebase Auth has a signed-in user.
+    // If initFirebaseChat hasn't completed yet, skip and fall through to
+    // the local IndexedDB cache (handled below) — no permission-denied error.
+    const isFirebaseAuthed = !!(window.firebaseAuth?.currentUser);
+    if (!forceCache && navigator.onLine && firebaseDb && firestore && isFirebaseAuthed) {
+
       try {
         const metaRef = firestore.doc(firebaseDb, 'direct_messages', chatId, 'messages', 'metadata');
         const lastMsgQuery = firestore.query(
