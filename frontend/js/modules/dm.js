@@ -10,6 +10,8 @@ let activeChatRecipientName = '';
 let activeChatRecipientPhoto = '';
 let activeChatId = null;
 let dmUnsubscribe = null;
+let dmMetaUnsubscribe = null;
+let contactsListeners = new Map(); // chatId -> unsubscribe function
 let dmMessagesLimit = 30;
 let selectedDMMediaBlobs = []; // Array of { blob, type, source, duration }
 let activeDMReplyTo = null;
@@ -37,6 +39,49 @@ let dmIsRecording = false;
 // ── Helper: generate chatId ──
 function getChatId(uid1, uid2) {
   return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+}
+
+// ── Sync DM Read status to Firestore ──
+let lastFirestoreLastReadSyncedAt = 0;
+async function syncLastReadToFirestore(chatId) {
+  const { firebaseDb, firestore, userId } = window;
+  if (!firebaseDb || !firestore || !userId || !chatId) return;
+
+  const now = Date.now();
+  if (now - lastFirestoreLastReadSyncedAt < 3000) return;
+  lastFirestoreLastReadSyncedAt = now;
+
+  try {
+    const metaRef = firestore.doc(firebaseDb, 'direct_messages', chatId, 'messages', 'metadata');
+    await firestore.setDoc(metaRef, {
+      lastRead: {
+        [String(userId)]: now
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Failed to sync lastRead to Firestore:', err);
+  }
+}
+
+// ── Update message double ticks in DOM ──
+function updateDMMessagesTicks(otherLastRead) {
+  const msgsList = document.getElementById('dm-messages-list');
+  if (!msgsList) return;
+
+  const tickElements = msgsList.querySelectorAll('.chat-tick');
+  tickElements.forEach(tick => {
+    const bubbleWrapper = tick.closest('.chat-bubble-wrapper');
+    if (!bubbleWrapper) return;
+
+    const ts = parseInt(bubbleWrapper.dataset.ts || '0');
+    if (ts && ts <= otherLastRead) {
+      if (!tick.classList.contains('blue') && !tick.classList.contains('pending')) {
+        tick.className = 'chat-tick blue';
+        tick.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;"></i>';
+        if (window.lucide) lucide.createIcons({ root: tick });
+      }
+    }
+  });
 }
 
 // ── Friends & Relationship API mappings ──
@@ -264,6 +309,8 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
   if (!recipientId) return;
   recipientId = String(recipientId).toLowerCase().trim();
 
+  window.activeChatRecipientLastRead = 0;
+
   const profileModal = document.getElementById('modal-public-profile');
   if (profileModal) closeModal('modal-public-profile');
   
@@ -285,8 +332,13 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
 
   // Update last read timestamp and clear UI unread badge
   localStorage.setItem('lastRead_' + activeChatId, Date.now().toString());
-  const unreadBadge = document.querySelector(`#dm-contact-card-${recipientId} .dm-unread-badge`);
-  if (unreadBadge) unreadBadge.remove();
+  const unreadWrapper = document.querySelector(`#dm-contact-card-${recipientId} .dm-unread-badge-wrapper`);
+  if (unreadWrapper) {
+    unreadWrapper.innerHTML = '';
+  } else {
+    const unreadBadge = document.querySelector(`#dm-contact-card-${recipientId} .dm-unread-badge`);
+    if (unreadBadge) unreadBadge.remove();
+  }
   
   // Update header UI
   document.getElementById('dm-chat-title').textContent = recipientName;
@@ -462,6 +514,7 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
   }
 
   subscribeToDMMessages();
+  syncLastReadToFirestore(activeChatId);
 }
 
 // ── Firestore Subscription for DMs ──
@@ -471,12 +524,38 @@ function subscribeToDMMessages() {
     dmUnsubscribe();
     dmUnsubscribe = null;
   }
+  if (dmMetaUnsubscribe) {
+    dmMetaUnsubscribe();
+    dmMetaUnsubscribe = null;
+  }
 
   const { firebaseDb, firestore } = window;
   if (!firebaseDb || !firestore) return;
 
   const msgsRef = firestore.collection(firebaseDb, 'direct_messages', activeChatId, 'messages');
   
+  // Real-time metadata subscription for read status
+  const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
+  dmMetaUnsubscribe = firestore.onSnapshot(metaRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && data.lastRead) {
+        const otherUserId = String(activeChatRecipientId).toLowerCase();
+        let otherLastRead = 0;
+        for (const [uid, ts] of Object.entries(data.lastRead)) {
+          if (uid.toLowerCase() === otherUserId) {
+            otherLastRead = ts;
+            break;
+          }
+        }
+        window.activeChatRecipientLastRead = otherLastRead;
+        updateDMMessagesTicks(otherLastRead);
+      }
+    }
+  }, (err) => {
+    console.warn('Failed to listen to DM metadata changes:', err);
+  });
+
   const q = firestore.query(
     msgsRef,
     firestore.orderBy('timestamp', 'asc')
@@ -530,6 +609,9 @@ function subscribeToDMMessages() {
         if (!document.getElementById(`dm-msg-${doc.id}`)) {
           await window.localDb.directMessages.put(msg);
           renderDMMessage(msg, msgsList, true, isPending);
+          if (String(msg.senderId).toLowerCase() !== String(window.userId).toLowerCase()) {
+            syncLastReadToFirestore(activeChatId);
+          }
         }
       } else if (change.type === 'modified') {
         await window.localDb.directMessages.put(msg);
@@ -562,8 +644,13 @@ function closeDMChat() {
     dmUnsubscribe();
     dmUnsubscribe = null;
   }
+  if (dmMetaUnsubscribe) {
+    dmMetaUnsubscribe();
+    dmMetaUnsubscribe = null;
+  }
   if (activeChatId) {
     localStorage.setItem('lastRead_' + activeChatId, Date.now().toString());
+    syncLastReadToFirestore(activeChatId);
   }
   closeModal('modal-direct-chat');
   activeChatRecipientId = null;
@@ -578,6 +665,10 @@ function renderDMMessage(msg, container, animate = false, isPending = false) {
   const timestamp = new Date(msg.timestamp);
   const time = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const docId = msg._id || '';
+
+  const otherLastRead = window.activeChatRecipientLastRead || 0;
+  const isRead = !isPending && msg.timestamp <= otherLastRead;
+  const tickClass = `chat-tick ${isRead ? 'blue' : ''} ${isPending ? 'pending' : ''}`;
 
   const wrapper = document.createElement('div');
   wrapper.className = `chat-bubble-wrapper ${isSelf ? 'self' : 'other'}`;
@@ -684,7 +775,7 @@ function renderDMMessage(msg, container, animate = false, isPending = false) {
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
       <span class="chat-time">${time}</span>
       ${isSelf ? `
-        <span class="chat-tick blue ${isPending ? 'pending' : ''}" id="dm-tick-${docId}">
+        <span class="${tickClass}" id="dm-tick-${docId}">
           <i data-lucide="${isPending ? 'clock' : 'check-check'}" style="width:14px;height:14px;"></i>
         </span>
       ` : ''}
@@ -794,7 +885,9 @@ function updateDMMessageInDOM(msg, isPending = false) {
         tick.innerHTML = '<i data-lucide="clock" style="width:14px;height:14px;"></i>';
       } else {
         tick.classList.remove('pending');
-        tick.className = 'chat-tick blue';
+        const otherLastRead = window.activeChatRecipientLastRead || 0;
+        const isRead = timestamp.getTime() <= otherLastRead;
+        tick.className = `chat-tick ${isRead ? 'blue' : ''}`;
         tick.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;"></i>';
       }
       if (window.lucide) lucide.createIcons({ root: tick });
@@ -1849,6 +1942,119 @@ function clearDMMediaPreview() {
 
 // ── Contact List & Request List Renderers ──
 
+function setupRealtimeContactsListeners(contactList) {
+  const { firebaseDb, firestore, userId } = window;
+  if (!firebaseDb || !firestore || !userId) return;
+
+  const currentChatIds = new Set();
+
+  contactList.forEach(f => {
+    const chatId = getChatId(userId, f._id);
+    currentChatIds.add(chatId);
+
+    if (!contactsListeners.has(chatId)) {
+      const msgsRef = firestore.collection(firebaseDb, 'direct_messages', chatId, 'messages');
+      const q = firestore.query(
+        msgsRef,
+        firestore.orderBy('timestamp', 'desc'),
+        firestore.limit(1)
+      );
+
+      const unsubscribe = firestore.onSnapshot(q, async (snapshot) => {
+        if (snapshot.empty) return;
+        
+        // Find latest message doc that is not 'metadata'
+        const doc = snapshot.docs.find(d => d.id !== 'metadata');
+        if (!doc) return;
+
+        const data = doc.data();
+        const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date();
+        const msg = {
+          ...data,
+          _id: doc.id,
+          chatId: chatId,
+          timestamp: timestampDate.getTime()
+        };
+
+        // 1. Put into local IndexDB so cache is fresh
+        if (window.localDb) {
+          await window.localDb.directMessages.put(msg);
+        }
+
+        // 2. Update UI card if it is in DOM
+        const card = document.getElementById(`dm-contact-card-${f._id}`);
+        if (card) {
+          // Update last message preview text
+          const isSelf = String(msg.senderId) === String(userId);
+          let prefix = isSelf ? 'You: ' : '';
+          let lastMsgText = '';
+          if (msg.mediaUrl) {
+            if (msg.mediaType === 'audio') {
+              lastMsgText = prefix + '🎙️ Voice Message';
+            } else {
+              lastMsgText = prefix + '📷 Photo';
+            }
+          } else {
+            lastMsgText = prefix + (msg.text || '');
+          }
+
+          const previewEl = card.querySelector('.dm-last-msg-text');
+          if (previewEl) {
+            previewEl.textContent = lastMsgText;
+            previewEl.style.color = 'var(--text)';
+            previewEl.style.fontSize = '12px';
+            previewEl.style.fontWeight = '600';
+          }
+
+          // Update unread badge in real-time
+          const unreadWrapper = card.querySelector('.dm-unread-badge-wrapper');
+          if (unreadWrapper) {
+            const lastReadTime = parseInt(localStorage.getItem('lastRead_' + chatId) || '0');
+            const chatDeletedAt = parseInt(localStorage.getItem('deletedAt_' + chatId) || '0');
+            
+            // Query local IndexedDB for exact count
+            let unreadCount = 0;
+            if (window.localDb) {
+              const unreadMsgs = await window.localDb.directMessages
+                .where('chatId').equals(chatId)
+                .and(m => String(m.senderId) !== String(userId) && m.timestamp > lastReadTime && m.timestamp > chatDeletedAt)
+                .toArray();
+              unreadCount = unreadMsgs.length;
+            }
+
+            if (unreadCount > 0 && activeChatId !== chatId) {
+              const displayUnread = unreadCount > 10 ? '10+' : String(unreadCount);
+              unreadWrapper.innerHTML = `<span class="dm-unread-badge" style="background:#ff3b30; color:#fff; font-size:10px; font-weight:900; padding:2px 6px; border-radius:10px; min-width:14px; text-align:center; box-shadow: 2px 2px 0 var(--black); border:1.5px solid var(--black);">${displayUnread}</span>`;
+            } else {
+              unreadWrapper.innerHTML = '';
+            }
+          }
+
+          // Prepend card to top of list container since it is active
+          const container = document.getElementById('dm-contacts-list');
+          if (container && container.firstChild !== card) {
+            container.prepend(card);
+          }
+        }
+      }, (err) => {
+        console.warn('Real-time contact card listener error:', chatId, err);
+      });
+
+      contactsListeners.set(chatId, unsubscribe);
+    }
+  });
+
+  // Clean up unused/removed contacts listeners
+  for (const [chatId, unsubscribe] of contactsListeners.entries()) {
+    if (!currentChatIds.has(chatId)) {
+      unsubscribe();
+      contactsListeners.delete(chatId);
+    }
+  }
+}
+
+// ── Contact List & Request List Renderers ──
+
 async function renderContactsList(friends, forceCache = false) {
   const container = document.getElementById('dm-contacts-list');
   if (!container) return;
@@ -2097,8 +2303,8 @@ async function renderContactsList(friends, forceCache = false) {
       : `<div style="width:100%; height:100%; background:var(--yellow); color:#000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px;">${initial}</div>`;
 
     const lastMsgHtml = lastMsgText 
-      ? `<p style="margin:4px 0 0 0; font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${window.escHtml(lastMsgText)}</p>` 
-      : `<p style="margin:2px 0 0 0; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@${window.escHtml(f.username)}</p>`;
+      ? `<p class="dm-last-msg-text" style="margin:4px 0 0 0; font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${window.escHtml(lastMsgText)}</p>` 
+      : `<p class="dm-last-msg-text" style="margin:2px 0 0 0; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@${window.escHtml(f.username)}</p>`;
 
     const unreadHtml = unreadCount > 0
       ? `<span class="dm-unread-badge" style="background:#ff3b30; color:#fff; font-size:10px; font-weight:900; padding:2px 6px; border-radius:10px; min-width:14px; text-align:center; box-shadow: 2px 2px 0 var(--black); border:1.5px solid var(--black);">${displayUnread}</span>`
@@ -2128,7 +2334,7 @@ async function renderContactsList(friends, forceCache = false) {
         ${lastMsgHtml}
       </div>
       <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-        ${unreadHtml}
+        <span class="dm-unread-badge-wrapper">${unreadHtml}</span>
         ${badgeHtml}
         <button class="contact-delete-btn" onclick="event.stopPropagation(); window.DM.deleteContact('${f._id}', '${window.escJs(f.name)}')" title="Remove Contact Card" style="background:var(--red); border:2.5px solid var(--black); border-radius:8px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; box-shadow:2px 2px 0 var(--black); padding:0; cursor:pointer; flex-shrink:0; margin-left:4px;">
           <i data-lucide="trash-2" style="width:16px; height:16px; color:#fff;"></i>
@@ -2138,6 +2344,8 @@ async function renderContactsList(friends, forceCache = false) {
 
     container.appendChild(card);
   }
+
+  setupRealtimeContactsListeners(contactList);
 
   if (window.lucide) {
     lucide.createIcons({ root: container });
