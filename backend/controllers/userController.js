@@ -326,7 +326,7 @@ async function getLeaderboard(req, res) {
         // Recalculate active user's streak first to ensure their rank calculation is accurate!
         const myDays = await Day.find({ userId: activeUser._id }).select('date categories graceApplied');
         myCurrentStreak = calculateCurrentStreak(myDays, clientDate);
-        myHighestStreak = calculateHighestStreak(myDays);
+        myHighestStreak = calculateHighestStreak(myDays, clientDate);
         
         const mostRecentCompletedDay = myDays
           .filter(d => countTasks(d.categories) > 0)

@@ -553,13 +553,13 @@ function buildDayCard(day, preLoadedAchievements = null) {
   const isToday = cardDateNormalized === today;
   const isFuture = cardDateNormalized > today;
   let isWithinWindow = false;
-  if (cardDateNormalized <= today) {
+  if (cardDateNormalized < today) {
     const [y, m, d] = cardDateNormalized.split('-').map(Number);
     const cardStartLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
     const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
     isWithinWindow = diffHours <= 36;
   }
-  const isEditable = isWithinWindow || !!day.graceApplied;
+  const isEditable = isToday || isFuture || isWithinWindow || !!day.graceApplied;
   const pct     = window.calcProgress(day.categories);
 
   const card = document.createElement('div');
@@ -2167,15 +2167,15 @@ async function evaluateDaysDistractions() {
     let showStats = false;
     let rawStats = null;
 
-    // Retrieve last 7 available Day cards (excluding today's card)
+    // Retrieve last 7 available Day cards (strictly before today's card)
     const sortedPastDays = [...window.allDays]
-      .filter(d => d.date !== today)
+      .filter(d => d.date < today)
       .sort((a, b) => b.date.localeCompare(a.date));
     const last7Days = sortedPastDays.slice(0, 7);
     const isOneOfLast7 = last7Days.some(d => d.date === day.date);
 
-    if (cardDate === today) {
-      // Exclude today's card from showing screen time stats (only display from yesterday onwards)
+    if (cardDate >= today) {
+      // Exclude today's and future cards from showing screen time stats (only display from yesterday onwards)
       showStats = false;
     } else if (isOneOfLast7) {
       // One of the last 7 available cards: display pre-saved stats or query dynamically (if limits are enabled)

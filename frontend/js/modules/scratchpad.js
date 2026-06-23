@@ -38,14 +38,16 @@ async function openScratchpad(dayId) {
   // Past day check (36-hour completion window or grace applied makes it writable)
   const today = todayStr();
   const cardDateNormalized = (day.date || '').split('T')[0];
+  const isToday = cardDateNormalized === today;
+  const isFuture = cardDateNormalized > today;
   let isWithinWindow = false;
-  if (cardDateNormalized <= today) {
+  if (cardDateNormalized < today) {
     const [y, m, d] = cardDateNormalized.split('-').map(Number);
     const cardStartLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
     const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
     isWithinWindow = diffHours <= 36;
   }
-  isReadOnly = !(isWithinWindow || !!day.graceApplied);
+  isReadOnly = !(isToday || isFuture || isWithinWindow || !!day.graceApplied);
   
   // Show modal
   openModal('modal-scratchpad');

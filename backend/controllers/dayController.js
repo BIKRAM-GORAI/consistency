@@ -58,9 +58,17 @@ function calculateCurrentStreak(days, clientDate) {
 
   // Timezone-safe today resolution: prioritize client date if sent by frontend, fall back to server or newest day
   let today = clientDate || serverToday;
-  const mostRecentDay = uniqueDays[0];
-  if (mostRecentDay && mostRecentDay.date > today) {
-    today = mostRecentDay.date;
+  if (!clientDate) {
+    const mostRecentDay = uniqueDays[0];
+    if (mostRecentDay && mostRecentDay.date > today) {
+      const [ry, rm, rd] = mostRecentDay.date.split('-').map(Number);
+      const [sy, sm, sd] = serverToday.split('-').map(Number);
+      const diffMs = new Date(ry, rm - 1, rd) - new Date(sy, sm - 1, sd);
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays <= 1) {
+        today = mostRecentDay.date;
+      }
+    }
   }
 
   let streak = 0;
@@ -107,10 +115,17 @@ function calculateCurrentStreak(days, clientDate) {
  * @param {Array} days - Array of Day documents (all days for this user)
  * @returns {number} All-time highest streak
  */
-function calculateHighestStreak(days) {
+function calculateHighestStreak(days, clientDate) {
   if (!days || !days.length) return 0;
 
-  const uniqueDays = getUniqueDaysWithCompletions(days);
+  const d = new Date();
+  const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = clientDate || serverToday;
+
+  // Filter out future days
+  const pastAndPresentDays = days.filter(day => day.date <= today);
+
+  const uniqueDays = getUniqueDaysWithCompletions(pastAndPresentDays);
   // Sort oldest-first to walk forward through history
   uniqueDays.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -165,7 +180,7 @@ async function updateUserStreakAndActivity(userId, clientDate) {
   const days = await Day.find({ userId }).select('date categories graceApplied');
 
   const currentStreak = calculateCurrentStreak(days, clientDate);
-  const highestStreak = calculateHighestStreak(days);
+  const highestStreak = calculateHighestStreak(days, clientDate);
 
   // Find the most recent day containing completed tasks
   const mostRecentCompletedDay = days
@@ -219,7 +234,7 @@ const getAllDays = async (req, res) => {
 
       // Recalculate streak fresh — this is the source of truth
       const currentStreak = calculateCurrentStreak(allUserDays, clientDate);
-      const newHighest    = calculateHighestStreak(allUserDays);
+      const newHighest    = calculateHighestStreak(allUserDays, clientDate);
 
       // Find the most recent day containing completed tasks
       const mostRecentCompletedDay = allUserDays
