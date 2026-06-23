@@ -1244,7 +1244,7 @@
     const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
                         navigator.userAgent.includes("Capacitor") ||
                         window.location.protocol === 'file:';
-    const API = isNativeApp ? 'https://consistency-daily.vercel.app' : '';
+    const oauthAPI = isNativeApp ? 'https://consistency-daily.vercel.app' : '';
 
     const overlay = document.getElementById('oauth-loading-overlay');
 
@@ -1387,7 +1387,7 @@
       const idToken = await user.getIdToken();
 
       // Send token to our backend for verification and account merge
-      const res = await fetch(API + '/api/auth/oauth-login', {
+      const res = await fetch(oauthAPI + '/api/auth/oauth-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
