@@ -1734,14 +1734,10 @@ async function initFirebaseChat(retryCount = 0) {
   if (!window.userId || !token) return;
 
   try {
-    const res = await fetch(`${window.API}/api/auth/firebase-token`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) {
-      throw new Error(`Firebase token endpoint returned ${res.status}`);
-    }
-    const data = await res.json();
-    if (data.token) {
+    // Use apiFetch (not raw fetch) so a 401 expired-token is automatically
+    // refreshed and retried, rather than silently failing here.
+    const data = await window.apiFetch(`${window.API}/api/auth/firebase-token`);
+    if (data && data.token) {
       const { firebaseAuth, signInWithFirebase } = window;
       if (firebaseAuth && signInWithFirebase) {
         await signInWithFirebase(firebaseAuth, data.token);

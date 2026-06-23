@@ -83,7 +83,8 @@ const authenticateTokenOptional = (req, res, next) => {
  */
 const generateToken = (userId, email) => {
   const jwtSecret = process.env.JWT_SECRET;
-  const jwtExpiry = process.env.JWT_ACCESS_EXPIRY || '15m'; 
+  // Read JWT_ACCESS_EXPIRY first, then fall back to JWT_EXPIRY (legacy), then 7d default
+  const jwtExpiry = process.env.JWT_ACCESS_EXPIRY || process.env.JWT_EXPIRY || '7d'; 
 
   if (!jwtSecret) {
     throw new Error('JWT_SECRET is missing in environment variables');
