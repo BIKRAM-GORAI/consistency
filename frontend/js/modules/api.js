@@ -1,4 +1,56 @@
-console.log("[Module] api.js initializing...");
+let isRefreshingToken = false;
+let refreshSubscribers = [];
+
+function subscribeTokenRefresh(cb) {
+  refreshSubscribers.push(cb);
+}
+
+function onRefreshed(token) {
+  refreshSubscribers.forEach(cb => cb(token));
+  refreshSubscribers = [];
+}
+
+async function performTokenRefresh(refreshToken) {
+  if (isRefreshingToken) {
+    return new Promise(resolve => {
+      subscribeTokenRefresh(token => {
+        resolve(token);
+      });
+    });
+  }
+
+  isRefreshingToken = true;
+
+  try {
+    const API = window.API || '';
+    const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
+    const resolvedAPI = isAndroidNative ? 'https://consistency-daily.vercel.app' : API;
+
+    const res = await fetch(`${resolvedAPI}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken })
+    });
+
+    if (!res.ok) {
+      throw new Error('Refresh request failed');
+    }
+
+    const data = await res.json();
+    localStorage.setItem('token', data.token);
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
+    
+    isRefreshingToken = false;
+    onRefreshed(data.token);
+    return data.token;
+  } catch (err) {
+    isRefreshingToken = false;
+    refreshSubscribers = [];
+    throw err;
+  }
+}
 
 // ── API Fetch Engine ───────────────────────────────────────
 async function apiFetch(url, options = {}) {
@@ -31,11 +83,60 @@ async function apiFetch(url, options = {}) {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       if (res.status === 401) {
-        const adminToken = localStorage.getItem('adminToken');
-        localStorage.clear();
-        if (adminToken) localStorage.setItem('adminToken', adminToken);
-        window.location.replace('landing.html');
-        throw new Error('Session expired. Please log in again.');
+        // If the request itself was the refresh token request, fail immediately
+        if (url.includes('/api/auth/refresh')) {
+          throw new Error('Refresh token expired or invalid');
+        }
+
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          try {
+            const newToken = await performTokenRefresh(refreshToken);
+            
+            // Retry the original request with the new access token
+            const retryHeaders = { ...headers };
+            retryHeaders['Authorization'] = `Bearer ${newToken}`;
+            
+            const retryController = new AbortController();
+            const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
+            
+            const retryRes = await fetch(url, {
+              cache: 'no-store',
+              ...options,
+              headers: retryHeaders,
+              signal: retryController.signal
+            });
+            clearTimeout(retryTimeoutId);
+            
+            if (!retryRes.ok) {
+              const body = await retryRes.json().catch(() => ({}));
+              throw new Error(body.message || `HTTP ${retryRes.status}`);
+            }
+            
+            return retryRes.json().then(data => {
+              if (window._wasOffline) {
+                window._wasOffline = false;
+                if (typeof window.updateOfflineButtonState === 'function') {
+                  window.updateOfflineButtonState(false);
+                }
+              }
+              return data;
+            });
+          } catch (refreshErr) {
+            console.error('Token refresh failed:', refreshErr);
+            const adminToken = localStorage.getItem('adminToken');
+            localStorage.clear();
+            if (adminToken) localStorage.setItem('adminToken', adminToken);
+            window.location.replace('landing.html');
+            throw new Error('Session expired. Please log in again.');
+          }
+        } else {
+          const adminToken = localStorage.getItem('adminToken');
+          localStorage.clear();
+          if (adminToken) localStorage.setItem('adminToken', adminToken);
+          window.location.replace('landing.html');
+          throw new Error('Session expired. Please log in again.');
+        }
       }
       if (res.status === 403) {
         if (body.isBlacklisted === true) {
@@ -99,6 +200,7 @@ window.apiFetch = apiFetch;
 const syncManager = {
   isProcessing: false,
   processingPromise: null,
+  inFlightQueueIds: new Set(),
 
   async addToQueue(method, entity, id, data, localId = null) {
     if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
@@ -125,7 +227,7 @@ const syncManager = {
       // ── DEDUP: For PUTs on real IDs, replace any existing queued PUT ──
       if (method === 'PUT' && id && !String(id).startsWith('temp_')) {
         const existing = await db.syncQueue
-          .filter(x => x.entity === entity && x.targetId === id && x.method === 'PUT')
+          .filter(x => x.entity === entity && x.targetId === id && x.method === 'PUT' && !syncManager.inFlightQueueIds.has(x.id))
           .first();
 
         if (existing) {
@@ -187,6 +289,7 @@ const syncManager = {
         if (queue.length === 0) break;
 
         const item = queue[0];
+        this.inFlightQueueIds.add(item.id);
         try {
           let url = '';
           const API = window.API || '';
@@ -205,6 +308,7 @@ const syncManager = {
 
           // SUCCESS: Remove from queue
           await localDb.syncQueue.delete(item.id);
+          this.inFlightQueueIds.delete(item.id);
 
           const remainingForThis = await localDb.syncQueue
             .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
@@ -260,14 +364,11 @@ const syncManager = {
                 .equals(item.localId)
                 .modify({ localId: response._id || mainId });
             } else if (!item.localId && item.entity === 'days' && window.allDays) {
-              // For existing days, update memory state and re-render if it's the last pending action
+              // For existing days, update memory state but do NOT renderDays (UI is already in sync)
               if (remainingForThis === 0) {
                 const idx = window.allDays.findIndex(d => d._id === item.targetId);
                 if (idx !== -1) {
                   window.allDays[idx] = response;
-                  if (typeof window.renderDays === 'function') {
-                    window.renderDays();
-                  }
                 }
               }
             }
@@ -277,6 +378,7 @@ const syncManager = {
             }
           }
         } catch (err) {
+          this.inFlightQueueIds.delete(item.id);
           console.warn('Sync failed for item:', item.id, err);
           // Only delete if it is a permanent client/validation error (e.g. 400 Bad Request, 404 Not Found)
           // Do NOT delete for transient errors (network errors, rate limits 429, or 5xx server errors)

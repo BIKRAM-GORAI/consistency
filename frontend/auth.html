@@ -875,6 +875,7 @@
         localStorage.setItem('userEmail', data.email);
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('userUsername', data.username || '');
         localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
         localStorage.setItem('userHighestStreak', data.highestStreak || 0);
@@ -1070,6 +1071,7 @@
         localStorage.setItem('userEmail', data.email);
         localStorage.setItem('userProfilePicture', data.profilePicture || '');
         localStorage.setItem('token', data.token);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('userUsername', data.username || '');
         localStorage.setItem('pointsBalance', data.pointsBalance || 0);
         localStorage.setItem('referralCode', data.referralCode || '');
@@ -1409,6 +1411,7 @@
       localStorage.setItem('userEmail', data.email);
       localStorage.setItem('userProfilePicture', data.profilePicture || '');
       localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('userUsername', data.username || '');
       localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
       localStorage.setItem('userHighestStreak', data.highestStreak || 0);

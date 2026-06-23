@@ -391,6 +391,7 @@ async function saveScratchpadDrawing() {
   const day = window.allDays.find(d => d._id === scratchpadDayId);
   if (day) {
     day.hasScratchpad = true;
+    day.lastLocalEdit = Date.now();
     if (window.localDb && window.localDb.days) {
       await window.localDb.days.put(day);
     }

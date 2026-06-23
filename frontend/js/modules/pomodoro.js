@@ -51,6 +51,7 @@ let pomoInterval         = null;
 let pomoSecondsRemaining = 25 * 60;
 let pomoTotalDuration    = 25 * 60;
 let pomoIsRunning        = false;
+window.pomoIsRunning = false;
 let pomoMode             = 'work'; // 'work'|'break'|'long'|'custom'
 let lastTickTime         = 0;
 
@@ -144,10 +145,15 @@ function setPomoMode(mode, skipSave = false) {
 // ── Display ───────────────────────────────────────────────────────────────────
 function updatePomoDisplay() {
   const display = document.getElementById('pomo-display');
+  const robotDisplay = document.getElementById('robot-pomo-display');
   if (!display) return;
   const m = Math.floor(pomoSecondsRemaining / 60);
   const s = pomoSecondsRemaining % 60;
   display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  if (robotDisplay) {
+    robotDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
 
   const modeText = (pomoMode === 'work' || isCustomSession) ? 'Focus' : 'Break';
   document.title = pomoIsRunning
@@ -197,6 +203,7 @@ function handleTimerTick() {
 function startPomodoroTimer() {
   if (pomoIsRunning) return;
   pomoIsRunning = true;
+  window.pomoIsRunning = true;
   setBtnPaused(true);
   lastTickTime = Date.now();
   pomoInterval = setInterval(handleTimerTick, 200);
@@ -205,6 +212,7 @@ function startPomodoroTimer() {
 function stopPomodoroTimer() {
   if (pomoInterval) { clearInterval(pomoInterval); pomoInterval = null; }
   pomoIsRunning = false;
+  window.pomoIsRunning = false;
   setBtnPaused(false);
   updatePomoDisplay();
   savePomoState();
@@ -226,15 +234,33 @@ function resetPomodoroTimer() {
 // ── Start/Pause button state ──────────────────────────────────────────────────
 function setBtnPaused(paused) {
   const btn = document.getElementById('pomo-start-btn');
-  if (!btn) return;
-  if (paused) {
-    btn.innerHTML = '<i data-lucide="pause" style="width:18px;height:18px;"></i> Pause';
-    btn.classList.add('paused');
-  } else {
-    btn.innerHTML = '<i data-lucide="play" style="width:18px;height:18px;"></i> Start';
-    btn.classList.remove('paused');
+  const robotBtn = document.getElementById('robot-pomo-start-btn');
+
+  if (btn) {
+    if (paused) {
+      btn.innerHTML = '<i data-lucide="pause" style="width:18px;height:18px;"></i> Pause';
+      btn.classList.add('paused');
+    } else {
+      btn.innerHTML = '<i data-lucide="play" style="width:18px;height:18px;"></i> Start';
+      btn.classList.remove('paused');
+    }
+    if (window.lucide) lucide.createIcons({ root: btn });
   }
-  if (window.lucide) lucide.createIcons({ root: btn });
+
+  if (robotBtn) {
+    if (paused) {
+      robotBtn.innerHTML = '<i data-lucide="pause" style="width:16px;height:16px;"></i> Pause';
+      robotBtn.classList.add('paused');
+      robotBtn.style.backgroundColor = 'var(--coral)';
+      robotBtn.style.color = '#fff';
+    } else {
+      robotBtn.innerHTML = '<i data-lucide="play" style="width:16px;height:16px;"></i> Start';
+      robotBtn.classList.remove('paused');
+      robotBtn.style.backgroundColor = 'var(--teal)';
+      robotBtn.style.color = 'var(--black)';
+    }
+    if (window.lucide) lucide.createIcons({ root: robotBtn });
+  }
 }
 
 // ── Custom cycling session engine ─────────────────────────────────────────────
@@ -406,6 +432,7 @@ function handleCustomTimerTick() {
 function startCustomCycle() {
   if (pomoIsRunning) return;
   pomoIsRunning = true;
+  window.pomoIsRunning = true;
   setBtnPaused(true);
   lastTickTime = Date.now();
   pomoInterval = setInterval(handleCustomTimerTick, 200);
@@ -414,6 +441,7 @@ function startCustomCycle() {
 function stopCustomSession() {
   if (pomoInterval) { clearInterval(pomoInterval); pomoInterval = null; }
   pomoIsRunning = false;
+  window.pomoIsRunning = false;
   setBtnPaused(false);
   savePomoState();
 }

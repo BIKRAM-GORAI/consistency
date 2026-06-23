@@ -105,6 +105,7 @@ async function loadDays(page = 1) {
   }
 
 
+  const fetchStartTime = Date.now();
   try {
     const data = await window.apiFetch(`${window.API}/api/days?page=${page}&limit=${window.daysPerPage}`);
     
@@ -128,6 +129,10 @@ async function loadDays(page = 1) {
 
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       if (page === 1) {
+        // Get cached days map first to evaluate if they have a newer lastLocalEdit
+        const cachedDays = await localDb.days.toArray();
+        const cachedDaysMap = new Map(cachedDays.map(d => [d._id, d]));
+
         // Preserve local-only changes (those not yet synced) — don't overwrite them
         const pendingDayItems = await localDb.syncQueue
           .filter(x => x.entity === 'days')
@@ -135,20 +140,38 @@ async function loadDays(page = 1) {
         const pendingIds = new Set(pendingDayItems.map(q => q.targetId).filter(Boolean));
         const pendingLocalIds = new Set(pendingDayItems.map(q => q.localId).filter(Boolean));
 
-        // Merge: use server data for synced days, keep local data for pending days
         const serverDays = data.days;
-        const safeToUpdate = serverDays.filter(d => !pendingIds.has(d._id));
-        const validDaysToUpdate = safeToUpdate.filter(d => d && typeof d === 'object' && d._id);
-        await localDb.days.bulkPut(validDaysToUpdate);
+        const validDaysToUpdate = [];
+        const mergedDays = [];
 
-        // Build final allDays: server data + locally modified days
+        for (const sd of serverDays) {
+          const cached = cachedDaysMap.get(sd._id);
+          const hasPending = pendingIds.has(sd._id);
+          const isLocallyEditedNewer = cached && cached.lastLocalEdit && cached.lastLocalEdit > fetchStartTime;
+
+          if ((hasPending || isLocallyEditedNewer) && cached) {
+            // Keep the local cached version
+            mergedDays.push(cached);
+          } else {
+            // Use the server version
+            validDaysToUpdate.push(sd);
+            mergedDays.push(sd);
+          }
+        }
+
+        if (validDaysToUpdate.length > 0) {
+          const validDays = validDaysToUpdate.filter(d => d && typeof d === 'object' && d._id);
+          await localDb.days.bulkPut(validDays);
+        }
+
+        // Build final allDays: mergedDays + locally modified days not in server list
         const localPendingDays = await Promise.all(
           [...pendingIds, ...pendingLocalIds].map(id => localDb.days.get(id))
         );
         const localPendingMap = new Map();
         localPendingDays.filter(Boolean).forEach(d => localPendingMap.set(d._id, d));
 
-        window.allDays = serverDays.map(sd => localPendingMap.get(sd._id) || sd);
+        window.allDays = mergedDays;
         // Also include any locally-created days (temp IDs) not on server
         for (const [id, day] of localPendingMap) {
           if (!window.allDays.find(d => d._id === id)) {
@@ -167,10 +190,48 @@ async function loadDays(page = 1) {
     } else {
       // Fallback for non-paginated window.API
       if (page === 1) {
-        window.allDays = data;
+        const cachedDays = await localDb.days.toArray();
+        const cachedDaysMap = new Map(cachedDays.map(d => [d._id, d]));
+
+        const pendingDayItems = await localDb.syncQueue
+          .filter(x => x.entity === 'days')
+          .toArray();
+        const pendingIds = new Set(pendingDayItems.map(q => q.targetId).filter(Boolean));
+        const pendingLocalIds = new Set(pendingDayItems.map(q => q.localId).filter(Boolean));
+
+        const serverDays = data || [];
+        const validDaysToUpdate = [];
+        const mergedDays = [];
+
+        for (const sd of serverDays) {
+          const cached = cachedDaysMap.get(sd._id);
+          const hasPending = pendingIds.has(sd._id);
+          const isLocallyEditedNewer = cached && cached.lastLocalEdit && cached.lastLocalEdit > fetchStartTime;
+
+          if ((hasPending || isLocallyEditedNewer) && cached) {
+            mergedDays.push(cached);
+          } else {
+            validDaysToUpdate.push(sd);
+            mergedDays.push(sd);
+          }
+        }
+
+        window.allDays = mergedDays;
         await localDb.days.clear();
-        const validDays = (data || []).filter(d => d && typeof d === 'object' && d._id);
+        const validDays = validDaysToUpdate.filter(d => d && typeof d === 'object' && d._id);
         await localDb.days.bulkPut(validDays);
+
+        // Include locally-created pending days not in server list
+        const localPendingDays = await Promise.all(
+          [...pendingIds, ...pendingLocalIds].map(id => localDb.days.get(id))
+        );
+        const localPendingMap = new Map();
+        localPendingDays.filter(Boolean).forEach(d => localPendingMap.set(d._id, d));
+        for (const [id, day] of localPendingMap) {
+          if (!window.allDays.find(d => d._id === id)) {
+            window.allDays.push(day);
+          }
+        }
       } else {
         window.allDays.push(...data);
         const validDays = (data || []).filter(d => d && typeof d === 'object' && d._id);
@@ -852,6 +913,7 @@ async function toggleTask(dayId, catId, taskId, checked) {
 
   try {
     // 1. Update Local DB immediately
+    day.lastLocalEdit = Date.now();
     await window.localDb.days.put(day);
     
     // 2. Add to Sync Queue (using the resolved real ID)
@@ -982,6 +1044,7 @@ async function deleteCategory(dayId, catId) {
   }
 
   updateProgressBar(dayId, day.categories);
+  day.lastLocalEdit = Date.now();
   await window.localDb.days.put(day);
 
   // 2. Queue for sync
@@ -1015,6 +1078,7 @@ async function deleteTask(dayId, catId, taskId) {
   // 1. Update UI and Local DB instantly
   cat.tasks.splice(taskIndex, 1);
   updateProgressBar(dayId, day.categories);
+  day.lastLocalEdit = Date.now();
   await window.localDb.days.put(day);
 
   // 2. Queue for sync
@@ -1059,7 +1123,10 @@ async function saveSummary(dayId) {
   if (!textarea) return;
   const summary = textarea.value.trim();
   const day = window.allDays.find(d => d._id === dayId);
-  if (day) day.summary = summary;
+  if (day) {
+    day.summary = summary;
+    day.lastLocalEdit = Date.now();
+  }
 
   try {
     // 1. Update Local
@@ -1591,6 +1658,7 @@ async function submitAddCategory() {
 
   try {
     // 1. Update Local
+    day.lastLocalEdit = Date.now();
     await window.localDb.days.put(day);
     // 2. Queue Sync
     window.syncManager.addToQueue('PUT', 'days', dayId, { categories: updatedCategories });
@@ -1684,6 +1752,7 @@ async function submitEditCategory() {
 
   try {
     // 1. Update Local
+    day.lastLocalEdit = Date.now();
     await window.localDb.days.put(day);
     // 2. Queue Sync
     window.syncManager.addToQueue('PUT', 'days', dayId, { categories: day.categories });
@@ -1972,6 +2041,7 @@ async function saveDailyReminderSettings() {
 
   try {
     // 1. Update Local DB immediately
+    day.lastLocalEdit = Date.now();
     await window.localDb.days.put(day);
     
     // 2. Add to Sync Queue (so it pushes to server/mongo)
@@ -2110,6 +2180,7 @@ async function evaluateDaysDistractions() {
           const newStatsStr = JSON.stringify(rawStats);
           if (Object.keys(rawStats).length > 0 && currentSavedStr !== newStatsStr) {
             day.screenTimeStats = rawStats;
+            day.lastLocalEdit = Date.now();
             window.localDb.days.put(day).catch(err => console.error("Error saving raw stats:", err));
             window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: rawStats });
           }
@@ -2144,6 +2215,7 @@ async function evaluateDaysDistractions() {
 
           // Save the frozen array back to IndexedDB and sync to MongoDB
           day.screenTimeStats = appStats;
+          day.lastLocalEdit = Date.now();
           window.localDb.days.put(day).catch(err => console.error("Error freezing old day stats:", err));
           window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: appStats });
 
@@ -2269,6 +2341,7 @@ async function deleteDailySummary(dayId) {
     day.aiSummary = "";
     try {
       // 1. Update Local DB
+      day.lastLocalEdit = Date.now();
       await window.localDb.days.put(day);
       // 2. Queue Sync
       window.syncManager.addToQueue('PUT', 'days', dayId, { aiSummary: "" });
@@ -3131,6 +3204,7 @@ async function confirmApplyGrace(dayId) {
     // Save in local database for offline persistence
     const localDay = window.allDays.find(d => d._id === dayId);
     if (localDay) {
+      localDay.lastLocalEdit = Date.now();
       await window.localDb.days.put(localDay);
     }
 

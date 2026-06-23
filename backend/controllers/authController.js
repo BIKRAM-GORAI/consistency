@@ -8,7 +8,7 @@ const Group = require('../models/Group');
 const Review = require('../models/Review');
 const { cloudinary } = require('../config/cloudinary');
 const bcrypt = require('bcrypt');
-const { generateToken } = require('../middleware/auth');
+const { generateToken, generateRefreshToken } = require('../middleware/auth');
 const { incrementFailedAttempts, resetFailedAttempts } = require('../middleware/accountLockout');
 const admin = require('../config/firebase');
 const crypto = require('crypto');
@@ -85,6 +85,7 @@ const register = async (req, res) => {
     }
 
     const token = generateToken(saved._id, saved.email);
+    const refreshToken = generateRefreshToken(saved._id, saved.email);
     res.status(201).json({ 
       _id: saved._id, 
       name: saved.name, 
@@ -93,7 +94,8 @@ const register = async (req, res) => {
       pointsBalance: saved.pointsBalance || 0,
       referralCode: saved.referralCode,
       showReferralPrompt: !saved.referredBy && !saved.referralPromptDismissed,
-      token 
+      token,
+      refreshToken
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -142,6 +144,7 @@ const login = async (req, res) => {
       { $set: { lastActiveAt: user.lastActiveAt, referralCode: user.referralCode } }
     );
     const token = generateToken(user._id, user.email);
+    const refreshToken = generateRefreshToken(user._id, user.email);
     res.json({ 
       _id: user._id, 
       name: user.name, 
@@ -153,7 +156,8 @@ const login = async (req, res) => {
       pointsBalance: user.pointsBalance || 0,
       referralCode: user.referralCode,
       showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
-      token 
+      token,
+      refreshToken
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -244,6 +248,7 @@ const oauthLogin = async (req, res) => {
     }
 
     const token = generateToken(user._id, user.email);
+    const refreshToken = generateRefreshToken(user._id, user.email);
     res.json({ 
       _id: user._id, 
       name: user.name, 
@@ -255,7 +260,8 @@ const oauthLogin = async (req, res) => {
       pointsBalance: user.pointsBalance || 0,
       referralCode: user.referralCode,
       showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
-      token 
+      token,
+      refreshToken
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -663,6 +669,53 @@ async function verifyEmail(req, res) {
   }
 }
 
+const jwt = require('jsonwebtoken');
+
+/**
+ * POST /api/auth/refresh
+ * Validates a refresh token and issues a new access token and rotated refresh token
+ */
+async function refresh(req, res) {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token is required' });
+    }
+
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || (process.env.JWT_SECRET + '_refresh');
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, refreshSecret);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ message: 'Invalid token type' });
+    }
+
+    // Verify user exists and is active
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    if (user.isBlacklisted) {
+      return res.status(403).json({ message: 'User is blacklisted' });
+    }
+
+    // Generate new tokens
+    const token = generateToken(user._id, user.email);
+    const newRefreshToken = generateRefreshToken(user._id, user.email);
+
+    res.json({
+      token,
+      refreshToken: newRefreshToken
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -681,5 +734,6 @@ module.exports = {
   getChangelogList,
   markChangelogViewed,
   sendVerificationOtp,
-  verifyEmail
+  verifyEmail,
+  refresh
 };

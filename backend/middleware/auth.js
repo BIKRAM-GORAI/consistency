@@ -78,12 +78,12 @@ const authenticateTokenOptional = (req, res, next) => {
 };
 
 /**
- * Generate JWT Token
- * Creates a JWT token for authenticated users
+ * Generate JWT Access Token
+ * Creates a short-lived access token for authenticated users (default: 15m)
  */
 const generateToken = (userId, email) => {
   const jwtSecret = process.env.JWT_SECRET;
-  const jwtExpiry = process.env.JWT_EXPIRY || '7d'; 
+  const jwtExpiry = process.env.JWT_ACCESS_EXPIRY || '15m'; 
 
   if (!jwtSecret) {
     throw new Error('JWT_SECRET is missing in environment variables');
@@ -99,8 +99,32 @@ const generateToken = (userId, email) => {
   );
 };
 
+/**
+ * Generate JWT Refresh Token
+ * Creates a long-lived refresh token for maintaining user sessions (default: 30d)
+ */
+const generateRefreshToken = (userId, email) => {
+  const refreshSecret = process.env.JWT_REFRESH_SECRET || (process.env.JWT_SECRET + '_refresh');
+  const refreshExpiry = process.env.JWT_REFRESH_EXPIRY || '30d';
+
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is missing in environment variables');
+  }
+
+  return jwt.sign(
+    {
+      userId,
+      email,
+      type: 'refresh'
+    },
+    refreshSecret,
+    { expiresIn: refreshExpiry }
+  );
+};
+
 module.exports = {
   authenticateToken,
   authenticateTokenOptional,
-  generateToken
+  generateToken,
+  generateRefreshToken
 };

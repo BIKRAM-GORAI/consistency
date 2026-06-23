@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit, getChangelogList, markChangelogViewed, sendVerificationOtp, verifyEmail } = require('../controllers/authController');
+const { register, login, oauthLogin, getAchievementPrivacy, setAchievementPrivacy, getProfileSettings, setProfileSettings, uploadProfilePicture, forgotPasswordOtp, validateOtp, resetPassword, deleteAccount, getFirebaseToken, getMediaUploadLimit, getChangelogList, markChangelogViewed, sendVerificationOtp, verifyEmail, refresh } = require('../controllers/authController');
 const { uploadProfile, uploadChat } = require('../config/cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const { mediaUploadLimiter } = require('../middleware/rateLimit');
@@ -31,6 +31,9 @@ router.post('/login', loginValidation, checkAccountLockout, login);
 
 // POST /api/auth/oauth-login (public)
 router.post('/oauth-login', oauthLogin);
+
+// POST /api/auth/refresh (public)
+router.post('/refresh', refresh);
 
 // POST /api/auth/forgot-password-otp
 router.post('/forgot-password-otp', otpSendLimiter, forgotPasswordOtp);
