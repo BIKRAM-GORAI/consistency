@@ -1729,8 +1729,7 @@ function renderTypingIndicator(typers) {
   `;
 }
 
-async function initFirebaseChat() {
-  const userId = window.userId;
+async function initFirebaseChat(retryCount = 0) {
   const token = localStorage.getItem('token');
   if (!window.userId || !token) return;
 
@@ -1738,17 +1737,45 @@ async function initFirebaseChat() {
     const res = await fetch(`${window.API}/api/auth/firebase-token`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    if (!res.ok) {
+      throw new Error(`Firebase token endpoint returned ${res.status}`);
+    }
     const data = await res.json();
     if (data.token) {
       const { firebaseAuth, signInWithFirebase } = window;
       if (firebaseAuth && signInWithFirebase) {
         await signInWithFirebase(firebaseAuth, data.token);
+        console.log('[Firebase] Chat auth signed in successfully.');
       }
     }
   } catch (err) {
-    console.error('Firebase Auth Sync Error:', err);
+    // Retry up to 3 times with exponential backoff for transient token issues
+    if (retryCount < 3) {
+      const delay = Math.pow(2, retryCount) * 1500; // 1.5s, 3s, 6s
+      console.warn(`[Firebase] Auth sync failed (attempt ${retryCount + 1}/3), retrying in ${delay}ms...`, err.message);
+      setTimeout(() => initFirebaseChat(retryCount + 1), delay);
+    } else {
+      console.warn('[Firebase] Auth sync failed after 3 retries. Chat features requiring Firebase Auth may be limited:', err.message);
+    }
   }
 }
+
+// Ensures Firebase Auth has a valid current user before Firestore writes.
+// Called by dm.js and chat.js before any addDoc/updateDoc calls.
+window.ensureFirebaseAuth = async function() {
+  const { firebaseAuth } = window;
+  if (!firebaseAuth) return false;
+  if (firebaseAuth.currentUser) return true;
+  // Not signed in — attempt sign-in now
+  try {
+    await initFirebaseChat();
+    // Give the auth state a moment to settle
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return !!firebaseAuth.currentUser;
+  } catch (e) {
+    return false;
+  }
+};
 
 async function initPushNotifications(forcePrompt = false) {
   const manuallyDisabled = localStorage.getItem('fcmNotificationsDisabled') === 'true';

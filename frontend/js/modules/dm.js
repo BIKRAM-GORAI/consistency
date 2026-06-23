@@ -912,6 +912,16 @@ async function sendDMMessage() {
     return showToast('Chat is currently offline.', 'error');
   }
 
+  // Ensure we are signed into Firebase Auth before writing to Firestore.
+  // If the custom token was previously rejected (e.g. on the local dev server),
+  // this transparently re-authenticates and clears the permission-denied error.
+  if (typeof window.ensureFirebaseAuth === 'function') {
+    const authed = await window.ensureFirebaseAuth();
+    if (!authed) {
+      return showToast('Could not authenticate with chat server. Please check your connection and try again.', 'error');
+    }
+  }
+
   isDMSending = true;
   const btn = document.getElementById('dm-chat-send-btn');
 
