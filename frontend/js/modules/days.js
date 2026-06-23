@@ -552,7 +552,14 @@ function buildDayCard(day, preLoadedAchievements = null) {
   const cardDateNormalized = (day.date || '').split('T')[0];
   const isToday = cardDateNormalized === today;
   const isFuture = cardDateNormalized > today;
-  const isEditable = isToday || !!day.graceApplied;
+  let isWithinWindow = false;
+  if (cardDateNormalized <= today) {
+    const [y, m, d] = cardDateNormalized.split('-').map(Number);
+    const cardStartLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
+    isWithinWindow = diffHours <= 36;
+  }
+  const isEditable = isWithinWindow || !!day.graceApplied;
   const pct     = window.calcProgress(day.categories);
 
   const card = document.createElement('div');

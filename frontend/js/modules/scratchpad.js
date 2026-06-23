@@ -35,9 +35,17 @@ async function openScratchpad(dayId) {
     return;
   }
   
-  // Past day check
+  // Past day check (36-hour completion window or grace applied makes it writable)
   const today = todayStr();
-  isReadOnly = day.date < today;
+  const cardDateNormalized = (day.date || '').split('T')[0];
+  let isWithinWindow = false;
+  if (cardDateNormalized <= today) {
+    const [y, m, d] = cardDateNormalized.split('-').map(Number);
+    const cardStartLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
+    isWithinWindow = diffHours <= 36;
+  }
+  isReadOnly = !(isWithinWindow || !!day.graceApplied);
   
   // Show modal
   openModal('modal-scratchpad');

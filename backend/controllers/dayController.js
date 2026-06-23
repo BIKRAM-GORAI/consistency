@@ -458,13 +458,13 @@ const saveScratchpad = async (req, res) => {
     const day = await Day.findOne({ _id: dayId, userId });
     if (!day) return res.status(404).json({ message: 'Day not found or unauthorized' });
 
-    // Past day verification with robust 36-hour buffer to handle server-vs-client timezone differences and offline-sync delays safely
+    // Past day verification with robust 36-hour buffer to handle server-vs-client timezone differences and offline-sync delays safely (allow if grace is applied)
     const today = new Date();
     const dayDateObj = new Date(day.date);
     const diffTime = today - dayDateObj;
     const diffHours = diffTime / (1000 * 60 * 60);
 
-    if (diffHours > 36) {
+    if (diffHours > 36 && !day.graceApplied) {
       return res.status(400).json({ message: 'Cannot modify scratchpad for a past day' });
     }
 
