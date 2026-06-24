@@ -1,4 +1,4 @@
-console.log("[Module] state.js initializing...");
+console.log("[Module] state.js initializing... (v2.8)");
 
 // Detect if running inside Capacitor Android native wrapper
 const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
