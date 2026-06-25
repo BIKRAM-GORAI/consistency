@@ -308,12 +308,40 @@ function updateDMMediaLimitDisplay() {
 async function openDMChat(recipientId, recipientName, recipientPhoto) {
   if (!recipientId) return;
   recipientId = String(recipientId).toLowerCase().trim();
+  console.log(`[DM] openDMChat called for recipientId: ${recipientId}`);
+
+  // Exit early if the chat is already open for this recipient to prevent duplicate transition glitches
+  const chatModal = document.getElementById('modal-direct-chat');
+  if (chatModal && chatModal.classList.contains('open') && activeChatRecipientId === recipientId) {
+    console.log(`[DM] Chat is already open for ${recipientId}. Ignoring call.`);
+    return;
+  }
 
   window.activeChatRecipientLastRead = 0;
 
+  // Close public profile modal instantly (no animation) to avoid overlap
   const profileModal = document.getElementById('modal-public-profile');
-  if (profileModal) closeModal('modal-public-profile');
-  
+  if (profileModal && profileModal.classList.contains('open')) {
+    console.log(`[DM] Closing public profile modal instantly before opening DM.`);
+    if (window.gsap) {
+      gsap.killTweensOf([profileModal, profileModal.querySelector('.modal')]);
+    }
+    profileModal.classList.remove('open');
+    profileModal.style.opacity = '';
+    const modalEl = profileModal.querySelector('.modal');
+    if (modalEl) {
+      modalEl.style.transform = '';
+      modalEl.style.opacity = '';
+    }
+  }
+
+  // ── OPEN MODAL FIRST (before any DOM mutations) ──
+  // This mirrors openGroupChat which calls openModal immediately, allowing
+  // GSAP to begin the slide-up animation in the very first paint frame
+  // without being delayed by layout-invalidating DOM mutations.
+  openModal('modal-direct-chat');
+
+  // ── State & data setup ──
   activeChatRecipientId = recipientId;
   activeChatRecipientName = recipientName;
   activeChatRecipientPhoto = recipientPhoto;
@@ -340,7 +368,8 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     if (unreadBadge) unreadBadge.remove();
   }
   
-  // Update header UI
+  // ── Update header UI ──
+  const modal = document.getElementById('modal-direct-chat');
   document.getElementById('dm-chat-title').textContent = recipientName;
   const avatarWrap = document.getElementById('dm-chat-avatar-wrap');
   if (avatarWrap) {
@@ -348,11 +377,6 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
       ? `<img src="${recipientPhoto}" onerror="this.onerror=null; this.src='/checklist.png'; this.style.padding='4px';" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
       : `<div style="width:100%;height:100%;background:var(--yellow);color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;border-radius:50%;font-size:16px;">${recipientName.charAt(0).toUpperCase()}</div>`;
   }
-
-  // Open direct chat modal
-  openModal('modal-direct-chat');
-  
-  const modal = document.getElementById('modal-direct-chat');
   if (window.lucide) lucide.createIcons({ root: modal });
   
   // Clear preview block if any
@@ -2288,10 +2312,12 @@ async function renderContactsList(friends, forceCache = false) {
     totalUnread += unreadCount;
 
     const card = document.createElement('div');
-    card.className = 'dm-contact-card ripple';
+    card.className = 'dm-contact-card ripple dm-open-chat-btn';
     card.id = `dm-contact-card-${f._id}`;
+    card.dataset.recipientId = f._id;
+    card.dataset.recipientName = f.name;
+    card.dataset.recipientPhoto = f.profilePicture || '';
     card.style.cssText = 'display:flex; align-items:center; gap:12px; padding:12px 16px; border:3px solid var(--black); border-radius:12px; background:var(--bg-card); cursor:pointer; box-shadow:4px 4px 0 var(--black); transition:all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom:12px;';
-    card.onclick = () => openDMChat(f._id, f.name, f.profilePicture || '');
 
     card.onmouseover = () => {
       card.style.transform = 'translateY(-2px)';
@@ -2827,4 +2853,19 @@ document.addEventListener('DOMContentLoaded', () => {
     dmInput.style.height = '48px';
     dmInput.style.height = Math.min(dmInput.scrollHeight, 150) + 'px';
   });
+});
+
+// Delegated click handler for DM Chat cards (avoids event conflicts and matches group chat logic)
+document.addEventListener('click', function(e) {
+  const card = e.target.closest('.dm-open-chat-btn');
+  if (!card) return;
+  // If clicking on delete button or inside it, ignore opening the chat
+  if (e.target.closest('.contact-delete-btn')) return;
+  
+  const recipientId = card.dataset.recipientId;
+  const recipientName = card.dataset.recipientName;
+  const recipientPhoto = card.dataset.recipientPhoto || '';
+  
+  console.log(`[DM] Delegated click triggered openDMChat for recipientId: ${recipientId}`);
+  openDMChat(recipientId, recipientName, recipientPhoto);
 });
