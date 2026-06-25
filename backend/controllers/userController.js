@@ -87,15 +87,33 @@ async function getPublicProfile(req, res) {
     }
 
     // Fetch only dates and task counts for the contribution graph (performance optimization)
-    const daysRaw = await Day.find({ userId: user._id }).select('date categories').lean();
+    const daysRaw = await Day.find({ userId: user._id }).select('date categories graceApplied').lean();
     
+    // Recalculate streak fresh to correct any stale values in the DB (e.g. from parallel sync race conditions)
+    const clientDate = req.headers['x-client-date'];
+    const computedCurrent = calculateCurrentStreak(daysRaw, clientDate);
+    const computedHighest = calculateHighestStreak(daysRaw, clientDate);
+
+    if (user.currentStreak !== computedCurrent || (user.highestStreak || 0) !== computedHighest) {
+      user.currentStreak = computedCurrent;
+      user.highestStreak = computedHighest;
+      await User.findByIdAndUpdate(user._id, {
+        currentStreak: computedCurrent,
+        highestStreak: computedHighest
+      });
+    }
+
     // Map contribution data
     const contributionData = [];
     for (const day of daysRaw) {
       let completedCount = 0;
-      for (const cat of day.categories) {
-        for (const task of cat.tasks) {
-          if (task.completed) completedCount++;
+      if (day.categories) {
+        for (const cat of day.categories) {
+          if (cat.tasks) {
+            for (const task of cat.tasks) {
+              if (task.completed) completedCount++;
+            }
+          }
         }
       }
       contributionData.push({ date: day.date, completedCount });
