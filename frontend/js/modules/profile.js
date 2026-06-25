@@ -1110,59 +1110,64 @@ async function openQuickView(username) {
       
       activityList.innerHTML = '<div class="loading-spinner" style="padding:20px;"><div class="spinner-ring"></div></div>';
       
-      try {
-        // Fetch first page of days to show task progress in feed
-        const days = await apiFetch(`${window.API}/api/users/${encodeURIComponent(username)}/days?page=1&limit=5`);
-        
-        const combined = [];
-        if (days && days.length > 0) {
-          days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
-        }
-        if (u.achievements && u.achievements.length > 0) {
-          u.achievements.forEach(a => combined.push({ type: 'achievement', date: a.date, data: a }));
-        }
-        
-        // Sort newest first
-        combined.sort((a, b) => b.date.localeCompare(a.date));
-        
-        activityList.innerHTML = '';
-        const recent = combined.slice(0, 10);
-        
-        if (recent.length === 0) {
-          activityList.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No recent activity recorded yet.</p>';
-        } else {
-          recent.forEach(item => {
-            if (item.type === 'day') {
-              activityList.appendChild(buildReadOnlyDayCard(item.data));
-            } else {
-              activityList.appendChild(buildReadOnlyAchievementCard(item.data));
-            }
-          });
-          
-          if (u.achievements.length > 5) {
-            const moreBtn = document.createElement('button');
-            moreBtn.className = 'btn-ghost ripple';
-            moreBtn.style.width = '100%';
-            moreBtn.style.marginTop = '12px';
-            moreBtn.style.fontSize = '12px';
-            moreBtn.style.fontWeight = '800';
-            moreBtn.innerHTML = `View All ${u.achievements.length} Wins <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>`;
-            moreBtn.onclick = () => {
-              window._currentMemberId = u._id;
-              window._currentMemberName = u.name;
-              openMemberAllAchievements();
-            };
-            activityList.appendChild(moreBtn);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading feed:', err);
-        activityList.innerHTML = '<p style="text-align:center; color:var(--red); font-size:12px;">Failed to load recent activity.</p>';
-      }
-    }
+      // Open the modal instantly first, allowing the UI to show immediately
+      openModal('modal-public-profile');
+      if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-public-profile') });
 
-    openModal('modal-public-profile');
-    if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-public-profile') });
+      // Fetch first page of days to show task progress in feed asynchronously (non-blocking)
+      apiFetch(`${window.API}/api/users/${encodeURIComponent(username)}/days?page=1&limit=5`)
+        .then(days => {
+          const combined = [];
+          if (days && days.length > 0) {
+            days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
+          }
+          if (u.achievements && u.achievements.length > 0) {
+            u.achievements.forEach(a => combined.push({ type: 'achievement', date: a.date, data: a }));
+          }
+          
+          // Sort newest first
+          combined.sort((a, b) => b.date.localeCompare(a.date));
+          
+          activityList.innerHTML = '';
+          const recent = combined.slice(0, 10);
+          
+          if (recent.length === 0) {
+            activityList.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No recent activity recorded yet.</p>';
+          } else {
+            recent.forEach(item => {
+              if (item.type === 'day') {
+                activityList.appendChild(buildReadOnlyDayCard(item.data));
+              } else {
+                activityList.appendChild(buildReadOnlyAchievementCard(item.data));
+              }
+            });
+            
+            if (u.achievements.length > 5) {
+              const moreBtn = document.createElement('button');
+              moreBtn.className = 'btn-ghost ripple';
+              moreBtn.style.width = '100%';
+              moreBtn.style.marginTop = '12px';
+              moreBtn.style.fontSize = '12px';
+              moreBtn.style.fontWeight = '800';
+              moreBtn.innerHTML = `View All ${u.achievements.length} Wins <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>`;
+              moreBtn.onclick = () => {
+                window._currentMemberId = u._id;
+                window._currentMemberName = u.name;
+                openMemberAllAchievements();
+              };
+              activityList.appendChild(moreBtn);
+              if (window.lucide) lucide.createIcons({ root: moreBtn });
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Error loading feed:', err);
+          activityList.innerHTML = '<p style="text-align:center; color:var(--red); font-size:12px;">Failed to load recent activity.</p>';
+        });
+    } else {
+      openModal('modal-public-profile');
+      if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-public-profile') });
+    }
 
   } catch (err) {
     console.error('Quick view error:', err);
