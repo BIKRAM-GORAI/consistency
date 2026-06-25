@@ -49,7 +49,7 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=24" />
+  <link rel="stylesheet" href="style.css?v=25" />
   <link rel="stylesheet" href="aurora-theme.css" />
   <link rel="stylesheet" href="minimalistic-theme.css" />
   <style>
@@ -2664,6 +2664,9 @@
   <!-- ===== MODAL: Lightbox Viewer ===== -->
   <div class="lightbox-overlay" id="lightbox-modal" onclick="closeLightbox(event)">
     <div class="lightbox-content">
+      <button class="lightbox-download" id="lightbox-download-btn" onclick="event.stopPropagation(); window.downloadLightboxImage()" title="Download Image">
+        <i data-lucide="download"></i>
+      </button>
       <button class="lightbox-close" onclick="closeLightbox(event, true)">✕</button>
       <img id="lightbox-img" src="" alt="Profile Picture" />
     </div>

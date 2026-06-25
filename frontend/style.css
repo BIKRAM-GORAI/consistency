@@ -3164,6 +3164,29 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   padding: 8px;
   line-height: 1;
 }
+.lightbox-download {
+  position: absolute;
+  top: -42px;
+  right: 40px; /* Offset from close button */
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.lightbox-download:hover {
+  transform: scale(1.15);
+}
+.lightbox-download .lucide {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+}
 .member-avatar {
   position: relative;
   cursor: pointer;

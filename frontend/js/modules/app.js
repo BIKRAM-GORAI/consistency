@@ -563,6 +563,50 @@ function openLightbox(url) {
   const img = document.getElementById('lightbox-img');
   img.src = url;
   overlay.classList.add('open');
+  if (window.lucide) lucide.createIcons({ root: overlay });
+}
+
+async function downloadLightboxImage() {
+  const img = document.getElementById('lightbox-img');
+  if (!img || !img.src) return;
+  
+  const url = img.src;
+  const downloadBtn = document.getElementById('lightbox-download-btn');
+  if (downloadBtn) {
+    downloadBtn.disabled = true;
+    downloadBtn.style.opacity = '0.5';
+  }
+  
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Parse file extension
+    let ext = 'png';
+    if (url.includes('.jpg') || url.includes('.jpeg')) ext = 'jpg';
+    else if (url.includes('.webp')) ext = 'webp';
+    else if (url.includes('.gif')) ext = 'gif';
+    
+    const filename = `Consistency_Image_${Date.now()}.${ext}`;
+    
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+  } catch (err) {
+    console.warn('CORS direct download failed, falling back to new window:', err);
+    window.open(url, '_blank');
+  } finally {
+    if (downloadBtn) {
+      downloadBtn.disabled = false;
+      downloadBtn.style.opacity = '1';
+    }
+  }
 }
 
 /** --- AUDIO MESSAGE HELPERS --- **/
@@ -2026,6 +2070,7 @@ window.toggleAppTheme = toggleAppTheme;
 window.toggleLeaderboardShowcase = toggleLeaderboardShowcase;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.openLightbox = openLightbox;
+window.downloadLightboxImage = downloadLightboxImage;
 window.formatDuration = formatDuration;
 window.downloadAudio = downloadAudio;
 window.checkAudioCache = checkAudioCache;
