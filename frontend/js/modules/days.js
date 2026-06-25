@@ -547,6 +547,22 @@ async function renderDays(appendOnly = false) {
   }
 }
 
+function isDayEditable(day) {
+  if (!day) return false;
+  const today = window.todayStr();
+  const cardDateNormalized = (day.date || '').split('T')[0];
+  const isToday = cardDateNormalized === today;
+  const isFuture = cardDateNormalized > today;
+  let isWithinWindow = false;
+  if (cardDateNormalized < today) {
+    const [y, m, d] = cardDateNormalized.split('-').map(Number);
+    const cardStartLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
+    isWithinWindow = diffHours <= 36;
+  }
+  return isToday || isFuture || isWithinWindow || !!day.graceApplied;
+}
+
 function buildDayCard(day, preLoadedAchievements = null) {
   const today   = window.todayStr();
   const cardDateNormalized = (day.date || '').split('T')[0];
@@ -559,7 +575,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
     const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
     isWithinWindow = diffHours <= 36;
   }
-  const isEditable = isToday || isFuture || isWithinWindow || !!day.graceApplied;
+  const isEditable = isDayEditable(day);
   const pct     = window.calcProgress(day.categories);
 
   const card = document.createElement('div');
@@ -573,15 +589,23 @@ function buildDayCard(day, preLoadedAchievements = null) {
     let tasksHTML = '';
     for (const task of cat.tasks) {
       if (isEditable) {
-        tasksHTML += `
-          <div class="task-item">
-            <input type="checkbox" class="task-checkbox"
-              ${task.completed ? 'checked' : ''}
-              onchange="toggleTask('${day._id}','${cat._id}','${task._id}',this.checked)"
-              id="chk-${task._id}" />
-            <label class="task-title" for="chk-${task._id}">${window.escHtml(task.title)}</label>
-            <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
-          </div>`;
+        if (isFuture) {
+          tasksHTML += `
+            <div class="task-item">
+              <span class="task-title" style="padding-left: 0;">${window.escHtml(task.title)}</span>
+              <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
+            </div>`;
+        } else {
+          tasksHTML += `
+            <div class="task-item">
+              <input type="checkbox" class="task-checkbox"
+                ${task.completed ? 'checked' : ''}
+                onchange="toggleTask('${day._id}','${cat._id}','${task._id}',this.checked)"
+                id="chk-${task._id}" />
+              <label class="task-title" for="chk-${task._id}">${window.escHtml(task.title)}</label>
+              <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
+            </div>`;
+        }
       } else {
         const lockClass = task.completed ? 'locked-complete' : 'locked-incomplete';
         tasksHTML += `
@@ -802,6 +826,15 @@ async function toggleTask(dayId, catId, taskId, checked) {
     return;
   }
   let day = window.allDays.find(d => d._id === dayId);
+  if (day) {
+    const cardDateNormalized = (day.date || '').split('T')[0];
+    if (cardDateNormalized > window.todayStr()) {
+      console.warn('Cannot complete tasks on future daily cards');
+      const chk = document.getElementById(`chk-${taskId}`);
+      if (chk) chk.checked = !checked;
+      return;
+    }
+  }
   let cat, task;
 
   if (day) {
@@ -1032,9 +1065,9 @@ async function deleteCategory(dayId, catId) {
   const day = window.allDays.find(d => d._id === dayId);
   if (!day) return;
 
-  // Strict check to prevent past days editing
-  if (day.date !== window.todayStr()) {
-    window.showToast('Cannot modify past days', 'error');
+  // Check if day card is editable (today, future, grace window)
+  if (!isDayEditable(day)) {
+    window.showToast('Cannot modify locked past days', 'error');
     return;
   }
 
@@ -1071,9 +1104,9 @@ async function deleteTask(dayId, catId, taskId) {
   const day = window.allDays.find(d => d._id === dayId);
   if (!day) return;
 
-  // Strict check to prevent past days editing
-  if (day.date !== window.todayStr()) {
-    window.showToast('Cannot modify past days', 'error');
+  // Check if day card is editable (today, future, grace window)
+  if (!isDayEditable(day)) {
+    window.showToast('Cannot modify locked past days', 'error');
     return;
   }
 
@@ -1696,8 +1729,8 @@ async function submitAddCategory() {
 // ── Edit Category (today's card only) ────────────────────
 function openEditCategoryModal(dayId, catId) {
   const day = window.allDays.find(d => d._id === dayId);
-  if (!day || day.date !== window.todayStr()) {
-    window.showToast('You can only edit today\'s card.', 'warn');
+  if (!day || !isDayEditable(day)) {
+    window.showToast('You can only edit editable cards.', 'warn');
     return;
   }
   const cat = day.categories.find(c => c._id === catId);
@@ -2114,6 +2147,7 @@ window.submitEditCategory = submitEditCategory;
 window.openEditGoalModal = openEditGoalModal;
 window.addEditGoalTaskField = addEditGoalTaskField;
 window.submitEditGoal = submitEditGoal;
+window.isDayEditable = isDayEditable;
 
 // ── Screen Time Distractions Evaluation Engine ───────────────
 window.cachedUsageStats = null;

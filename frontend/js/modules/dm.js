@@ -1943,8 +1943,13 @@ function clearDMMediaPreview() {
 // ── Contact List & Request List Renderers ──
 
 function setupRealtimeContactsListeners(contactList) {
-  const { firebaseDb, firestore, userId } = window;
+  const { firebaseDb, firestore, userId, firebaseAuth } = window;
   if (!firebaseDb || !firestore || !userId) return;
+
+  // Prevent Firestore permission errors if auth hasn't completed yet
+  if (!firebaseAuth || !firebaseAuth.currentUser) {
+    return;
+  }
 
   const currentChatIds = new Set();
 
