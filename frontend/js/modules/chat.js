@@ -71,11 +71,19 @@ let presenceUnsubscribe = null;
 let presenceHeartbeatInterval = null;
 
 function openGroupChat(groupId, groupName, groupIcon, resetLimit = true) {
+  console.log(`[Chat] openGroupChat called for groupId: ${groupId}`);
+  const modal = document.getElementById('modal-group-chat');
+  
+  // Exit early if the group chat modal is already open for this group
+  if (modal && modal.classList.contains('open') && activeChatGroupId === groupId) {
+    console.log(`[Chat] Group chat is already open for ${groupId}. Ignoring call.`);
+    return;
+  }
+
   activeChatGroupId = groupId;
   if (resetLimit) chatMessagesLimit = 30; 
   document.getElementById('chat-group-name').textContent = groupName;
   
-  const modal = document.getElementById('modal-group-chat');
   openModal('modal-group-chat');
   fetchMediaLimit();
 

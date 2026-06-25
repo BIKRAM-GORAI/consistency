@@ -1529,9 +1529,16 @@ async function openMemberAllAchievements() {
 
 // ── Modal helpers ──────────────────────────────────────────
 function openModal(id) {
+  console.log(`[Modal] openModal called for id: ${id}`);
   const overlay = document.getElementById(id);
+  if (!overlay) return;
+  if (overlay.classList.contains('open')) {
+    console.log(`[Modal] openModal id: ${id} is already open. Exiting.`);
+    return;
+  }
   const modalEl = overlay.querySelector('.modal');
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = typeof window.isMobile === 'function' ? window.isMobile() : (window.innerWidth <= 768);
+  console.log(`[Modal] openModal id: ${id}, isMobile: ${isMobile}`);
 
   // Kill any in-flight tweens on both overlay and modal elements
   if (window.gsap) {
@@ -1581,6 +1588,7 @@ function openModal(id) {
 }
 
 function closeModal(id) {
+  console.log(`[Modal] closeModal called for id: ${id}`);
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     document.activeElement.blur();
   }
@@ -1595,8 +1603,13 @@ function closeModal(id) {
     return;
   }
   const overlay = document.getElementById(id);
+  if (!overlay || !overlay.classList.contains('open')) {
+    console.log(`[Modal] closeModal id: ${id} is not open. Exiting.`);
+    return;
+  }
   const modalEl = overlay.querySelector('.modal');
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = typeof window.isMobile === 'function' ? window.isMobile() : (window.innerWidth <= 768);
+  console.log(`[Modal] closeModal id: ${id}, isMobile: ${isMobile}`);
 
   if (window.gsap) {
     // Kill any in-flight tweens before closing
@@ -1610,6 +1623,7 @@ function closeModal(id) {
         if (id === 'modal-add-leetcode') {
           resetLeetCodeModalState();
         }
+        console.log(`[Modal] closeModal animation complete for id: ${id}`);
       }
     });
 

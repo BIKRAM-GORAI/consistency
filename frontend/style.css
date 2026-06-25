@@ -4844,16 +4844,22 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 /* Chat Message Media Rendering */
 .chat-media-content {
   margin-top: 10px;
-  width: 100%;
-  max-width: 260px; /* Responsive limit */
-  aspect-ratio: 1 / 1;
-  border: 4px solid var(--black);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 6px 6px 0 var(--black);
-  background: var(--bg-muted);
+  width: fit-content;
+  max-width: 230px; /* Responsive limit adjusted for mobile */
+  min-width: 120px;
+  min-height: 120px;
+  border: none;
+  background: transparent;
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start; /* Prevents stretching in parent flex column for other's messages */
+}
+
+.chat-bubble.self .chat-media-content {
+  align-self: flex-end; /* Align media to right for user's own messages */
 }
 
 .chat-media-content:hover {
@@ -4863,10 +4869,14 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .chat-media-content img,
 .chat-media-content video {
   display: block;
-  width: 100%;
-  height: 100%;
-  max-height: 350px;
-  object-fit: cover; /* Cover until loaded */
+  max-width: 222px; /* Accounts for 4px borders on each side to prevent overflow */
+  max-height: 180px; /* Reduced vertical size to prevent taking up too much screen */
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: 4px solid var(--black); /* Border wraps the image/video exactly */
+  border-radius: 16px;
+  background: var(--bg-muted);
 }
 
 .chat-reply-thumbnail {
