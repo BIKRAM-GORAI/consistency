@@ -725,7 +725,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
         <span class="card-date">${window.formatDisplayDate(day.date)}</span>
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span class="card-day-name">${window.getDayName(day.date)}</span>
-          ${(!isToday && isWithinWindow) ? `<span class="editable-until-badge" style="font-size: 10px; font-weight: 800; color: var(--text-muted); opacity: 0.65; background: var(--bg-muted); padding: 1px 6px; border: 1.5px dashed var(--black); border-radius: 4px; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif;">Editable till 12 noon</span>` : ''}
+          ${(!isToday && isWithinWindow) ? `<span class="editable-until-badge" style="font-size: 10px; font-weight: 800; color: var(--text-muted); opacity: 0.65; background: var(--bg-muted); padding: 1px 6px; border: 1.5px dashed var(--black); border-radius: 4px; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif; white-space: nowrap;">Editable till 12 noon</span>` : ''}
         </div>
       </div>
       <div class="card-header-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
