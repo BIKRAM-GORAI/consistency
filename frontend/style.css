@@ -3134,6 +3134,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
   backdrop-filter: blur(4px);
+  overflow: hidden; /* Prevent body/document scrollbars when image is zoomed */
 }
 .lightbox-overlay.open {
   opacity: 1;
@@ -3151,6 +3152,9 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-radius: var(--r-md);
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   display: block;
+  touch-action: none; /* Disable default browser touch actions (scrolling, pinch-to-zoom) */
+  user-select: none; /* Prevent text selection highlight on drag */
+  -webkit-user-drag: none; /* Disable native browser image dragging */
 }
 .lightbox-close {
   position: absolute;
