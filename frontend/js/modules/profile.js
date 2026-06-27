@@ -266,6 +266,12 @@ function renderProfileData(user) {
   const themeSelect = document.getElementById('theme-select');
   if (themeSelect && user.theme) {
     themeSelect.value = user.theme;
+    
+    // Automatically apply synced theme to the layout if it differs from current local theme
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (user.theme !== currentTheme && typeof window.toggleAppTheme === 'function') {
+      window.toggleAppTheme(user.theme);
+    }
   }
 
   // Update Email Verification UI
