@@ -41,6 +41,10 @@
     {
       "path": "/api/cron/inactive-reminders",
       "schedule": "30 14 * * 3"
+    },
+    {
+      "path": "/api/cron/sync-leetcode",
+      "schedule": "5 0 * * *"
     }
   ],
   "headers": [
