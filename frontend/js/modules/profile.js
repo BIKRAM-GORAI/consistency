@@ -368,14 +368,11 @@ async function submitProfileSettings() {
     }
 
     // Apply and sync theme if changed
-    const themeSelect = document.getElementById('theme-select');
-    if (themeSelect) {
-      const selectedTheme = themeSelect.value;
-      const currentTheme = localStorage.getItem('theme') || 'light';
-      if (selectedTheme !== currentTheme) {
-        if (typeof window.toggleAppTheme === 'function') {
-          await window.toggleAppTheme(selectedTheme);
-        } else {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (selectedTheme !== currentTheme) {
+      if (typeof window.toggleAppTheme === 'function') {
+        await window.toggleAppTheme(selectedTheme);
+      } else {
           if (selectedTheme === 'dark') {
             await window.toggleDarkTheme(true);
           } else if (selectedTheme === 'light') {
