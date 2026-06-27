@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const Day = require('../models/Day');
 const CronLog = require('../models/CronLog');
+const { getUserAcceptedSubmissions, getProblemDetails } = require('./leetcodeController');
+const { updateUserStreakAndActivity } = require('./dayController');
 
 // Helper to check authorization
 function checkAuth(req, res) {
@@ -222,4 +224,158 @@ const sendInactiveReminders = async (req, res) => {
   }
 };
 
-module.exports = { sendStreakReminders, sendInactiveReminders };
+/**
+ * GET /api/cron/sync-leetcode
+ */
+const autoSyncLeetcodeSubmissions = async (req, res) => {
+  if (!checkAuth(req, res)) return;
+
+  try {
+    const today = new Date();
+    // Yesterday in server timezone
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const targetYear = yesterday.getFullYear();
+    const targetMonth = yesterday.getMonth(); // 0-indexed
+    const targetDay = yesterday.getDate();
+
+    // YYYY-MM-DD string
+    const yesterdayStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+
+    console.log(`[LeetCode Auto-Sync] Syncing for date: ${yesterdayStr}`);
+
+    // Find all premium users with auto-sync enabled and connected username
+    const premiumUsers = await User.find({
+      subscriptionTier: 'premium',
+      leetcodeUsername: { $ne: null },
+      leetcodeAutoSync: true
+    });
+
+    console.log(`[LeetCode Auto-Sync] Found ${premiumUsers.length} premium users to process.`);
+
+    const results = [];
+
+    for (const user of premiumUsers) {
+      console.log(`[LeetCode Auto-Sync] Syncing user: ${user.username} (${user.leetcodeUsername})`);
+      
+      // Throttle delay to respect LeetCode rate limit (e.g. 500ms between requests)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      try {
+        // Fetch user's accepted submissions
+        const submissions = await getUserAcceptedSubmissions(user.leetcodeUsername);
+        
+        // Filter submissions accepted yesterday (server time)
+        const yesterdaySubmissions = submissions.filter(sub => {
+          if (sub.statusDisplay !== 'Accepted') return false;
+          
+          const subDate = new Date(parseInt(sub.timestamp) * 1000);
+          return subDate.getFullYear() === targetYear &&
+                 subDate.getMonth() === targetMonth &&
+                 subDate.getDate() === targetDay;
+        });
+
+        console.log(`[LeetCode Auto-Sync] User ${user.username} solved ${yesterdaySubmissions.length} problems yesterday.`);
+
+        if (yesterdaySubmissions.length === 0) {
+          results.push({ username: user.username, synced: 0, status: 'No submissions found' });
+          continue;
+        }
+
+        // Load or create Day document for yesterday
+        let dayDoc = await Day.findOne({ userId: user._id, date: yesterdayStr });
+        if (!dayDoc) {
+          dayDoc = new Day({
+            userId: user._id,
+            date: yesterdayStr,
+            categories: []
+          });
+        }
+
+        // Find or create LeetCode category
+        let leetcodeCategory = dayDoc.categories.find(cat => cat.name === 'LeetCode');
+        if (!leetcodeCategory) {
+          dayDoc.categories.push({ name: 'LeetCode', tasks: [] });
+          leetcodeCategory = dayDoc.categories[dayDoc.categories.length - 1];
+        }
+
+        let tasksAddedCount = 0;
+
+        for (const sub of yesterdaySubmissions) {
+          const taskTitle = `🧠 LeetCode: ${sub.title}`;
+
+          // Check if this problem is already present in yesterday's tasks
+          const alreadyExists = leetcodeCategory.tasks.some(task => {
+            const hasUrlMatch = task.metadata && task.metadata.problemUrl && 
+                                task.metadata.problemUrl.includes(sub.titleSlug);
+            const hasTitleMatch = task.title === taskTitle;
+            return hasUrlMatch || hasTitleMatch;
+          });
+
+          if (alreadyExists) {
+            console.log(`[LeetCode Auto-Sync] Task "${taskTitle}" already present. Skipping.`);
+            continue;
+          }
+
+          // Fetch problem details for difficulty
+          let difficulty = 'Medium';
+          try {
+            const details = await getProblemDetails(sub.titleSlug);
+            if (details && details.difficulty) {
+              difficulty = details.difficulty;
+            }
+          } catch (detailsErr) {
+            console.warn(`[LeetCode Auto-Sync] Failed to fetch problem details for ${sub.titleSlug}:`, detailsErr.message);
+          }
+
+          const taskData = {
+            title: taskTitle,
+            completed: true,
+            metadata: {
+              problemUrl: `https://leetcode.com/problems/${sub.titleSlug}/`,
+              difficulty,
+              acceptedDate: yesterdayStr,
+              submissionCount: 1,
+              verified: true,
+              autoSynced: true
+            }
+          };
+
+          leetcodeCategory.tasks.push(taskData);
+          tasksAddedCount++;
+        }
+
+        if (tasksAddedCount > 0) {
+          await dayDoc.save();
+          // Recalculate streak
+          await updateUserStreakAndActivity(user._id, yesterdayStr);
+          console.log(`[LeetCode Auto-Sync] Saved ${tasksAddedCount} auto-synced tasks for ${user.username}.`);
+        }
+
+        results.push({ username: user.username, synced: tasksAddedCount, status: 'Success' });
+
+      } catch (userErr) {
+        console.error(`[LeetCode Auto-Sync] Failed to sync user ${user.username}:`, userErr);
+        results.push({ username: user.username, synced: 0, status: 'Failed', error: userErr.message });
+      }
+    }
+
+    res.json({
+      message: `LeetCode auto-sync completed.`,
+      date: yesterdayStr,
+      processedCount: premiumUsers.length,
+      results
+    });
+
+  } catch (error) {
+    console.error('[LeetCode Auto-Sync] Global error during auto-sync:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
+
+module.exports = {
+  sendStreakReminders,
+  sendInactiveReminders,
+  autoSyncLeetcodeSubmissions
+};

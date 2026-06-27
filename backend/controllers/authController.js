@@ -324,7 +324,8 @@ async function getProfileSettings(req, res) {
       showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
       globalStreakReminderEnabled: user.globalStreakReminderEnabled !== false,
       globalStreakReminderTime: user.globalStreakReminderTime || "21:00",
-      globalStreakReminderType: user.globalStreakReminderType || "notification"
+      globalStreakReminderType: user.globalStreakReminderType || "notification",
+      leetcodeAutoSync: user.leetcodeAutoSync || false
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 }
@@ -332,7 +333,7 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType } = req.body;
+    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, leetcodeAutoSync } = req.body;
 
     if (typeof emailNotifications === 'boolean') user.emailNotifications = emailNotifications;
     if (typeof globalStreakReminderEnabled === 'boolean') user.globalStreakReminderEnabled = globalStreakReminderEnabled;
@@ -342,6 +343,15 @@ async function setProfileSettings(req, res) {
     if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) {
       user.theme = theme;
+    }
+
+    if (typeof leetcodeAutoSync === 'boolean') {
+      const isPremiumCheck = user.subscriptionTier === 'premium' && 
+        (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+      if (leetcodeAutoSync && !isPremiumCheck) {
+        return res.status(403).json({ message: 'Auto-sync LeetCode submissions requires a premium subscription.' });
+      }
+      user.leetcodeAutoSync = leetcodeAutoSync;
     }
 
     if (username && username.trim() !== '') {
@@ -411,7 +421,8 @@ async function setProfileSettings(req, res) {
       showReferralPrompt: !user.referredBy && !user.referralPromptDismissed,
       globalStreakReminderEnabled: user.globalStreakReminderEnabled !== false,
       globalStreakReminderTime: user.globalStreakReminderTime || "21:00",
-      globalStreakReminderType: user.globalStreakReminderType || "notification"
+      globalStreakReminderType: user.globalStreakReminderType || "notification",
+      leetcodeAutoSync: user.leetcodeAutoSync || false
     });
   } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
 }

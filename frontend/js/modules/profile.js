@@ -205,6 +205,20 @@ function renderProfileData(user) {
   const publicToggle = document.getElementById('public-profile-toggle');
   if (publicToggle) publicToggle.checked = user.isPublicProfile !== false;
 
+  const leetcodeAutoSyncToggle = document.getElementById('leetcode-auto-sync-toggle');
+  if (leetcodeAutoSyncToggle) {
+    leetcodeAutoSyncToggle.checked = !!user.leetcodeAutoSync;
+    if (!isPremium) {
+      leetcodeAutoSyncToggle.disabled = true;
+      leetcodeAutoSyncToggle.parentElement.classList.add('disabled');
+      leetcodeAutoSyncToggle.title = 'Premium Subscription Required';
+    } else {
+      leetcodeAutoSyncToggle.disabled = false;
+      leetcodeAutoSyncToggle.parentElement.classList.remove('disabled');
+      leetcodeAutoSyncToggle.title = '';
+    }
+  }
+
   const globalReminderToggle = document.getElementById('global-streak-reminder-toggle');
   if (globalReminderToggle) {
     globalReminderToggle.checked = user.globalStreakReminderEnabled !== false;
@@ -302,6 +316,7 @@ async function submitProfileSettings() {
   const globalStreakReminderEnabled = document.getElementById('global-streak-reminder-toggle').checked;
   const globalStreakReminderTime = document.getElementById('global-streak-reminder-time').value || '21:00';
   const globalStreakReminderType = document.querySelector('input[name="global-streak-reminder-type-radio"]:checked')?.value || 'notification';
+  const leetcodeAutoSync = document.getElementById('leetcode-auto-sync-toggle')?.checked || false;
 
   const currentSavedShowcase = localStorage.getItem('showOnLeaderboard') !== 'false';
   if (!navigator.onLine && showOnLeaderboard !== currentSavedShowcase) {
@@ -334,6 +349,7 @@ async function submitProfileSettings() {
       globalStreakReminderEnabled,
       globalStreakReminderTime,
       globalStreakReminderType,
+      leetcodeAutoSync,
       theme: selectedTheme
     };
     if (!usernameInput.readOnly && username) {

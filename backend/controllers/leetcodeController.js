@@ -596,5 +596,7 @@ module.exports = {
   verifyLeetCodeProfile,
   validateLeetCodeProblem,
   getDailyLeetCodeProblem,
-  disconnectLeetCode
+  disconnectLeetCode,
+  getUserAcceptedSubmissions,
+  getProblemDetails
 };

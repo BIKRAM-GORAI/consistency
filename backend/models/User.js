@@ -145,6 +145,10 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    leetcodeAutoSync: {
+      type: Boolean,
+      default: false
+    },
     // OTP fields for Forgot Password
     resetOtp: {
       type: String,

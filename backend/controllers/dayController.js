@@ -651,6 +651,7 @@ module.exports = {
   getGraceLimits,
   applyGrace,
   calculateCurrentStreak,
-  calculateHighestStreak
+  calculateHighestStreak,
+  updateUserStreakAndActivity
 };
 
