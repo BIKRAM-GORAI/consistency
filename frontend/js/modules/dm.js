@@ -793,7 +793,7 @@ function renderDMMessage(msg, container, animate = false, isPending = false) {
         </div>
       `}
     ` : ''}
-    <div class="chat-text" id="dm-chat-text-${docId}" style="margin-top: 4px;">${window.escHtml(msg.text)}</div>
+    <div class="chat-text" id="dm-chat-text-${docId}" style="margin-top: 4px;">${window.linkify(window.escHtml(msg.text))}</div>
     ${reactionsHtml}
     <div class="chat-message-footer">
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
@@ -860,7 +860,7 @@ function updateDMMessageInUI(msg) {
   const bubble = document.getElementById(`dm-msg-${msg._id}`);
   if (!bubble) return;
   const textEl = bubble.querySelector(`#dm-chat-text-${msg._id}`);
-  if (textEl) textEl.textContent = msg.text;
+  if (textEl) textEl.innerHTML = window.linkify(window.escHtml(msg.text));
   
   // Update reactions
   const reactionsHtml = renderDMReactionsHTML(msg.reactions, msg._id);

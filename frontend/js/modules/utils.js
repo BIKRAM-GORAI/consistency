@@ -337,6 +337,20 @@ function escHtml(str) {
 }
 window.escHtml = escHtml;
 
+function linkify(escapedText) {
+  if (!escapedText) return '';
+  const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g;
+  return escapedText.replace(urlRegex, (url) => {
+    let href = url;
+    if (url.startsWith('www.')) {
+      href = 'http://' + url;
+    }
+    const safeHref = href.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return `<a href="${safeHref}" target="_system" class="chat-message-link" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 700; word-break: break-all;">${url}</a>`;
+  });
+}
+window.linkify = linkify;
+
 function escJs(str) {
   if (!str) return '';
   let decoded = str;

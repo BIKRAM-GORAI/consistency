@@ -450,7 +450,7 @@ function renderChatMessage(msg, container, animate = false, isPending = false) {
         </div>
       `}
     ` : ''}
-    <div class="chat-text" id="chat-text-${docId}" style="margin-top: 4px;">${escHtml(msg.text)}</div>
+    <div class="chat-text" id="chat-text-${docId}" style="margin-top: 4px;">${window.linkify(escHtml(msg.text))}</div>
     ${reactionsHtml}
     <div class="chat-message-footer">
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}
@@ -926,7 +926,7 @@ function updateExistingMessage(msg, el) {
   // Update text
   const textEl = bubble.querySelector('.chat-text');
   if (textEl && textEl.textContent !== msg.text) {
-    textEl.textContent = msg.text;
+    textEl.innerHTML = window.linkify(escHtml(msg.text));
   }
   
   // Update reactions
