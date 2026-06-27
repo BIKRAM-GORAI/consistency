@@ -394,7 +394,6 @@ async function submitProfileSettings() {
           }
         }
       }
-    }
 
     // 3. SHOW SUCCESS INSTANTLY
     showToast('Settings saved!', 'success');
