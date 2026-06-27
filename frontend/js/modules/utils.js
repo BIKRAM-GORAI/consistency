@@ -414,6 +414,24 @@ window.addEventListener('DOMContentLoaded', () => {
   if (banner) {
     banner.addEventListener('click', handlePushBannerClick);
   }
+
+  // Intercept external links to force opening in default system browser on mobile (Capacitor)
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link && (link.getAttribute('target') === '_system' || link.classList.contains('chat-message-link'))) {
+      e.preventDefault();
+      const href = link.getAttribute('href');
+      if (href) {
+        const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                            navigator.userAgent.includes("Capacitor");
+        if (isNativeApp) {
+          window.open(href, '_system');
+        } else {
+          window.open(href, '_blank');
+        }
+      }
+    }
+  });
 });
 
 // Dynamic WebRTC Camera Capture with fallback to standard input
