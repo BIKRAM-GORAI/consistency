@@ -62,7 +62,6 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="landing-themes.css" />
   <script src="libs/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
@@ -2239,7 +2238,6 @@
       <span>Consistency Daily</span>
     </div>
     <div class="landing-nav-actions">
-      <a href="https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk" class="btn-nav" id="nav-apk-btn" style="background: var(--lime); color: var(--black); border: 2px solid var(--black); font-weight: 800; text-decoration: none; border-radius: 4px; padding: 8px 16px; font-size: 13px; text-transform: uppercase;">Get APK</a>
       <a href="auth.html?tab=login" class="btn-nav btn-nav-ghost" id="nav-login-btn">Login</a>
       <a href="auth.html?tab=register" class="btn-nav btn-nav-solid" id="nav-register-btn">Sign Up</a>
     </div>
@@ -2309,28 +2307,7 @@
     <p class="landing-footer-note">Consistency is the key <i data-lucide="zap"></i></p>
   </div>
 
-  <!-- Dedicated Themes Preview Section -->
-  <section class="landing-themes-preview reveal" style="padding: 60px 20px; border-bottom: var(--border); background: #faf7f2; text-align: center; position: relative; z-index: 2;">
-    <h2 class="landing-section-title" style="margin-bottom: 20px; display: inline-block;">Try out our different themes 🎨</h2>
-    <p style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: #666; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 0.5px;">Click any theme below to preview how our styles adapt to your layout instantly!</p>
-    <div class="theme-buttons-container" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; max-width: 900px; margin: 0 auto;">
-      <button class="btn-theme-swapper" onclick="previewLandingTheme('light')" style="background: #faf7f2; color: #000; border: var(--border); box-shadow: 4px 4px 0 #000; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; padding: 12px 24px; cursor: pointer; border-radius: 6px; transition: transform 0.1s, box-shadow 0.1s;">
-        ☀️ Light Brutalistic
-      </button>
-      <button class="btn-theme-swapper" onclick="previewLandingTheme('dark')" style="background: #1a1a1a; color: #fff; border: 4px solid #fff; box-shadow: 4px 4px 0 #fff; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; padding: 12px 24px; cursor: pointer; border-radius: 6px; transition: transform 0.1s, box-shadow 0.1s;">
-        🌙 Dark Brutalistic
-      </button>
-      <button class="btn-theme-swapper" onclick="previewLandingTheme('minimalistic')" style="background: #ffffff; color: #000; border: 2px solid #000; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; text-transform: uppercase; padding: 12px 24px; cursor: pointer; border-radius: 0px; transition: transform 0.1s, box-shadow 0.1s;">
-        ▫️ Minimalism
-      </button>
-      <button class="btn-theme-swapper" onclick="previewLandingTheme('premium-aurora')" style="background: linear-gradient(90deg, #ec4899, #8b5cf6); color: #fff; border: none; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; padding: 12px 24px; cursor: pointer; border-radius: 12px; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); transition: transform 0.1s, box-shadow 0.1s;">
-        ✨ Glassmorphism
-      </button>
-      <button class="btn-theme-swapper" onclick="previewLandingTheme('claymorphism')" style="background: #27a55a; color: #fff; border: none; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; padding: 12px 24px; cursor: pointer; border-radius: 18px; box-shadow: 0 4px 12px rgba(39, 165, 90, 0.25), inset 2px 2px 4px rgba(255,255,255,0.4); transition: transform 0.1s, box-shadow 0.1s;">
-        🍃 Claymorphism
-      </button>
-    </div>
-  </section>
+
 
   <!-- Features Section -->
   <section class="landing-about">
@@ -2494,7 +2471,13 @@
         <p>Log items on the go. Record your voice, and our backend AI will instantly transcribe, parse, and populate structured tasks straight onto your consistency logs.</p>
       </div>
 
-
+      <!-- Claymorphic Milestones -->
+      <div class="feature-card reveal" style="background: #e8f7ef; color: #105032; border: 2px solid #b5e2c9 !important;">
+        <span class="feature-tag" style="background: #27a55a; color: #fff;">Premium UI</span>
+        <i data-lucide="palette"></i>
+        <h3>Claymorphic Milestones</h3>
+        <p>Experience soft 3D clay borders and glassmorphic depth, including Indigo-to-Lavender 7-day wrap-up cards and Pink-to-Gold 30-day elite summary cards.</p>
+      </div>
 
       <!-- Premium Subscription & Limits -->
       <div class="feature-card reveal" style="background: var(--purple); color: #fff;">
@@ -3486,16 +3469,6 @@
         alert('To install: open your browser menu and select "Install App" or "Add to Home Screen".');
       }
     }
-
-    // ── Theme Swapper Preview ──
-    window.previewLandingTheme = function(theme) {
-      if (theme === 'light') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
-      console.log('[Theme Preview] Changed layout skin to:', theme);
-    };
 
     // Hide button inside Capacitor Android native wrapper
     const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
