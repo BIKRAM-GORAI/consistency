@@ -731,6 +731,10 @@
   background-color: #ffffff !important;
   background-image: none !important;
 }
+[data-theme="claymorphism"] body.exporting-canvas .designer-main {
+  display: block !important;
+  overflow: visible !important;
+}
 
 /* ── AI Sidebar — distinct white/light background so it doesn't merge ── */
 [data-theme="claymorphism"] #canvas-sidebar-panel {
