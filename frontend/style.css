@@ -5468,15 +5468,15 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   #modal-scratchpad.modal-overlay {
     align-items: stretch !important;
     justify-content: stretch !important;
-    padding: 0 !important;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px) !important;
   }
 
   #modal-scratchpad .modal {
     border-radius: 0 !important;
     max-width: 100vw !important;
-    max-height: 100dvh !important;
+    max-height: 100% !important;
     width: 100vw !important;
-    height: 100dvh !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     display: flex !important;
@@ -5506,7 +5506,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
     flex-direction: column !important;
     gap: 12px !important;
     overflow: hidden !important;
-    height: calc(100dvh - 56px - 72px) !important;
+    min-height: 0 !important;
   }
 
   #modal-scratchpad #scratchpad-main-content {
