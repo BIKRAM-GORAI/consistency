@@ -247,8 +247,8 @@ app.get('/', (req, res) => {
 });
 
 // ── Architecture Report Page ──
-app.get('/architecture', architectureLimiter, (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/architecture.html'));
+app.get('/architecture', (req, res) => {
+  res.redirect('https://github.com/BIKRAM-GORAI/consistency#-system-architecture');
 });
 
 // ── SPA fallback: return landing.html for unknown routes ───
