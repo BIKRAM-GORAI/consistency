@@ -816,6 +816,32 @@
       color: #fff;
     }
 
+    .btn-landing-apk {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 40px;
+      background: var(--lime);
+      border: var(--border);
+      border-radius: 6px;
+      color: var(--black);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 6px 6px 0 var(--black);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-landing-apk:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0 var(--black);
+      background: var(--lime);
+      color: var(--black);
+    }
+
     /* ── Feature Pills (Descriptive, not buttons) ── */
     .landing-features {
       display: flex;
@@ -2248,12 +2274,15 @@
           each on their own account.
         </p>
 
-        <div class="landing-actions">
+        <div class="landing-actions" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
           <a href="auth.html?tab=login" class="btn-landing-primary" id="btn-go-login">
             <i data-lucide="zap"></i> Login
           </a>
           <a href="auth.html?tab=register" class="btn-landing-secondary" id="btn-go-register">
             <i data-lucide="sparkles"></i> Create Account
+          </a>
+          <a href="https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk" class="btn-landing-apk" id="btn-go-apk">
+            <i data-lucide="smartphone"></i> Download APK
           </a>
         </div>
       </div>
@@ -2273,6 +2302,9 @@
       <div class="feature-pill" style="background: var(--purple); color: #fff;"><span class="feature-pill-icon"><i data-lucide="sparkles"></i></span> AI Summaries</div>
       <div class="feature-pill" style="background: var(--pink); color: #fff;"><span class="feature-pill-icon"><i data-lucide="bell"></i></span> Push Notifs</div>
       <div class="feature-pill" style="background: var(--lime);"><span class="feature-pill-icon"><i data-lucide="pen-line"></i></span> Scratchpad</div>
+      <div class="feature-pill" style="background: var(--teal); color: #fff;"><span class="feature-pill-icon"><i data-lucide="message-square"></i></span> Private DMs</div>
+      <div class="feature-pill" style="background: var(--yellow); color: var(--black);"><span class="feature-pill-icon"><i data-lucide="mic"></i></span> Voice Tasks</div>
+      <div class="feature-pill" style="background: #ffa116; color: #fff;"><span class="feature-pill-icon"><i data-lucide="code"></i></span> LeetCode Sync</div>
     </div>
 
     <p class="landing-footer-note">Consistency is the key <i data-lucide="zap"></i></p>
@@ -2398,8 +2430,8 @@
       <div class="feature-card reveal">
         <span class="feature-tag">Daily Cards</span>
         <i data-lucide="pen-line"></i>
-        <h3>Built-in Scratchpad</h3>
-        <p>Each daily card has a built-in <b>canvas scratchpad</b>. Draw, sketch, or jot notes with your finger or trackpad. Animated on open, persistent across edits — always there when inspiration strikes.</p>
+        <h3>Scratchpad Time-Lapse</h3>
+        <p>Each daily card has a built-in <b>canvas scratchpad</b>. Sketch ideas, then watch them draw back as a fully animated time-lapse replay with speed controls (1x to 10x).</p>
       </div>
 
       <!-- Global Leaderboard -->
@@ -2424,6 +2456,30 @@
         <i data-lucide="scan"></i>
         <h3>Photo List Scanner</h3>
         <p>Go from paper to digital instantly. Snap a photo of your handwritten to-do list, and our AI will automatically parse, structure, and populate all your tasks and categories straight into your daily card.</p>
+      </div>
+
+      <!-- Private DMs & Friends -->
+      <div class="feature-card reveal" style="background: var(--pink);">
+        <span class="feature-tag" style="background: var(--black); color: #fff;">Accountability</span>
+        <i data-lucide="message-circle" style="color: var(--black);"></i>
+        <h3>Private DMs &amp; Friends</h3>
+        <p>Search for buddies, build your accountability circle, and chat 1-on-1 in secure, offline-cached direct messages with real-time online presence indicators.</p>
+      </div>
+
+      <!-- Voice-to-Task -->
+      <div class="feature-card reveal" style="background: var(--lime);">
+        <span class="feature-tag" style="background: var(--black); color: #fff;">Hands-Free</span>
+        <i data-lucide="mic"></i>
+        <h3>AI Voice-to-Task Logger</h3>
+        <p>Log items on the go. Record your voice, and our backend AI will instantly transcribe, parse, and populate structured tasks straight onto your consistency logs.</p>
+      </div>
+
+      <!-- Claymorphic Milestones -->
+      <div class="feature-card reveal" style="background: #e8f7ef; color: #105032; border: 2px solid #b5e2c9 !important;">
+        <span class="feature-tag" style="background: #27a55a; color: #fff;">Premium UI</span>
+        <i data-lucide="palette"></i>
+        <h3>Claymorphic Milestones</h3>
+        <p>Experience soft 3D clay borders and glassmorphic depth, including Indigo-to-Lavender 7-day wrap-up cards and Pink-to-Gold 30-day elite summary cards.</p>
       </div>
 
       <!-- Premium Subscription & Limits -->
@@ -2470,16 +2526,16 @@
     <div class="screenshots-grid">
       <!-- Screenshot 1 -->
       <div class="screenshot-card" onclick="openLightbox(0)">
-        <img src="/about1.png" loading="lazy" alt="Dashboard" class="screenshot-img">
+        <img src="/about1.png" loading="lazy" alt="Dashboard &amp; Claymorphism" class="screenshot-img">
         <div class="screenshot-overlay">
-          <h4>Dashboard</h4>
-          <p>Your daily progress at a glance</p>
+          <h4>Dashboard &amp; Themes</h4>
+          <p>Claymorphic, Light Brutalist, Minimal, or Dark Mode themes</p>
         </div>
       </div>
 
       <!-- Screenshot 2 -->
       <div class="screenshot-card" onclick="openLightbox(1)">
-        <img src="/about2.png" loading="lazy" alt="Profile" class="screenshot-img">
+        <img src="/about2.png" loading="lazy" alt="Goals" class="screenshot-img">
         <div class="screenshot-overlay">
           <h4>Goals</h4>
           <p>Track your goals with ease</p>
@@ -2497,19 +2553,19 @@
 
       <!-- Screenshot 4 -->
       <div class="screenshot-card" onclick="openLightbox(3)">
-        <img src="/about4.png" loading="lazy" alt="Chat" class="screenshot-img">
+        <img src="/about4.png" loading="lazy" alt="Direct Messaging &amp; DMs" class="screenshot-img">
         <div class="screenshot-overlay">
-          <h4>Acheivements</h4>
-          <p>Track your acheivements</p>
+          <h4>Direct Messages (DMs)</h4>
+          <p>Offline-cached 1-on-1 private messaging chats</p>
         </div>
       </div>
 
       <!-- Screenshot 5 -->
       <div class="screenshot-card" onclick="openLightbox(4)">
-        <img src="/about5.png" loading="lazy" alt="Groups" class="screenshot-img">
+        <img src="/about5.png" loading="lazy" alt="Social &amp; Relationships" class="screenshot-img">
         <div class="screenshot-overlay">
-          <h4>Profile Page</h4>
-          <p>Configure your profile</p>
+          <h4>Accountability Friends</h4>
+          <p>Search profiles and build mutual relationship links</p>
         </div>
       </div>
 
@@ -2542,11 +2598,11 @@
       
       <!-- Screenshot 9 -->
       <div class="screenshot-card" onclick="openLightbox(8)">
-        <img src="/about9.png" loading="lazy" alt="Privacy" class="screenshot-img" 
+        <img src="/about9.png" loading="lazy" alt="Live Group Chat &amp; DMs" class="screenshot-img" 
              onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about9.png</text></svg>'">
         <div class="screenshot-overlay">
-          <h4>Live Group Chat</h4>
-          <p>Chat with your group members</p>
+          <h4>Live Group &amp; DM Chat</h4>
+          <p>Exchange chat messages with your accountability circle</p>
         </div>
       </div>
 
@@ -2562,7 +2618,7 @@
 
       <!-- Screenshot 11 -->
       <div class="screenshot-card" onclick="openLightbox(10)">
-        <img src="/about11.png" loading="lazy" alt="Public Profile & Streaks" class="screenshot-img" 
+        <img src="/about11.png" loading="lazy" alt="Public Profile &amp; Streaks" class="screenshot-img" 
              onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about11.png</text></svg>'">
         <div class="screenshot-overlay">
           <h4>Public Profile &amp; Streaks</h4>
@@ -2572,11 +2628,11 @@
 
       <!-- Screenshot 12 -->
       <div class="screenshot-card" onclick="openLightbox(11)">
-        <img src="/about12.png" loading="lazy" alt="Photo List Scanner" class="screenshot-img" 
+        <img src="/about12.png" loading="lazy" alt="Voice Tasks &amp; Scan" class="screenshot-img" 
              onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'><rect width=\'100%\' height=\'100%\' fill=\'%23eee\'/><text x=\'50%\' y=\'50%\' font-family=\'sans-serif\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23999\'>about12.png</text></svg>'">
         <div class="screenshot-overlay">
-          <h4>Photo List Scanner</h4>
-          <p>Scan handwritten lists straight to digital tasks</p>
+          <h4>AI List Scanner &amp; Voice Tasks</h4>
+          <p>Scan handwritten lists or record voice logs into tasks</p>
         </div>
       </div>
 
@@ -2597,7 +2653,7 @@
   <section class="landing-upcoming reveal">
     <h2 class="landing-section-title" style="color:#fff;">Upcoming Features</h2>
     <div class="upcoming-grid">
-      <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="users"></i></span> Add Friends</div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="users"></i></span> <span class="upcoming-text">Add Friends & Relations</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="crown"></i></span> <span
           class="upcoming-text">Global Leaderboards</span></div>
       <div class="upcoming-card"><span class="upcoming-icon"><i data-lucide="swords"></i></span> Group Challenges</div>
@@ -2617,10 +2673,14 @@
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="activity"></i></span> <span class="upcoming-text">Screen Time Tracker</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="sparkles"></i></span> <span class="upcoming-text">AI Summaries</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="bell"></i></span> <span class="upcoming-text">Push Notifications</span></div>
-      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="pen-line"></i></span> <span class="upcoming-text">Scratchpad Canvas</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="pen-line"></i></span> <span class="upcoming-text">Scratchpad Replays</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="scan"></i></span> <span class="upcoming-text">AI Handwriting Photo Scan</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="trending-up"></i></span> <span class="upcoming-text">AI Productivity Analytics</span></div>
       <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="crown"></i></span> <span class="upcoming-text">Dynamic Premium Tiers</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="message-circle"></i></span> <span class="upcoming-text">Private Direct Messages (DMs)</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="mic"></i></span> <span class="upcoming-text">AI Voice-to-Task Logger</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="code"></i></span> <span class="upcoming-text">LeetCode Daily Sync</span></div>
+      <div class="upcoming-card done"><span class="upcoming-icon"><i data-lucide="palette"></i></span> <span class="upcoming-text">Claymorphism Theme Gradients</span></div>
     </div>
   </section>
 
@@ -3052,18 +3112,18 @@
     }
 
     const screenshotsData = [
-      { src: '/about1.png', title: 'Dashboard', desc: 'Your daily progress at a glance' },
+      { src: '/about1.png', title: 'Dashboard & Themes', desc: 'Custom theme swapper options including Light Brutalistic, Minimal, Dark Mode, and premium Claymorphism gradients.' },
       { src: '/about2.png', title: 'Goals', desc: 'Track your goals with ease' },
       { src: '/about3.jpg', title: 'Groups', desc: 'Find like-minded people and achieve your goals together' },
-      { src: '/about4.png', title: 'Acheivements', desc: 'Track your acheivements' },
-      { src: '/about5.png', title: 'Profile Page', desc: 'Configure your profile' },
+      { src: '/about4.png', title: 'Direct Messages (DMs)', desc: '1-on-1 private messaging with accountability buddies, including media attachments and offline sync.' },
+      { src: '/about5.png', title: 'Accountability Friends', desc: 'Build relationship networks, search users, and manage friends requests list.' },
       { src: '/about6.jpg', title: 'Share profile View', desc: 'Share your profile with friends' },
       { src: '/about8.jpg', title: 'Public Profile', desc: "View Otherr's Profile" },
       { src: '/about7.jpg', title: 'Top Global Rankings', desc: 'View top global rankings' },
-      { src: '/about9.png', title: 'Live Group Chat', desc: 'Chat with your group members' },
+      { src: '/about9.png', title: 'Live Group Chat', desc: 'Chat in real-time with group members or 1-on-1 direct channels.' },
       { src: '/about10.png', title: 'AI Productivity Insights', desc: 'Tailored 30-day summaries, streak recommendations, and improvement highlights' },
       { src: '/about11.png', title: 'Public Profile & Streaks', desc: 'Custom shareable profile links with activity graphs and unlocked badges' },
-      { src: '/about12.png', title: 'Photo List Scanner', desc: 'Scan handwritten tasks from photo directly into categories' },
+      { src: '/about12.png', title: 'AI Transcribers & Scanners', desc: 'Scan handwritten tasks from photo directly, or record voice logs parsed automatically via AI.' },
       { src: '/about13.png', title: 'Screen Time & App Limits', desc: 'Grant usage permission to track daily app activity and set custom time limits to protect focus' }
     ];
 
