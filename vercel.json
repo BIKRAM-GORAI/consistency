@@ -44,7 +44,7 @@
     },
     {
       "path": "/api/cron/sync-leetcode",
-      "schedule": "5 0 * * *"
+      "schedule": "35 18 * * *"
     }
   ],
   "headers": [
