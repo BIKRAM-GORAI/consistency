@@ -40,6 +40,7 @@ async function openProfileModal() {
   const storedUsername = localStorage.getItem('userUsername') || '';
   const storedPic = localStorage.getItem('window.userProfilePicture') || localStorage.getItem('userProfilePicture') || '';
   const storedShowcase = localStorage.getItem('showOnLeaderboard');
+  const storedEmailVerified = localStorage.getItem('isEmailVerified') === 'true';
 
   const storedLcUsername = localStorage.getItem('leetcodeUsername') || '';
   const storedLcPending = localStorage.getItem('leetcodePendingUsername') || '';
@@ -53,6 +54,7 @@ async function openProfileModal() {
     username: storedUsername,
     profilePicture: storedPic,
     showOnLeaderboard: storedShowcase !== 'false',
+    isEmailVerified: storedEmailVerified,
     emailNotifications: true,
     isPublicProfile: true,
     leetcodeUsername: storedLcUsername,

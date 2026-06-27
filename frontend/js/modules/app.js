@@ -269,7 +269,7 @@ async function deleteTemplate(templateId) {
   }
 }
 
-async function toggleAppTheme(theme) {
+async function toggleAppTheme(theme, skipApi = false) {
   if (theme === 'premium-aurora') {
     document.documentElement.setAttribute('data-theme', 'premium-aurora');
     localStorage.setItem('theme', 'premium-aurora');
@@ -291,6 +291,8 @@ async function toggleAppTheme(theme) {
   if (themeSelect) {
     themeSelect.value = theme;
   }
+
+  if (skipApi) return;
   
   try {
     await apiFetch(`${window.API}/api/auth/settings`, {

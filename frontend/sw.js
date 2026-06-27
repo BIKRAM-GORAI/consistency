@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v89'; // Bumped cache version to force cache update
+const CACHE_NAME = 'consistency-cache-v90'; // Bumped cache version to force cache update
 const STATIC_ASSETS = [
   '/',
   'index.html',

@@ -2770,10 +2770,20 @@ window.addEventListener('pagehide', () => {
   if (activeChatGroupId) updatePresence(activeChatGroupId, false);
 });
 
+let _lastVisibilitySyncTime = 0;
 document.addEventListener('visibilitychange', () => {
+  const isVisible = document.visibilityState === 'visible';
   if (activeChatGroupId) {
-    const isVisible = document.visibilityState === 'visible';
     updatePresence(activeChatGroupId, isVisible);
+  }
+  if (isVisible) {
+    const now = Date.now();
+    if (now - _lastVisibilitySyncTime > 10000) {
+      _lastVisibilitySyncTime = now;
+      if (typeof proactiveSync === 'function') {
+        proactiveSync(true);
+      }
+    }
   }
 });
 
@@ -2931,27 +2941,8 @@ async function proactiveSync(force = false) {
 
       // Apply profile updates to UI
       if (profile.theme && localStorage.getItem('theme') !== profile.theme) {
-        localStorage.setItem('theme', profile.theme);
-        if (profile.theme === 'dark') {
-          document.documentElement.setAttribute('data-theme', 'dark');
-          const themeToggle = document.getElementById('dark-theme-toggle');
-          if (themeToggle) themeToggle.checked = true;
-        } else if (profile.theme === 'premium-aurora') {
-          document.documentElement.setAttribute('data-theme', 'premium-aurora');
-          const themeToggle = document.getElementById('dark-theme-toggle');
-          if (themeToggle) themeToggle.checked = false;
-        } else if (profile.theme === 'minimalistic') {
-          document.documentElement.setAttribute('data-theme', 'minimalistic');
-          const themeToggle = document.getElementById('dark-theme-toggle');
-          if (themeToggle) themeToggle.checked = false;
-        } else if (profile.theme === 'claymorphism') {
-          document.documentElement.setAttribute('data-theme', 'claymorphism');
-          const themeToggle = document.getElementById('dark-theme-toggle');
-          if (themeToggle) themeToggle.checked = false;
-        } else {
-          document.documentElement.removeAttribute('data-theme');
-          const themeToggle = document.getElementById('dark-theme-toggle');
-          if (themeToggle) themeToggle.checked = false;
+        if (typeof window.toggleAppTheme === 'function') {
+          window.toggleAppTheme(profile.theme, true);
         }
       }
       if (profile.profilePicture) {
