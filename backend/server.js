@@ -4,7 +4,7 @@ const cors    = require('cors');
 const path    = require('path');
 const connectDB = require('./config/db');
 const { authenticateToken } = require('./middleware/auth');
-const { generalLimiter, authLimiter, dataModificationLimiter, readOnlyLimiter, architectureLimiter } = require('./middleware/rateLimit');
+const { generalLimiter, authLimiter, dataModificationLimiter, readOnlyLimiter } = require('./middleware/rateLimit');
 
 const authRoutes        = require('./routes/authRoutes');
 const dayRoutes         = require('./routes/dayRoutes');
@@ -246,10 +246,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/landing.html'));
 });
 
-// ── Architecture Report Page ──
-app.get('/architecture', (req, res) => {
-  res.redirect('https://github.com/BIKRAM-GORAI/consistency#-system-architecture');
-});
+
 
 // ── SPA fallback: return landing.html for unknown routes ───
 app.get('*', (req, res) => {

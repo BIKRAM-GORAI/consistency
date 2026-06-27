@@ -19,10 +19,7 @@
       "src": "/js/libs/lucide/(.*)",
       "dest": "backend/server.js"
     },
-    {
-      "src": "/architecture",
-      "dest": "backend/server.js"
-    },
+
     {
       "src": "/$",
       "dest": "frontend/landing.html"

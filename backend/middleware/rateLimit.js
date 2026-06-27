@@ -74,24 +74,10 @@ const readOnlyLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/**
- * Strict rate limiter for the public architecture report page
- */
-const architectureLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: {
-    message: 'Too many requests for the architecture report. Please try again in 15 minutes.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 module.exports = {
   generalLimiter,
   authLimiter,
   dataModificationLimiter,
   readOnlyLimiter,
-  architectureLimiter,
   mediaUploadLimiter
 };
