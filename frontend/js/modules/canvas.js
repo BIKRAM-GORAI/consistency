@@ -2068,8 +2068,9 @@ window.downloadCanvas = async function(format) {
     await new Promise(r => setTimeout(r, 120));
 
     // ── STEP 5: Capture node content with TRANSPARENT background ──────────
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const bgColor = isDark ? '#212121' : '#f5f2eb';
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const isDark = currentTheme === 'dark';
+    const bgColor = currentTheme === 'claymorphism' ? '#ffffff' : (isDark ? '#212121' : '#f5f2eb');
 
     // ── CRITICAL: html2canvas cannot resolve CSS custom properties (var() tokens)
     // for either HTML elements or SVG elements. We must inline all computed values.
