@@ -5,6 +5,14 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Solve Node.js DNS resolution issues with MongoDB Atlas SRV on some Windows environments
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+  console.warn('Failed to set custom DNS servers:', err.message);
+}
 
 // Configure multer to store uploaded files in memory
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // limit to 10MB
