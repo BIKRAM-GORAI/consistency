@@ -1,0 +1,405 @@
+/* ============================================================
+   LANDING PAGE THEME OVERRIDES (landing-themes.css)
+   ============================================================ */
+
+/* 1. DARK BRUTALISTIC THEME OVERRIDES */
+[data-theme="dark"] {
+  --bg-dark: #121212;
+  --bg-dark-card: #1e1e1e;
+  --border-dark: #333333;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg-dark) !important;
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .landing-nav {
+  background-color: #1a1a1a !important;
+  border-bottom: 4px solid var(--border-dark) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .landing-nav-brand,
+[data-theme="dark"] .landing-nav-actions a.btn-nav-ghost,
+[data-theme="dark"] .landing-subtitle,
+[data-theme="dark"] .landing-section-title,
+[data-theme="dark"] .landing-footer-note,
+[data-theme="dark"] .landing-about p,
+[data-theme="dark"] .landing-faq p,
+[data-theme="dark"] .team-name,
+[data-theme="dark"] .testimonial-text,
+[data-theme="dark"] .faq-answer {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .landing-wrap {
+  background-color: var(--bg-dark) !important;
+}
+
+[data-theme="dark"] .feature-card,
+[data-theme="dark"] .team-card,
+[data-theme="dark"] .upcoming-card,
+[data-theme="dark"] .screenshot-card,
+[data-theme="dark"] .testimonial-card,
+[data-theme="dark"] .faq-card,
+[data-theme="dark"] .demo-habit-card {
+  background-color: var(--bg-dark-card) !important;
+  border: 4px solid var(--border-dark) !important;
+  box-shadow: 6px 6px 0px var(--border-dark) !important;
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .feature-card h3,
+[data-theme="dark"] .feature-card p,
+[data-theme="dark"] .screenshot-overlay h4,
+[data-theme="dark"] .screenshot-overlay p,
+[data-theme="dark"] .demo-task span {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-landing-secondary {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border-color: var(--border-dark) !important;
+  box-shadow: 6px 6px 0px var(--border-dark) !important;
+}
+[data-theme="dark"] .btn-landing-secondary:hover {
+  background-color: var(--pink) !important;
+  box-shadow: 8px 8px 0px var(--border-dark) !important;
+}
+
+[data-theme="dark"] .landing-themes-preview {
+  background-color: #1a1a1a !important;
+  border-top: 4px solid var(--border-dark) !important;
+  border-bottom: 4px solid var(--border-dark) !important;
+}
+
+[data-theme="dark"] .landing-themes-preview p {
+  color: #aaaaaa !important;
+}
+
+[data-theme="dark"] .feature-pill {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border: 2px solid var(--border-dark) !important;
+}
+
+
+/* 2. MINIMALISM THEME OVERRIDES */
+[data-theme="minimalistic"] body {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+[data-theme="minimalistic"] .landing-nav {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+[data-theme="minimalistic"] .landing-nav-brand,
+[data-theme="minimalistic"] .landing-nav-actions a.btn-nav-ghost,
+[data-theme="minimalistic"] .landing-subtitle,
+[data-theme="minimalistic"] .landing-section-title,
+[data-theme="minimalistic"] .landing-footer-note,
+[data-theme="minimalistic"] .landing-about p,
+[data-theme="minimalistic"] .landing-faq p,
+[data-theme="minimalistic"] .team-name,
+[data-theme="minimalistic"] .testimonial-text,
+[data-theme="minimalistic"] .faq-answer {
+  color: #000000 !important;
+}
+
+[data-theme="minimalistic"] .landing-wrap {
+  background-color: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .feature-card,
+[data-theme="minimalistic"] .team-card,
+[data-theme="minimalistic"] .upcoming-card,
+[data-theme="minimalistic"] .screenshot-card,
+[data-theme="minimalistic"] .testimonial-card,
+[data-theme="minimalistic"] .faq-card,
+[data-theme="minimalistic"] .demo-habit-card {
+  background-color: #ffffff !important;
+  border: 1px solid #000000 !important;
+  box-shadow: none !important;
+  border-radius: 0px !important;
+  color: #000000 !important;
+}
+
+[data-theme="minimalistic"] .feature-card h3,
+[data-theme="minimalistic"] .feature-card p,
+[data-theme="minimalistic"] .screenshot-overlay h4,
+[data-theme="minimalistic"] .screenshot-overlay p,
+[data-theme="minimalistic"] .demo-task span {
+  color: #000000 !important;
+}
+
+[data-theme="minimalistic"] .btn-landing-primary,
+[data-theme="minimalistic"] .btn-landing-secondary,
+[data-theme="minimalistic"] .btn-landing-apk {
+  border: 1px solid #000000 !important;
+  box-shadow: none !important;
+  border-radius: 0px !important;
+  text-transform: uppercase !important;
+  padding: 16px 40px !important;
+}
+[data-theme="minimalistic"] .btn-landing-primary {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+[data-theme="minimalistic"] .btn-landing-secondary,
+[data-theme="minimalistic"] .btn-landing-apk {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+[data-theme="minimalistic"] .landing-themes-preview {
+  background-color: #ffffff !important;
+  border-top: 1px solid #000000 !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+[data-theme="minimalistic"] .landing-themes-preview p {
+  color: #666666 !important;
+}
+
+[data-theme="minimalistic"] .feature-pill {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .shape {
+  display: none !important;
+}
+
+
+/* 3. GLASSMORPHISM (AURORA) THEME OVERRIDES */
+[data-theme="premium-aurora"] body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="premium-aurora"] .landing-nav {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="premium-aurora"] .landing-nav-brand,
+[data-theme="premium-aurora"] .landing-nav-actions a.btn-nav-ghost,
+[data-theme="premium-aurora"] .landing-subtitle,
+[data-theme="premium-aurora"] .landing-section-title,
+[data-theme="premium-aurora"] .landing-footer-note,
+[data-theme="premium-aurora"] .landing-about p,
+[data-theme="premium-aurora"] .landing-faq p,
+[data-theme="premium-aurora"] .team-name,
+[data-theme="premium-aurora"] .testimonial-text,
+[data-theme="premium-aurora"] .faq-answer {
+  color: #ffffff !important;
+}
+
+[data-theme="premium-aurora"] .landing-wrap {
+  background: transparent !important;
+}
+
+[data-theme="premium-aurora"] .feature-card,
+[data-theme="premium-aurora"] .team-card,
+[data-theme="premium-aurora"] .upcoming-card,
+[data-theme="premium-aurora"] .screenshot-card,
+[data-theme="premium-aurora"] .testimonial-card,
+[data-theme="premium-aurora"] .faq-card,
+[data-theme="premium-aurora"] .demo-habit-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+  border-radius: 16px !important;
+  color: #ffffff !important;
+}
+
+[data-theme="premium-aurora"] .feature-card h3,
+[data-theme="premium-aurora"] .feature-card p,
+[data-theme="premium-aurora"] .screenshot-overlay h4,
+[data-theme="premium-aurora"] .screenshot-overlay p,
+[data-theme="premium-aurora"] .demo-task span {
+  color: #ffffff !important;
+}
+
+[data-theme="premium-aurora"] .btn-landing-primary {
+  background: linear-gradient(90deg, #a855f7, #ec4899) !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.4) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+}
+[data-theme="premium-aurora"] .btn-landing-primary:hover {
+  transform: translateY(-2px) !important;
+}
+
+[data-theme="premium-aurora"] .btn-landing-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+}
+[data-theme="premium-aurora"] .btn-landing-secondary:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="premium-aurora"] .btn-landing-apk {
+  background: linear-gradient(90deg, #10b981, #059669) !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+}
+
+[data-theme="premium-aurora"] .landing-themes-preview {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="premium-aurora"] .landing-themes-preview p {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="premium-aurora"] .feature-pill {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+
+[data-theme="premium-aurora"] .shape {
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(139, 92, 246, 0.05) 50%, transparent 100%) !important;
+}
+
+
+/* 4. CLAYMORPHISM THEME OVERRIDES */
+[data-theme="claymorphism"] body {
+  background-color: #f0fbf5 !important;
+  color: #1c3d2e !important;
+}
+
+[data-theme="claymorphism"] .landing-nav {
+  background-color: #ffffff !important;
+  border-bottom: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+  color: #105032 !important;
+  border-radius: 0 0 16px 16px !important;
+}
+
+[data-theme="claymorphism"] .landing-nav-brand,
+[data-theme="claymorphism"] .landing-nav-actions a.btn-nav-ghost,
+[data-theme="claymorphism"] .landing-subtitle,
+[data-theme="claymorphism"] .landing-section-title,
+[data-theme="claymorphism"] .landing-footer-note,
+[data-theme="claymorphism"] .landing-about p,
+[data-theme="claymorphism"] .landing-faq p,
+[data-theme="claymorphism"] .team-name,
+[data-theme="claymorphism"] .testimonial-text,
+[data-theme="claymorphism"] .faq-answer {
+  color: #105032 !important;
+}
+
+[data-theme="claymorphism"] .landing-wrap {
+  background-color: #f0fbf5 !important;
+}
+
+[data-theme="claymorphism"] .feature-card,
+[data-theme="claymorphism"] .team-card,
+[data-theme="claymorphism"] .upcoming-card,
+[data-theme="claymorphism"] .screenshot-card,
+[data-theme="claymorphism"] .testimonial-card,
+[data-theme="claymorphism"] .faq-card,
+[data-theme="claymorphism"] .demo-habit-card {
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 25px rgba(35, 75, 55, 0.08), 
+              inset 2px 2px 5px rgba(255,255,255,0.7), 
+              inset -2px -2px 5px rgba(0,0,0,0.05) !important;
+  color: #1c3d2e !important;
+}
+
+[data-theme="claymorphism"] .feature-card h3,
+[data-theme="claymorphism"] .feature-card p,
+[data-theme="claymorphism"] .screenshot-overlay h4,
+[data-theme="claymorphism"] .screenshot-overlay p,
+[data-theme="claymorphism"] .demo-task span {
+  color: #1c3d2e !important;
+}
+
+[data-theme="claymorphism"] .btn-landing-primary {
+  background: #27a55a !important;
+  border: none !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 15px rgba(39, 165, 90, 0.3), 
+              inset 2px 2px 4px rgba(255,255,255,0.4) !important;
+}
+[data-theme="claymorphism"] .btn-landing-primary:hover {
+  transform: translateY(-2px) !important;
+}
+
+[data-theme="claymorphism"] .btn-landing-secondary {
+  background: rgba(255,255,255,0.9) !important;
+  border: none !important;
+  border-radius: 14px !important;
+  color: #105032 !important;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05), 
+              inset 2px 2px 4px rgba(255,255,255,0.8), 
+              inset -2px -2px 4px rgba(0,0,0,0.05) !important;
+}
+[data-theme="claymorphism"] .btn-landing-secondary:hover {
+  background: #ffffff !important;
+}
+
+[data-theme="claymorphism"] .btn-landing-apk {
+  background: #a855f7 !important;
+  border: none !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 15px rgba(168, 85, 247, 0.3), 
+              inset 2px 2px 4px rgba(255,255,255,0.4) !important;
+}
+
+[data-theme="claymorphism"] .landing-themes-preview {
+  background-color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03) !important;
+  margin: 20px !important;
+}
+
+[data-theme="claymorphism"] .landing-themes-preview p {
+  color: #666666 !important;
+}
+
+[data-theme="claymorphism"] .feature-pill {
+  background-color: #ffffff !important;
+  color: #1c3d2e !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 10px rgba(35, 75, 55, 0.05) !important;
+}
+
+/* Swapper Interactions */
+.btn-theme-swapper:hover {
+  transform: translateY(-2px) !important;
+}
+.btn-theme-swapper:active {
+  transform: translateY(1px) !important;
+}
