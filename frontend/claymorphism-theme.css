@@ -725,6 +725,13 @@
   background-position: 0 0, 15px 15px !important;
 }
 
+/* ── Prevent body background leaking on the right side during export ── */
+[data-theme="claymorphism"] body.exporting-canvas,
+[data-theme="claymorphism"] body.exporting-canvas #canvas-viewport-container {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
 /* ── AI Sidebar — distinct white/light background so it doesn't merge ── */
 [data-theme="claymorphism"] #canvas-sidebar-panel {
   background: #ffffff !important;
