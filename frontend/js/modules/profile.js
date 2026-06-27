@@ -323,13 +323,16 @@ async function submitProfileSettings() {
 
   try {
     const profilePicture = document.getElementById('profile-pic-dataurl').value;
+    const themeSelect = document.getElementById('theme-select');
+    const selectedTheme = themeSelect ? themeSelect.value : 'light';
     const payload = { 
       emailNotifications, 
       isPublicProfile, 
       showOnLeaderboard,
       globalStreakReminderEnabled,
       globalStreakReminderTime,
-      globalStreakReminderType
+      globalStreakReminderType,
+      theme: selectedTheme
     };
     if (!usernameInput.readOnly && username) {
       payload.username = username;
