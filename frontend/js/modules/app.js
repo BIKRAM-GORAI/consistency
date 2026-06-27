@@ -279,6 +279,9 @@ async function toggleAppTheme(theme) {
   } else if (theme === 'minimalistic') {
     document.documentElement.setAttribute('data-theme', 'minimalistic');
     localStorage.setItem('theme', 'minimalistic');
+  } else if (theme === 'claymorphism') {
+    document.documentElement.setAttribute('data-theme', 'claymorphism');
+    localStorage.setItem('theme', 'claymorphism');
   } else {
     document.documentElement.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
@@ -387,6 +390,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.setAttribute('data-theme', 'premium-aurora');
   } else if (savedTheme === 'minimalistic') {
     document.documentElement.setAttribute('data-theme', 'minimalistic');
+  } else if (savedTheme === 'claymorphism') {
+    document.documentElement.setAttribute('data-theme', 'claymorphism');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }

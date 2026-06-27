@@ -1,0 +1,360 @@
+/* ============================================================
+   CONSISTENCY TRACKER — Premium Claymorphism Theme
+   Soft 3D Clay · Volumetric Shadows · Rounded & Puffed Elements
+   ============================================================ */
+
+/* ── 1. CSS Custom Properties Override ── */
+[data-theme="claymorphism"] {
+  /* ── Body Background (Soft Pastel Lavender / Lilac) ── */
+  --bg:                  #e5e9f5;
+  --bg-card:             #ffffff;
+  --bg-input:            #f0f2fa;
+  --bg-muted:            #f5f7ff;
+  --bg-readonly:         #ebedf7;
+  --graph-empty:         #dce0ee;
+  --chat-messages-bg:    #e5e9f5;
+  --day-card-dot-color:  transparent; /* Remove brutalist pattern */
+
+  /* ── Text (Rich Charcoal Slate — High Contrast & Legibility) ── */
+  --text:                #1e293b;
+  --text-muted:          #475569;
+  --text-light:          #94a3b8;
+
+  /* ── Soft Tactile Clay Accent Palette ── */
+  --yellow:              #fef08a; /* Pastel Yellow */
+  --pink:                #fbcfe8; /* Pastel Pink */
+  --teal:                #6ee7b7; /* Pastel Teal Mint */
+  --coral:               #fca5a5; /* Pastel Coral Rose */
+  --purple:              #c7d2fe; /* Pastel Lilac Purple */
+  --lime:                #d9f99d; /* Pastel Lime */
+  --blue:                #93c5fd; /* Pastel Sky Blue */
+  --red:                 #fca5a5; /* Pastel Coral Red */
+  --green:               #a7f3d0; /* Pastel Emerald Green */
+  --amber:               #fde68a; /* Pastel Apricot Amber */
+  --orange:              #fed7aa; /* Pastel Orange */
+
+  /* ── Border System (Clean Rounded White Edge Highlights) ── */
+  --black:               #1e293b;
+  --border:              2px solid rgba(255, 255, 255, 0.85);
+  --border-2:            1.5px solid rgba(255, 255, 255, 0.6);
+
+  /* ── Rounded Corners (Clay-style, organic, soft) ── */
+  --r-sm:                12px;
+  --r-md:                20px;
+  --r-lg:                26px;
+  --r-xl:                34px;
+
+  /* ── Goal State Backgrounds ── */
+  --bg-goal-completed:         rgba(167, 243, 208, 0.45);
+  --bg-goal-completed-overdue: rgba(254, 240, 138, 0.45);
+  --bg-goal-overdue:           rgba(252, 165, 165, 0.45);
+  --bg-cat-input:              rgba(255, 255, 255, 0.8);
+  --bg-ach-section:            rgba(255, 255, 255, 0.6);
+  --bg-ach-note:               rgba(0, 0, 0, 0.02);
+
+  /* ── Distraction Colors ── */
+  --distraction-green:         #10b981;
+  --distraction-red:           #ef4444;
+  --bg-distraction-green:      rgba(16, 185, 129, 0.08);
+  --bg-distraction-red:        rgba(239, 68, 68, 0.08);
+}
+
+/* ============================================================
+   2. DYNAMIC CLAY BACKGROUND GESTURE
+   ============================================================ */
+[data-theme="claymorphism"] .aurora-bg {
+  display: block;
+  background: radial-gradient(circle at 15% 15%, rgba(200, 210, 254, 0.4) 0%, transparent 50%),
+              radial-gradient(circle at 85% 80%, rgba(251, 207, 232, 0.4) 0%, transparent 50%),
+              #e5e9f5;
+}
+
+[data-theme="claymorphism"] .aurora-blob {
+  opacity: 0.5;
+  filter: blur(55px);
+  mix-blend-mode: multiply;
+}
+
+/* ============================================================
+   3. PUFFED CARDS & CONTAINERS
+   ============================================================ */
+[data-theme="claymorphism"] .card,
+[data-theme="claymorphism"] .day-card,
+[data-theme="claymorphism"] .pomo-card,
+[data-theme="claymorphism"] .goal-card,
+[data-theme="claymorphism"] .achievement-card,
+[data-theme="claymorphism"] .leaderboard-card,
+[data-theme="claymorphism"] .group-card,
+[data-theme="claymorphism"] .limits-card,
+[data-theme="claymorphism"] .quick-view-card,
+[data-theme="claymorphism"] #ai-bio-card,
+[data-theme="claymorphism"] .modal,
+[data-theme="claymorphism"] .accordion-panel {
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 8px 8px 16px rgba(165, 180, 228, 0.35), 
+              -8px -8px 16px #ffffff, 
+              inset 2px 2px 5px rgba(255, 255, 255, 0.8), 
+              inset -2px -2px 5px rgba(165, 180, 228, 0.2) !important;
+  border-radius: 24px !important;
+  transform: none !important;
+  background: #ffffff !important;
+  transition: box-shadow 0.3s ease, transform 0.2s ease !important;
+}
+
+/* Subtle clay cards lift on hover */
+[data-theme="claymorphism"] .day-card:hover,
+[data-theme="claymorphism"] .goal-card:hover,
+[data-theme="claymorphism"] .achievement-card:hover,
+[data-theme="claymorphism"] .group-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 12px 12px 24px rgba(165, 180, 228, 0.4), 
+              -10px -10px 20px #ffffff, 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.9), 
+              inset -3px -3px 6px rgba(165, 180, 228, 0.25) !important;
+}
+
+/* Remove brutalist background colors and text-shadows */
+[data-theme="claymorphism"] * {
+  text-shadow: none !important;
+}
+
+/* ============================================================
+   4. TACTILE CLAY BUTTONS
+   ============================================================ */
+[data-theme="claymorphism"] .btn,
+[data-theme="claymorphism"] .btn-primary,
+[data-theme="claymorphism"] .btn-secondary,
+[data-theme="claymorphism"] .btn-ghost,
+[data-theme="claymorphism"] .btn-lb-sort,
+[data-theme="claymorphism"] .modal-close {
+  border-radius: 20px !important;
+  border: 2px solid rgba(255, 255, 255, 0.7) !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+  transform: none !important;
+}
+
+/* Primary Button Override (Periwinkle Clay) */
+[data-theme="claymorphism"] .btn-primary {
+  background: var(--purple) !important;
+  color: #1e293b !important;
+  box-shadow: 0 6px 12px rgba(100, 110, 200, 0.15), 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.5), 
+              inset -3px -3px 6px rgba(0, 0, 0, 0.1) !important;
+}
+[data-theme="claymorphism"] .btn-primary:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 16px rgba(100, 110, 200, 0.2), 
+              inset 3px 3px 6px rgba(255, 255, 255, 0.6), 
+              inset -3px -3px 6px rgba(0, 0, 0, 0.12) !important;
+}
+[data-theme="claymorphism"] .btn-primary:active {
+  transform: translateY(1px) scale(0.98) !important;
+  box-shadow: 0 2px 4px rgba(100, 110, 200, 0.1), 
+              inset 1px 1px 3px rgba(255, 255, 255, 0.3), 
+              inset -1px -1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Secondary & Ghost Buttons (Polished White Clay) */
+[data-theme="claymorphism"] .btn-secondary,
+[data-theme="claymorphism"] .btn-ghost,
+[data-theme="claymorphism"] .btn-lb-sort {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  box-shadow: 4px 4px 10px rgba(165, 180, 228, 0.25), 
+              -4px -4px 10px #ffffff, 
+              inset 2px 2px 4px rgba(255, 255, 255, 0.8), 
+              inset -2px -2px 4px rgba(165, 180, 228, 0.15) !important;
+}
+[data-theme="claymorphism"] .btn-secondary:hover,
+[data-theme="claymorphism"] .btn-ghost:hover,
+[data-theme="claymorphism"] .btn-lb-sort:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  background: #fafbff !important;
+  box-shadow: 6px 6px 12px rgba(165, 180, 228, 0.3), 
+              -6px -6px 12px #ffffff, 
+              inset 3px 3px 5px rgba(255, 255, 255, 0.9), 
+              inset -3px -3px 5px rgba(165, 180, 228, 0.2) !important;
+}
+[data-theme="claymorphism"] .btn-secondary:active,
+[data-theme="claymorphism"] .btn-ghost:active,
+[data-theme="claymorphism"] .btn-lb-sort:active {
+  transform: translateY(1px) scale(0.98) !important;
+  box-shadow: 2px 2px 5px rgba(165, 180, 228, 0.15), 
+              -2px -2px 5px #ffffff, 
+              inset 1px 1px 3px rgba(255, 255, 255, 0.7), 
+              inset -1px -1px 3px rgba(165, 180, 228, 0.1) !important;
+}
+
+[data-theme="claymorphism"] .btn-lb-sort.active {
+  background: var(--purple) !important;
+  color: #1e293b !important;
+  box-shadow: inset 3px 3px 6px rgba(255, 255, 255, 0.5), 
+              inset -3px -3px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================================
+   5. CARVED (DEBOSSED) FORM CONTROLS
+   ============================================================ */
+[data-theme="claymorphism"] .form-control,
+[data-theme="claymorphism"] input[type="text"],
+[data-theme="claymorphism"] input[type="number"],
+[data-theme="claymorphism"] input[type="password"],
+[data-theme="claymorphism"] input[type="email"],
+[data-theme="claymorphism"] input[type="datetime-local"],
+[data-theme="claymorphism"] input[type="time"],
+[data-theme="claymorphism"] textarea,
+[data-theme="claymorphism"] select {
+  background: #f0f2fa !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 16px !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  box-shadow: inset 4px 4px 8px rgba(165, 180, 228, 0.35), 
+              inset -4px -4px 8px #ffffff, 
+              2px 2px 4px rgba(255, 255, 255, 0.5) !important;
+  outline: none !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+[data-theme="claymorphism"] .form-control:focus,
+[data-theme="claymorphism"] select:focus,
+[data-theme="claymorphism"] textarea:focus {
+  border-color: var(--purple) !important;
+  box-shadow: inset 4px 4px 8px rgba(165, 180, 228, 0.25), 
+              inset -4px -4px 8px #ffffff, 
+              0 0 8px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* ============================================================
+   6. 3D GLOSSY TOGGLES
+   ============================================================ */
+[data-theme="claymorphism"] .toggle-track {
+  background: #e2e8f0 !important;
+  border-radius: 20px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.08), 
+              inset -3px -3px 6px #ffffff !important;
+}
+
+[data-theme="claymorphism"] input:checked + .toggle-track {
+  background: var(--teal) !important;
+}
+
+[data-theme="claymorphism"] .toggle-thumb {
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 2px 2px 5px rgba(100, 110, 200, 0.25), 
+              inset 1px 1px 2px rgba(255, 255, 255, 0.8) !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+/* ============================================================
+   7. NAVBAR & APP HEADER OVERRIDES
+   ============================================================ */
+[data-theme="claymorphism"] .navbar {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 4px 12px rgba(165, 180, 228, 0.25) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 0 0 24px 24px !important;
+}
+
+[data-theme="claymorphism"] .bottom-nav-container {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 8px 8px 16px rgba(165, 180, 228, 0.35) !important;
+  border-radius: 28px !important;
+  bottom: 12px !important;
+  margin: 0 12px !important;
+  width: calc(100% - 24px) !important;
+}
+
+[data-theme="claymorphism"] .nav-link-btn {
+  border-radius: 18px !important;
+  border: 1.5px solid transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="claymorphism"] .nav-link-btn.active {
+  background: var(--purple) !important;
+  color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.5), 
+              inset -2px -2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================================
+   8. TACTILE TIMELINE MESSAGES (CHAT BUBBLES)
+   ============================================================ */
+[data-theme="claymorphism"] .message-bubble {
+  border-radius: 20px !important;
+  border: 2px solid rgba(255, 255, 255, 0.7) !important;
+  padding: 12px 18px !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="claymorphism"] .message-bubble.self {
+  background: var(--purple) !important;
+  color: #1e293b !important;
+  border-bottom-right-radius: 4px !important;
+  box-shadow: 4px 4px 8px rgba(165, 180, 228, 0.2), 
+              inset 2px 2px 4px rgba(255, 255, 255, 0.4), 
+              inset -2px -2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="claymorphism"] .message-bubble.other {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-bottom-left-radius: 4px !important;
+  box-shadow: 4px 4px 8px rgba(165, 180, 228, 0.2), 
+              inset 2px 2px 4px rgba(255, 255, 255, 0.8), 
+              inset -2px -2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ============================================================
+   9. MISCELLANEOUS CHIPS & BADGES
+   ============================================================ */
+[data-theme="claymorphism"] .motivation-chip,
+[data-theme="claymorphism"] .ach-privacy-banner,
+[data-theme="claymorphism"] #weekly-stats-summary,
+[data-theme="claymorphism"] #monthly-stats-summary {
+  background: #ffffff !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 4px 4px 10px rgba(165, 180, 228, 0.2) !important;
+  border-radius: 20px !important;
+}
+
+[data-theme="claymorphism"] .day-card-header {
+  border-bottom: 2px dashed rgba(165, 180, 228, 0.2) !important;
+}
+
+[data-theme="claymorphism"] .badge-img-container {
+  border-radius: 50% !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 4px 4px 8px rgba(165, 180, 228, 0.25) !important;
+}
+
+/* ============================================================
+   10. SCROLLBARS FOR THE CLAY THEME
+   ============================================================ */
+[data-theme="claymorphism"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-theme="claymorphism"] ::-webkit-scrollbar-track {
+  background: rgba(165, 180, 228, 0.1);
+  border-radius: 10px;
+}
+[data-theme="claymorphism"] ::-webkit-scrollbar-thumb {
+  background: rgba(165, 180, 228, 0.4);
+  border: 2px solid #e5e9f5;
+  border-radius: 10px;
+}
+[data-theme="claymorphism"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(165, 180, 228, 0.6);
+}
