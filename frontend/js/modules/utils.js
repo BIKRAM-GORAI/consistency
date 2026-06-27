@@ -339,6 +339,13 @@ window.escHtml = escHtml;
 
 function linkify(escapedText) {
   if (!escapedText) return '';
+  const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                      navigator.userAgent.includes("Capacitor");
+  const isMobileBrowser = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                          (window.innerWidth <= 768);
+  if (isNativeApp || isMobileBrowser) {
+    return escapedText;
+  }
   const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g;
   return escapedText.replace(urlRegex, (url) => {
     let href = url;
@@ -346,7 +353,7 @@ function linkify(escapedText) {
       href = 'http://' + url;
     }
     const safeHref = href.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    return `<a href="${safeHref}" target="_system" class="chat-message-link" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 700; word-break: break-all;">${url}</a>`;
+    return `<a href="${safeHref}" target="_blank" class="chat-message-link" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 700; word-break: break-all;">${url}</a>`;
   });
 }
 window.linkify = linkify;
@@ -414,26 +421,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (banner) {
     banner.addEventListener('click', handlePushBannerClick);
   }
-
-  // Intercept external links to force opening in default system browser on mobile (Capacitor vs PWA/Web)
-  document.addEventListener('click', (e) => {
-    const link = e.target.closest('a');
-    if (link && (link.getAttribute('target') === '_system' || link.classList.contains('chat-message-link'))) {
-      const href = link.getAttribute('href');
-      if (href) {
-        const isNativeCapacitor = window.Capacitor && 
-                                  (typeof window.Capacitor.isNativePlatform === 'function') && 
-                                  window.Capacitor.isNativePlatform();
-        if (isNativeCapacitor) {
-          e.preventDefault();
-          window.open(href, '_system');
-        } else {
-          // For web browser/PWA, change target to _blank and let browser natively open it in default browser
-          link.setAttribute('target', '_blank');
-        }
-      }
-    }
-  });
 });
 
 // Dynamic WebRTC Camera Capture with fallback to standard input
