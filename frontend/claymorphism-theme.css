@@ -180,7 +180,7 @@
   color: #1a0f00 !important;
   border: none !important;
   border-radius: 20px !important;
-  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.35),
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.35) !important;
 }
 
 /* ── 7-Day Weekly Summary Card (Pastel Indigo / Lavender Claymorphism) ── */
