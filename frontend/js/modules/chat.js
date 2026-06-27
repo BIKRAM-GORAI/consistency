@@ -2770,90 +2770,10 @@ window.addEventListener('pagehide', () => {
   if (activeChatGroupId) updatePresence(activeChatGroupId, false);
 });
 
-async function syncProfileSettings() {
-  if (!navigator.onLine || !window.userId) return;
-  try {
-    const profile = await apiFetch(`${window.API}/api/auth/settings`);
-    if (profile) {
-      profile.userId = window.userId;
-      if (profile.mutedGroups) {
-        localStorage.setItem('userMutedGroups', JSON.stringify(profile.mutedGroups.map(g => String(g._id || g))));
-      } else {
-        localStorage.setItem('userMutedGroups', '[]');
-      }
-      if (profile.isPremium !== undefined) {
-        localStorage.setItem('isPremium', profile.isPremium.toString());
-        localStorage.setItem('subscriptionTier', profile.isPremium ? 'premium' : 'free');
-      }
-      await cacheProfileImagesOffline(profile);
-      if (window.localDb) {
-        await window.localDb.userProfile.put(profile);
-      }
-      
-      if (typeof window.checkChangelogNotifications === 'function') {
-        window.checkChangelogNotifications(profile);
-      }
-      
-      initPushNotifications();
-
-      const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
-      if (showcaseToggle) showcaseToggle.checked = profile.showOnLeaderboard !== false;
-      const lbShowcaseToggle = document.getElementById('leaderboard-showcase-toggle');
-      if (lbShowcaseToggle) lbShowcaseToggle.checked = profile.showOnLeaderboard !== false;
-
-      localStorage.setItem('showOnLeaderboard', (profile.showOnLeaderboard !== false).toString());
-
-      if (profile.theme && localStorage.getItem('theme') !== profile.theme) {
-        if (typeof window.toggleAppTheme === 'function') {
-          window.toggleAppTheme(profile.theme, true);
-        }
-      }
-      if (profile.profilePicture) {
-        window.userProfilePicture = profile.profilePicture;
-        localStorage.setItem('window.userProfilePicture', window.userProfilePicture);
-      }
-      if (profile.name) {
-        window.userName = profile.name;
-        localStorage.setItem('window.userName', profile.name);
-        const chipName = document.getElementById('user-chip-name');
-        if (chipName) chipName.textContent = profile.name;
-      }
-      if (profile.username) {
-        localStorage.setItem('userUsername', profile.username);
-      }
-      if (profile.currentStreak !== undefined) {
-        localStorage.setItem('userCurrentStreak', profile.currentStreak);
-      }
-      if (profile.highestStreak !== undefined) {
-        localStorage.setItem('userHighestStreak', profile.highestStreak);
-      }
-      updateNavAvatar();
-    }
-  } catch (err) {
-    console.warn('Failed to sync profile settings:', err);
-  }
-}
-window.syncProfileSettings = syncProfileSettings;
-
-let _lastVisibilitySyncTime = 0;
 document.addEventListener('visibilitychange', () => {
   const isVisible = document.visibilityState === 'visible';
   if (activeChatGroupId) {
     updatePresence(activeChatGroupId, isVisible);
-  }
-  if (isVisible) {
-    const now = Date.now();
-    if (now - _lastVisibilitySyncTime > 30000) {
-      _lastVisibilitySyncTime = now;
-      
-      // 1. Sync light settings/theme instantly
-      syncProfileSettings();
-      
-      // 2. Refresh background tables only if the 5-minute sync throttle has expired
-      if (typeof proactiveSync === 'function') {
-        proactiveSync(false);
-      }
-    }
   }
 });
 
