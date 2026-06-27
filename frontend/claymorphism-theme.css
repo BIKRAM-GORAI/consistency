@@ -726,10 +726,17 @@
 }
 
 /* ── Prevent body background leaking on the right side during export ── */
-[data-theme="claymorphism"] body.exporting-canvas,
-[data-theme="claymorphism"] body.exporting-canvas #canvas-viewport-container {
+[data-theme="claymorphism"] body.exporting-canvas {
   background-color: #ffffff !important;
   background-image: none !important;
+}
+[data-theme="claymorphism"] body.exporting-canvas #canvas-viewport-container {
+  background-color: #ffffff !important;
+  background-image:
+    radial-gradient(#d1d5db 1.5px, transparent 1.5px),
+    radial-gradient(#d1d5db 1.5px, transparent 1.5px) !important;
+  background-size: 30px 30px !important;
+  background-position: 0 0, 15px 15px !important;
 }
 [data-theme="claymorphism"] body.exporting-canvas .designer-main {
   display: block !important;
