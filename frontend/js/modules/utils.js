@@ -415,19 +415,21 @@ window.addEventListener('DOMContentLoaded', () => {
     banner.addEventListener('click', handlePushBannerClick);
   }
 
-  // Intercept external links to force opening in default system browser on mobile (Capacitor)
+  // Intercept external links to force opening in default system browser on mobile (Capacitor vs PWA/Web)
   document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
     if (link && (link.getAttribute('target') === '_system' || link.classList.contains('chat-message-link'))) {
-      e.preventDefault();
       const href = link.getAttribute('href');
       if (href) {
-        const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
-                            navigator.userAgent.includes("Capacitor");
-        if (isNativeApp) {
+        const isNativeCapacitor = window.Capacitor && 
+                                  (typeof window.Capacitor.isNativePlatform === 'function') && 
+                                  window.Capacitor.isNativePlatform();
+        if (isNativeCapacitor) {
+          e.preventDefault();
           window.open(href, '_system');
         } else {
-          window.open(href, '_blank');
+          // For web browser/PWA, change target to _blank and let browser natively open it in default browser
+          link.setAttribute('target', '_blank');
         }
       }
     }
