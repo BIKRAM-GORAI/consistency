@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const mongoose = require('mongoose');
 
 // Configure multer to store uploaded files in memory
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // limit to 10MB
@@ -13,6 +14,59 @@ const PORT = process.env.PORT || 5002;
 
 app.use(cors());
 app.use(express.json());
+
+// ── Lazy MongoDB connection (only for cron routes that need DB) ──
+let mongoConnected = false;
+async function getMongoose() {
+  if (!mongoConnected) {
+    const uri = process.env.MONGO_URI;
+    if (!uri) throw new Error('MONGO_URI is not set in environment');
+    await mongoose.connect(uri);
+    mongoConnected = true;
+  }
+  return mongoose;
+}
+
+// ── Inline Mongoose schemas for LeetCode Sync (self-contained) ──
+function getModels() {
+  // Avoid re-compiling models on subsequent calls
+  const UserSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    username: String,
+    leetcodeUsername: String,
+    leetcodeAutoSync: { type: Boolean, default: false },
+    subscriptionTier: { type: String, default: 'free' },
+    subscriptionExpiresAt: Date,
+    currentStreak: { type: Number, default: 0 },
+    highestStreak: { type: Number, default: 0 },
+    lastCompletedDate: String,
+    lastActiveAt: Date,
+  }, { strict: false });
+
+  const TaskSchema = new mongoose.Schema({
+    title: String,
+    completed: { type: Boolean, default: false },
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
+  }, { strict: false });
+
+  const CategorySchema = new mongoose.Schema({
+    name: String,
+    tasks: [TaskSchema]
+  });
+
+  const DaySchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true },
+    categories: [CategorySchema],
+    summary: { type: String, default: '' },
+    graceApplied: { type: Boolean, default: false },
+  }, { timestamps: true, strict: false });
+
+  const User = mongoose.models.User || mongoose.model('User', UserSchema);
+  const Day = mongoose.models.Day || mongoose.model('Day', DaySchema);
+  return { User, Day };
+}
 
 // Uptime tracker
 const startTime = Date.now();
@@ -751,6 +805,267 @@ app.post('/api/ai/moderate-group', async (req, res) => {
   }
 });
 
+// ══════════════════════════════════════════════════════════
+//  GET /api/cron/sync-leetcode
+//  Hosted on Render (no timeout limit) — called by external
+//  cron scheduler (e.g. cron-job.org) once per day at ~00:05
+// ══════════════════════════════════════════════════════════
+
+// ── Streak helper functions (inlined from main backend) ──
+function countCompletedTasks(categories) {
+  let completed = 0;
+  for (const cat of (categories || [])) {
+    for (const task of (cat.tasks || [])) {
+      if (task.completed) completed++;
+    }
+  }
+  return completed;
+}
+
+function getUniqueDaysWithCompletions(days) {
+  const dayMap = {};
+  for (const d of days) {
+    const completed = countCompletedTasks(d.categories) > 0 || !!d.graceApplied;
+    if (dayMap[d.date] !== undefined) {
+      dayMap[d.date] = dayMap[d.date] || completed;
+    } else {
+      dayMap[d.date] = completed;
+    }
+  }
+  return Object.keys(dayMap).map(date => ({ date, completed: dayMap[date] }));
+}
+
+function calculateCurrentStreak(days, clientDate) {
+  if (!days || !days.length) return 0;
+  const uniqueDays = getUniqueDaysWithCompletions(days);
+  uniqueDays.sort((a, b) => b.date.localeCompare(a.date));
+  const d = new Date();
+  const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  let today = clientDate || serverToday;
+
+  let streak = 0;
+  let checkDate = today;
+  const todayDay = uniqueDays.find(d => d.date === today);
+  const todayDone = todayDay && todayDay.completed;
+
+  if (!todayDone) {
+    const [y, m, dayNum] = checkDate.split('-').map(Number);
+    const prev = new Date(y, m - 1, dayNum - 1);
+    checkDate = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
+  }
+
+  for (const day of uniqueDays) {
+    if (day.date > checkDate) continue;
+    if (day.date < checkDate) break;
+    if (day.completed) {
+      streak++;
+      const [y, m, dayNum] = checkDate.split('-').map(Number);
+      const prev = new Date(y, m - 1, dayNum - 1);
+      checkDate = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function calculateHighestStreak(days, clientDate) {
+  if (!days || !days.length) return 0;
+  const d = new Date();
+  const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = clientDate || serverToday;
+  const pastAndPresentDays = days.filter(day => day.date <= today);
+  const uniqueDays = getUniqueDaysWithCompletions(pastAndPresentDays);
+  uniqueDays.sort((a, b) => a.date.localeCompare(b.date));
+
+  let maxStreak = 0;
+  let curStreak = 0;
+  let prevDate = null;
+
+  for (const day of uniqueDays) {
+    if (!day.completed) { curStreak = 0; prevDate = null; continue; }
+    if (prevDate === null) {
+      curStreak = 1;
+    } else {
+      const [py, pm, pd] = prevDate.split('-').map(Number);
+      const [cy, cm, cd] = day.date.split('-').map(Number);
+      const diffMs = new Date(cy, cm - 1, cd) - new Date(py, pm - 1, pd);
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      curStreak = diffDays === 1 ? curStreak + 1 : 1;
+    }
+    prevDate = day.date;
+    if (curStreak > maxStreak) maxStreak = curStreak;
+  }
+  return maxStreak;
+}
+
+async function updateStreakForUser(User, Day, userId, yesterdayStr) {
+  const days = await Day.find({ userId }).select('date categories graceApplied');
+  const currentStreak = calculateCurrentStreak(days, yesterdayStr);
+  const highestStreak = calculateHighestStreak(days, yesterdayStr);
+  const mostRecentCompletedDay = days
+    .filter(d => countCompletedTasks(d.categories) > 0)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const lastCompletedDate = mostRecentCompletedDay ? mostRecentCompletedDay.date : null;
+
+  await User.findByIdAndUpdate(userId, {
+    currentStreak,
+    highestStreak,
+    lastCompletedDate,
+    lastActiveAt: new Date()
+  });
+  return currentStreak;
+}
+
+// ── LeetCode Public API helper ──
+async function fetchLeetCodeSubmissions(username, limit = 20) {
+  const url = `https://alfa-leetcode-api.onrender.com/${encodeURIComponent(username)}/acSubmission?limit=${limit}`;
+  const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  if (!resp.ok) throw new Error(`LeetCode API error: ${resp.status}`);
+  const data = await resp.json();
+  return data.submission || [];
+}
+
+async function fetchProblemDifficulty(titleSlug) {
+  const url = `https://alfa-leetcode-api.onrender.com/select?titleSlug=${encodeURIComponent(titleSlug)}`;
+  const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!resp.ok) return 'Medium';
+  const data = await resp.json();
+  return data.difficulty || 'Medium';
+}
+
+// ── The cron endpoint ──
+app.get('/api/cron/sync-leetcode', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    await getMongoose();
+    const { User, Day } = getModels();
+
+    // Determine yesterday in server timezone
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const targetYear = yesterday.getFullYear();
+    const targetMonth = yesterday.getMonth();   // 0-indexed
+    const targetDay = yesterday.getDate();
+    const yesterdayStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+
+    console.log(`[LeetCode Auto-Sync] Running for date: ${yesterdayStr}`);
+
+    // Find all premium users with auto-sync enabled and a connected LeetCode username
+    const premiumUsers = await User.find({
+      subscriptionTier: 'premium',
+      leetcodeUsername: { $ne: null, $exists: true },
+      leetcodeAutoSync: true
+    }).lean(false); // lean(false) keeps save() method
+
+    console.log(`[LeetCode Auto-Sync] ${premiumUsers.length} eligible premium users found.`);
+
+    const results = [];
+
+    for (const user of premiumUsers) {
+      // Throttle: 600ms between external API calls to avoid rate-limiting
+      await new Promise(r => setTimeout(r, 600));
+
+      try {
+        const submissions = await fetchLeetCodeSubmissions(user.leetcodeUsername, 25);
+
+        // Filter for accepted submissions made yesterday (server timezone)
+        const yesterdaySubmissions = submissions.filter(sub => {
+          if (sub.statusDisplay !== 'Accepted') return false;
+          const subDate = new Date(parseInt(sub.timestamp) * 1000);
+          return subDate.getFullYear() === targetYear &&
+                 subDate.getMonth() === targetMonth &&
+                 subDate.getDate() === targetDay;
+        });
+
+        // Deduplicate by titleSlug (keep first Accepted per problem)
+        const seenSlugs = new Set();
+        const uniqueSubmissions = yesterdaySubmissions.filter(sub => {
+          if (seenSlugs.has(sub.titleSlug)) return false;
+          seenSlugs.add(sub.titleSlug);
+          return true;
+        });
+
+        console.log(`[LeetCode Auto-Sync] ${user.username || user.email}: ${uniqueSubmissions.length} problems solved yesterday.`);
+
+        if (uniqueSubmissions.length === 0) {
+          results.push({ user: user.username || user.email, synced: 0, status: 'No new submissions' });
+          continue;
+        }
+
+        // Load or create yesterday's Day document
+        let dayDoc = await Day.findOne({ userId: user._id, date: yesterdayStr });
+        if (!dayDoc) {
+          dayDoc = new Day({ userId: user._id, date: yesterdayStr, categories: [] });
+        }
+
+        // Ensure LeetCode category exists
+        let lcCategory = dayDoc.categories.find(c => c.name === 'LeetCode');
+        if (!lcCategory) {
+          dayDoc.categories.push({ name: 'LeetCode', tasks: [] });
+          lcCategory = dayDoc.categories[dayDoc.categories.length - 1];
+        }
+
+        let tasksAdded = 0;
+
+        for (const sub of uniqueSubmissions) {
+          const taskTitle = `🧠 LeetCode: ${sub.title}`;
+
+          // Skip if already present (idempotent)
+          const alreadyExists = lcCategory.tasks.some(t =>
+            (t.metadata && t.metadata.problemUrl && t.metadata.problemUrl.includes(sub.titleSlug)) ||
+            t.title === taskTitle
+          );
+          if (alreadyExists) continue;
+
+          // Fetch difficulty with throttle
+          await new Promise(r => setTimeout(r, 400));
+          let difficulty = 'Medium';
+          try {
+            difficulty = await fetchProblemDifficulty(sub.titleSlug);
+          } catch (_) {}
+
+          lcCategory.tasks.push({
+            title: taskTitle,
+            completed: true,
+            metadata: {
+              problemUrl: `https://leetcode.com/problems/${sub.titleSlug}/`,
+              difficulty,
+              acceptedDate: yesterdayStr,
+              autoSynced: true,
+              verified: true
+            }
+          });
+          tasksAdded++;
+        }
+
+        if (tasksAdded > 0) {
+          await dayDoc.save();
+          await updateStreakForUser(User, Day, user._id, yesterdayStr);
+          console.log(`[LeetCode Auto-Sync] Saved ${tasksAdded} tasks for ${user.username || user.email}.`);
+        }
+
+        results.push({ user: user.username || user.email, synced: tasksAdded, status: 'OK' });
+
+      } catch (userErr) {
+        console.error(`[LeetCode Auto-Sync] Error for ${user.username || user.email}:`, userErr.message);
+        results.push({ user: user.username || user.email, synced: 0, status: 'Error', error: userErr.message });
+      }
+    }
+
+    res.json({ message: 'LeetCode auto-sync completed.', date: yesterdayStr, processedCount: premiumUsers.length, results });
+
+  } catch (err) {
+    console.error('[LeetCode Auto-Sync] Fatal error:', err);
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+  }
+});
+
 // Start listening
 app.listen(PORT, () => {
   console.log(`🤖 Standalone AI Microservice running on port ${PORT}`);
@@ -759,4 +1074,5 @@ app.listen(PORT, () => {
   console.log(`👉 JWT Summary generation endpoint active at POST http://localhost:${PORT}/api/ai/generate-summary`);
   console.log(`👉 Voice parsing endpoint active at POST http://localhost:${PORT}/api/ai/voice-to-task`);
   console.log(`👉 Group moderation endpoint active at POST http://localhost:${PORT}/api/ai/moderate-group`);
+  console.log(`👉 LeetCode sync cron active at GET http://localhost:${PORT}/api/cron/sync-leetcode`);
 });
