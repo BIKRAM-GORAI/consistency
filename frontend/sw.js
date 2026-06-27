@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v77'; // Bumped cache version
+const CACHE_NAME = 'consistency-cache-v79'; // Bumped cache version to force cache update
 const STATIC_ASSETS = [
   '/',
   'index.html',
@@ -118,6 +118,7 @@ self.addEventListener('fetch', (event) => {
                           url.pathname === '/style.css' ||
                           url.pathname === '/aurora-theme.css' ||
                           url.pathname === '/minimalistic-theme.css' ||
+                          url.pathname === '/claymorphism-theme.css' ||
                           url.pathname.startsWith('/js/modules/') ||
                           url.pathname === '/subscription.html' ||
                           url.pathname === '/donate.html' ||

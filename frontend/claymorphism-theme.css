@@ -1,203 +1,863 @@
 /* ============================================================
-   CONSISTENCY TRACKER — Premium Claymorphism Theme
-   Soft 3D Clay · Volumetric Shadows · Rounded & Puffed Elements
+   CONSISTENCY TRACKER — Claymorphism Theme
+   Solid pastel colors · Darker shades · Puffed 3D Clay
+   No glowing outlines · No gradient blobs
    ============================================================ */
 
 /* ── 1. CSS Custom Properties Override ── */
 [data-theme="claymorphism"] {
-  /* ── Body Background (Soft Pastel Lavender / Lilac) ── */
-  --bg:                  #e5e9f5;
-  --bg-card:             #ffffff;
-  --bg-input:            #f0f2fa;
-  --bg-muted:            #f5f7ff;
-  --bg-readonly:         #ebedf7;
-  --graph-empty:         #dce0ee;
-  --chat-messages-bg:    #e5e9f5;
-  --day-card-dot-color:  transparent; /* Remove brutalist pattern */
+  /* ── Page Background (Medium Pastel Mint, not too light) ── */
+  --bg:                  #b7e4c7;
+  --bg-card:             #f4f4f4;
+  --bg-input:            #d4edde;
+  --bg-muted:            #c8e6d3;
+  --bg-readonly:         #c0dcc8;
+  --graph-empty:         #b0cebb;
+  --chat-messages-bg:    #b7e4c7;
+  --day-card-dot-color:  transparent;
 
-  /* ── Text (Rich Charcoal Slate — High Contrast & Legibility) ── */
-  --text:                #1e293b;
-  --text-muted:          #475569;
-  --text-light:          #94a3b8;
+  /* ── Text — dark enough to contrast on all pastel backgrounds ── */
+  --text:                #0d1f15;
+  --text-muted:          #2c4a38;
+  --text-light:          #5a8a6f;
 
-  /* ── Soft Tactile Clay Accent Palette ── */
-  --yellow:              #fef08a; /* Pastel Yellow */
-  --pink:                #fbcfe8; /* Pastel Pink */
-  --teal:                #6ee7b7; /* Pastel Teal Mint */
-  --coral:               #fca5a5; /* Pastel Coral Rose */
-  --purple:              #c7d2fe; /* Pastel Lilac Purple */
-  --lime:                #d9f99d; /* Pastel Lime */
-  --blue:                #93c5fd; /* Pastel Sky Blue */
-  --red:                 #fca5a5; /* Pastel Coral Red */
-  --green:               #a7f3d0; /* Pastel Emerald Green */
-  --amber:               #fde68a; /* Pastel Apricot Amber */
-  --orange:              #fed7aa; /* Pastel Orange */
+  /* ── Solid Pastel Accent Palette (richer/darker than before) ── */
+  --yellow:              #f5c400;
+  --pink:                #f472b6;
+  --teal:                #2d9a6b;
+  --coral:               #f97316;
+  --purple:              #8b5cf6;
+  --lime:                #65c14c;
+  --blue:                #3b8fd4;
+  --red:                 #e84040;
+  --green:               #27a55a;
+  --amber:               #f5a623;
+  --orange:              #f97316;
 
-  /* ── Border System (Clean Rounded White Edge Highlights) ── */
-  --black:               #1e293b;
-  --border:              2px solid rgba(255, 255, 255, 0.85);
-  --border-2:            1.5px solid rgba(255, 255, 255, 0.6);
+  /* ── Remove brutalist hard borders ── */
+  --black:               #0d1f15;
+  --border:              none;
+  --border-2:            none;
 
-  /* ── Rounded Corners (Clay-style, organic, soft) ── */
-  --r-sm:                12px;
-  --r-md:                20px;
-  --r-lg:                26px;
-  --r-xl:                34px;
+  /* ── Rounded Corners ── */
+  --r-sm:                10px;
+  --r-md:                18px;
+  --r-lg:                24px;
+  --r-xl:                32px;
 
-  /* ── Goal State Backgrounds ── */
-  --bg-goal-completed:         rgba(167, 243, 208, 0.45);
-  --bg-goal-completed-overdue: rgba(254, 240, 138, 0.45);
-  --bg-goal-overdue:           rgba(252, 165, 165, 0.45);
+  /* ── Goal State Backgrounds (richer solid pastels) ── */
+  --bg-goal-completed:         #86efac;
+  --bg-goal-completed-overdue: #fde047;
+  --bg-goal-overdue:           #fca5a5;
   --bg-cat-input:              rgba(255, 255, 255, 0.8);
-  --bg-ach-section:            rgba(255, 255, 255, 0.6);
-  --bg-ach-note:               rgba(0, 0, 0, 0.02);
+  --bg-ach-section:            #e8f7ef;
+  --bg-ach-note:               rgba(0,0,0,0.03);
+
+  /* ── Soft drop shadows (slightly stronger than before) ── */
+  --shadow:    0 5px 16px rgba(20, 50, 35, 0.18);
+  --shadow-lg: 0 8px 22px rgba(20, 50, 35, 0.22);
+  --shadow-sm: 0 3px 10px rgba(20, 50, 35, 0.14);
+  --shadow-xl: 0 10px 30px rgba(20, 50, 35, 0.25);
 
   /* ── Distraction Colors ── */
-  --distraction-green:         #10b981;
-  --distraction-red:           #ef4444;
-  --bg-distraction-green:      rgba(16, 185, 129, 0.08);
-  --bg-distraction-red:        rgba(239, 68, 68, 0.08);
+  --distraction-green:         #27a55a;
+  --distraction-red:           #e84040;
+  --bg-distraction-green:      rgba(39, 165, 90, 0.10);
+  --bg-distraction-red:        rgba(232, 64, 64, 0.10);
 }
 
 /* ============================================================
-   2. DYNAMIC CLAY BACKGROUND GESTURE
+   2. BACKGROUND — Solid, No Gradients, No Blobs
    ============================================================ */
+[data-theme="claymorphism"] body {
+  background-color: #b7e4c7 !important;
+  background-image: none !important;
+}
+
 [data-theme="claymorphism"] .aurora-bg {
-  display: block;
-  background: radial-gradient(circle at 15% 15%, rgba(200, 210, 254, 0.4) 0%, transparent 50%),
-              radial-gradient(circle at 85% 80%, rgba(251, 207, 232, 0.4) 0%, transparent 50%),
-              #e5e9f5;
+  display: none !important;
 }
 
-[data-theme="claymorphism"] .aurora-blob {
-  opacity: 0.5;
-  filter: blur(55px);
-  mix-blend-mode: multiply;
-}
-
-/* ============================================================
-   3. PUFFED CARDS & CONTAINERS
-   ============================================================ */
-[data-theme="claymorphism"] .card,
-[data-theme="claymorphism"] .day-card,
-[data-theme="claymorphism"] .pomo-card,
-[data-theme="claymorphism"] .goal-card,
-[data-theme="claymorphism"] .achievement-card,
-[data-theme="claymorphism"] .leaderboard-card,
-[data-theme="claymorphism"] .group-card,
-[data-theme="claymorphism"] .limits-card,
-[data-theme="claymorphism"] .quick-view-card,
-[data-theme="claymorphism"] #ai-bio-card,
-[data-theme="claymorphism"] .modal,
-[data-theme="claymorphism"] .accordion-panel {
-  border: 2px solid rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 8px 8px 16px rgba(165, 180, 228, 0.35), 
-              -8px -8px 16px #ffffff, 
-              inset 2px 2px 5px rgba(255, 255, 255, 0.8), 
-              inset -2px -2px 5px rgba(165, 180, 228, 0.2) !important;
-  border-radius: 24px !important;
-  transform: none !important;
-  background: #ffffff !important;
-  transition: box-shadow 0.3s ease, transform 0.2s ease !important;
-}
-
-/* Subtle clay cards lift on hover */
-[data-theme="claymorphism"] .day-card:hover,
-[data-theme="claymorphism"] .goal-card:hover,
-[data-theme="claymorphism"] .achievement-card:hover,
-[data-theme="claymorphism"] .group-card:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 12px 12px 24px rgba(165, 180, 228, 0.4), 
-              -10px -10px 20px #ffffff, 
-              inset 3px 3px 6px rgba(255, 255, 255, 0.9), 
-              inset -3px -3px 6px rgba(165, 180, 228, 0.25) !important;
-}
-
-/* Remove brutalist background colors and text-shadows */
+/* Remove all text-shadows */
 [data-theme="claymorphism"] * {
   text-shadow: none !important;
 }
 
 /* ============================================================
-   4. TACTILE CLAY BUTTONS
+   3. DAY CARDS — Richer Medium Green, Colored Inner Blocks
+   ============================================================ */
+[data-theme="claymorphism"] .day-card {
+  background: #74c69d !important;  /* Richer medium green — well saturated */
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 7px 20px rgba(20, 60, 35, 0.22),
+              inset 4px 4px 8px rgba(255,255,255,0.35),
+              inset -4px -4px 8px rgba(0,0,0,0.14) !important;
+  transform: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+[data-theme="claymorphism"] .day-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px rgba(20, 60, 35, 0.26),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* Day card text — ensure legibility on medium green */
+[data-theme="claymorphism"] .day-card .day-date,
+[data-theme="claymorphism"] .day-card .day-weekday,
+[data-theme="claymorphism"] .day-card .progress-label,
+[data-theme="claymorphism"] .day-card .progress-label-text,
+[data-theme="claymorphism"] .day-card h3,
+[data-theme="claymorphism"] .day-card h4 {
+  color: #0d1f15 !important;
+  font-weight: 800 !important;
+}
+
+/* ── Day card buttons — make clearly visible on green background ── */
+[data-theme="claymorphism"] .btn-add-cat {
+  background: #27a55a !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.35),
+              inset -2px -2px 5px rgba(0,0,0,0.18),
+              0 3px 8px rgba(20,80,40,0.18) !important;
+  transition: transform 0.15s ease !important;
+}
+[data-theme="claymorphism"] .btn-add-cat:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.2),
+              0 5px 12px rgba(20,80,40,0.22) !important;
+}
+
+[data-theme="claymorphism"] .btn-save-template {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.3),
+              inset -2px -2px 5px rgba(0,0,0,0.2),
+              0 3px 8px rgba(70,20,130,0.20) !important;
+  transition: transform 0.15s ease !important;
+}
+[data-theme="claymorphism"] .btn-save-template:hover {
+  transform: translateY(-2px) !important;
+}
+
+[data-theme="claymorphism"] .btn-add-leetcode {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.3),
+              inset -2px -2px 5px rgba(0,0,0,0.2),
+              0 3px 8px rgba(20,60,180,0.20) !important;
+  transition: transform 0.15s ease !important;
+}
+[data-theme="claymorphism"] .btn-add-leetcode:hover {
+  transform: translateY(-2px) !important;
+}
+
+/* Notes toggle and AI insights button inside day card */
+[data-theme="claymorphism"] .summary-toggle,
+[data-theme="claymorphism"] .btn-ai-insights,
+[data-theme="claymorphism"] .ai-insights-btn {
+  background: rgba(255,255,255,0.6) !important;
+  color: #0d1f15 !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.8),
+              inset -2px -2px 5px rgba(20,60,35,0.14) !important;
+}
+
+/* Log achievement button */
+[data-theme="claymorphism"] .btn-log-ach,
+[data-theme="claymorphism"] [onclick*="logAchievement"],
+[data-theme="claymorphism"] [id*="log-ach"] {
+  background: #f5a623 !important;
+  color: #1a0f00 !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.35),
+              inset -2px -2px 5px rgba(0,0,0,0.18) !important;
+}
+
+/* ── Category Blocks inside Day Cards ── */
+/* These are the inner task group sections (APP, VIDEO EDIT etc.) */
+[data-theme="claymorphism"] .category-block {
+  background: rgba(255, 255, 255, 0.30) !important;
+  border: none !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  /* Inset shadow to make it feel "carved" into the card */
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.45),
+              inset -3px -3px 6px rgba(20,60,35,0.16) !important;
+  margin-bottom: 10px !important;
+}
+
+[data-theme="claymorphism"] .category-header {
+  background: rgba(255,255,255,0.28) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.35) !important;
+  padding: 9px 14px !important;
+}
+
+[data-theme="claymorphism"] .category-name {
+  color: #0d1f15 !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="claymorphism"] .category-name::before {
+  background: #27a55a !important;
+  border: none !important;
+  border-radius: 50% !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+[data-theme="claymorphism"] .category-count {
+  background: #27a55a !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.3),
+              inset -1px -1px 3px rgba(0,0,0,0.15) !important;
+}
+
+/* Task items inside category blocks */
+[data-theme="claymorphism"] .task-item {
+  color: #0d1f15 !important;
+}
+[data-theme="claymorphism"] .task-title {
+  color: #0d1f15 !important;
+  font-weight: 700 !important;
+}
+
+/* ============================================================
+   4. GOAL CARDS — Color by Status, No Left Bar, Dark Enough Text
+   ============================================================ */
+[data-theme="claymorphism"] .goal-card {
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 7px 20px rgba(20, 50, 35, 0.18),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+  transform: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  overflow: hidden !important;
+}
+[data-theme="claymorphism"] .goal-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px rgba(20, 50, 35, 0.24),
+              inset 4px 4px 8px rgba(255,255,255,0.45),
+              inset -4px -4px 8px rgba(0,0,0,0.14) !important;
+}
+
+/* Remove the colored left accent bar completely */
+[data-theme="claymorphism"] .goal-card::before {
+  display: none !important;
+}
+
+/* Default in-progress goal: soft sky blue (not yellow — better contrast) */
+[data-theme="claymorphism"] .goal-card:not(.goal-completed):not(.goal-completed-overdue):not(.goal-overdue) {
+  background: #93c5fd !important; /* Soft Sky Blue */
+}
+[data-theme="claymorphism"] .goal-card:not(.goal-completed):not(.goal-completed-overdue):not(.goal-overdue) .goal-title {
+  color: #1e3a5f !important;
+}
+
+/* Completed on-time: medium green */
+[data-theme="claymorphism"] .goal-card.goal-completed {
+  background: #86efac !important;
+  box-shadow: 0 7px 20px rgba(20, 100, 50, 0.20),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+}
+[data-theme="claymorphism"] .goal-card.goal-completed::before { display: none !important; }
+[data-theme="claymorphism"] .goal-card.goal-completed .goal-title { color: #14532d !important; }
+
+/* Completed late: amber */
+[data-theme="claymorphism"] .goal-card.goal-completed-overdue {
+  background: #fde047 !important;
+  box-shadow: 0 7px 20px rgba(100, 70, 0, 0.16),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+}
+[data-theme="claymorphism"] .goal-card.goal-completed-overdue::before { display: none !important; }
+[data-theme="claymorphism"] .goal-card.goal-completed-overdue .goal-title { color: #78350f !important; }
+
+/* Overdue goal: medium red/rose */
+[data-theme="claymorphism"] .goal-card.goal-overdue {
+  background: #fca5a5 !important;
+  box-shadow: 0 7px 20px rgba(120, 30, 30, 0.18),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+}
+[data-theme="claymorphism"] .goal-card.goal-overdue::before { display: none !important; }
+[data-theme="claymorphism"] .goal-card.goal-overdue .goal-title { color: #7f1d1d !important; }
+
+/* Category blocks inside goal cards */
+[data-theme="claymorphism"] .goal-card .category-block {
+  background: rgba(255,255,255,0.32) !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.5),
+              inset -2px -2px 5px rgba(0,0,0,0.08) !important;
+}
+
+/* Days-left badge: no black borders */
+[data-theme="claymorphism"] .days-left-badge {
+  border: none !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.4),
+              inset -1px -1px 3px rgba(0,0,0,0.12) !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+}
+[data-theme="claymorphism"] .days-safe    { background: #27a55a !important; color: #ffffff !important; }
+[data-theme="claymorphism"] .days-warn    { background: #f5a623 !important; color: #1a0f00 !important; }
+[data-theme="claymorphism"] .days-danger  { background: #f97316 !important; color: #ffffff !important; }
+[data-theme="claymorphism"] .days-overdue { background: #e84040 !important; color: #ffffff !important; animation: none !important; }
+[data-theme="claymorphism"] .days-completed { background: #27a55a !important; color: #ffffff !important; }
+[data-theme="claymorphism"] .days-completed-overdue { background: #f5a623 !important; color: #1a0f00 !important; border: none !important; box-shadow: none !important; }
+
+/* ============================================================
+   5. LEADERBOARD — Override Neo-Brutalist Styling
+   ============================================================ */
+[data-theme="claymorphism"] .lb-card {
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 6px 18px rgba(20, 50, 35, 0.16),
+              inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.12) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+[data-theme="claymorphism"] .lb-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 24px rgba(20, 50, 35, 0.22),
+              inset 3px 3px 6px rgba(255,255,255,0.45),
+              inset -3px -3px 6px rgba(0,0,0,0.14) !important;
+}
+
+/* Rank card backgrounds — richer pastels */
+[data-theme="claymorphism"] .lb-card.card-rank-1 { background: #fcd34d !important; } /* Gold */
+[data-theme="claymorphism"] .lb-card.card-rank-2 { background: #cbd5e1 !important; } /* Silver */
+[data-theme="claymorphism"] .lb-card.card-rank-3 { background: #fca5a5 !important; } /* Rose */
+[data-theme="claymorphism"] .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3) {
+  background: #d1fae5 !important; /* Light Mint */
+}
+
+/* Rank badge */
+[data-theme="claymorphism"] .lb-rank {
+  border: none !important;
+  border-radius: 50% !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.5),
+              inset -2px -2px 4px rgba(0,0,0,0.12) !important;
+}
+[data-theme="claymorphism"] .lb-rank.rank-1 { background: #f5c400 !important; box-shadow: none !important; color: #3d2c00 !important; }
+[data-theme="claymorphism"] .lb-rank.rank-2 { background: #b0bec5 !important; box-shadow: none !important; color: #1a2228 !important; }
+[data-theme="claymorphism"] .lb-rank.rank-3 { background: #f472b6 !important; box-shadow: none !important; color: #4a0020 !important; }
+
+/* Avatar */
+[data-theme="claymorphism"] .lb-avatar {
+  border: 3px solid rgba(255,255,255,0.65) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 3px 8px rgba(20, 50, 35, 0.14) !important;
+}
+
+/* Streak boxes */
+[data-theme="claymorphism"] .lb-streak-box {
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.5),
+              inset -2px -2px 4px rgba(0,0,0,0.10) !important;
+}
+[data-theme="claymorphism"] .lb-streak-box.current {
+  background: rgba(255,255,255,0.55) !important;
+}
+[data-theme="claymorphism"] .lb-streak-box.highest {
+  background: #f9a8d4 !important;
+  color: #831843 !important;
+}
+[data-theme="claymorphism"] .lb-card.card-rank-1 .lb-streak-box.current,
+[data-theme="claymorphism"] .lb-card.card-rank-2 .lb-streak-box.current,
+[data-theme="claymorphism"] .lb-card.card-rank-3 .lb-streak-box.current {
+  background: rgba(255,255,255,0.6) !important;
+  box-shadow: none !important;
+}
+
+/* My rank card */
+[data-theme="claymorphism"] .lb-card.my-rank-card {
+  outline: 3px solid #27a55a !important;
+  outline-offset: 2px !important;
+}
+
+/* Leaderboard sort buttons */
+[data-theme="claymorphism"] .btn-lb-sort {
+  background: rgba(255,255,255,0.65) !important;
+  color: #0d1f15 !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.8),
+              inset -2px -2px 5px rgba(20,50,35,0.12),
+              0 2px 6px rgba(20,50,35,0.10) !important;
+  font-weight: 800 !important;
+  transition: transform 0.15s ease !important;
+}
+[data-theme="claymorphism"] .btn-lb-sort:hover {
+  transform: translateY(-1px) !important;
+}
+[data-theme="claymorphism"] .btn-lb-sort.active {
+  background: #27a55a !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.3),
+              inset -3px -3px 6px rgba(0,0,0,0.18) !important;
+}
+
+/* Leaderboard visibility card */
+[data-theme="claymorphism"] .leaderboard-card {
+  background: #d1fae5 !important;
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 5px 16px rgba(20,50,35,0.14),
+              inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.10) !important;
+}
+
+/* ============================================================
+   6. ACHIEVEMENTS/WINS — Dynamic Clay Colors from JS
+   ============================================================ */
+[data-theme="claymorphism"] .achievement-card,
+[data-theme="claymorphism"] .ach-privacy-banner {
+  background: #f0fdf4 !important;
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 5px 16px rgba(20, 50, 35, 0.12),
+              inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.08) !important;
+  padding: 20px !important;
+}
+
+/* Achievement page cards — Dynamic color diversity via CSS nth-of-type (cache proof) */
+[data-theme="claymorphism"] .achievement-page-card {
+  border: none !important;
+  border-radius: 18px !important;
+  padding: 18px 20px !important;
+  box-shadow: 0 5px 16px rgba(20, 50, 35, 0.14),
+              inset 3px 3px 6px rgba(255,255,255,0.45),
+              inset -3px -3px 6px rgba(0,0,0,0.10) !important;
+  margin-bottom: 14px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  transform: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+[data-theme="claymorphism"] .achievement-page-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 9px 22px rgba(20, 50, 35, 0.18),
+              inset 3px 3px 6px rgba(255,255,255,0.45),
+              inset -3px -3px 6px rgba(0,0,0,0.12) !important;
+}
+[data-theme="claymorphism"] .achievement-page-card::before {
+  display: none !important;
+}
+/* Deterministic pastel color palette per card */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+1) { background: #fde68a !important; color: #78350f !important; } /* Amber */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+2) { background: #c4b5fd !important; color: #1e1b4b !important; } /* Lavender */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+3) { background: #86efac !important; color: #14532d !important; } /* Mint */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+4) { background: #f9a8d4 !important; color: #831843 !important; } /* Pink */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+5) { background: #93c5fd !important; color: #1e3a5f !important; } /* Sky Blue */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+6) { background: #fca5a5 !important; color: #7f1d1d !important; } /* Rose */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+7) { background: #6ee7b7 !important; color: #064e3b !important; } /* Teal */
+[data-theme="claymorphism"] .achievement-page-card:nth-of-type(8n+8) { background: #fdba74 !important; color: #7c2d12 !important; } /* Peach */
+
+/* Inner elements inherit the text color dynamically */
+[data-theme="claymorphism"] .achievement-page-card .ach-page-title,
+[data-theme="claymorphism"] .achievement-page-card .ach-page-desc {
+  color: inherit !important;
+  opacity: 0.95;
+}
+
+/* Achievement items inside the achievement-card (on the tracker page) */
+[data-theme="claymorphism"] .achievement-item {
+  border-top: 1px solid rgba(20, 50, 35, 0.08) !important;
+  padding: 12px 0 !important;
+}
+[data-theme="claymorphism"] .achievement-item:first-of-type {
+  border-top: none !important;
+}
+
+[data-theme="claymorphism"] .ach-date-badge {
+  background: #fde047 !important;
+  color: #78350f !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  padding: 3px 10px !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.4),
+              inset -1px -1px 3px rgba(0,0,0,0.12) !important;
+}
+
+[data-theme="claymorphism"] .ach-link {
+  background: #27a55a !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.3),
+              inset -2px -2px 4px rgba(0,0,0,0.18) !important;
+  transform: none !important;
+  transition: transform 0.15s ease !important;
+}
+[data-theme="claymorphism"] .ach-link:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.35),
+              inset -2px -2px 4px rgba(0,0,0,0.2) !important;
+}
+
+/* ============================================================
+   7. DM / DIRECT MESSAGES — Contact Cards & Chat UI
+   ============================================================ */
+/* Override the hardcoded inline styles in dm.js via class name */
+[data-theme="claymorphism"] .dm-contact-card {
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: 0 5px 14px rgba(20, 50, 35, 0.14),
+              inset 3px 3px 6px rgba(255,255,255,0.5),
+              inset -3px -3px 6px rgba(0,0,0,0.08) !important;
+  margin-bottom: 12px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+[data-theme="claymorphism"] .dm-contact-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(20, 50, 35, 0.18),
+              inset 3px 3px 6px rgba(255,255,255,0.55),
+              inset -3px -3px 6px rgba(0,0,0,0.10) !important;
+}
+
+/* DM page containers */
+[data-theme="claymorphism"] #page-messages {
+  background: #b7e4c7 !important;
+}
+
+/* Search bar in messages */
+[data-theme="claymorphism"] #dm-search-input,
+[data-theme="claymorphism"] .dm-search-input {
+  background: #d4edde !important;
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: inset 3px 3px 6px rgba(20,50,35,0.12),
+              inset -3px -3px 6px rgba(255,255,255,0.8) !important;
+  color: #0d1f15 !important;
+}
+
+/* DM request cards (same clay styling) */
+[data-theme="claymorphism"] #dm-requests-list > div {
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 14px rgba(20, 50, 35, 0.12),
+              inset 3px 3px 6px rgba(255,255,255,0.5),
+              inset -3px -3px 6px rgba(0,0,0,0.08) !important;
+  margin-bottom: 10px !important;
+}
+
+/* Avatar circle inside DM card (the hard black border) */
+[data-theme="claymorphism"] .dm-contact-card > div[style*="border:2px solid var(--black)"],
+[data-theme="claymorphism"] .dm-contact-card > div[style*="border: 2px solid var(--black)"] {
+  border: 3px solid rgba(255,255,255,0.7) !important;
+  box-shadow: 0 2px 6px rgba(20,50,35,0.12) !important;
+}
+
+/* Delete button in DM cards */
+[data-theme="claymorphism"] .contact-delete-btn {
+  background: #fca5a5 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.4),
+              inset -2px -2px 4px rgba(0,0,0,0.12) !important;
+}
+
+/* Chats/Requests tab buttons */
+[data-theme="claymorphism"] #dm-tab-chats,
+[data-theme="claymorphism"] #dm-tab-requests {
+  border: none !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.5),
+              inset -2px -2px 5px rgba(0,0,0,0.10) !important;
+}
+
+/* ============================================================
+   8. GROUPS — Dynamic Clay Colors from JS, No Left Bar
+   ============================================================ */
+[data-theme="claymorphism"] .group-card {
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 7px 20px rgba(60, 30, 120, 0.16),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+  transform: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+[data-theme="claymorphism"] .group-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px rgba(60, 30, 120, 0.20),
+              inset 4px 4px 8px rgba(255,255,255,0.45),
+              inset -4px -4px 8px rgba(0,0,0,0.14) !important;
+}
+/* Diverse color palette per group card */
+[data-theme="claymorphism"] .group-card:nth-child(8n+1) { background: #c4b5fd !important; color: #1e1b4b !important; } /* Lavender */
+[data-theme="claymorphism"] .group-card:nth-child(8n+2) { background: #86efac !important; color: #14532d !important; } /* Mint Green */
+[data-theme="claymorphism"] .group-card:nth-child(8n+3) { background: #93c5fd !important; color: #1e3a5f !important; } /* Sky Blue */
+[data-theme="claymorphism"] .group-card:nth-child(8n+4) { background: #fde68a !important; color: #78350f !important; } /* Amber */
+[data-theme="claymorphism"] .group-card:nth-child(8n+5) { background: #fca5a5 !important; color: #7f1d1d !important; } /* Rose Red */
+[data-theme="claymorphism"] .group-card:nth-child(8n+6) { background: #f9a8d4 !important; color: #831843 !important; } /* Pink */
+[data-theme="claymorphism"] .group-card:nth-child(8n+7) { background: #6ee7b7 !important; color: #064e3b !important; } /* Teal */
+[data-theme="claymorphism"] .group-card:nth-child(8n+8) { background: #fdba74 !important; color: #7c2d12 !important; } /* Peach */
+
+/* Group card text inherits clay color */
+[data-theme="claymorphism"] .group-card .group-name {
+  color: inherit !important;
+}
+[data-theme="claymorphism"] .group-card .group-meta,
+[data-theme="claymorphism"] .group-card .group-description,
+[data-theme="claymorphism"] .group-card .group-owner-badge {
+  color: inherit !important;
+  opacity: 0.9;
+}
+/* Remove the teal left accent bar from group cards */
+[data-theme="claymorphism"] .group-card::before,
+[data-theme="claymorphism"] .my-team-card::before {
+  display: none !important;
+}
+/* REMOVE member button — better contrast (solid red background with bold white text) */
+[data-theme="claymorphism"] .member-view-btn[onclick*="removeMember"] {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 4px 10px !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.3),
+              inset -1px -1px 3px rgba(0,0,0,0.2) !important;
+}
+
+/* ============================================================
+   9. POMO CARD — Soft Blue (Replacing the boring green)
+   ============================================================ */
+[data-theme="claymorphism"] .pomo-card {
+  background: #93c5fd !important; /* Sky Blue */
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 7px 20px rgba(20, 50, 90, 0.15),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+}
+
+/* ============================================================
+   10. LIMITS CARD — Stronger Peach/Orange
+   ============================================================ */
+[data-theme="claymorphism"] .limits-card {
+  background: #fed7aa !important; /* Medium Peach/Orange */
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 7px 20px rgba(90, 40, 10, 0.14),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.12) !important;
+}
+
+/* App usage row items inside limits card */
+[data-theme="claymorphism"] .limit-app-row,
+[data-theme="claymorphism"] .limit-entry {
+  background: rgba(255,255,255,0.45) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.5),
+              inset -2px -2px 4px rgba(0,0,0,0.08) !important;
+}
+
+/* ============================================================
+   11. CANVAS PAGE — Darker Cards + White Board + AI Sidebar Fix
+   ============================================================ */
+
+/* Canvas dashboard listing cards */
+[data-theme="claymorphism"] .canvas-card {
+  background: #818cf8 !important; /* Rich Indigo */
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 7px 20px rgba(50, 30, 120, 0.22),
+              inset 4px 4px 8px rgba(255,255,255,0.35),
+              inset -4px -4px 8px rgba(0,0,0,0.18) !important;
+  transform: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+[data-theme="claymorphism"] .canvas-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px rgba(50, 30, 120, 0.28),
+              inset 4px 4px 8px rgba(255,255,255,0.4),
+              inset -4px -4px 8px rgba(0,0,0,0.20) !important;
+}
+[data-theme="claymorphism"] .canvas-card-title {
+  color: #000000 !important; /* Pure black text */
+  font-weight: 800 !important;
+}
+[data-theme="claymorphism"] .canvas-card-meta {
+  color: #000000 !important; /* Pure black meta text */
+}
+[data-theme="claymorphism"] .canvas-card-meta i,
+[data-theme="claymorphism"] .canvas-card-meta svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+[data-theme="claymorphism"] .canvas-card-badge {
+  background: rgba(0,0,0,0.08) !important;
+  color: #000000 !important;
+  border: none !important;
+  border-radius: 20px !important;
+}
+
+/* ── Canvas BOARD (the actual infinite whiteboard) — always white ── */
+[data-theme="claymorphism"] #canvas-viewport-container {
+  background-color: #ffffff !important;
+  background-image:
+    radial-gradient(#d1d5db 1.5px, transparent 1.5px),
+    radial-gradient(#d1d5db 1.5px, transparent 1.5px) !important;
+  background-size: 30px 30px !important;
+  background-position: 0 0, 15px 15px !important;
+}
+
+/* ── AI Sidebar — distinct white/light background so it doesn't merge ── */
+[data-theme="claymorphism"] #canvas-sidebar-panel {
+  background: #ffffff !important;
+  border-left: 2px solid rgba(129, 140, 248, 0.35) !important;
+  box-shadow: -4px 0 16px rgba(50, 30, 120, 0.12) !important;
+}
+[data-theme="claymorphism"] .sidebar-header {
+  background: #eef2ff !important;
+  border-bottom: 1px solid rgba(129, 140, 248, 0.25) !important;
+}
+[data-theme="claymorphism"] .chat-history {
+  background: #f8fafc !important;
+}
+[data-theme="claymorphism"] .chat-input-area,
+[data-theme="claymorphism"] .prompt-box-container {
+  background: #ffffff !important;
+}
+[data-theme="claymorphism"] .prompt-textarea {
+  background: #eef2ff !important;
+  border: 1.5px solid rgba(129,140,248,0.4) !important;
+  border-radius: 12px !important;
+  color: #0d1f15 !important;
+}
+[data-theme="claymorphism"] .chat-msg.agent {
+  background: #e0e7ff !important;
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+/* Canvas brutal buttons */
+[data-theme="claymorphism"] .btn-brutal {
+  border: none !important;
+  border-radius: 18px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.14),
+              0 4px 10px rgba(20,50,35,0.12) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+[data-theme="claymorphism"] .btn-brutal:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.5),
+              inset -2px -2px 5px rgba(0,0,0,0.16),
+              0 6px 14px rgba(20,50,35,0.16) !important;
+}
+[data-theme="claymorphism"] .btn-brutal:active {
+  transform: translateY(1px) scale(0.98) !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.3),
+              inset -1px -1px 3px rgba(0,0,0,0.18) !important;
+}
+[data-theme="claymorphism"] .btn-brutal.btn-yellow {
+  background: #f5c400 !important;
+  color: #2d1f00 !important;
+}
+[data-theme="claymorphism"] .btn-brutal.btn-muted {
+  background: rgba(255,255,255,0.7) !important;
+  color: #0d1f15 !important;
+}
+
+[data-theme="claymorphism"] .designer-toolbar {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-bottom: none !important;
+  box-shadow: 0 3px 12px rgba(20, 50, 35, 0.12) !important;
+}
+
+[data-theme="claymorphism"] .dashboard-header {
+  border-bottom: 1px solid rgba(20, 50, 35, 0.12) !important;
+}
+
+/* ============================================================
+   12. BUTTONS — Tactile, No Black Borders
    ============================================================ */
 [data-theme="claymorphism"] .btn,
 [data-theme="claymorphism"] .btn-primary,
 [data-theme="claymorphism"] .btn-secondary,
 [data-theme="claymorphism"] .btn-ghost,
-[data-theme="claymorphism"] .btn-lb-sort,
 [data-theme="claymorphism"] .modal-close {
+  border: none !important;
   border-radius: 20px !important;
-  border: 2px solid rgba(255, 255, 255, 0.7) !important;
-  font-family: 'Space Grotesk', sans-serif !important;
   font-weight: 800 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
-  transform: none !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-/* Primary Button Override (Periwinkle Clay) */
 [data-theme="claymorphism"] .btn-primary {
-  background: var(--purple) !important;
-  color: #1e293b !important;
-  box-shadow: 0 6px 12px rgba(100, 110, 200, 0.15), 
-              inset 3px 3px 6px rgba(255, 255, 255, 0.5), 
-              inset -3px -3px 6px rgba(0, 0, 0, 0.1) !important;
+  background: #27a55a !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.35),
+              inset -3px -3px 6px rgba(0,0,0,0.18),
+              0 4px 12px rgba(20,90,50,0.20) !important;
 }
 [data-theme="claymorphism"] .btn-primary:hover {
   transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 8px 16px rgba(100, 110, 200, 0.2), 
-              inset 3px 3px 6px rgba(255, 255, 255, 0.6), 
-              inset -3px -3px 6px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.2),
+              0 6px 16px rgba(20,90,50,0.24) !important;
 }
 [data-theme="claymorphism"] .btn-primary:active {
   transform: translateY(1px) scale(0.98) !important;
-  box-shadow: 0 2px 4px rgba(100, 110, 200, 0.1), 
-              inset 1px 1px 3px rgba(255, 255, 255, 0.3), 
-              inset -1px -1px 3px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.2),
+              inset -1px -1px 3px rgba(0,0,0,0.22) !important;
 }
 
-/* Secondary & Ghost Buttons (Polished White Clay) */
 [data-theme="claymorphism"] .btn-secondary,
-[data-theme="claymorphism"] .btn-ghost,
-[data-theme="claymorphism"] .btn-lb-sort {
-  background: #ffffff !important;
-  color: #1e293b !important;
-  box-shadow: 4px 4px 10px rgba(165, 180, 228, 0.25), 
-              -4px -4px 10px #ffffff, 
-              inset 2px 2px 4px rgba(255, 255, 255, 0.8), 
-              inset -2px -2px 4px rgba(165, 180, 228, 0.15) !important;
+[data-theme="claymorphism"] .btn-ghost {
+  background: rgba(255,255,255,0.65) !important;
+  color: #0d1f15 !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.8),
+              inset -2px -2px 5px rgba(20,50,35,0.12),
+              0 3px 8px rgba(20,50,35,0.10) !important;
 }
 [data-theme="claymorphism"] .btn-secondary:hover,
-[data-theme="claymorphism"] .btn-ghost:hover,
-[data-theme="claymorphism"] .btn-lb-sort:hover {
+[data-theme="claymorphism"] .btn-ghost:hover {
   transform: translateY(-2px) scale(1.02) !important;
-  background: #fafbff !important;
-  box-shadow: 6px 6px 12px rgba(165, 180, 228, 0.3), 
-              -6px -6px 12px #ffffff, 
-              inset 3px 3px 5px rgba(255, 255, 255, 0.9), 
-              inset -3px -3px 5px rgba(165, 180, 228, 0.2) !important;
+  background: rgba(255,255,255,0.80) !important;
 }
 [data-theme="claymorphism"] .btn-secondary:active,
-[data-theme="claymorphism"] .btn-ghost:active,
-[data-theme="claymorphism"] .btn-lb-sort:active {
+[data-theme="claymorphism"] .btn-ghost:active {
   transform: translateY(1px) scale(0.98) !important;
-  box-shadow: 2px 2px 5px rgba(165, 180, 228, 0.15), 
-              -2px -2px 5px #ffffff, 
-              inset 1px 1px 3px rgba(255, 255, 255, 0.7), 
-              inset -1px -1px 3px rgba(165, 180, 228, 0.1) !important;
 }
 
-[data-theme="claymorphism"] .btn-lb-sort.active {
-  background: var(--purple) !important;
-  color: #1e293b !important;
-  box-shadow: inset 3px 3px 6px rgba(255, 255, 255, 0.5), 
-              inset -3px -3px 6px rgba(0, 0, 0, 0.1) !important;
+/* Delete button */
+[data-theme="claymorphism"] .btn-delete {
+  background: #fca5a5 !important;
+  color: #7f1d1d !important;
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.4),
+              inset -2px -2px 4px rgba(0,0,0,0.10) !important;
 }
 
 /* ============================================================
-   5. CARVED (DEBOSSED) FORM CONTROLS
+   13. FORMS & INPUTS
    ============================================================ */
 [data-theme="claymorphism"] .form-control,
 [data-theme="claymorphism"] input[type="text"],
@@ -208,66 +868,40 @@
 [data-theme="claymorphism"] input[type="time"],
 [data-theme="claymorphism"] textarea,
 [data-theme="claymorphism"] select {
-  background: #f0f2fa !important;
-  border: 2px solid rgba(255, 255, 255, 0.8) !important;
-  border-radius: 16px !important;
-  color: #1e293b !important;
+  background: #d4edde !important;
+  border: none !important;
+  border-radius: 14px !important;
+  color: #0d1f15 !important;
   font-weight: 600 !important;
-  box-shadow: inset 4px 4px 8px rgba(165, 180, 228, 0.35), 
-              inset -4px -4px 8px #ffffff, 
-              2px 2px 4px rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 3px 3px 6px rgba(20,50,35,0.14),
+              inset -3px -3px 6px rgba(255,255,255,0.8) !important;
   outline: none !important;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+  transition: box-shadow 0.2s ease !important;
 }
-
 [data-theme="claymorphism"] .form-control:focus,
 [data-theme="claymorphism"] select:focus,
 [data-theme="claymorphism"] textarea:focus {
-  border-color: var(--purple) !important;
-  box-shadow: inset 4px 4px 8px rgba(165, 180, 228, 0.25), 
-              inset -4px -4px 8px #ffffff, 
-              0 0 8px rgba(99, 102, 241, 0.3) !important;
+  box-shadow: inset 3px 3px 6px rgba(20,50,35,0.14),
+              inset -3px -3px 6px rgba(255,255,255,0.8),
+              0 0 0 2.5px #27a55a !important;
 }
 
 /* ============================================================
-   6. 3D GLOSSY TOGGLES
-   ============================================================ */
-[data-theme="claymorphism"] .toggle-track {
-  background: #e2e8f0 !important;
-  border-radius: 20px !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.08), 
-              inset -3px -3px 6px #ffffff !important;
-}
-
-[data-theme="claymorphism"] input:checked + .toggle-track {
-  background: var(--teal) !important;
-}
-
-[data-theme="claymorphism"] .toggle-thumb {
-  background: #ffffff !important;
-  border-radius: 50% !important;
-  box-shadow: 2px 2px 5px rgba(100, 110, 200, 0.25), 
-              inset 1px 1px 2px rgba(255, 255, 255, 0.8) !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-}
-
-/* ============================================================
-   7. NAVBAR & APP HEADER OVERRIDES
+   14. NAVBAR & BOTTOM NAVIGATION
    ============================================================ */
 [data-theme="claymorphism"] .navbar {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.7) !important;
-  box-shadow: 0 4px 12px rgba(165, 180, 228, 0.25) !important;
-  background: rgba(255, 255, 255, 0.8) !important;
+  border-bottom: none !important;
+  background: rgba(255,255,255,0.88) !important;
   backdrop-filter: blur(10px) !important;
-  border-radius: 0 0 24px 24px !important;
+  box-shadow: 0 3px 14px rgba(20, 50, 35, 0.14) !important;
+  border-radius: 0 0 20px 20px !important;
 }
 
 [data-theme="claymorphism"] .bottom-nav-container {
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255,255,255,0.90) !important;
   backdrop-filter: blur(12px) !important;
-  border: 2px solid rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 8px 8px 16px rgba(165, 180, 228, 0.35) !important;
+  border: none !important;
+  box-shadow: 0 5px 22px rgba(20, 50, 35, 0.16) !important;
   border-radius: 28px !important;
   bottom: 12px !important;
   margin: 0 12px !important;
@@ -275,86 +909,239 @@
 }
 
 [data-theme="claymorphism"] .nav-link-btn {
-  border-radius: 18px !important;
-  border: 1.5px solid transparent !important;
-  transition: all 0.2s ease !important;
+  border-radius: 16px !important;
+  border: none !important;
+  transition: all 0.15s ease !important;
 }
 
 [data-theme="claymorphism"] .nav-link-btn.active {
-  background: var(--purple) !important;
-  color: #1e293b !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.5), 
-              inset -2px -2px 4px rgba(0, 0, 0, 0.1) !important;
+  background: #27a55a !important;
+  color: #ffffff !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.4),
+              inset -2px -2px 4px rgba(0,0,0,0.12) !important;
 }
 
 /* ============================================================
-   8. TACTILE TIMELINE MESSAGES (CHAT BUBBLES)
+   15. MODALS & ACCORDION PANELS
+   ============================================================ */
+[data-theme="claymorphism"] .modal,
+[data-theme="claymorphism"] .accordion-panel {
+  background: #e8f7ef !important;
+  border: none !important;
+  border-radius: 24px !important;
+  box-shadow: 0 10px 30px rgba(20, 50, 35, 0.20),
+              inset 3px 3px 7px rgba(255,255,255,0.4),
+              inset -3px -3px 7px rgba(0,0,0,0.10) !important;
+}
+
+/* ============================================================
+   16. CHAT BUBBLES
    ============================================================ */
 [data-theme="claymorphism"] .message-bubble {
-  border-radius: 20px !important;
-  border: 2px solid rgba(255, 255, 255, 0.7) !important;
-  padding: 12px 18px !important;
+  border: none !important;
+  border-radius: 18px !important;
   font-weight: 600 !important;
 }
-
 [data-theme="claymorphism"] .message-bubble.self {
-  background: var(--purple) !important;
-  color: #1e293b !important;
+  background: #27a55a !important;
+  color: #ffffff !important;
   border-bottom-right-radius: 4px !important;
-  box-shadow: 4px 4px 8px rgba(165, 180, 228, 0.2), 
-              inset 2px 2px 4px rgba(255, 255, 255, 0.4), 
-              inset -2px -2px 4px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 3px 8px rgba(20,80,50,0.16),
+              inset 2px 2px 4px rgba(255,255,255,0.35),
+              inset -2px -2px 4px rgba(0,0,0,0.14) !important;
 }
-
 [data-theme="claymorphism"] .message-bubble.other {
-  background: #ffffff !important;
-  color: #1e293b !important;
+  background: rgba(255,255,255,0.80) !important;
+  color: #0d1f15 !important;
   border-bottom-left-radius: 4px !important;
-  box-shadow: 4px 4px 8px rgba(165, 180, 228, 0.2), 
-              inset 2px 2px 4px rgba(255, 255, 255, 0.8), 
-              inset -2px -2px 4px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 3px 8px rgba(20,50,35,0.10),
+              inset 2px 2px 4px rgba(255,255,255,0.8),
+              inset -2px -2px 4px rgba(0,0,0,0.06) !important;
 }
 
 /* ============================================================
-   9. MISCELLANEOUS CHIPS & BADGES
+   17. MISC — Quick View Card, Progress Track
    ============================================================ */
-[data-theme="claymorphism"] .motivation-chip,
-[data-theme="claymorphism"] .ach-privacy-banner,
-[data-theme="claymorphism"] #weekly-stats-summary,
-[data-theme="claymorphism"] #monthly-stats-summary {
-  background: #ffffff !important;
-  border: 2px solid rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 4px 4px 10px rgba(165, 180, 228, 0.2) !important;
+[data-theme="claymorphism"] .quick-view-card {
+  background: #e8f7ef !important;
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 5px 16px rgba(20, 50, 35, 0.12),
+              inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="claymorphism"] .progress-track {
+  background: rgba(20, 50, 35, 0.12) !important;
+  border: none !important;
   border-radius: 20px !important;
-}
-
-[data-theme="claymorphism"] .day-card-header {
-  border-bottom: 2px dashed rgba(165, 180, 228, 0.2) !important;
-}
-
-[data-theme="claymorphism"] .badge-img-container {
-  border-radius: 50% !important;
-  border: 2px solid rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 4px 4px 8px rgba(165, 180, 228, 0.25) !important;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.10) !important;
 }
 
 /* ============================================================
-   10. SCROLLBARS FOR THE CLAY THEME
+   18. SCROLLBARS
    ============================================================ */
-[data-theme="claymorphism"] ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
+[data-theme="claymorphism"] ::-webkit-scrollbar { width: 10px; height: 10px; }
 [data-theme="claymorphism"] ::-webkit-scrollbar-track {
-  background: rgba(165, 180, 228, 0.1);
+  background: rgba(20, 50, 35, 0.06);
   border-radius: 10px;
 }
 [data-theme="claymorphism"] ::-webkit-scrollbar-thumb {
-  background: rgba(165, 180, 228, 0.4);
-  border: 2px solid #e5e9f5;
+  background: rgba(20, 50, 35, 0.26);
+  border: 2px solid #b7e4c7;
   border-radius: 10px;
 }
 [data-theme="claymorphism"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(165, 180, 228, 0.6);
+  background: rgba(20, 50, 35, 0.42);
+}
+
+/* ============================================================
+   19. PROFILE PAGE — Diverse Button Colors, Clay Sections
+   ============================================================ */
+
+/* Install as App section */
+[data-theme="claymorphism"] #pwa-install-container {
+  background: #dbeafe !important; /* Sky Blue */
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: 0 5px 14px rgba(30,80,180,0.12),
+              inset 3px 3px 6px rgba(255,255,255,0.45),
+              inset -3px -3px 6px rgba(0,0,0,0.08) !important;
+}
+[data-theme="claymorphism"] #pwa-install-container .btn-primary {
+  background: #2563eb !important; /* Strong Blue */
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.3),
+              inset -2px -2px 5px rgba(0,0,0,0.2) !important;
+}
+
+/* Premium Subscription section */
+[data-theme="claymorphism"] #page-profile [style*="168, 85, 247"] {
+  background: #ede9fe !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: 0 5px 14px rgba(120,60,220,0.12),
+              inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.08) !important;
+}
+
+/* Community Feedback section */
+[data-theme="claymorphism"] #page-profile [style*="opacity: 1"] + div,
+[data-theme="claymorphism"] #page-profile [style*="rgba(59, 130, 246"] {
+  background: #e0f2fe !important;
+  border: none !important;
+  border-radius: 18px !important;
+}
+
+/* Report Issue section */
+[data-theme="claymorphism"] #page-profile [style*="rgba(239, 68, 68"] {
+  background: #fee2e2 !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: 0 5px 14px rgba(220,38,38,0.10),
+              inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.06) !important;
+}
+
+/* Profile page generic section cards (bg-muted sections) */
+[data-theme="claymorphism"] #page-profile > div > div[style*="background: var(--bg-muted)"] {
+  background: rgba(255,255,255,0.65) !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 12px rgba(20,50,35,0.10),
+              inset 2px 2px 5px rgba(255,255,255,0.6),
+              inset -2px -2px 5px rgba(0,0,0,0.06) !important;
+}
+
+/* Feature Changelog button */
+[data-theme="claymorphism"] #btn-feature-changelog {
+  background: #fdba74 !important; /* Soft Orange */
+  color: #7c2d12 !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Claim Your Badges button */
+[data-theme="claymorphism"] [onclick*="openBadgesModal"] {
+  background: #fde68a !important; /* Soft Yellow */
+  color: #78350f !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Share My Profile button */
+[data-theme="claymorphism"] [onclick*="sharePublicProfile"] {
+  background: #a7f3d0 !important; /* Soft Emerald */
+  color: #064e3b !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Preview Public Link button */
+[data-theme="claymorphism"] [onclick*="previewFullProfile"] {
+  background: #bfdbfe !important; /* Soft Blue */
+  color: #1e3a5f !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* How others view my profile button */
+[data-theme="claymorphism"] #preview-minimal-btn {
+  background: #c7d2fe !important; /* Soft Indigo */
+  color: #1e1b4b !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Update Password button */
+[data-theme="claymorphism"] #submit-pwd-btn {
+  background: #ddd6fe !important; /* Soft Lavender */
+  color: #4c1d95 !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Manage Subscription button */
+[data-theme="claymorphism"] a[href="#"][onclick*="Subscription"],
+[data-theme="claymorphism"] a[onclick*="Subscription"] {
+  background: #f3e8ff !important; /* Soft Purple */
+  color: #581c87 !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Give Feedback button */
+[data-theme="claymorphism"] [onclick*="Feedback"] {
+  background: #e0f2fe !important; /* Soft Cyan */
+  color: #0369a1 !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
+}
+
+/* Report Issue button */
+[data-theme="claymorphism"] [onclick*="Report"] {
+  background: #fee2e2 !important; /* Soft Red */
+  color: #991b1b !important;
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
+              inset -2px -2px 5px rgba(0,0,0,0.12) !important;
 }

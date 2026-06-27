@@ -15,6 +15,8 @@
       document.documentElement.setAttribute('data-theme', 'premium-aurora');
     } else if (savedTheme === 'minimalistic') {
       document.documentElement.setAttribute('data-theme', 'minimalistic');
+    } else if (savedTheme === 'claymorphism') {
+      document.documentElement.setAttribute('data-theme', 'claymorphism');
     }
   </script>
   <meta charset="UTF-8" />
@@ -28,6 +30,7 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="aurora-theme.css" />
   <link rel="stylesheet" href="minimalistic-theme.css" />
+  <link rel="stylesheet" href="claymorphism-theme.css" />
   <script src="libs/lucide.min.js"></script>
   <!-- Canvas Export Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
@@ -2177,8 +2180,8 @@
         </button>
       </div>
       <div id="download-progress-msg">Rendering canvas, please wait...</div>
-      <div class="modal-footer">
-        <button class="btn-brutal btn-muted" onclick="closeDownloadModal()" style="padding: 10px 18px;">Cancel</button>
+      <div class="modal-footer" style="margin-top: 16px; display: flex; justify-content: center;">
+        <button class="btn-brutal btn-muted" onclick="closeDownloadModal()" style="padding: 14px 0; width: 100%; font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; border-radius: 12px; justify-content: center;">Cancel</button>
       </div>
     </div>
   </div>

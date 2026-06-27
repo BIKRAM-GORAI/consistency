@@ -224,10 +224,33 @@ async function toggleAchievementPrivacy() {
   }
 }
 
+/** Pick a pastel clay color deterministically from an id string */
+function getClayAchColor(id) {
+  const palette = [
+    { bg: '#fde68a', text: '#78350f' }, // Amber
+    { bg: '#c4b5fd', text: '#1e1b4b' }, // Lavender
+    { bg: '#86efac', text: '#14532d' }, // Mint
+    { bg: '#f9a8d4', text: '#831843' }, // Pink
+    { bg: '#93c5fd', text: '#1e3a5f' }, // Sky Blue
+    { bg: '#fca5a5', text: '#7f1d1d' }, // Rose
+    { bg: '#6ee7b7', text: '#064e3b' }, // Teal
+    { bg: '#fdba74', text: '#7c2d12' }, // Peach
+  ];
+  let hash = 0;
+  const str = String(id || '');
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
+}
+
 function buildAchievementPageCard(a) {
   const card = document.createElement('div');
   card.className = 'achievement-page-card';
   card.id = `ach-page-${a._id}`;
+
+  // Apply clay color as CSS custom property (only visible in claymorphism theme)
+  const clayColor = getClayAchColor(a._id);
+  card.style.setProperty('--clay-card-bg', clayColor.bg);
+  card.style.setProperty('--clay-card-text', clayColor.text);
 
   const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
   const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';

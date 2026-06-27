@@ -820,3 +820,55 @@
   background: #3b82f6 !important;
 }
 
+/* ── 20. LeetCode Disconnect Button (Clean soft-red flat styling) ── */
+[data-theme="minimalistic"] .btn-disconnect {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+[data-theme="minimalistic"] .btn-disconnect:hover {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border-color: #f87171 !important;
+}
+
+/* ── 21. Leaderboard Sorting Buttons (Minimalistic pastel toggles & hover fix) ── */
+[data-theme="minimalistic"] .btn-lb-sort {
+  background: transparent !important;
+  color: #475569 !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+}
+[data-theme="minimalistic"] .btn-lb-sort:not(.active):hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="minimalistic"] #btn-sort-current.active {
+  background: #e0f2fe !important; /* Soft sky blue */
+  color: #0369a1 !important;
+  border-color: #bae6fd !important;
+  box-shadow: none !important;
+}
+[data-theme="minimalistic"] #btn-sort-current.active:hover {
+  background: #bae6fd !important;
+  color: #0369a1 !important;
+  border-color: #bae6fd !important;
+}
+[data-theme="minimalistic"] #btn-sort-highest.active {
+  background: #fdf2f8 !important; /* Soft pink */
+  color: #9d174d !important;
+  border-color: #fbcfe8 !important;
+  box-shadow: none !important;
+}
+[data-theme="minimalistic"] #btn-sort-highest.active:hover {
+  background: #fce7f3 !important;
+  color: #9d174d !important;
+  border-color: #f9a8d4 !important;
+}

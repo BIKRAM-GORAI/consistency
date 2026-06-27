@@ -317,6 +317,24 @@ function renderGroupSection(container, title, groups, isOwnerSection, emoji, emp
   if (window.lucide) lucide.createIcons({ root: section });
 }
 
+/** Pick a pastel clay color deterministically from group._id */
+function getClayGroupColor(id) {
+  const palette = [
+    { bg: '#c4b5fd', text: '#1e1b4b' }, // Lavender
+    { bg: '#86efac', text: '#14532d' }, // Mint Green
+    { bg: '#93c5fd', text: '#1e3a5f' }, // Sky Blue
+    { bg: '#fde68a', text: '#78350f' }, // Amber
+    { bg: '#fca5a5', text: '#7f1d1d' }, // Rose Red
+    { bg: '#f9a8d4', text: '#831843' }, // Pink
+    { bg: '#6ee7b7', text: '#064e3b' }, // Teal
+    { bg: '#fdba74', text: '#7c2d12' }, // Peach
+  ];
+  let hash = 0;
+  const str = String(id || '');
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
+}
+
 function renderSingleGroupCard(group, emoji) {
   const userId = window.userId;
   const isMyOwned = group.owner && String(group.owner._id || group.owner) === String(window.userId);
@@ -374,7 +392,7 @@ function renderSingleGroupCard(group, emoji) {
   }
 
   return `
-    <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}">
+    <div class="group-card ${isMyOwned ? 'my-team-card' : ''}" id="group-card-${group._id}" data-clay-color="${getClayGroupColor(group._id).bg}" style="--clay-card-bg: ${getClayGroupColor(group._id).bg}; --clay-card-text: ${getClayGroupColor(group._id).text};">
       <div class="group-card-top">
         <!-- Left Side: Identity & Core Actions -->
         <div class="group-card-left">
