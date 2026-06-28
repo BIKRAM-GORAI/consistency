@@ -60,10 +60,10 @@
   --shadow-xl: 0 10px 30px rgba(20, 50, 35, 0.25);
 
   /* ── Distraction Colors ── */
-  --distraction-green:         #27a55a;
-  --distraction-red:           #e84040;
-  --bg-distraction-green:      rgba(39, 165, 90, 0.10);
-  --bg-distraction-red:        rgba(232, 64, 64, 0.10);
+  --distraction-green:         #047857; /* Rich dark green for text and details */
+  --distraction-red:           #b91c1c; /* Rich dark red for text and details */
+  --bg-distraction-green:      #a7f3d0; /* Solid pastel mint green (no transparency) */
+  --bg-distraction-red:        #fecaca; /* Solid pastel pinkish red (no transparency) */
 }
 
 /* ============================================================
@@ -715,6 +715,26 @@
   border-radius: 12px !important;
   box-shadow: inset 2px 2px 4px rgba(255,255,255,0.5),
               inset -2px -2px 4px rgba(0,0,0,0.08) !important;
+}
+
+/* App distraction inner block on Day Cards */
+[data-theme="claymorphism"] .app-distraction-block {
+  background: #fff5e6 !important; /* Soft, warm pastel peach-cream that doesn't hurt the eyes */
+  border: none !important;
+  border-radius: 18px !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.8),
+              inset -3px -3px 6px rgba(90,40,10,0.06),
+              0 6px 18px rgba(20,60,40,0.12) !important;
+  padding: 16px !important;
+}
+
+/* App distraction row items */
+[data-theme="claymorphism"] .app-distraction-block > div:nth-child(2) > div {
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.45),
+              inset -2px -2px 5px rgba(0,0,0,0.06),
+              0 4px 8px rgba(0,0,0,0.04) !important;
 }
 
 /* ============================================================
