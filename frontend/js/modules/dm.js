@@ -2193,6 +2193,13 @@ async function renderContactsList(friends, forceCache = false) {
           const metaData = metaSnap.data();
           chatDeletedAt = metaData?.deletedAt?.[myUserId] || 0;
           localStorage.setItem('deletedAt_' + chatId, chatDeletedAt.toString());
+
+          // KEY FIX: Also load and sync lastRead time from Firestore metadata
+          const serverLastRead = metaData?.lastRead?.[myUserId] || 0;
+          if (serverLastRead > lastReadTime) {
+            lastReadTime = serverLastRead;
+            localStorage.setItem('lastRead_' + chatId, lastReadTime.toString());
+          }
         }
 
         let lastMsg = null;
