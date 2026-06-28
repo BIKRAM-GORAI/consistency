@@ -587,8 +587,16 @@ function buildDayCard(day, preLoadedAchievements = null) {
   let categoriesHTML = '';
   for (const cat of day.categories) {
     let tasksHTML = '';
+    const isLeetCode = cat.name === 'LeetCode';
     for (const task of cat.tasks) {
-      if (isEditable) {
+      if (isLeetCode) {
+        tasksHTML += `
+          <div class="task-item locked-complete leetcode-task-locked" style="opacity: 0.95;">
+            <input type="checkbox" class="task-checkbox" checked disabled style="accent-color: var(--teal);" />
+            <span class="task-title" style="font-weight: 600; color: var(--text);">${window.escHtml(task.title)}</span>
+            <span class="lc-badge-pill" style="margin-left:auto; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; background:var(--bg-muted); border:1px solid var(--black); text-transform:uppercase;">${window.escHtml(task.metadata?.difficulty || 'Medium')}</span>
+          </div>`;
+      } else if (isEditable) {
         if (isFuture) {
           tasksHTML += `
             <div class="task-item">
@@ -617,10 +625,10 @@ function buildDayCard(day, preLoadedAchievements = null) {
     }
 
     const completedCount = cat.tasks.filter(t => t.completed).length;
-    const editCatBtn = isEditable
+    const editCatBtn = (isEditable && !isLeetCode)
       ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category"><i data-lucide="edit-3"></i></button>`
       : '';
-    const delCatBtn = isEditable
+    const delCatBtn = (isEditable && !isLeetCode)
       ? `<button class="btn-del-cat" onclick="deleteCategory('${day._id}','${cat._id}')" title="Delete category"><i data-lucide="trash-2"></i></button>`
       : '';
     categoriesHTML += `
