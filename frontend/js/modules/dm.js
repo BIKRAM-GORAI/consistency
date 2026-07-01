@@ -416,6 +416,7 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
                         rebuildDMDateSeparators(msgsList);
                         scrollToBottom('dm-messages-container');
                       }
+                      subscribeToDMMessages();
                     });
                 }
               });
@@ -580,10 +581,19 @@ function subscribeToDMMessages() {
     console.warn('Failed to listen to DM metadata changes:', err);
   });
 
-  const q = firestore.query(
-    msgsRef,
-    firestore.orderBy('timestamp', 'asc')
-  );
+  let q;
+  if (myDeletedAt) {
+    q = firestore.query(
+      msgsRef,
+      firestore.where('timestamp', '>', new Date(myDeletedAt)),
+      firestore.orderBy('timestamp', 'asc')
+    );
+  } else {
+    q = firestore.query(
+      msgsRef,
+      firestore.orderBy('timestamp', 'asc')
+    );
+  }
 
   const msgsList = document.getElementById('dm-messages-list');
 
