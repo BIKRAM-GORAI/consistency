@@ -1231,6 +1231,7 @@ async function saveEditDMMessage(docId) {
   if (!newText) return showToast('Message text cannot be empty.', 'warn');
 
   try {
+    const { firebaseDb, firestore } = window;
     const docRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', docId);
     await firestore.updateDoc(docRef, {
       text: newText,
@@ -1246,6 +1247,7 @@ async function saveEditDMMessage(docId) {
 async function deleteDMMessage(docId) {
   if (!confirm('Are you sure you want to delete this message? This action is permanent.')) return;
   try {
+    const { firebaseDb, firestore } = window;
     const docRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', docId);
     await firestore.deleteDoc(docRef);
     showToast('Message deleted.', 'info');
@@ -1303,6 +1305,7 @@ function toggleDMReactionPicker(event, docId) {
 
 async function toggleDMReaction(docId, emoji) {
   try {
+    const { firebaseDb, firestore } = window;
     const docRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', docId);
     const snap = await firestore.getDoc(docRef);
     if (!snap.exists()) return;
@@ -1382,6 +1385,7 @@ async function clearDMChatHistory() {
     const now = Date.now();
 
     try {
+      const { firebaseDb, firestore } = window;
       // 1. Delete locally from IndexedDB
       await window.localDb.directMessages.where('chatId').equals(activeChatId).delete();
       
@@ -1471,6 +1475,7 @@ async function clearDMChatHistory() {
     const recipientName = activeChatRecipientName;
 
     try {
+      const { firebaseDb, firestore } = window;
       // 1. Delete locally from IndexedDB
       await window.localDb.directMessages.where('chatId').equals(activeChatId).delete();
       
