@@ -389,6 +389,41 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
   }
 
   myDeletedAt = parseInt(localStorage.getItem('deletedAt_' + activeChatId) || '0');
+  const { firebaseDb, firestore } = window;
+  if (firebaseDb && firestore && navigator.onLine) {
+    const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
+    firestore.getDoc(metaRef).then(metaSnap => {
+      if (metaSnap.exists()) {
+        const newDeletedAt = metaSnap.data()?.deletedAt?.[myUserId] || 0;
+        if (newDeletedAt !== myDeletedAt) {
+          localStorage.setItem('deletedAt_' + activeChatId, newDeletedAt.toString());
+          myDeletedAt = newDeletedAt;
+          if (activeChatId) {
+            window.localDb.directMessages
+              .where('chatId').equals(activeChatId)
+              .and(msg => msg.timestamp <= newDeletedAt)
+              .delete()
+              .then(() => {
+                if (activeChatId) {
+                  window.localDb.directMessages
+                    .where('chatId').equals(activeChatId)
+                    .sortBy('timestamp')
+                    .then(cached => {
+                      const msgsList = document.getElementById('dm-messages-list');
+                      if (msgsList && activeChatId) {
+                        msgsList.innerHTML = '';
+                        cached.forEach(msg => renderDMMessage(msg, msgsList, false));
+                        rebuildDMDateSeparators(msgsList);
+                        scrollToBottom('dm-messages-container');
+                      }
+                    });
+                }
+              });
+          }
+        }
+      }
+    }).catch(err => console.warn('Failed to fetch DM chat metadata in background:', err));
+  }
 
   let lastTimestamp = 0;
   try {
@@ -502,57 +537,8 @@ async function openDMChat(recipientId, recipientName, recipientPhoto) {
     if (limitDisplay) limitDisplay.style.display = 'none';
   }
 
-  // Helper to start the real-time message stream
-  const startSubscription = () => {
-    subscribeToDMMessages();
-    syncLastReadToFirestore(activeChatId);
-  };
-
-  const { firebaseDb, firestore } = window;
-  if (firebaseDb && firestore && navigator.onLine) {
-    const metaRef = firestore.doc(firebaseDb, 'direct_messages', activeChatId, 'messages', 'metadata');
-    firestore.getDoc(metaRef).then(metaSnap => {
-      if (metaSnap.exists()) {
-        const newDeletedAt = metaSnap.data()?.deletedAt?.[myUserId] || 0;
-        if (newDeletedAt !== myDeletedAt) {
-          localStorage.setItem('deletedAt_' + activeChatId, newDeletedAt.toString());
-          myDeletedAt = newDeletedAt;
-          if (activeChatId) {
-            window.localDb.directMessages
-              .where('chatId').equals(activeChatId)
-              .and(msg => msg.timestamp <= newDeletedAt)
-              .delete()
-              .then(() => {
-                if (activeChatId) {
-                  window.localDb.directMessages
-                    .where('chatId').equals(activeChatId)
-                    .sortBy('timestamp')
-                    .then(cached => {
-                      const msgsList = document.getElementById('dm-messages-list');
-                      if (msgsList && activeChatId) {
-                        msgsList.innerHTML = '';
-                        cached.forEach(msg => renderDMMessage(msg, msgsList, false));
-                        rebuildDMDateSeparators(msgsList);
-                        scrollToBottom('dm-messages-container');
-                      }
-                      startSubscription();
-                    });
-                }
-              });
-          }
-        } else {
-          startSubscription();
-        }
-      } else {
-        startSubscription();
-      }
-    }).catch(err => {
-      console.warn('Failed to fetch DM chat metadata in background:', err);
-      startSubscription();
-    });
-  } else {
-    startSubscription();
-  }
+  subscribeToDMMessages();
+  syncLastReadToFirestore(activeChatId);
 }
 
 // ── Firestore Subscription for DMs ──

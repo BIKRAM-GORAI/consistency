@@ -749,6 +749,10 @@
       .group-members-grid {
         grid-template-columns: 1fr !important;
       }
+      /* Bulk email responsive */
+      #section-bulk-email > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+      }
     }
   </style>
 </head>
@@ -767,6 +771,7 @@
         <button class="nav-link" id="nav-refunds" onclick="showSection('refunds')">💸 Refunds</button>
         <button class="nav-link" id="nav-reports" onclick="showSection('reports')">🐞 Reports</button>
         <button class="nav-link" id="nav-changelogs" onclick="showSection('changelogs')">🚀 Changelogs</button>
+        <button class="nav-link" id="nav-bulk-email" onclick="showSection('bulk-email')">📧 Bulk Email</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -1044,6 +1049,89 @@
       </div>
     </div>
 
+    <!-- Bulk Email Section -->
+    <div id="section-bulk-email" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>📧 Bulk Email Sender</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Compose one email and send it to selected users. Sent sequentially to respect Gmail rate limits.</p>
+        </div>
+        <div class="header-actions">
+          <div class="controls">
+            <button class="btn-control active" id="bulk-sort-desc" onclick="loadUserEmailsOnly('desc')">Newest</button>
+            <button class="btn-control" id="bulk-sort-asc" onclick="loadUserEmailsOnly('asc')">Oldest</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+        <!-- LEFT: Compose Panel -->
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+          <div style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: #666; border-bottom: 2px dashed #eee; padding-bottom: 10px;">✏️ Compose Email</div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Subject *</label>
+            <input type="text" id="bulk-subject" placeholder="e.g. Important update from Consistency Tracker" style="border: var(--border);">
+          </div>
+
+          <!-- Mode Toggle -->
+          <div style="display: flex; gap: 0; border: var(--border); width: fit-content;">
+            <button id="bulk-mode-plain" onclick="setBulkMode('text')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: var(--yellow); cursor: pointer; border-right: 2px solid #000;">Plain Text</button>
+            <button id="bulk-mode-html" onclick="setBulkMode('html')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: #eee; cursor: pointer;">HTML</button>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label id="bulk-body-label">Message *</label>
+            <textarea id="bulk-body" rows="12" placeholder="Type your message here..." style="border: var(--border); resize: vertical; font-family: inherit;"></textarea>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button id="bulk-preview-btn" onclick="previewBulkEmail()" style="display:none; flex: 1; padding: 10px; background: var(--blue); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
+              👁 Preview HTML
+            </button>
+            <button onclick="sendBulkEmailFromAdmin()" style="flex: 2; padding: 12px; background: var(--black); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;" id="btn-send-bulk">
+              📤 Send to Selected
+            </button>
+          </div>
+
+          <!-- Results -->
+          <div id="bulk-email-results" style="display:none; padding: 16px; border: var(--border); background: #f8f8f8; font-size: 13px; font-weight: 700;"></div>
+        </div>
+
+        <!-- RIGHT: Recipient Panel -->
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #eee; padding-bottom: 10px;">
+            <div style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: #666;">👥 Recipients <span id="bulk-selected-count" style="color: var(--black); background: var(--yellow); padding: 2px 8px; border: 2px solid #000; font-size: 11px;">0 selected</span></div>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="selectAllBulkEmails()" style="padding: 6px 12px; background: var(--green); color: #000; border: 2px solid #000; font-family: inherit; font-weight: 800; font-size: 11px; text-transform: uppercase; cursor: pointer;">All</button>
+              <button onclick="deselectAllBulkEmails()" style="padding: 6px 12px; background: #eee; color: #000; border: 2px solid #000; font-family: inherit; font-weight: 800; font-size: 11px; text-transform: uppercase; cursor: pointer;">None</button>
+            </div>
+          </div>
+
+          <input type="text" id="bulk-email-search" placeholder="Filter emails..." oninput="filterBulkEmails()" style="border: var(--border); padding: 10px; font-family: inherit; font-size: 13px;">
+
+          <div id="bulk-email-list" style="flex: 1; overflow-y: auto; max-height: 440px; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+            <p style="font-weight: 700; color: #888; font-size: 13px;">Loading email addresses...</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Email HTML Preview Modal -->
+  <div id="email-preview-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 760px; height: 85vh; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3>👁 Email HTML Preview</h3>
+        <button class="btn-cancel" style="flex:none; padding: 6px 12px;" onclick="closeEmailPreviewModal()">Close</button>
+      </div>
+      <div style="flex: 1; border: var(--border); overflow: hidden;">
+        <iframe id="email-preview-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
+    </div>
   </div>
 
   <!-- Modal -->
@@ -1149,6 +1237,7 @@
         <button class="nav-link" id="tab-groups" onclick="showUserTab('groups')">Groups</button>
         <button class="nav-link" id="tab-user-badges" onclick="showUserTab('badges')">Badges</button>
         <button class="nav-link" id="tab-payments" onclick="showUserTab('payments')">Payments</button>
+        <button class="nav-link" id="tab-email" onclick="showUserTab('email')">📧 Email</button>
       </div>
 
       <div id="user-modal-content" style="flex: 1; overflow-y: auto; padding-right: 10px;">

@@ -691,6 +691,138 @@ async function createAdminDay(req, res) {
   }
 }
 
+/* ============================================================
+   EMAIL MANAGEMENT
+   ============================================================ */
+
+/**
+ * GET /api/admin/user-emails
+ * Returns ONLY email + _id + createdAt for all users.
+ * Lightweight — no related documents, no extra fields.
+ */
+async function getUserEmailsOnly(req, res) {
+  try {
+    const sort = req.query.sort === 'asc' ? 1 : -1;
+    const users = await User.find({}, 'email createdAt').sort({ createdAt: sort }).lean();
+    res.json({ emails: users });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * POST /api/admin/users/:id/send-email
+ * Send a custom email to a single user.
+ * Body: { subject, body, mode ('html'|'text'), attachments: [{ filename, data (base64) }] }
+ */
+async function sendEmailToUser(req, res) {
+  try {
+    const user = await User.findById(req.params.id).select('email name').lean();
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const { subject, body, mode, attachments } = req.body;
+    if (!subject || !body) {
+      return res.status(400).json({ message: 'Subject and body are required.' });
+    }
+
+    const { sendEmail, htmlToPlainText, wrapHtml } = require('../utils/email');
+
+    // Build the HTML body — plain text mode gets a simple <pre> wrapper, HTML mode uses as-is
+    const rawHtml = mode === 'text'
+      ? `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:14px;line-height:1.6;">${body}</pre>`
+      : body;
+
+    // Always derive a plain-text alternative (critical for inbox delivery)
+    const plainText = mode === 'text' ? body : htmlToPlainText(body);
+
+    // Wrap in a proper email-safe HTML document shell
+    const htmlBody = wrapHtml(rawHtml, subject);
+
+    // Build nodemailer attachments from base64 payloads
+    const mailAttachments = (attachments || []).map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.data, 'base64'),
+    }));
+
+    await sendEmail({
+      to: user.email,
+      subject,
+      html: htmlBody,
+      text: plainText,
+      attachments: mailAttachments.length ? mailAttachments : undefined,
+    });
+
+    console.log(`[Admin Email] Sent to ${user.email} | Subject: ${subject}`);
+    res.json({ message: `Email sent successfully to ${user.email}.` });
+  } catch (err) {
+    console.error('[Admin sendEmailToUser Error]', err);
+    res.status(500).json({ message: 'Failed to send email.', error: err.message });
+  }
+}
+
+/**
+ * POST /api/admin/bulk-email
+ * Send one email to multiple recipients — sequentially to avoid Gmail rate limits.
+ * Body: { subject, body, mode ('html'|'text'), emails: ['a@b.com', ...] }
+ */
+async function sendBulkEmail(req, res) {
+  try {
+    const { subject, body, mode, emails } = req.body;
+
+    if (!subject || !body) {
+      return res.status(400).json({ message: 'Subject and body are required.' });
+    }
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ message: 'At least one recipient email is required.' });
+    }
+
+    const { sendEmail, htmlToPlainText, wrapHtml } = require('../utils/email');
+
+    // Build once — reuse for all recipients
+    const rawHtml = mode === 'text'
+      ? `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:14px;line-height:1.6;">${body}</pre>`
+      : body;
+    const plainText = mode === 'text' ? body : htmlToPlainText(body);
+    const htmlBody  = wrapHtml(rawHtml, subject);
+
+    const results = [];
+
+    // Send sequentially with a small delay between each email.
+    // 300 ms gap prevents Gmail from treating this as a spam burst,
+    // which is the #1 reason subsequent bulk emails land in spam.
+    for (const email of emails) {
+      try {
+        await sendEmail({
+          to: email,
+          subject,
+          html: htmlBody,
+          text: plainText,
+        });
+        results.push({ email, status: 'sent' });
+        console.log(`[Admin Bulk Email] Sent to ${email}`);
+      } catch (emailErr) {
+        console.error(`[Admin Bulk Email] Failed for ${email}:`, emailErr.message);
+        results.push({ email, status: 'failed', error: emailErr.message });
+      }
+      // Small inter-message pause — avoids triggering Gmail's burst-spam detector
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    const sent   = results.filter(r => r.status === 'sent').length;
+    const failed = results.filter(r => r.status === 'failed').length;
+
+    res.json({
+      message: `Bulk email complete. Sent: ${sent}, Failed: ${failed}`,
+      sent,
+      failed,
+      results,
+    });
+  } catch (err) {
+    console.error('[Admin sendBulkEmail Error]', err);
+    res.status(500).json({ message: 'Failed to send bulk emails.', error: err.message });
+  }
+}
+
 module.exports = {
   adminRequestOtp,
   adminLogin,
@@ -717,6 +849,10 @@ module.exports = {
   updateAdminUserProfilePicture,
   updateAdminGroupIcon,
   createAdminDay,
+  // Email Management
+  getUserEmailsOnly,
+  sendEmailToUser,
+  sendBulkEmail,
   // Badge Management
   getAdminBadges: async (req, res) => {
     try {

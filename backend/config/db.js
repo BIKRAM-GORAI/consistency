@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 const dns = require('dns');
 
-// Solve Node.js DNS resolution issues with MongoDB Atlas SRV on some Windows environments
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) {
-  console.warn('Failed to set custom DNS servers:', err.message);
+// Solve Node.js DNS resolution issues with MongoDB Atlas SRV on some Windows local environments
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+  } catch (err) {
+    console.warn('Failed to set custom DNS servers:', err.message);
+  }
 }
 
 // Cache the connection to prevent multiple connections on Vercel (Serverless)

@@ -96,4 +96,9 @@ router.post('/changelogs', authenticateAdmin, adminController.createAdminChangel
 router.put('/changelogs/:id', authenticateAdmin, adminController.updateAdminChangelog);
 router.delete('/changelogs/:id', authenticateAdmin, adminController.deleteAdminChangelog);
 
+// Email Management
+router.get('/user-emails', authenticateAdmin, adminController.getUserEmailsOnly);
+router.post('/users/:id/send-email', authenticateAdmin, adminController.sendEmailToUser);
+router.post('/bulk-email', authenticateAdmin, adminController.sendBulkEmail);
+
 module.exports = router;

@@ -73,6 +73,7 @@ function showSection(section) {
   if (section === 'refunds') loadRefunds();
   if (section === 'reports') loadReports();
   if (section === 'changelogs') loadChangelogs();
+  if (section === 'bulk-email') loadUserEmailsOnly('desc');
 }
 
 /**
@@ -755,8 +756,51 @@ function showUserTab(tab) {
         </div>
       `;
       break;
+    case 'email':
+      html = `
+        <div style="padding: 4px 0 20px;">
+          <div style="background: #fffbeb; border: 2px dashed var(--yellow); padding: 12px 16px; margin-bottom: 20px; font-size: 13px; font-weight: 700; color: #92400e;">
+            📧 Sending to: <strong>${user.email}</strong> &mdash; from <strong>${'(your Gmail)'}</strong>
+          </div>
+
+          <div class="form-group">
+            <label>Subject *</label>
+            <input type="text" id="user-email-subject" placeholder="e.g. Hello from Consistency Tracker" style="border: var(--border);">
+          </div>
+
+          <!-- Mode Toggle -->
+          <div style="margin-bottom: 14px; display: flex; gap: 0; border: var(--border); width: fit-content;">
+            <button id="user-email-mode-plain" onclick="setUserEmailMode('text')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: var(--yellow); cursor: pointer; border-right: 2px solid #000;">Plain Text</button>
+            <button id="user-email-mode-html" onclick="setUserEmailMode('html')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: #eee; cursor: pointer;">HTML</button>
+          </div>
+
+          <div class="form-group">
+            <label id="user-email-body-label">Message *</label>
+            <textarea id="user-email-body" rows="10" placeholder="Type your message here..." style="border: var(--border); resize: vertical; font-family: inherit;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Attachment (optional &bull; max ~5 MB)</label>
+            <input type="file" id="user-email-attachment" onchange="handleAdminEmailAttachment(event)" style="border: var(--border); padding: 10px; width: 100%; font-family: inherit;">
+            <div id="user-email-attach-info" style="font-size: 11px; color: #666; font-weight: 700; margin-top: 6px;"></div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button id="user-email-preview-btn" onclick="previewUserEmail()" style="display:none; flex:1; padding: 10px; background: var(--blue); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
+              👁 Preview HTML
+            </button>
+            <button id="btn-send-user-email" onclick="sendAdminEmailToUser('${user._id}')" style="flex:2; padding: 12px; background: var(--black); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
+              📤 Send Email
+            </button>
+          </div>
+
+          <div id="user-email-result" style="display:none; margin-top: 16px; padding: 14px; border: var(--border); font-weight: 700; font-size: 13px;"></div>
+        </div>
+      `;
+      break;
   }
   container.innerHTML = html;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function promptBlacklist(userId) {
@@ -2448,3 +2492,326 @@ window.openAddChangelogModal = openAddChangelogModal;
 window.openEditChangelogModal = openEditChangelogModal;
 window.closeChangelogModal = closeChangelogModal;
 window.deleteChangelog = deleteChangelog;
+
+/* ============================================================
+   ADMIN EMAIL — Individual User
+   ============================================================ */
+
+let _userEmailMode = 'text'; // current mode for user email tab
+let _userEmailAttachment = null; // { filename, data (base64) } | null
+
+function setUserEmailMode(mode) {
+  _userEmailMode = mode;
+  const plainBtn = document.getElementById('user-email-mode-plain');
+  const htmlBtn  = document.getElementById('user-email-mode-html');
+  const preview  = document.getElementById('user-email-preview-btn');
+  const label    = document.getElementById('user-email-body-label');
+  if (!plainBtn) return;
+  if (mode === 'html') {
+    plainBtn.style.background = '#eee';
+    htmlBtn.style.background  = 'var(--yellow)';
+    if (preview)  preview.style.display = 'block';
+    if (label)    label.textContent = 'HTML Body *';
+    document.getElementById('user-email-body').placeholder = '<h1>Hello!</h1>\n<p>Your message here...</p>';
+  } else {
+    plainBtn.style.background = 'var(--yellow)';
+    htmlBtn.style.background  = '#eee';
+    if (preview)  preview.style.display = 'none';
+    if (label)    label.textContent = 'Message *';
+    document.getElementById('user-email-body').placeholder = 'Type your message here...';
+  }
+}
+
+function handleAdminEmailAttachment(event) {
+  const file = event.target.files[0];
+  if (!file) { _userEmailAttachment = null; return; }
+  const maxBytes = 5 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    alert('Attachment too large. Max size is 5 MB.');
+    event.target.value = '';
+    _userEmailAttachment = null;
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Strip the data-url prefix (e.g. "data:application/pdf;base64,")
+    const base64 = e.target.result.split(',')[1];
+    _userEmailAttachment = { filename: file.name, data: base64 };
+    const info = document.getElementById('user-email-attach-info');
+    if (info) info.textContent = `✓ Ready to attach: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewUserEmail() {
+  const body = document.getElementById('user-email-body')?.value || '';
+  const iframe = document.getElementById('email-preview-iframe');
+  if (!iframe) return;
+  const modal = document.getElementById('email-preview-modal');
+  iframe.srcdoc = body;
+  modal.classList.add('open');
+}
+
+async function sendAdminEmailToUser(userId) {
+  const subject = document.getElementById('user-email-subject')?.value?.trim();
+  const body    = document.getElementById('user-email-body')?.value?.trim();
+  const resultEl = document.getElementById('user-email-result');
+  const btn      = document.getElementById('btn-send-user-email');
+
+  if (!subject || !body) {
+    alert('Subject and message body are required.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  if (resultEl) { resultEl.style.display = 'none'; }
+
+  try {
+    const payload = {
+      subject,
+      body,
+      mode: _userEmailMode,
+      attachments: _userEmailAttachment ? [_userEmailAttachment] : [],
+    };
+    const res = await fetch(`${API}/api/admin/users/${userId}/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.style.background = res.ok ? '#f0fdf4' : '#fff1f2';
+      resultEl.style.borderColor = res.ok ? '#22c55e' : '#ef4444';
+      resultEl.textContent = data.message || (res.ok ? 'Email sent!' : 'Failed to send.');
+    }
+  } catch (err) {
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.style.background = '#fff1f2';
+      resultEl.style.borderColor = '#ef4444';
+      resultEl.textContent = 'Connection error: ' + err.message;
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📤 Send Email';
+  }
+}
+
+/* ============================================================
+   ADMIN EMAIL — Bulk Sender
+   ============================================================ */
+
+let _bulkAllEmails    = []; // { _id, email, createdAt }
+let _bulkSelectedSet  = new Set(); // selected email strings
+let _bulkCurrentSort  = 'desc';
+let _bulkMode         = 'text'; // 'text' | 'html'
+
+async function loadUserEmailsOnly(sort = 'desc') {
+  _bulkCurrentSort = sort;
+
+  // Update sort button state
+  const descBtn = document.getElementById('bulk-sort-desc');
+  const ascBtn  = document.getElementById('bulk-sort-asc');
+  if (descBtn) { descBtn.classList.toggle('active', sort === 'desc'); }
+  if (ascBtn)  { ascBtn.classList.toggle('active',  sort === 'asc');  }
+
+  const listEl = document.getElementById('bulk-email-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<p style="font-weight:700;color:#888;font-size:13px;">Loading...</p>';
+
+  try {
+    const res = await fetch(`${API}/api/admin/user-emails?sort=${sort}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch emails');
+    const data = await res.json();
+    _bulkAllEmails = data.emails || [];
+    _bulkSelectedSet.clear();
+    _updateBulkSelectedCount();
+    _renderBulkEmailList(_bulkAllEmails);
+  } catch (err) {
+    listEl.innerHTML = `<p style="color:red;font-weight:700;">${err.message}</p>`;
+  }
+}
+
+function _renderBulkEmailList(emails) {
+  const listEl = document.getElementById('bulk-email-list');
+  if (!listEl) return;
+  if (emails.length === 0) {
+    listEl.innerHTML = '<p style="font-weight:700;color:#888;font-size:13px;">No emails match your filter.</p>';
+    return;
+  }
+  listEl.innerHTML = emails.map(u => {
+    const isSelected = _bulkSelectedSet.has(u.email);
+    const date = new Date(u.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    return `
+      <label onclick="toggleBulkEmail('${u.email}', this)" id="bulk-row-${CSS.escape(u.email)}" style="
+        display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+        border: 2px solid ${isSelected ? '#000' : '#e5e7eb'};
+        background: ${isSelected ? 'var(--yellow)' : '#fff'};
+        cursor: pointer; transition: all 0.15s; user-select: none;
+      ">
+        <input type="checkbox" style="width: auto; flex-shrink:0; cursor:pointer;" ${isSelected ? 'checked' : ''}
+          onclick="event.stopPropagation(); toggleBulkEmail('${u.email}', this.closest('label'))">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
+          <div style="font-size:10px;color:#888;font-weight:700;">${date}</div>
+        </div>
+      </label>
+    `;
+  }).join('');
+}
+
+function toggleBulkEmail(email, labelEl) {
+  if (_bulkSelectedSet.has(email)) {
+    _bulkSelectedSet.delete(email);
+    if (labelEl) {
+      labelEl.style.background = '#fff';
+      labelEl.style.borderColor = '#e5e7eb';
+      const cb = labelEl.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = false;
+    }
+  } else {
+    _bulkSelectedSet.add(email);
+    if (labelEl) {
+      labelEl.style.background = 'var(--yellow)';
+      labelEl.style.borderColor = '#000';
+      const cb = labelEl.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = true;
+    }
+  }
+  _updateBulkSelectedCount();
+}
+
+function selectAllBulkEmails() {
+  _bulkAllEmails.forEach(u => _bulkSelectedSet.add(u.email));
+  _updateBulkSelectedCount();
+  // Refresh visible filtered list to reflect state
+  filterBulkEmails();
+}
+
+function deselectAllBulkEmails() {
+  _bulkSelectedSet.clear();
+  _updateBulkSelectedCount();
+  filterBulkEmails();
+}
+
+function filterBulkEmails() {
+  const query = (document.getElementById('bulk-email-search')?.value || '').toLowerCase();
+  const filtered = query ? _bulkAllEmails.filter(u => u.email.toLowerCase().includes(query)) : _bulkAllEmails;
+  _renderBulkEmailList(filtered);
+}
+
+function _updateBulkSelectedCount() {
+  const el = document.getElementById('bulk-selected-count');
+  if (el) el.textContent = `${_bulkSelectedSet.size} selected`;
+}
+
+function setBulkMode(mode) {
+  _bulkMode = mode;
+  const plainBtn  = document.getElementById('bulk-mode-plain');
+  const htmlBtn   = document.getElementById('bulk-mode-html');
+  const previewBtn = document.getElementById('bulk-preview-btn');
+  const label      = document.getElementById('bulk-body-label');
+  if (!plainBtn) return;
+  if (mode === 'html') {
+    plainBtn.style.background = '#eee';
+    htmlBtn.style.background  = 'var(--yellow)';
+    if (previewBtn) previewBtn.style.display = 'block';
+    if (label)      label.textContent = 'HTML Body *';
+    document.getElementById('bulk-body').placeholder = '<h1>Hello!</h1>\n<p>Your message here...</p>';
+  } else {
+    plainBtn.style.background = 'var(--yellow)';
+    htmlBtn.style.background  = '#eee';
+    if (previewBtn) previewBtn.style.display = 'none';
+    if (label)      label.textContent = 'Message *';
+    document.getElementById('bulk-body').placeholder = 'Type your message here...';
+  }
+}
+
+function previewBulkEmail() {
+  const body = document.getElementById('bulk-body')?.value || '';
+  const iframe = document.getElementById('email-preview-iframe');
+  if (!iframe) return;
+  iframe.srcdoc = body;
+  document.getElementById('email-preview-modal').classList.add('open');
+}
+
+function closeEmailPreviewModal() {
+  document.getElementById('email-preview-modal').classList.remove('open');
+}
+
+async function sendBulkEmailFromAdmin() {
+  const subject   = document.getElementById('bulk-subject')?.value?.trim();
+  const body      = document.getElementById('bulk-body')?.value?.trim();
+  const emails    = Array.from(_bulkSelectedSet);
+  const resultEl  = document.getElementById('bulk-email-results');
+  const btn       = document.getElementById('btn-send-bulk');
+
+  if (!subject || !body) {
+    alert('Subject and message body are required.');
+    return;
+  }
+  if (emails.length === 0) {
+    alert('Please select at least one recipient.');
+    return;
+  }
+  if (!confirm(`Send this email to ${emails.length} recipient(s)?`)) return;
+
+  btn.disabled = true;
+  btn.textContent = `Sending to ${emails.length} recipients (sequentially)...`;
+  if (resultEl) resultEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/admin/bulk-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ subject, body, mode: _bulkMode, emails }),
+    });
+    const data = await res.json();
+
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      const ok = data.failed === 0;
+      resultEl.style.background  = ok ? '#f0fdf4' : '#fffbeb';
+      resultEl.style.borderColor = ok ? '#22c55e' : '#f59e0b';
+
+      let html = `<div style="font-size:14px;margin-bottom:10px;">${data.message}</div>`;
+      if (data.results && data.results.length > 0) {
+        const failed = data.results.filter(r => r.status === 'failed');
+        if (failed.length > 0) {
+          html += `<div style="font-size:12px;color:#ef4444;font-weight:700;margin-top:8px;">Failed recipients:</div>`;
+          html += failed.map(r => `<div style="font-size:11px;font-family:monospace;">✗ ${r.email} &mdash; ${r.error || 'unknown error'}</div>`).join('');
+        }
+      }
+      resultEl.innerHTML = html;
+    }
+  } catch (err) {
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.style.background  = '#fff1f2';
+      resultEl.style.borderColor = '#ef4444';
+      resultEl.textContent = 'Connection error: ' + err.message;
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📤 Send to Selected';
+  }
+}
+
+// Expose to global scope
+window.loadUserEmailsOnly   = loadUserEmailsOnly;
+window.setBulkMode          = setBulkMode;
+window.filterBulkEmails     = filterBulkEmails;
+window.selectAllBulkEmails  = selectAllBulkEmails;
+window.deselectAllBulkEmails = deselectAllBulkEmails;
+window.toggleBulkEmail      = toggleBulkEmail;
+window.previewBulkEmail     = previewBulkEmail;
+window.sendBulkEmailFromAdmin = sendBulkEmailFromAdmin;
+window.closeEmailPreviewModal = closeEmailPreviewModal;
+window.setUserEmailMode     = setUserEmailMode;
+window.handleAdminEmailAttachment = handleAdminEmailAttachment;
+window.previewUserEmail     = previewUserEmail;
+window.sendAdminEmailToUser = sendAdminEmailToUser;
