@@ -106,23 +106,30 @@
       outline: none !important;
     }
 
-    /* ── Promo Ticker Bar ── */
+    /* ── Promo Ticker Bar (Placed Under Top Navigation Bar) ── */
     .promo-ticker-bar {
       position: fixed;
-      top: 0;
+      top: 72px; /* Positioned directly beneath top navigation bar */
       left: 0;
       right: 0;
-      z-index: 1001; /* Above nav */
-      background: #0a0a0a;
-      color: #FFD60A;
-      height: 32px;
+      z-index: 999;
+      background: #FF6B35; /* Vibrant warm coral */
+      color: #3D0C02; /* Deep warm mahogany text — soft and legible */
+      height: 34px;
       display: flex;
       align-items: center;
       overflow: hidden;
-      border-bottom: 2px solid #FFD60A;
+      border-bottom: 2px solid #3D0C02;
+      box-sizing: border-box;
+      transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .landing-nav.scrolled ~ .promo-ticker-bar {
+      top: 64px; /* Move up smoothly when top navbar shrinks on scroll */
     }
     .promo-ticker-track {
       display: flex;
+      align-items: center;
+      height: 100%;
       white-space: nowrap;
       animation: ticker-slide 30s linear infinite;
     }
@@ -130,23 +137,38 @@
     .promo-ticker-item {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      height: 100%;
       gap: 10px;
       padding: 0 48px;
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       letter-spacing: 0.6px;
       text-transform: uppercase;
+      line-height: 1;
     }
     .promo-ticker-item .ticker-dot {
       display: inline-block;
       width: 5px;
       height: 5px;
-      background: #FF6B35;
+      background: #3D0C02;
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .promo-ticker-item .ticker-highlight { color: #FF6B35; font-weight: 900; }
+    .promo-ticker-item .ticker-highlight { 
+      color: #3D0C02; 
+      background: linear-gradient(135deg, #FFFDF0 0%, #FFE885 100%); /* Soft warm cream-gold gradient pill */
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-weight: 900; 
+      border: 1px solid rgba(61, 12, 2, 0.25);
+      margin: 0 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
     @keyframes ticker-slide {
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
@@ -160,10 +182,10 @@
       padding: 0 32px;
       height: 72px; /* Slightly taller for premium feel */
       background: var(--yellow);
-      border-bottom: var(--border);
-      box-shadow: 0 4px 0 var(--black);
-      position: fixed; /* Changed to fixed to ensure it stays intact */
-      top: 32px; /* Sits below the 32px promo ticker */
+      border-bottom: 4.5px solid var(--black); /* Thicker bottom border for strong neo-brutalist contrast */
+      box-shadow: none;
+      position: fixed; /* Fixed at top of page */
+      top: 0;
       left: 0;
       right: 0;
       z-index: 1000;
@@ -174,7 +196,7 @@
       height: 64px;
       background: rgba(255, 214, 10, 0.95);
       backdrop-filter: blur(10px);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1), 0 4px 0 var(--black);
+      box-shadow: 0 2px 0 var(--black);
     }
 
     .landing-nav-brand {
@@ -971,6 +993,10 @@
     }
 
     @media (max-width: 768px) {
+      .landing-wrap {
+        padding-top: 148px !important; /* Ensures generous space below top nav (72px) + promo banner (32px) = 104px total header */
+      }
+
       .landing-nav {
         padding: 0 16px;
       }
@@ -1028,7 +1054,7 @@
 
     @media (max-width: 480px) {
       .landing-wrap {
-        padding: 96px 16px 60px;
+        padding: 148px 16px 60px !important;
       }
 
       .landing-actions {
@@ -2376,23 +2402,6 @@
     </div>
   </div>
 
-  <!-- ===== Promo Ticker Bar ===== -->
-  <div class="promo-ticker-bar" aria-label="Promotional offer">
-    <div class="promo-ticker-track">
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Free&nbsp;</span> 🚀</span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;start your streak today</span></span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium. Exclusively yours.</span> ⚡</span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 full year free.</span> No cap. 🏆</span>
-      <!-- Duplicate for seamless loop -->
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Free&nbsp;</span> 🚀</span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;start your streak today</span></span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium. Exclusively yours.</span> ⚡</span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
-      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 full year free.</span> No cap. 🏆</span>
-    </div>
-  </div>
-
   <nav class="landing-nav">
     <div class="landing-nav-brand" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" style="cursor: pointer;">
       <span><i data-lucide="zap"></i></span>
@@ -2403,6 +2412,23 @@
       <a href="auth.html?tab=register" class="btn-nav btn-nav-solid" id="nav-register-btn">Sign Up</a>
     </div>
   </nav>
+
+  <!-- ===== Promo Ticker Bar (Under Navbar) ===== -->
+  <div class="promo-ticker-bar" aria-label="Promotional offer">
+    <div class="promo-ticker-track">
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Premium Subscription FREE&nbsp;</span> 🚀</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;win a Free 1-Year Premium Subscription</span></span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium Subscription. Exclusively yours.</span> ⚡</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 Full Year Premium Subscription for FREE.</span> No cap. 🏆</span>
+      <!-- Duplicate for seamless loop -->
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Premium Subscription FREE&nbsp;</span> 🚀</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;win a Free 1-Year Premium Subscription</span></span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium Subscription. Exclusively yours.</span> ⚡</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 Full Year Premium Subscription for FREE.</span> No cap. 🏆</span>
+    </div>
+  </div>
 
   <!-- Decorative Shapes -->
   <div class="landing-wrap">
