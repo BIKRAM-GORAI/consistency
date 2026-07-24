@@ -545,6 +545,167 @@
       .auth-card-body { padding: 18px 16px 20px; }
       .auth-title { font-size: 18px; }
     }
+    /* ── Terms & Conditions Checkbox ── */
+    .tnc-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 18px 0 20px;
+      padding: 12px 14px;
+      background: #fffef0;
+      border: 2px solid #e0d800;
+      border-radius: 6px;
+    }
+    .tnc-checkbox {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      margin-top: 2px;
+      accent-color: #0a0a0a;
+      cursor: pointer;
+    }
+    .tnc-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #333;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+    .tnc-label a {
+      color: #0a0a0a;
+      font-weight: 900;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .tnc-label a:hover { color: #FF6B35; }
+
+    /* ── OAuth T&C Consent Modal ── */
+    .oauth-tnc-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 30000;
+      background: rgba(0,0,0,0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .oauth-tnc-overlay.active { display: flex; }
+    .oauth-tnc-modal {
+      background: #fff;
+      border: 3px solid #0a0a0a;
+      border-radius: 12px;
+      box-shadow: 6px 6px 0 #0a0a0a;
+      max-width: 420px;
+      width: 100%;
+      padding: 28px 28px 24px;
+      font-family: 'Space Grotesk', sans-serif;
+      animation: modalPop 0.22s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.88); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+    .oauth-tnc-provider-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f5f5f5;
+      border: 2px solid #ddd;
+      border-radius: 30px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .oauth-tnc-modal h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: #0a0a0a;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .oauth-tnc-modal p {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+      margin: 0 0 20px;
+    }
+    .oauth-tnc-agree-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      background: #fffef0;
+      border: 2px solid #e0d800;
+      border-radius: 6px;
+      margin-bottom: 22px;
+    }
+    .oauth-tnc-agree-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      margin-top: 2px;
+      accent-color: #0a0a0a;
+      cursor: pointer;
+    }
+    .oauth-tnc-agree-row label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+    .oauth-tnc-agree-row label a {
+      color: #0a0a0a;
+      font-weight: 900;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .oauth-tnc-agree-row label a:hover { color: #FF6B35; }
+    .oauth-tnc-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .oauth-tnc-confirm {
+      flex: 1;
+      padding: 11px 16px;
+      background: #0a0a0a;
+      color: #fff;
+      border: 2px solid #0a0a0a;
+      border-radius: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 #FFD60A;
+      transition: 0.15s;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .oauth-tnc-confirm.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .oauth-tnc-confirm.enabled:hover {
+      transform: translate(-1px,-1px);
+      box-shadow: 4px 4px 0 #FFD60A;
+    }
+    .oauth-tnc-cancel {
+      padding: 11px 16px;
+      background: #fff;
+      color: #555;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .oauth-tnc-cancel:hover { border-color: #999; color: #333; }
   </style>
 </head>
 <body>
@@ -554,6 +715,33 @@
     <div style="border: 8px solid #f3f3f3; border-top: 8px solid #FF6B35; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite;"></div>
     <h2 id="oauth-loading-title" style="font-size: 26px; font-weight: 900; margin-top: 24px; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif; color: #0a0a0a;">Authenticating...</h2>
     <p id="oauth-loading-sub" style="font-size: 14px; font-weight: 700; margin-top: 8px; font-family: 'Inter', sans-serif; color: #666;">Completing secure login, please wait.</p>
+  </div>
+
+  <!-- ===== OAuth T&C Consent Modal ===== -->
+  <div id="oauth-tnc-overlay" class="oauth-tnc-overlay" role="dialog" aria-modal="true" aria-labelledby="oauth-tnc-title">
+    <div class="oauth-tnc-modal">
+      <div id="oauth-tnc-provider-badge" class="oauth-tnc-provider-badge">
+        <span id="oauth-tnc-provider-icon"></span>
+        <span id="oauth-tnc-provider-name">Google</span>
+      </div>
+      <h2 id="oauth-tnc-title">Before you continue</h2>
+      <p>You’ve selected <strong id="oauth-tnc-provider-label">Google</strong> to create your account. The sign-in window will open after you agree to our terms.</p>
+      <div class="oauth-tnc-agree-row">
+        <input type="checkbox" id="oauth-tnc-checkbox" onchange="toggleOAuthConfirm()" />
+        <label for="oauth-tnc-checkbox">
+          I have read and agree to the
+          <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
+          and
+          <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+        </label>
+      </div>
+      <div class="oauth-tnc-actions">
+        <button class="oauth-tnc-cancel" id="oauth-tnc-cancel" onclick="closeOAuthTncModal()">Cancel</button>
+        <button class="oauth-tnc-confirm" id="oauth-tnc-confirm" onclick="confirmOAuthTnc()">
+          Continue with <span id="oauth-tnc-confirm-label">Google</span> →
+        </button>
+      </div>
+    </div>
   </div>
   
   <style>
@@ -700,6 +888,17 @@
             <label class="auth-label" for="register-referral-code">Referral Code <span style="font-weight: 500; font-size: 11px; color: #888;">(Optional)</span></label>
             <input class="auth-input" type="text" id="register-referral-code" placeholder="CONS-XXXXXX" style="text-transform: uppercase;" />
             <p class="auth-hint">Enter a friend's code to get a 200 CP welcome bonus instantly!</p>
+          </div>
+
+          <!-- Terms & Conditions checkbox — required before Create Account enables -->
+          <div class="tnc-row">
+            <input type="checkbox" class="tnc-checkbox" id="register-tnc" onchange="validateRegisterForm()" />
+            <label class="tnc-label" for="register-tnc">
+              I have read and agree to the
+              <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
+              and
+              <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+            </label>
           </div>
 
           <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()" disabled>Create Account <i data-lucide="arrow-right"></i></button>
@@ -931,7 +1130,8 @@
 
       const isPasswordFormatValid = password.length > 0 && !pwdError;
 
-      const isFormValid = name && username && email && password && confirmPassword && passwordsMatch && isPasswordFormatValid && pic && !isCompressing;
+      const tncChecked = document.getElementById('register-tnc') && document.getElementById('register-tnc').checked;
+      const isFormValid = name && username && email && password && confirmPassword && passwordsMatch && isPasswordFormatValid && pic && !isCompressing && tncChecked;
       btn.disabled = !isFormValid;
     }
 
@@ -1481,12 +1681,62 @@
         }
       };
       
-      attachListener('oauth-login-google', 'google');
-      attachListener('oauth-login-github', 'github');
+      // ── OAuth T&C Consent Modal Logic ──
+      let pendingOAuthProvider = null;
+
+      const PROVIDER_META = {
+        google:   { name: 'Google',   icon: '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>' },
+        github:   { name: 'GitHub',   icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>' },
+        facebook: { name: 'Facebook', icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>' }
+      };
+
+      function openOAuthTncModal(providerKey) {
+        pendingOAuthProvider = providerKey;
+        const meta = PROVIDER_META[providerKey] || { name: providerKey, icon: '' };
+        document.getElementById('oauth-tnc-provider-icon').innerHTML  = meta.icon;
+        document.getElementById('oauth-tnc-provider-name').textContent = meta.name;
+        document.getElementById('oauth-tnc-provider-label').textContent = meta.name;
+        document.getElementById('oauth-tnc-confirm-label').textContent  = meta.name;
+        document.getElementById('oauth-tnc-checkbox').checked = false;
+        document.getElementById('oauth-tnc-confirm').classList.remove('enabled');
+        document.getElementById('oauth-tnc-overlay').classList.add('active');
+      }
+
+      function closeOAuthTncModal() {
+        document.getElementById('oauth-tnc-overlay').classList.remove('active');
+        pendingOAuthProvider = null;
+      }
+
+      function toggleOAuthConfirm() {
+        const checked = document.getElementById('oauth-tnc-checkbox').checked;
+        document.getElementById('oauth-tnc-confirm').classList.toggle('enabled', checked);
+      }
+
+      function confirmOAuthTnc() {
+        if (!document.getElementById('oauth-tnc-checkbox').checked) return;
+        closeOAuthTncModal();
+        if (pendingOAuthProvider) handleOAuthLogin(pendingOAuthProvider);
+      }
+
+      // Close on backdrop click
+      document.getElementById('oauth-tnc-overlay').addEventListener('click', function(e) {
+        if (e.target === this) closeOAuthTncModal();
+      });
+
+      // Attach OAuth button listeners
+      // Login buttons — go directly (no T&C needed for login)
+      attachListener('oauth-login-google',   'google');
+      attachListener('oauth-login-github',   'github');
       attachListener('oauth-login-facebook', 'facebook');
-      attachListener('oauth-register-google', 'google');
-      attachListener('oauth-register-github', 'github');
-      attachListener('oauth-register-facebook', 'facebook');
+
+      // Register buttons — show T&C modal first
+      function attachRegisterOAuthListener(id, provider) {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', () => openOAuthTncModal(provider));
+      }
+      attachRegisterOAuthListener('oauth-register-google',   'google');
+      attachRegisterOAuthListener('oauth-register-github',   'github');
+      attachRegisterOAuthListener('oauth-register-facebook', 'facebook');
       console.log("[Auth Module] All event listeners processed!");
     } catch (bindError) {
       console.error("[Auth Module] Critical error binding event listeners:", bindError);
