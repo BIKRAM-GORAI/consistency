@@ -21,7 +21,7 @@
 - [🏗️ System Architecture](#️-system-architecture)
 - [🔄 Offline Synchronization Engine](#-offline-synchronization-engine)
 - [🛠️ Tech Stack & Technologies](#️-tech-stack--technologies)
-- [💻 Local Installation Guide](#-local-installation-guide)
+- [💻 Local Installation & Run Guide](#-local-installation--run-guide)
 - [🔒 Security & Sensitive Configs](#-security--sensitive-configs)
 - [🤝 Contributing Guidelines](#-contributing-guidelines)
 
@@ -44,7 +44,11 @@
   </tr>
   <tr>
     <td><strong>💬 Squad Chat & Direct Messages</strong></td>
-    <td>Real-time chat rooms and direct messages with text formatting, stickers, image sharing, and online presence tracking.</td>
+    <td>Real-time chat rooms and direct messages with text formatting, stickers, image sharing, and online presence tracking. Supports stacked native push notifications via Firebase Cloud Messaging (FCM).</td>
+  </tr>
+  <tr>
+    <td><strong>🏆 Leaderboard Showcase & Privacy</strong></td>
+    <td>Toggle leaderboard opt-in (`showOnLeaderboard`) or showcase profiles privately. Opting out allows users to track their rank privately via a floating mobile rank card. Search is unified so private profiles are searchable but detail cards are locked.</td>
   </tr>
   <tr>
     <td><strong>🤖 Groq AI Summary Coach</strong></td>
@@ -52,11 +56,7 @@
   </tr>
   <tr>
     <td><strong>💻 LeetCode Integration</strong></td>
-    <td>Link LeetCode user accounts to auto-verify solved challenge stats and check off corresponding habit cards automatically.</td>
-  </tr>
-  <tr>
-    <td><strong>🔔 Live Push Notifications</strong></td>
-    <td>Receive squad notifications instantly on your device via Firebase Cloud Messaging (FCM) even when the app is closed.</td>
+    <td>Link LeetCode user accounts to auto-verify solved challenge stats and check off corresponding habit cards automatically. Run via optimized background sync crons to prevent Vercel function timeouts.</td>
   </tr>
 </table>
 
@@ -64,14 +64,13 @@
 
 ## 🎨 Beautiful UI Themes
 
-Consistency Daily ships with **4 custom UI layouts** to suit any aesthetic preference:
+Consistency Daily ships with **5 custom UI layouts** to suit any aesthetic preference:
 
 * <span style="background-color: #ffd60a; color: #000; padding: 2px 6px; border: 2px solid #000; font-weight: bold; border-radius: 4px;">Neo-Brutalist Light</span>: High-contrast layout featuring raw bold borders (`4px solid #000`), flat drop-shadows, and primary retro highlights.
 * <span style="background-color: #1e1e1e; color: #fff; padding: 2px 6px; border: 2px solid #333; font-weight: bold; border-radius: 4px;">Dark Mode</span>: Sleek dark obsidian elements with high-contrast pastel text overlays to minimize eye strain.
 * <span style="background-color: #ffffff; color: #000; padding: 2px 6px; border: 2px solid #ccc; font-weight: bold; border-radius: 4px;">Minimalistic</span>: High-fashion, low-noise layout featuring ultra-thin lines, spacious margins, and pure monochrome structure.
 * <span style="background-color: #e8f7ef; color: #105032; padding: 2px 6px; border: 2px solid #b5e2c9; font-weight: bold; border-radius: 4px;">Claymorphism Mode</span>: Premium pastel gradients combined with inner glassmorphic highlights and soft outer depth.
-  * **Weekly wrap-up cards** feature specialized Indigo-to-Lavender gradients (`#e0e7ff` &rarr; `#f3e8ff`).
-  * **Monthly elite summary cards** feature Pink-to-Gold gradients (`#fce7f3` &rarr; `#fae8ff` &rarr; `#ffedd5`).
+* <span style="background-image: linear-gradient(135deg, #4c1d95, #be185d); color: #fff; padding: 2px 6px; border: 1px solid rgba(255,255,255,0.2); font-weight: bold; border-radius: 4px;">Premium Aurora Glass Mode</span>: Modern glassmorphism UI styles with 24px blur backdrop filters, custom action color palettes, and floating radial gradient backgrounds.
 
 ---
 
@@ -102,7 +101,7 @@ graph TD
 
     subgraph AI_Core ["AI Coaching Service (Render Node)"]
         Proxy["HMAC API Verification Layer"]
-        Groq["Groq API (Llama 3.3 - 70B Model)"]
+        Groq["Groq API (Llama 3.3 / Gemini Lite)"]
     end
 
     %% Connection mappings
@@ -150,25 +149,26 @@ stateDiagram-v2
 
 ## 🛠️ Tech Stack & Technologies
 
-### <span style="color: #2563eb;">Frontend Core</span>
+### Frontend Core
 * **HTML5 / Vanilla JavaScript**: Modular ES6 modules for optimized loading without framework overhead.
 * **Vanilla CSS**: Neo-brutalist, Claymorphic, and Dark systems driven by CSS variables and utility variables.
 * **Dexie.js (IndexedDB)**: Wrapper providing query capabilities for caching tasks, scratchpads, and profiles.
 * **GSAP (GreenSock)**: Micro-interaction animations and custom transition libraries.
 
-### <span style="color: #0d9488;">Backend Core</span>
+### Backend Core
 * **Node.js & Express**: API layer handling routing, authentication, and database requests.
 * **Mongoose & MongoDB**: Object modeling schema mapping to Mongo collections.
 * **Firebase Suite**: Real-time Firebase Firestore database for instant chat messaging and direct chats.
 
-### <span style="color: #b45309;">Integrations</span>
+### Integrations
 * **Groq API & Llama 3.3**: High-speed LLM integration proxying structured summaries from user metrics.
+* **Google Gemini API**: Cognitive engine driving personality traits, focus comments, and memory logs.
 * **Firebase Cloud Messaging (FCM)**: Real-time native push engine with service worker hooks.
 * **Cloudinary SDK**: Remote media hosting with optimization constraints.
 
 ---
 
-## 💻 Local Installation Guide
+## 💻 Local Installation & Run Guide
 
 ### 1. Prerequisites
 Install **Node.js** (v18+) and **MongoDB** (Local Community Server or Atlas URL).
@@ -179,27 +179,64 @@ git clone https://github.com/BIKRAM-GORAI/consistency.git
 cd consistency
 ```
 
-### 3. Server Setup
+---
+
+### 3. Primary Server & Web Frontend Setup
 Install dependencies in the root directory:
 ```bash
 npm install
 ```
-Configure `.env` environment variables using `.env.example`:
+
+Create a `.env` file in the root directory by copying the example:
+```bash
+cp .env.example .env
+```
+
+Configure the root `.env` variables:
 ```ini
-PORT=5001
+# --- Database & Port ---
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_signing_key
+PORT=your_port_number
+FRONTEND_URL=your_frontend_url
+
+# --- Security & JWT Sessions ---
+JWT_SECRET=your_jwt_signing_key_here
+JWT_EXPIRY=your_jwt_expiry_here
+JWT_ACCESS_EXPIRY=your_jwt_access_expiry_here
+JWT_REFRESH_EXPIRY=your_jwt_refresh_expiry_here
+CRON_SECRET=your_cron_secret_here
+
+# --- Email (SMTP Configuration via Gmail) ---
+GMAIL_EMAIL=your_gmail_address_here
+GMAIL_APP_PASSWORD=your_gmail_app_specific_password_here
+
+# --- Firebase Service Account Credentials ---
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_PRIVATE_KEY="your_firebase_private_key_here"
+
+# --- Cloudinary Asset Management ---
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-FIREBASE_SERVICE_ACCOUNT_JSON=escaped_firebase_service_account_json_content
-AI_SERVICE_SECRET=your_shared_hmac_secret
-AI_SERVICE_URL=http://localhost:5002
+
+# --- Administrative Credentials ---
+ADMIN_EMAIL=your_admin_email_here
+ADMIN_PASSWORD=your_admin_password_here
+ADMIN_OTP_RECIPIENT_EMAIL=your_admin_otp_recipient_email_here
+ADMIN_BACKUP_OTP=your_admin_backup_otp_here
+
+# --- AI Microservice Configuration ---
+AI_SERVICE_URL=your_ai_service_url_here
+AI_SERVICE_SECRET=your_shared_hmac_secret_here
 ```
+
 Start the development server:
 ```bash
 npm run dev
 ```
+
+---
 
 ### 4. AI Coaching Service Setup
 Navigate to the `ai-service` folder:
@@ -207,12 +244,26 @@ Navigate to the `ai-service` folder:
 cd ai-service
 npm install
 ```
-Create `.env` inside `ai-service` using the keys:
-```ini
-PORT=5002
-GROQ_API_KEY=your_groq_llama_key
-AI_SERVICE_SECRET=your_shared_hmac_secret
+
+Create `.env` inside `ai-service`:
+```bash
+cp .env.example .env
 ```
+
+Configure `.env` inside the `ai-service` directory:
+```ini
+PORT=your_ai_service_port
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=your_groq_model_here
+AI_SERVICE_SECRET=your_shared_hmac_secret_here
+JWT_SECRET=your_jwt_signing_key_here
+GEMINI_MODEL=your_gemini_model_here
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_CANVAS_API_KEY=your_gemini_canvas_api_key_here
+MONGO_URI=your_mongodb_connection_string
+CRON_SECRET=your_cron_secret_here
+```
+
 Run the service:
 ```bash
 npm start
