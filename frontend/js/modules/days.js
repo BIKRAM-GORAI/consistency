@@ -341,14 +341,30 @@ function updateStreak() {
       if (window.lucide) lucide.createIcons({ root: fireEl });
     }
     
+    // Define streak warning dismissal handler globally
+    window.dismissStreakWarning = function() {
+      const warningBanner = document.getElementById('streak-warning-banner');
+      if (warningBanner) {
+        warningBanner.style.display = 'none';
+      }
+      const todayDate = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+      localStorage.setItem('streakWarningLastDismissedDate', todayDate);
+    };
+
     // Manage dynamic streak rescue warning banner
     const warningBanner = document.getElementById('streak-warning-banner');
     if (warningBanner) {
-      if (streak > 0 && !todayDone) {
+      const todayDate = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+      const lastDismissedDate = localStorage.getItem('streakWarningLastDismissedDate');
+      
+      if (streak > 0 && !todayDone && lastDismissedDate !== todayDate) {
         warningBanner.style.display = 'flex';
         const warningText = document.getElementById('streak-warning-text');
         if (warningText) {
-          warningText.textContent = `⚠️ Streak Rescue: Complete today's card to lock in your ${streak}-day streak!`;
+          warningText.textContent = `Streak Rescue: Complete today's card to lock in your ${streak}-day streak!`;
+        }
+        if (window.lucide) {
+          lucide.createIcons({ root: warningBanner });
         }
       } else {
         warningBanner.style.display = 'none';

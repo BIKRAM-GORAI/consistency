@@ -10,6 +10,17 @@ const crypto = require('crypto');
 exports.getSubscriptionStatus = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const clientDate = req.headers['x-client-date'];
+
+    if (clientDate) {
+      try {
+        const { updateUserStreakAndActivity } = require('./dayController');
+        await updateUserStreakAndActivity(userId, clientDate);
+      } catch (err) {
+        console.error('Failed to auto-update streak in status endpoint:', err);
+      }
+    }
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -86,6 +97,8 @@ exports.getSubscriptionStatus = async (req, res) => {
       paymentHistory: user.paymentHistory || [],
       pointsBalance: user.pointsBalance || 0,
       referralCode: user.referralCode || '',
+      hasClaimedFreePremium: user.hasClaimedFreePremium || false,
+      currentStreak: user.currentStreak || 0,
 
       prices: {
         monthly: priceMonthly,
@@ -768,6 +781,10 @@ exports.requestRefund = async (req, res) => {
       return res.status(400).json({ message: `Refund has already been ${payment.refundStatus} for this transaction.` });
     }
 
+    if (payment.amount === 0 || payment.orderId === 'FREE_100_DAYS_CHALLENGE') {
+      return res.status(400).json({ message: 'Free promotional/challenge subscriptions cannot be refunded.' });
+    }
+
     // Verify 48-hour window limit
     const purchaseTime = new Date(payment.purchasedAt).getTime();
     const elapsed = Date.now() - purchaseTime;
@@ -1049,6 +1066,76 @@ exports.getMyCoupons = async (req, res) => {
   } catch (error) {
     console.error('getMyCoupons error:', error);
     res.status(500).json({ message: 'Error retrieving your coupons.' });
+  }
+};
+
+/**
+ * POST /api/subscriptions/claim-free-premium
+ * Server-side checks eligibility and claims the 1-year premium subscription.
+ */
+exports.claimFreePremium = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const clientDate = req.headers['x-client-date'];
+
+    if (clientDate) {
+      try {
+        const { updateUserStreakAndActivity } = require('./dayController');
+        await updateUserStreakAndActivity(userId, clientDate);
+      } catch (err) {
+        console.error('Failed to auto-update streak in claim endpoint:', err);
+      }
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    // 1. Check if user already claimed this free challenge subscription
+    if (user.hasClaimedFreePremium) {
+      return res.status(400).json({ message: 'You have already claimed your 100-Day Challenge free premium subscription.' });
+    }
+
+    // 2. Enforce minimum 100-day current streak requirement on the server side
+    if ((user.currentStreak || 0) < 100) {
+      return res.status(400).json({
+        message: `Eligibility check failed. You need a current streak of at least 100 days (current: ${user.currentStreak || 0} days).`
+      });
+    }
+
+    // 3. Update subscription status
+    user.hasClaimedFreePremium = true;
+    user.subscriptionTier = 'premium';
+
+    // Extend subscription expiration date by 365 days
+    const currentExpires = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date()
+      ? new Date(user.subscriptionExpiresAt)
+      : new Date();
+    const newExpires = new Date(currentExpires.getTime() + 365 * 24 * 60 * 60 * 1000);
+    user.subscriptionExpiresAt = newExpires;
+
+    // 4. Record free challenge pass inside paymentHistory to maintain ledger records (with zero price, non-refundable)
+    user.paymentHistory.push({
+      orderId: 'FREE_100_DAYS_CHALLENGE',
+      paymentId: `FREE_CHALLENGE_${Date.now()}`,
+      amount: 0,
+      duration: '1_year',
+      purchasedAt: new Date(),
+      refundStatus: 'none',
+      refundReason: '100-Day Consistency Challenge Free Premium Reward'
+    });
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Congratulations! You have successfully claimed 1 Year of Free Premium Subscription!',
+      expiresAt: user.subscriptionExpiresAt,
+      tier: user.subscriptionTier
+    });
+
+  } catch (error) {
+    console.error('claimFreePremium error:', error);
+    res.status(500).json({ message: 'Internal Server Error claiming free premium subscription.' });
   }
 };
 

@@ -64,6 +64,65 @@
     body.is-offline [data-requires-network="true"]::after {
       content: '';
     }
+
+    /* Streak Warning Banner Styles */
+    .streak-warning-banner {
+      display: none;
+      background: linear-gradient(135deg, var(--red) 0%, #dc2626 100%);
+      color: #fff;
+      padding: 14px 20px;
+      border: 3px solid var(--black);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+      font-size: 13px;
+      text-align: left;
+      gap: 12px;
+    }
+    
+    .streak-warning-banner button {
+      border: 2px solid var(--black);
+      padding: 4px 10px;
+      background: #fff;
+      color: #000;
+      font-size: 11px;
+      font-weight: 900;
+      box-shadow: 2px 2px 0 #000;
+      cursor: pointer;
+      text-transform: uppercase;
+      border-radius: 4px;
+      flex-shrink: 0;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    
+    .streak-warning-banner button:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 #000;
+    }
+
+    @media (max-width: 600px) {
+      .streak-warning-banner {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        padding: 12px 16px;
+        gap: 10px;
+      }
+      .streak-warning-banner > div {
+        justify-content: center;
+        width: 100%;
+      }
+      .streak-warning-banner button {
+        width: 100%;
+        padding: 8px;
+        font-size: 12px;
+      }
+    }
   </style>
   <script src="libs/gsap.min.js"></script>
   <script src="libs/ScrollTrigger.min.js"></script>
@@ -375,12 +434,12 @@
   <!-- ===== HOME PAGE ===== -->
   <main class="page active" id="page-home">
     <!-- Streak Warning Banner -->
-    <div id="streak-warning-banner" style="display: none; background: linear-gradient(135deg, var(--red) 0%, #dc2626 100%); color: #fff; padding: 14px 20px; border: 3px solid var(--black); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; align-items: center; justify-content: space-between; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; font-size: 13px; text-align: left; gap: 12px;">
+    <div id="streak-warning-banner" class="streak-warning-banner">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span>⚠️</span>
-        <span id="streak-warning-text">Streak Warning: Complete today's card to lock in your streak!</span>
+        <i data-lucide="alert-triangle" style="width: 18px; height: 18px; flex-shrink: 0; color: #fff;"></i>
+        <span id="streak-warning-text">Streak Rescue: Complete today's card to lock in your streak!</span>
       </div>
-      <button onclick="this.parentElement.style.display='none'" style="border: 2px solid var(--black); padding: 4px 10px; background: #fff; color: #000; font-size: 11px; font-weight: 900; box-shadow: 2px 2px 0 #000; cursor: pointer; text-transform: uppercase; border-radius: 4px;">Dismiss</button>
+      <button onclick="dismissStreakWarning()">Dismiss</button>
     </div>
     <div class="page-header">
       <div>

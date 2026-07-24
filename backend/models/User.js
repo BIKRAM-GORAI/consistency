@@ -349,6 +349,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    hasClaimedFreePremium: {
+      type: Boolean,
+      default: false,
+    },
     lastCompletedDate: {
       type: String,
       default: null,

@@ -20,5 +20,6 @@ router.post('/skip-referral', authenticateToken, subscriptionController.skipRefe
 router.post('/redeem-points', authenticateToken, subscriptionController.redeemPoints);
 router.get('/points-history', authenticateToken, subscriptionController.getPointsHistory);
 router.get('/my-coupons', authenticateToken, subscriptionController.getMyCoupons);
+router.post('/claim-free-premium', authenticateToken, subscriptionController.claimFreePremium);
 
 module.exports = router;
