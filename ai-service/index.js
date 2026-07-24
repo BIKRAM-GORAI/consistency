@@ -950,129 +950,134 @@ app.get('/api/cron/sync-leetcode', async (req, res) => {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  try {
-    await getMongoose();
-    const { User, Day } = getModels();
+  // Respond immediately to prevent Vercel/cron timeouts
+  res.status(202).json({ message: 'LeetCode auto-sync started in the background.' });
 
-    // Determine yesterday in server timezone
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const targetYear = yesterday.getFullYear();
-    const targetMonth = yesterday.getMonth();   // 0-indexed
-    const targetDay = yesterday.getDate();
-    const yesterdayStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+  // Run the rest of the sync process asynchronously in the background
+  (async () => {
+    try {
+      await getMongoose();
+      const { User, Day } = getModels();
 
-    console.log(`[LeetCode Auto-Sync] Running for date: ${yesterdayStr}`);
+      // Determine yesterday in server timezone
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const targetYear = yesterday.getFullYear();
+      const targetMonth = yesterday.getMonth();   // 0-indexed
+      const targetDay = yesterday.getDate();
+      const yesterdayStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
 
-    // Find all premium users with auto-sync enabled and a connected LeetCode username
-    const premiumUsers = await User.find({
-      subscriptionTier: 'premium',
-      leetcodeUsername: { $ne: null, $exists: true },
-      leetcodeAutoSync: true
-    }).lean(false); // lean(false) keeps save() method
+      console.log(`[LeetCode Auto-Sync] [Background] Running for date: ${yesterdayStr}`);
 
-    console.log(`[LeetCode Auto-Sync] ${premiumUsers.length} eligible premium users found.`);
+      // Find all premium users with auto-sync enabled and a connected LeetCode username
+      const premiumUsers = await User.find({
+        subscriptionTier: 'premium',
+        leetcodeUsername: { $ne: null, $exists: true },
+        leetcodeAutoSync: true
+      }).lean(false); // lean(false) keeps save() method
 
-    const results = [];
+      console.log(`[LeetCode Auto-Sync] [Background] ${premiumUsers.length} eligible premium users found.`);
 
-    for (const user of premiumUsers) {
-      // Throttle: 600ms between external API calls to avoid rate-limiting
-      await new Promise(r => setTimeout(r, 600));
+      const results = [];
 
-      try {
-        const submissions = await fetchLeetCodeSubmissions(user.leetcodeUsername, 25);
+      for (const user of premiumUsers) {
+        // Throttle: 600ms between external API calls to avoid rate-limiting
+        await new Promise(r => setTimeout(r, 600));
 
-        // Filter for accepted submissions made yesterday (server timezone)
-        const yesterdaySubmissions = submissions.filter(sub => {
-          if (sub.statusDisplay !== 'Accepted') return false;
-          const subDate = new Date(parseInt(sub.timestamp) * 1000);
-          return subDate.getFullYear() === targetYear &&
-                 subDate.getMonth() === targetMonth &&
-                 subDate.getDate() === targetDay;
-        });
+        try {
+          const submissions = await fetchLeetCodeSubmissions(user.leetcodeUsername, 25);
 
-        // Deduplicate by titleSlug (keep first Accepted per problem)
-        const seenSlugs = new Set();
-        const uniqueSubmissions = yesterdaySubmissions.filter(sub => {
-          if (seenSlugs.has(sub.titleSlug)) return false;
-          seenSlugs.add(sub.titleSlug);
-          return true;
-        });
-
-        console.log(`[LeetCode Auto-Sync] ${user.username || user.email}: ${uniqueSubmissions.length} problems solved yesterday.`);
-
-        if (uniqueSubmissions.length === 0) {
-          results.push({ user: user.username || user.email, synced: 0, status: 'No new submissions' });
-          continue;
-        }
-
-        // Load or create yesterday's Day document
-        let dayDoc = await Day.findOne({ userId: user._id, date: yesterdayStr });
-        if (!dayDoc) {
-          dayDoc = new Day({ userId: user._id, date: yesterdayStr, categories: [] });
-        }
-
-        // Ensure LeetCode category exists
-        let lcCategory = dayDoc.categories.find(c => c.name === 'LeetCode');
-        if (!lcCategory) {
-          dayDoc.categories.push({ name: 'LeetCode', tasks: [] });
-          lcCategory = dayDoc.categories[dayDoc.categories.length - 1];
-        }
-
-        let tasksAdded = 0;
-
-        for (const sub of uniqueSubmissions) {
-          const taskTitle = `🧠 LeetCode: ${sub.title}`;
-
-          // Skip if already present (idempotent)
-          const alreadyExists = lcCategory.tasks.some(t =>
-            (t.metadata && t.metadata.problemUrl && t.metadata.problemUrl.includes(sub.titleSlug)) ||
-            t.title === taskTitle
-          );
-          if (alreadyExists) continue;
-
-          // Fetch difficulty with throttle
-          await new Promise(r => setTimeout(r, 400));
-          let difficulty = 'Medium';
-          try {
-            difficulty = await fetchProblemDifficulty(sub.titleSlug);
-          } catch (_) {}
-
-          lcCategory.tasks.push({
-            title: taskTitle,
-            completed: true,
-            metadata: {
-              problemUrl: `https://leetcode.com/problems/${sub.titleSlug}/`,
-              difficulty,
-              acceptedDate: yesterdayStr,
-              autoSynced: true,
-              verified: true
-            }
+          // Filter for accepted submissions made yesterday (server timezone)
+          const yesterdaySubmissions = submissions.filter(sub => {
+            if (sub.statusDisplay !== 'Accepted') return false;
+            const subDate = new Date(parseInt(sub.timestamp) * 1000);
+            return subDate.getFullYear() === targetYear &&
+                   subDate.getMonth() === targetMonth &&
+                   subDate.getDate() === targetDay;
           });
-          tasksAdded++;
+
+          // Deduplicate by titleSlug (keep first Accepted per problem)
+          const seenSlugs = new Set();
+          const uniqueSubmissions = yesterdaySubmissions.filter(sub => {
+            if (seenSlugs.has(sub.titleSlug)) return false;
+            seenSlugs.add(sub.titleSlug);
+            return true;
+          });
+
+          console.log(`[LeetCode Auto-Sync] [Background] ${user.username || user.email}: ${uniqueSubmissions.length} problems solved yesterday.`);
+
+          if (uniqueSubmissions.length === 0) {
+            results.push({ user: user.username || user.email, synced: 0, status: 'No new submissions' });
+            continue;
+          }
+
+          // Load or create yesterday's Day document
+          let dayDoc = await Day.findOne({ userId: user._id, date: yesterdayStr });
+          if (!dayDoc) {
+            dayDoc = new Day({ userId: user._id, date: yesterdayStr, categories: [] });
+          }
+
+          // Ensure LeetCode category exists
+          let lcCategory = dayDoc.categories.find(c => c.name === 'LeetCode');
+          if (!lcCategory) {
+            dayDoc.categories.push({ name: 'LeetCode', tasks: [] });
+            lcCategory = dayDoc.categories[dayDoc.categories.length - 1];
+          }
+
+          let tasksAdded = 0;
+
+          for (const sub of uniqueSubmissions) {
+            const taskTitle = `🧠 LeetCode: ${sub.title}`;
+
+            // Skip if already present (idempotent)
+            const alreadyExists = lcCategory.tasks.some(t =>
+              (t.metadata && t.metadata.problemUrl && t.metadata.problemUrl.includes(sub.titleSlug)) ||
+              t.title === taskTitle
+            );
+            if (alreadyExists) continue;
+
+            // Fetch difficulty with throttle
+            await new Promise(r => setTimeout(r, 400));
+            let difficulty = 'Medium';
+            try {
+              difficulty = await fetchProblemDifficulty(sub.titleSlug);
+            } catch (_) {}
+
+            lcCategory.tasks.push({
+              title: taskTitle,
+              completed: true,
+              metadata: {
+                problemUrl: `https://leetcode.com/problems/${sub.titleSlug}/`,
+                difficulty,
+                acceptedDate: yesterdayStr,
+                autoSynced: true,
+                verified: true
+              }
+            });
+            tasksAdded++;
+          }
+
+          if (tasksAdded > 0) {
+            await dayDoc.save();
+            await updateStreakForUser(User, Day, user._id, yesterdayStr);
+            console.log(`[LeetCode Auto-Sync] [Background] Saved ${tasksAdded} tasks for ${user.username || user.email}.`);
+          }
+
+          results.push({ user: user.username || user.email, synced: tasksAdded, status: 'OK' });
+
+        } catch (userErr) {
+          console.error(`[LeetCode Auto-Sync] [Background] Error for ${user.username || user.email}:`, userErr.message);
+          results.push({ user: user.username || user.email, synced: 0, status: 'Error', error: userErr.message });
         }
-
-        if (tasksAdded > 0) {
-          await dayDoc.save();
-          await updateStreakForUser(User, Day, user._id, yesterdayStr);
-          console.log(`[LeetCode Auto-Sync] Saved ${tasksAdded} tasks for ${user.username || user.email}.`);
-        }
-
-        results.push({ user: user.username || user.email, synced: tasksAdded, status: 'OK' });
-
-      } catch (userErr) {
-        console.error(`[LeetCode Auto-Sync] Error for ${user.username || user.email}:`, userErr.message);
-        results.push({ user: user.username || user.email, synced: 0, status: 'Error', error: userErr.message });
       }
+
+      console.log(`[LeetCode Auto-Sync] [Background] Finished. Date: ${yesterdayStr}, Processed Count: ${premiumUsers.length}`);
+
+    } catch (err) {
+      console.error('[LeetCode Auto-Sync] [Background] Fatal error:', err);
     }
-
-    res.json({ message: 'LeetCode auto-sync completed.', date: yesterdayStr, processedCount: premiumUsers.length, results });
-
-  } catch (err) {
-    console.error('[LeetCode Auto-Sync] Fatal error:', err);
-    res.status(500).json({ message: 'Internal Server Error', error: err.message });
-  }
+  })();
 });
 
 // Start listening
