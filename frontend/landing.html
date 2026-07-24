@@ -60,7 +60,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
   <script src="libs/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -195,7 +195,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 120px 24px 80px;
+      padding: 120px 24px 40px;
       text-align: center;
       overflow: hidden;
     }
@@ -1123,9 +1123,9 @@
       text-transform: uppercase;
     }
     .landing-about {
-      padding: 80px 24px;
+      padding: 40px 24px 80px 24px; /* Less top padding — banner now opens the section */
       background: var(--bg);
-      border-top: var(--border);
+      border-top: none;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -2214,6 +2214,104 @@
     body.native-android .landing-wrap {
       padding-top: 144px !important; /* 120px base padding + 24px status bar offset */
     }
+
+    /* Gen Z Challenge Banner */
+    .challenge-banner {
+      position: relative;
+      /* Full bleed — break out of any max-width container */
+      width: 100vw;
+      /* Centre properly: push left by half the overflow on each side */
+      margin-left: calc(-50vw + 50%);
+      margin-right: calc(-50vw + 50%);
+      aspect-ratio: 1204 / 300;
+      max-height: 200px; /* Cap height — keep it compact */
+      margin-top: 40px;
+      margin-bottom: 40px; /* Equal breathing room above and below */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background-image: url('assets/paint-splash.svg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      /* Fade all 4 edges — left, right, top & bottom blend into the page */
+      -webkit-mask-image:
+        linear-gradient(to right,  transparent 0%, black 15%, black 85%, transparent 100%),
+        linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+      -webkit-mask-composite: source-in; /* Safari/Chrome: intersect both masks */
+      mask-image:
+        linear-gradient(to right,  transparent 0%, black 15%, black 85%, transparent 100%),
+        linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+      mask-composite: intersect; /* Firefox/standard: only opaque in both shows through */
+    }
+
+    /* ===== Samurai Thought Bubble ===== */
+    .samurai-thought {
+      position: absolute;
+      top: -10px;
+      /* Push right past the container edge so it clears the face */
+      right: -120px;
+      width: 290px;
+      background: #fffef5;
+      border: 2.5px solid #111;
+      /* Sharp bottom-LEFT corner — tail points left toward the samurai head */
+      border-radius: 18px 18px 18px 4px;
+      padding: 16px 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #111;
+      box-shadow: 3px 3px 0px #111;
+      opacity: 0;
+      transform: scale(0.85) translateY(4px);
+      transform-origin: bottom left;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .samurai-thought.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    /* Tail circles on the LEFT — pointing toward the samurai's head */
+    .samurai-thought::before,
+    .samurai-thought::after {
+      content: '';
+      position: absolute;
+      background: #fffef5;
+      border: 2px solid #111;
+      border-radius: 50%;
+    }
+    .samurai-thought::before { width: 11px; height: 11px; bottom: -14px; left: 20px; }
+    .samurai-thought::after  { width:  7px; height:  7px; bottom: -23px; left: 12px; }
+
+    .banner-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-1.5deg);
+      width: 78%;
+      text-align: center;
+      /* Intimidating dark crimson — stands out aggressively on the orange */
+      color: #1a0000;
+      font-family: 'Caveat Brush', cursive;
+      font-weight: 900;
+      font-size: clamp(13px, 3.2vw, 44px);
+      text-transform: uppercase;
+      letter-spacing: 0.16em; /* Bigger spacing — breathable, bold */
+      pointer-events: none;
+      line-height: 1.05;
+      margin: 0;
+      /* Glowing fire-red shadow to feel threatening */
+      text-shadow:
+        0 0 12px rgba(220, 0, 0, 0.6),
+        2px 2px 0px #fff,
+        -1px -1px 0px #fff,
+        1px -1px 0px #fff,
+        -1px  1px 0px #fff;
+    }
   </style>
 </head>
 
@@ -2241,8 +2339,6 @@
       <a href="auth.html?tab=login" class="btn-nav btn-nav-ghost" id="nav-login-btn">Login</a>
       <a href="auth.html?tab=register" class="btn-nav btn-nav-solid" id="nav-register-btn">Sign Up</a>
     </div>
-  </nav>
-
   </nav>
 
   <!-- Decorative Shapes -->
@@ -2286,8 +2382,15 @@
 
       <div id="samurai-3d-container" class="samurai-3d-container">
         <div id="samurai-canvas-holder" style="width: 100%; height: 100%; position: relative;"></div>
+        <!-- Samurai idle thought bubble -->
+        <div id="samurai-thought" class="samurai-thought">
+          I’ve been guarding this page for I don’t know how long...<br><br>
+          💡 <em>These people can’t even stay consistent for a month.</em>
+        </div>
       </div>
     </div>
+
+
 
     <div class="landing-features">
       <div class="feature-pill"><span class="feature-pill-icon">🔥</span> Streak Tracking</div>
@@ -2311,6 +2414,12 @@
 
   <!-- Features Section -->
   <section class="landing-about">
+
+    <!-- ===== GEN Z CHALLENGE BANNER ===== -->
+    <div class="challenge-banner">
+      <h2 class="banner-text">DARE TO STAY CONSISTENT FOR 100 DAYS STRAIGHT?</h2>
+    </div>
+
     <h2 class="landing-section-title">What's Inside? 🚀</h2>
     
     <div class="streak-flex-container reveal">
@@ -3793,12 +3902,16 @@
         rightForearmGroup.rotation.set(normalForearmRotX, 0, 0);
         katanaGroup.rotation.set(normalKatanaRotX, normalKatanaRotY, 0);
 
+        const thoughtBubble = document.getElementById('samurai-thought');
+
         function triggerSlash() {
           if (isSlashing) return;
           isSlashing = true;
           slashTime = 0;
           didTriggerShatter = false;
-          
+          // Hide thought bubble the moment the samurai attacks
+          thoughtBubble.classList.remove('visible');
+
           blade.material.color.setHex(0xff3ea5);
           blade.material.emissive.setHex(0xff3ea5);
         }
@@ -3849,6 +3962,8 @@
             blade.material.emissive.setHex(0x00c9a7);
             rightArmGroup.rotation.set(normalRightArmRotX, normalRightArmRotY, normalRightArmRotZ);
             rightForearmGroup.rotation.set(normalForearmRotX, 0, 0);
+            // Restore thought bubble once samurai returns to idle
+            thoughtBubble.classList.add('visible');
             katanaGroup.rotation.set(normalKatanaRotX, normalKatanaRotY, 0);
           }
         }
@@ -4055,6 +4170,10 @@
           camera.updateProjectionMatrix();
           renderer.setSize(w, h);
         });
+
+        // ===== Samurai thought bubble — always visible except during slash =====
+        // Show immediately on load, only hide when samurai is slashing
+        thoughtBubble.classList.add('visible');
       }
     })();
   </script>

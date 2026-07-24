@@ -341,6 +341,20 @@ function updateStreak() {
       if (window.lucide) lucide.createIcons({ root: fireEl });
     }
     
+    // Manage dynamic streak rescue warning banner
+    const warningBanner = document.getElementById('streak-warning-banner');
+    if (warningBanner) {
+      if (streak > 0 && !todayDone) {
+        warningBanner.style.display = 'flex';
+        const warningText = document.getElementById('streak-warning-text');
+        if (warningText) {
+          warningText.textContent = `⚠️ Streak Rescue: Complete today's card to lock in your ${streak}-day streak!`;
+        }
+      } else {
+        warningBanner.style.display = 'none';
+      }
+    }
+    
     if (el) {
       if (window.gsap) {
         gsap.to({ val: parseInt(el.textContent) || 0 }, {
