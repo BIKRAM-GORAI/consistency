@@ -106,6 +106,52 @@
       outline: none !important;
     }
 
+    /* ── Promo Ticker Bar ── */
+    .promo-ticker-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1001; /* Above nav */
+      background: #0a0a0a;
+      color: #FFD60A;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      border-bottom: 2px solid #FFD60A;
+    }
+    .promo-ticker-track {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker-slide 30s linear infinite;
+    }
+    .promo-ticker-track:hover { animation-play-state: paused; }
+    .promo-ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 48px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .promo-ticker-item .ticker-dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: #FF6B35;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .promo-ticker-item .ticker-highlight { color: #FF6B35; font-weight: 900; }
+    @keyframes ticker-slide {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
     /* ── Top Navbar ── */
     .landing-nav {
       display: flex;
@@ -117,7 +163,7 @@
       border-bottom: var(--border);
       box-shadow: 0 4px 0 var(--black);
       position: fixed; /* Changed to fixed to ensure it stays intact */
-      top: 0;
+      top: 32px; /* Sits below the 32px promo ticker */
       left: 0;
       right: 0;
       z-index: 1000;
@@ -2327,6 +2373,23 @@
       <div class="web-splash-loader">
         <div class="web-splash-progress"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== Promo Ticker Bar ===== -->
+  <div class="promo-ticker-bar" aria-label="Promotional offer">
+    <div class="promo-ticker-track">
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Free&nbsp;</span> 🚀</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;start your streak today</span></span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium. Exclusively yours.</span> ⚡</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 full year free.</span> No cap. 🏆</span>
+      <!-- Duplicate for seamless loop -->
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Free&nbsp;</span> 🚀</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;start your streak today</span></span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium. Exclusively yours.</span> ⚡</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 full year free.</span> No cap. 🏆</span>
     </div>
   </div>
 

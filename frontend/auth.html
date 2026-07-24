@@ -727,7 +727,8 @@
       <h2 id="oauth-tnc-title">Before you continue</h2>
       <p>You’ve selected <strong id="oauth-tnc-provider-label">Google</strong> to create your account. The sign-in window will open after you agree to our terms.</p>
       <div class="oauth-tnc-agree-row">
-        <input type="checkbox" id="oauth-tnc-checkbox" onchange="toggleOAuthConfirm()" />
+        <!-- No inline onchange — listener attached in module script to avoid scope error -->
+        <input type="checkbox" id="oauth-tnc-checkbox" />
         <label for="oauth-tnc-checkbox">
           I have read and agree to the
           <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
@@ -736,8 +737,9 @@
         </label>
       </div>
       <div class="oauth-tnc-actions">
-        <button class="oauth-tnc-cancel" id="oauth-tnc-cancel" onclick="closeOAuthTncModal()">Cancel</button>
-        <button class="oauth-tnc-confirm" id="oauth-tnc-confirm" onclick="confirmOAuthTnc()">
+        <!-- No inline onclick — listeners attached in module script -->
+        <button class="oauth-tnc-cancel" id="oauth-tnc-cancel">Cancel</button>
+        <button class="oauth-tnc-confirm" id="oauth-tnc-confirm">
           Continue with <span id="oauth-tnc-confirm-label">Google</span> →
         </button>
       </div>
@@ -751,11 +753,83 @@
     }
   </style>
 
+  <!-- ===== Promo Ticker Bar ===== -->
+  <style>
+    .promo-ticker-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 99999;
+      background: #0a0a0a;
+      color: #FFD60A;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      border-bottom: 2px solid #FFD60A;
+    }
+    .promo-ticker-track {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker-slide 30s linear infinite;
+      gap: 0;
+    }
+    .promo-ticker-track:hover { animation-play-state: paused; }
+    .promo-ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 48px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .promo-ticker-item .ticker-dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: #FF6B35;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .promo-ticker-item .ticker-highlight {
+      color: #FF6B35;
+      font-weight: 900;
+    }
+    @keyframes ticker-slide {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    /* Push page content below the ticker */
+    body { padding-top: 32px; }
+  </style>
+
   <!-- Decorative shapes -->
   <div class="auth-shape auth-shape-1" aria-hidden="true"></div>
   <div class="auth-shape auth-shape-2" aria-hidden="true"></div>
   <div class="auth-shape auth-shape-3" aria-hidden="true"></div>
   <div class="auth-shape auth-shape-4" aria-hidden="true"></div>
+
+  <!-- Promo ticker bar — duplicate the items so the loop is seamless -->
+  <div class="promo-ticker-bar" aria-label="Promotional offer">
+    <div class="promo-ticker-track">
+      <!-- First set -->
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Free&nbsp;</span> 🚀</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;start your streak today</span></span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium. Exclusively yours.</span> ⚡</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 full year free.</span> No cap. 🏆</span>
+      <!-- Duplicate set for seamless infinite scroll -->
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Be consistent for <span class="ticker-highlight">&nbsp;100 days straight&nbsp;</span> &amp; unlock <span class="ticker-highlight">&nbsp;1 Year Free&nbsp;</span> 🚀</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 🔥 Only the disciplined survive — <span class="ticker-highlight">&nbsp;start your streak today</span></span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> 100-Day Consistency Challenge — <span class="ticker-highlight">&nbsp;1 Year Premium. Exclusively yours.</span> ⚡</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Miss a day? The streak resets. <span class="ticker-highlight">&nbsp;Are you built different?</span> 🧠</span>
+      <span class="promo-ticker-item"><span class="ticker-dot"></span> Complete 100 days — <span class="ticker-highlight">&nbsp;get 1 full year free.</span> No cap. 🏆</span>
+    </div>
+  </div>
 
   <div class="auth-wrap">
     <div class="auth-card">
@@ -1717,6 +1791,11 @@
         closeOAuthTncModal();
         if (pendingOAuthProvider) handleOAuthLogin(pendingOAuthProvider);
       }
+
+      // Wire modal buttons via addEventListener (avoids module scope issue with inline handlers)
+      document.getElementById('oauth-tnc-checkbox').addEventListener('change', toggleOAuthConfirm);
+      document.getElementById('oauth-tnc-cancel').addEventListener('click', closeOAuthTncModal);
+      document.getElementById('oauth-tnc-confirm').addEventListener('click', confirmOAuthTnc);
 
       // Close on backdrop click
       document.getElementById('oauth-tnc-overlay').addEventListener('click', function(e) {
