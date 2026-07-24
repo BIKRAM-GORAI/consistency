@@ -15,12 +15,12 @@ const authenticateAdmin = (req, res, next) => {
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('CRITICAL: JWT_SECRET is missing in .env for Admin');
+    const jwtAdminSecret = process.env.JWT_ADMIN_SECRET;
+    if (!jwtAdminSecret) {
+      console.error('CRITICAL: JWT_ADMIN_SECRET is missing in .env for Admin Verification');
       return res.status(500).json({ message: 'Server configuration error' });
     }
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtAdminSecret);
     
     // Extra security: Verify isAdmin flag AND match against environment ADMIN_EMAIL
     if (!decoded.isAdmin || decoded.email !== process.env.ADMIN_EMAIL) {

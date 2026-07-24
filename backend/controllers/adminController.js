@@ -110,11 +110,16 @@ async function adminLogin(req, res) {
     adminOtpExpiry = null;
 
     // Generate Admin Token
-    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    const jwtAdminSecret = process.env.JWT_ADMIN_SECRET;
+    if (!jwtAdminSecret) {
+      console.error('CRITICAL: JWT_ADMIN_SECRET is missing in .env');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+    const jwtAdminExpiry = process.env.JWT_ADMIN_EXPIRY || '30m';
     const token = jwt.sign(
       { isAdmin: true, email: adminEmail },
-      jwtSecret,
-      { expiresIn: '24h' }
+      jwtAdminSecret,
+      { expiresIn: jwtAdminExpiry }
     );
 
     res.json({ token, message: 'Admin login successful' });
@@ -283,7 +288,9 @@ async function getAdminUsers(req, res) {
  */
 async function getAdminUserDetails(req, res) {
   try {
-    const user = await User.findById(req.params.id).populate('claimedBadges');
+    const user = await User.findById(req.params.id)
+      .populate('claimedBadges')
+      .populate('referredBy', 'name username email');
     if (!user) return res.status(404).json({ message: 'User not found' });
     
     const days = await Day.find({ userId: user._id }).sort({ date: -1 });

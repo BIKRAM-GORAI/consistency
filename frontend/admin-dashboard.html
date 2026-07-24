@@ -774,7 +774,10 @@
         <button class="nav-link" id="nav-bulk-email" onclick="showSection('bulk-email')">📧 Bulk Email</button>
       </div>
     </div>
-    <button class="btn-logout" onclick="logout()">Logout</button>
+    <div style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
+      <span id="session-timer" style="font-weight: 800; font-family: monospace; font-size: 14px; color: #ef4444; border: 2px solid #ef4444; padding: 4px 10px; background: #fef2f2; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">⏳ Session: --:--</span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
   </nav>
 
   <div class="container">

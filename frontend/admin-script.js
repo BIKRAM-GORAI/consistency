@@ -8,6 +8,63 @@ let currentPages = {
   payments: 1
 };
 
+function getAdminTokenExpiry(token) {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const payload = JSON.parse(jsonPayload);
+    return payload.exp ? payload.exp * 1000 : null;
+  } catch (e) {
+    console.error('Error decoding admin token:', e);
+    return null;
+  }
+}
+
+let sessionTimerInterval = null;
+
+function initSessionTimer() {
+  if (!token) return;
+  const expiry = getAdminTokenExpiry(token);
+  if (!expiry) {
+    console.warn('Could not decode admin token expiration');
+    return;
+  }
+
+  const timerEl = document.getElementById('session-timer');
+  if (!timerEl) return;
+
+  function updateTimer() {
+    const remainingMs = expiry - Date.now();
+    if (remainingMs <= 0) {
+      clearInterval(sessionTimerInterval);
+      timerEl.textContent = '⏳ Session: Expired';
+      alert('Your admin session has expired. You will be logged out.');
+      logout();
+      return;
+    }
+
+    const remainingSecs = Math.floor(remainingMs / 1000);
+    const mins = Math.floor(remainingSecs / 60);
+    const secs = remainingSecs % 60;
+    timerEl.textContent = `⏳ Session: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  updateTimer();
+  sessionTimerInterval = setInterval(updateTimer, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.location.pathname.includes('admin-dashboard.html')) {
+    initSessionTimer();
+  }
+});
+
 // Redirect if not logged in
 if (!token && !window.location.pathname.includes('admin-login.html')) {
   window.location.replace('admin-login.html');
@@ -578,6 +635,112 @@ function closeUserModal() {
   currentUserDetail = null;
 }
 
+function generateHeatmapHtml(days) {
+  // Create a map of date string (YYYY-MM-DD) -> completion status
+  const dateMap = {};
+  days.forEach(d => {
+    const dateObj = new Date(d.date);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    
+    let total = 0;
+    let completed = 0;
+    d.categories.forEach(c => {
+      c.tasks.forEach(t => {
+        total++;
+        if (t.completed) completed++;
+      });
+    });
+    
+    dateMap[dateStr] = {
+      total,
+      completed,
+      pct: total > 0 ? (completed / total) * 100 : 0
+    };
+  });
+  
+  // Generate grids for the last 12 months
+  let monthsHtml = '';
+  const now = new Date();
+  
+  // Loop for the past 12 months
+  for (let i = 11; i >= 0; i--) {
+    const mDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthName = mDate.toLocaleString(undefined, { month: 'short' });
+    const year = mDate.getFullYear();
+    
+    const numDays = new Date(mDate.getFullYear(), mDate.getMonth() + 1, 0).getDate();
+    const startDay = mDate.getDay();
+    
+    let dayBoxes = '';
+    // Fill empty spaces for start offset
+    for (let s = 0; s < startDay; s++) {
+      dayBoxes += `<div style="width: 14px; height: 14px; background: transparent;"></div>`;
+    }
+    
+    // Fill day boxes
+    for (let d = 1; d <= numDays; d++) {
+      const dateStr = `${year}-${String(mDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const activity = dateMap[dateStr];
+      
+      let bgColor = '#f3f4f6'; // Default grey
+      let title = `${monthName} ${d}, ${year}: No card logged`;
+      let border = '1px solid #e5e7eb';
+      
+      if (activity) {
+        const { total, completed, pct } = activity;
+        border = '1px solid #000';
+        if (total === 0) {
+          bgColor = '#e0e7ff'; // Indigo 50
+          title = `${monthName} ${d}, ${year}: 0 tasks logged`;
+        } else if (pct === 0) {
+          bgColor = '#e0e7ff'; // Indigo 50
+          title = `${monthName} ${d}, ${year}: 0/${total} completed (0%)`;
+        } else if (pct < 50) {
+          bgColor = '#c7d2fe'; // Indigo 200
+          title = `${monthName} ${d}, ${year}: ${completed}/${total} completed (${Math.round(pct)}%)`;
+        } else if (pct < 100) {
+          bgColor = '#818cf8'; // Indigo 400
+          title = `${monthName} ${d}, ${year}: ${completed}/${total} completed (${Math.round(pct)}%)`;
+        } else {
+          bgColor = '#4f46e5'; // Indigo 600
+          title = `${monthName} ${d}, ${year}: All ${completed}/${total} completed (100%)!`;
+        }
+      }
+      
+      dayBoxes += `
+        <div title="${title}" style="width: 14px; height: 14px; background: ${bgColor}; border: ${border}; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+        </div>
+      `;
+    }
+    
+    monthsHtml += `
+      <div style="padding: 10px; border: 2px solid #000; border-radius: 8px; background: #fafafa; display: flex; flex-direction: column; align-items: center; min-width: 130px;">
+        <div style="font-weight: 800; font-size: 12px; margin-bottom: 6px; font-family: 'Space Grotesk';">${monthName} ${year}</div>
+        <div style="display: grid; grid-template-columns: repeat(7, 14px); gap: 4px;">
+          ${dayBoxes}
+        </div>
+      </div>
+    `;
+  }
+  
+  return `
+    <div style="font-weight: 900; font-family: 'Space Grotesk'; margin-bottom: 12px; font-size: 16px;">📅 Habit Consistency Heatmap (Past 12 Months)</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-height: 280px; overflow-y: auto; padding: 4px;">
+      ${monthsHtml}
+    </div>
+    <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 11px; font-weight: 800; justify-content: center;">
+      <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:2px;"></div> No Card</div>
+      <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#e0e7ff; border:1px solid #000; border-radius:2px;"></div> 0% Completed</div>
+      <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#c7d2fe; border:1px solid #000; border-radius:2px;"></div> 1-49% Completed</div>
+      <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#818cf8; border:1px solid #000; border-radius:2px;"></div> 50-99% Completed</div>
+      <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#4f46e5; border:1px solid #000; border-radius:2px;"></div> 100% Completed</div>
+    </div>
+  `;
+}
+
 function showUserTab(tab) {
   const container = document.getElementById('user-modal-content');
   document.querySelectorAll('#user-detail-modal .nav-link').forEach(btn => {
@@ -600,6 +763,12 @@ function showUserTab(tab) {
           </button>
           <input type="file" id="admin-user-pic-input" style="display:none" accept="image/*" onchange="handleAdminUserPicUpload(event, '${user._id}')">
           <p style="font-size: 11px; color: #666; font-weight: 700;">Click to upload a new avatar for this user</p>
+          
+          <div style="width: 100%; max-width: 420px; padding: 16px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 #000; font-size: 13px; text-align: left; line-height: 1.6;">
+            <div>📅 <strong>Member Since:</strong> <span style="font-weight: 800; color: #000;">${new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+            <div>🔥 <strong>Current Streak:</strong> <span style="font-weight: 900; color: var(--red);">${user.currentStreak || 0} days</span> (Highest: ${user.highestStreak || 0} days)</div>
+            <div>📧 <strong>Verification Status:</strong> ${user.isEmailVerified ? '<span style="color: #22c55e; font-weight: 800;">✔ Verified</span>' : '<span style="color: #ef4444; font-weight: 800;">⚠ Unverified (Grace Limit)</span>'}</div>
+          </div>
         </div>
 
         <div class="user-subscription-box">
@@ -619,6 +788,46 @@ function showUserTab(tab) {
           <button class="btn-control" style="background: var(--blue); color: white; padding: 10px 18px; box-shadow: 4px 4px 0 #000;" onclick="showUserTab('payments')">
             <i data-lucide="receipt"></i> View Payments History
           </button>
+        </div>
+
+        <div class="user-referral-box" style="margin-top: 24px; padding: 16px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 #000; display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px;">
+          <h4 style="margin: 0 0 4px 0; font-family:'Space Grotesk'; font-size: 16px;">👥 Referral &amp; Gamification Details</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
+            <div>🎟️ <strong>Referral Code:</strong> <span style="font-family: monospace; font-weight: 800;">${user.referralCode || 'N/A'}</span></div>
+            <div>💰 <strong>Points Balance:</strong> <span style="font-weight: 900; color: var(--blue);">${user.pointsBalance || 0} pts</span></div>
+            <div style="grid-column: 1 / -1; margin-top: 4px;">
+              🔗 <strong>Referred By:</strong> 
+              ${user.referredBy ? `
+                <span onclick="openUserModal('${user.referredBy._id}')" style="color: var(--blue); font-weight: 800; cursor: pointer; text-decoration: underline;">
+                  ${user.referredBy.name} (@${user.referredBy.username || 'user'})
+                </span>
+              ` : '<span style="color: #666;">Direct Signup / None</span>'}
+            </div>
+          </div>
+        </div>
+
+        <div class="user-ai-quotas" style="margin-top: 24px; padding: 16px; border: 3px solid #000; border-radius: 12px; background: #f9f9f9; box-shadow: 4px 4px 0 #000; margin-bottom: 24px;">
+          <h4 style="margin: 0 0 12px 0; font-family:'Space Grotesk'; font-size: 16px;">🤖 Daily AI Usage Quota Tracking</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; font-size: 12px; font-weight: 700;">
+            <div style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; background: #fff;">
+              <strong>Coach Reports:</strong> ${user.aiGenerationCount || 0}
+            </div>
+            <div style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; background: #fff;">
+              <strong>Image OCR:</strong> ${user.aiPhotoExtractionCount || 0}
+            </div>
+            <div style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; background: #fff;">
+              <strong>Voice Parses:</strong> ${user.voiceParseCount || 0}
+            </div>
+            <div style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; background: #fff;">
+              <strong>Canvas Messages:</strong> ${user.canvasMsgCount || 0}
+            </div>
+            <div style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; background: #fff;">
+              <strong>Weekly Summaries:</strong> ${user.weeklySummaryDailyCount || 0}
+            </div>
+            <div style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; background: #fff;">
+              <strong>Monthly Summaries:</strong> ${user.monthlySummaryDailyCount || 0}
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -661,6 +870,9 @@ function showUserTab(tab) {
           </button>
         </div>
         <div id="new-day-placeholder"></div>
+        <div style="margin-bottom: 24px; padding: 16px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 #000;">
+          ${generateHeatmapHtml(days)}
+        </div>
         ${days.length ? days.map(d => `
           <div id="day-card-${d._id}" style="padding:16px; border:3px solid #000; margin-bottom:16px; background:#fff; border-radius:12px; box-shadow: 4px 4px 0 #000;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 12px; margin-bottom: 12px;">
