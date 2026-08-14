@@ -34,6 +34,29 @@ function renderDayAchievements(dayId, achievements, cardEl) {
 
   if (achievements.length === 0) return;
 
+  // Milestone Day UI transformation if card has 0 tasks
+  const dayObj = (window.allDays || []).find(d => String(d._id) === String(dayId));
+  const totalTasks = (dayObj?.categories || []).reduce((acc, cat) => acc + (cat.tasks || []).length, 0);
+  if (totalTasks === 0) {
+    const progSec = cardEl.querySelector('.progress-section');
+    if (progSec) {
+      progSec.className = 'progress-section milestone-progress-section';
+      progSec.style.padding = '4px 0 10px 0';
+      progSec.innerHTML = `
+        <div class="progress-meta" style="justify-content: flex-start;">
+          <span class="milestone-day-badge" style="font-size: 11px; font-weight: 900; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #ffffff; padding: 4px 10px; border-radius: 6px; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="trophy" style="width: 14px; height: 14px;"></i> Goal Milestone Day
+          </span>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons({ root: progSec });
+    }
+    const catList = cardEl.querySelector('.categories-list');
+    if (catList && catList.innerHTML.includes('No categories yet.')) {
+      catList.innerHTML = '';
+    }
+  }
+
   const section = document.createElement('div');
   section.className = 'achievements-section';
 
