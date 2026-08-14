@@ -2050,8 +2050,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
    ≥ 769px
    ============================================================ */
 @media (min-width: 769px) {
-  .bottom-nav { display: none !important; }
-  .nav-actions { display: flex; }
+  .nav-actions { display: none !important; }
 }
 
 /* ============================================================
@@ -6366,7 +6365,6 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   /* Adjust bottom nav margins or heights if needed for safe areas */
   .bottom-nav {
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
