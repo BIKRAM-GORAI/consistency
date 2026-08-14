@@ -5,7 +5,8 @@
 
 [data-theme="minimalistic"] {
   /* ── Backgrounds ── */
-  --bg:        #f1f5f9; /* Slate-100: Soft cool gray background */
+  --bg:        #f1f5f9;
+  --bg-body:   #f1f5f9; /* Slate-100: Soft cool gray background */
   --bg-card:   #ffffff; /* Pure white cards */
   --bg-input:  #ffffff;
   --bg-muted:  #f8fafc; /* Slate-50 for subtle container backgrounds */

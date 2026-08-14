@@ -405,6 +405,9 @@
       <button class="nav-btn" id="btn-pomodoro" onclick="showPage('pomodoro')">
         <span><i data-lucide="clock"></i></span><span class="btn-text"> Pomodoro</span>
       </button>
+      <button class="nav-btn" id="btn-devhub" onclick="showPage('devhub')">
+        <span><i data-lucide="terminal"></i></span><span class="btn-text"> Dev Hub</span>
+      </button>
       <button class="nav-btn" id="btn-canvas" onclick="navigateToCanvas()">
         <span><i data-lucide="palette"></i></span><span class="btn-text"> Canvas</span>
       </button>
@@ -1440,6 +1443,958 @@
   </main>
 
 
+  <!-- ===== PAGE: Developer Hub ===== -->
+  <main class="page" id="page-devhub">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <div>
+        <h1 class="page-title" style="display: flex; align-items: center; gap: 10px;">
+          <i data-lucide="terminal"></i> Developer Hub
+          <button class="btn-ghost ripple" onclick="loadDevHub()" style="padding: 4px 10px; border: 2px solid var(--black); border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 2px 2px 0 var(--black);" title="Refresh Integrations"><i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i> Refresh</button>
+        </h1>
+        <p class="page-subtitle">Unified dashboard for your repositories, calendars, and coding activity</p>
+      </div>
+    </div>
+
+    <!-- Dedicated Study Mode & AI Banner (Separate Section) -->
+    <div style="margin-bottom: 16px; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 214, 10, 0.15) 100%); border: 3px solid var(--black); border-radius: 12px; padding: 14px 20px; box-shadow: 4px 4px 0 var(--black); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="background: var(--yellow); border: 2px solid var(--black); border-radius: 10px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--black);">
+          <i data-lucide="graduation-cap" style="width: 22px; height: 22px; color: var(--black);"></i>
+        </div>
+        <div>
+          <h4 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 15px; color: var(--text);">YouTube Study Mode & AI Notes</h4>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Stream developer tutorials in-app & generate Gemini AI study notes</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-primary ripple" onclick="switchDevHubTab('studymode')" style="padding: 9px 18px; border: 2.5px solid var(--black); border-radius: 8px; background: var(--yellow); color: var(--black); font-weight: 900; font-size: 12.5px; cursor: pointer; box-shadow: 2.5px 2.5px 0 var(--black); display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="play-circle" style="width: 15px; height: 15px;"></i> Open Study Hub
+        </button>
+      </div>
+    </div>
+
+    <!-- Horizontal Tabs for Integrations & Developer Tools (Scrollable on Desktop & Mobile) -->
+    <div class="devhub-tab-bar" style="display: flex; gap: 10px; overflow-x: auto; padding: 6px 4px 14px 4px; margin-bottom: 20px; border-bottom: 3px solid var(--black); white-space: nowrap; scrollbar-width: auto; -webkit-overflow-scrolling: touch;">
+      <!-- 1. Universal Search -->
+      <button class="devhub-tab-btn active" id="devhub-tab-universal" onclick="switchDevHubTab('universal')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <i data-lucide="globe" style="width: 14px; height: 14px;"></i> Universal Search
+      </button>
+      <!-- 2. GitHub -->
+      <button class="devhub-tab-btn" id="devhub-tab-github" onclick="switchDevHubTab('github')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg> GitHub
+      </button>
+      <!-- 3. Stack Overflow -->
+      <button class="devhub-tab-btn" id="devhub-tab-stackoverflow" onclick="switchDevHubTab('stackoverflow')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i> Stack Overflow
+      </button>
+      <!-- 4. Medium -->
+      <button class="devhub-tab-btn" id="devhub-tab-medium" onclick="switchDevHubTab('medium')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <i data-lucide="edit" style="width: 14px; height: 14px;"></i> Medium
+      </button>
+      <!-- 5. Dev.to -->
+      <button class="devhub-tab-btn" id="devhub-tab-devto" onclick="switchDevHubTab('devto')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <i data-lucide="book-open" style="width: 14px; height: 14px;"></i> Dev.to
+      </button>
+      <!-- 6. Dev Toolbox -->
+      <button class="devhub-tab-btn" id="devhub-tab-toolbox" onclick="switchDevHubTab('toolbox')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <i data-lucide="wrench" style="width: 14px; height: 14px;"></i> Dev Toolbox
+      </button>
+      <!-- 7. Bookmarks & Notes -->
+      <button class="devhub-tab-btn" id="devhub-tab-bookmarks" onclick="switchDevHubTab('bookmarks')" style="flex-shrink: 0; padding: 10px 18px; border: 3px solid var(--black); border-radius: 8px; background: var(--bg-card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 3px 3px 0 var(--black); transition: all 0.15s ease;">
+        <i data-lucide="bookmark" style="width: 14px; height: 14px;"></i> Bookmarks & Notes
+      </button>
+    </div>
+
+    <!-- Hub Grid -->
+    <div class="devhub-grid">
+
+      <!-- 1. Universal Search Card -->
+      <div class="devhub-card" id="hub-card-universal" style="width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <h3><i data-lucide="search"></i> Universal Developer Search</h3>
+          <span class="status-badge connected">Live Search</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Search input bar -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="uni-search-input" placeholder="Search across GitHub, Stack Overflow, Dev.to, Medium & your Saved Bookmarks (e.g. react state)..." oninput="window.onUniversalSearchInput(this.value)" onkeydown="if(event.key==='Enter') window.executeUniversalSearch()" style="flex:1; min-width:280px; padding:12px 16px; border:3px solid var(--black); border-radius:10px; font-size:14px; font-family:'Space Grotesk', sans-serif; font-weight:700; background:var(--bg-card); color:var(--text);" />
+            <button onclick="window.executeUniversalSearch()" style="padding:12px 24px; border:3px solid var(--black); border-radius:10px; background:var(--yellow); color:var(--black); font-weight:900; font-size:14px; cursor:pointer; box-shadow:3px 3px 0 var(--black); display:flex; align-items:center; gap:6px;">
+              <i data-lucide="search" style="width:16px; height:16px;"></i> Search
+            </button>
+          </div>
+
+          <!-- Channel Filter Pills -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; user-select:none;">
+            <span style="font-weight:900; font-size:12px; color:var(--text-muted);">Source Filter:</span>
+            <button class="uni-filter-pill active" onclick="window.filterUniversalSource('all')" id="uni-filter-all" style="padding:4px 12px; border:2px solid var(--black); border-radius:20px; font-size:11px; font-weight:800; background:var(--yellow); color:var(--black); cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">All Sources</button>
+            <button class="uni-filter-pill" onclick="window.filterUniversalSource('github')" id="uni-filter-github" style="padding:4px 12px; border:2px solid var(--black); border-radius:20px; font-size:11px; font-weight:800; background:var(--bg-card); color:var(--text); cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">GitHub</button>
+            <button class="uni-filter-pill" onclick="window.filterUniversalSource('stackoverflow')" id="uni-filter-stackoverflow" style="padding:4px 12px; border:2px solid var(--black); border-radius:20px; font-size:11px; font-weight:800; background:var(--bg-card); color:var(--text); cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Stack Overflow</button>
+            <button class="uni-filter-pill" onclick="window.filterUniversalSource('devto')" id="uni-filter-devto" style="padding:4px 12px; border:2px solid var(--black); border-radius:20px; font-size:11px; font-weight:800; background:var(--bg-card); color:var(--text); cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Dev.to</button>
+            <button class="uni-filter-pill" onclick="window.filterUniversalSource('medium')" id="uni-filter-medium" style="padding:4px 12px; border:2px solid var(--black); border-radius:20px; font-size:11px; font-weight:800; background:var(--bg-card); color:var(--text); cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Medium</button>
+            <button class="uni-filter-pill" onclick="window.filterUniversalSource('bookmarks')" id="uni-filter-bookmarks" style="padding:4px 12px; border:2px solid var(--black); border-radius:20px; font-size:11px; font-weight:800; background:var(--bg-card); color:var(--text); cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">My Saved Bookmarks</button>
+          </div>
+
+          <!-- Results Container -->
+          <div id="universal-results-container" class="devhub-scroll-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px; max-height:540px; overflow-y:auto; padding-right:6px; width:100%;">
+            <p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">Type a topic or keyword above to search all developer sources instantly!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Dev Toolbox Card -->
+      <div class="devhub-card" id="hub-card-toolbox" style="display: none; width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <h3><i data-lucide="wrench"></i> Developer Toolbox</h3>
+          <span class="status-badge connected">Client-Side Tools</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Toolbox Sub-tab navigation -->
+          <div class="github-sub-tab-bar" style="display:flex; gap:6px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; overflow-x:auto; user-select:none; scrollbar-width:none;">
+            <button class="github-sub-tab-btn active" id="toolbox-tab-json" onclick="window.switchToolboxTab('json')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">JSON Formatter</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-jsontots" onclick="window.switchToolboxTab('jsontots')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">JSON → TypeScript</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-regex" onclick="window.switchToolboxTab('regex')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">Regex Tester</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-timestamp" onclick="window.switchToolboxTab('timestamp')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">Timestamp</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-jwt" onclick="window.switchToolboxTab('jwt')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">JWT Decoder</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-base64" onclick="window.switchToolboxTab('base64')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">Base64</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-uuid" onclick="window.switchToolboxTab('uuid')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">UUID Generator</button>
+            <button class="github-sub-tab-btn" id="toolbox-tab-url" onclick="window.switchToolboxTab('url')" style="padding:7px 14px; font-size:12px; font-weight:800; border-radius:8px;">URL Encoder</button>
+          </div>
+
+          <!-- Tool 1: JSON Formatter -->
+          <div id="toolbox-panel-json" class="toolbox-panel" style="display:block; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; font-size:13px;">JSON Input:</span>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="window.runJSONPrettify()" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Prettify</button>
+                  <button onclick="window.runJSONMinify()" style="padding:6px 14px; border:1.5px solid #474c5c; border-radius:6px; background:#2e323d; color:#f1f5f9 !important; font-weight:800; font-size:11.5px; cursor:pointer; box-shadow:1.5px 1.5px 0 #121317;">Minify</button>
+                  <button onclick="window.copyToolboxOutput('json-output')" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--green); color:white; font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Copy Result</button>
+                </div>
+              </div>
+              <textarea id="json-input" placeholder="Paste unformatted JSON here..." style="width:100%; height:140px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);"></textarea>
+              <div id="json-status" style="font-size:12px; font-weight:800; color:var(--green);"></div>
+              <textarea id="json-output" readonly placeholder="Formatted JSON output will appear here..." style="width:100%; height:180px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-body); color:var(--text);"></textarea>
+            </div>
+          </div>
+
+          <!-- Tool 2: JSON to TypeScript -->
+          <div id="toolbox-panel-jsontots" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; font-size:13px;">JSON Input:</span>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="window.runJSONToTS()" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Convert to TS</button>
+                  <button onclick="window.copyToolboxOutput('jsontots-output')" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--green); color:white; font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Copy TS Interface</button>
+                </div>
+              </div>
+              <textarea id="jsontots-input" placeholder='Paste JSON object (e.g. {"id": 1, "name": "Alice", "tags": ["admin"]})...' style="width:100%; height:140px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);"></textarea>
+              <textarea id="jsontots-output" readonly placeholder="TypeScript interface definition output..." style="width:100%; height:180px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-body); color:var(--text);"></textarea>
+            </div>
+          </div>
+
+          <!-- Tool 3: Regex Tester -->
+          <div id="toolbox-panel-regex" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="regex-pattern" placeholder="Regex Pattern (e.g. ([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+))" oninput="window.runRegexTest()" style="flex:1; padding:8px 12px; border:2px solid var(--black); border-radius:8px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);" />
+                <input type="text" id="regex-flags" value="gi" placeholder="flags (gi)" oninput="window.runRegexTest()" style="width:70px; padding:8px 12px; border:2px solid var(--black); border-radius:8px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);" />
+              </div>
+              <textarea id="regex-text" placeholder="Paste test string here..." oninput="window.runRegexTest()" style="width:100%; height:120px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);"></textarea>
+              <div id="regex-output" style="border:2.5px solid var(--black); border-radius:8px; padding:12px; font-family:monospace; font-size:12px; background:var(--bg-body); min-height:100px; max-height:180px; overflow-y:auto; white-space:pre-wrap;"></div>
+            </div>
+          </div>
+
+          <!-- Tool 4: Timestamp Converter -->
+          <div id="toolbox-panel-timestamp" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="timestamp-input" placeholder="Enter Unix Epoch timestamp (seconds or ms)..." style="flex:1; padding:10px 14px; border:2px solid var(--black); border-radius:8px; font-size:13px; font-family:monospace; background:var(--bg-card); color:var(--text);" />
+                <button onclick="window.convertTimestamp()" style="padding:10px 18px; border:2px solid var(--black); border-radius:8px; background:var(--yellow); font-weight:800; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black);">Convert</button>
+                <button onclick="window.useCurrentTimestamp()" style="padding:10px 14px; border:1.5px solid #474c5c; border-radius:8px; background:#2e323d; color:#f1f5f9 !important; font-weight:800; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 #121317;">Now</button>
+              </div>
+              <div id="timestamp-output" style="border:2.5px solid var(--black); border-radius:8px; padding:16px; font-size:13px; font-weight:700; background:var(--bg-body); display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+          </div>
+
+          <!-- Tool 5: JWT Decoder -->
+          <div id="toolbox-panel-jwt" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; font-size:13px;">Encoded JWT Token:</span>
+                <button onclick="window.runJWTDecode()" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Decode JWT</button>
+              </div>
+              <textarea id="jwt-input" placeholder="Paste JWT token (eyJhbGci...)..." style="width:100%; height:80px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);"></textarea>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                  <span style="font-weight:800; font-size:11px; color:var(--text-muted);">Header:</span>
+                  <textarea id="jwt-header-out" readonly style="width:100%; height:140px; border:2px solid var(--black); border-radius:6px; padding:8px; font-family:monospace; font-size:11px; background:var(--bg-body);"></textarea>
+                </div>
+                <div>
+                  <span style="font-weight:800; font-size:11px; color:var(--text-muted);">Payload:</span>
+                  <textarea id="jwt-payload-out" readonly style="width:100%; height:140px; border:2px solid var(--black); border-radius:6px; padding:8px; font-family:monospace; font-size:11px; background:var(--bg-body);"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tool 6: Base64 Encoder / Decoder -->
+          <div id="toolbox-panel-base64" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; font-size:13px;">Input Text / Base64:</span>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="window.runBase64Encode()" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Encode Base64</button>
+                  <button onclick="window.runBase64Decode()" style="padding:6px 14px; border:1.5px solid #474c5c; border-radius:6px; background:#2e323d; color:#f1f5f9 !important; font-weight:800; font-size:11.5px; cursor:pointer; box-shadow:1.5px 1.5px 0 #121317;">Decode Base64</button>
+                  <button onclick="window.copyToolboxOutput('base64-output')" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--green); color:white; font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Copy Output</button>
+                </div>
+              </div>
+              <textarea id="base64-input" placeholder="Enter plain text or Base64 string..." style="width:100%; height:120px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);"></textarea>
+              <textarea id="base64-output" readonly placeholder="Output string..." style="width:100%; height:120px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-body); color:var(--text);"></textarea>
+            </div>
+          </div>
+
+          <!-- Tool 7: UUID Generator -->
+          <div id="toolbox-panel-uuid" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <label style="font-size:12px; font-weight:800;">Quantity:</label>
+                <input type="number" id="uuid-count" value="5" min="1" max="50" style="width:70px; padding:6px 10px; border:2px solid var(--black); border-radius:6px; font-size:12px; font-weight:800;" />
+                <button onclick="window.generateUUIDs()" style="padding:8px 16px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:800; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black);">Generate UUID v4</button>
+                <button onclick="window.copyToolboxOutput('uuid-output')" style="padding:8px 16px; border:2px solid var(--black); border-radius:6px; background:var(--green); color:white; font-weight:800; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black);">Copy All</button>
+              </div>
+              <textarea id="uuid-output" readonly style="width:100%; height:180px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-body); color:var(--text);"></textarea>
+            </div>
+          </div>
+
+          <!-- Tool 8: URL Encoder -->
+          <div id="toolbox-panel-url" class="toolbox-panel" style="display:none; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:800; font-size:13px;">URL / String Input:</span>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="window.runURLEncode()" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">URL Encode</button>
+                  <button onclick="window.runURLDecode()" style="padding:6px 14px; border:1.5px solid #474c5c; border-radius:6px; background:#2e323d; color:#f1f5f9 !important; font-weight:800; font-size:11.5px; cursor:pointer; box-shadow:1.5px 1.5px 0 #121317;">URL Decode</button>
+                  <button onclick="window.copyToolboxOutput('url-output')" style="padding:6px 12px; border:2px solid var(--black); border-radius:6px; background:var(--green); color:white; font-weight:800; font-size:11px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">Copy Result</button>
+                </div>
+              </div>
+              <textarea id="url-input" placeholder="Paste URL or string..." style="width:100%; height:100px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-card); color:var(--text);"></textarea>
+              <textarea id="url-output" readonly placeholder="Resulting URL..." style="width:100%; height:100px; border:2.5px solid var(--black); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; background:var(--bg-body); color:var(--text);"></textarea>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 3. Bookmarks & Notes Card -->
+      <div class="devhub-card" id="hub-card-bookmarks" style="display: none; width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <h3><i data-lucide="bookmark"></i> Saved Bookmarks & Notes</h3>
+          <span class="status-badge connected" id="bookmarks-quota-badge">0 / 50 Saved</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Filter bar -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="bookmarks-search-input" placeholder="Search saved bookmarks by title, note, or tag..." oninput="window.filterUserBookmarks()" style="flex:1; min-width:260px; padding:10px 14px; border:2.5px solid var(--black); border-radius:8px; font-size:13px; font-family:'Space Grotesk', sans-serif; background:var(--bg-card); color:var(--text);" />
+            <button onclick="window.openAddCustomBookmarkModal()" style="padding:10px 16px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:800; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; gap:6px;">
+              <i data-lucide="plus" style="width:14px; height:14px;"></i> Add Custom Link
+            </button>
+          </div>
+
+          <!-- Limit warning banner (hidden by default) -->
+          <div id="bookmark-limit-banner" style="display:none; background:var(--yellow); border:2.5px solid var(--black); border-radius:8px; padding:10px 14px; font-weight:800; font-size:12px; color:var(--black); box-shadow:2px 2px 0 var(--black); align-items:center; justify-content:space-between;">
+            <span><i data-lucide="alert-circle"></i> You have reached your Free Tier Limit (50/50). Upgrade to Premium for 250 Bookmarks!</span>
+            <button onclick="if(window.showPage) window.showPage('pricing')" style="padding:4px 10px; border:1.5px solid var(--black); border-radius:4px; background:var(--black); color:white; font-size:11px; cursor:pointer;">Upgrade</button>
+          </div>
+
+          <!-- Bookmarks grid list -->
+          <div id="user-bookmarks-grid" class="devhub-scroll-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; max-height:500px; overflow-y:auto; padding-right:6px; width:100%;">
+            <p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">Loading saved bookmarks...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Study Mode & AI Notes Card -->
+      <div class="devhub-card" id="hub-card-studymode" style="display: none; width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <h3><i data-lucide="graduation-cap"></i> YouTube Study Mode & AI Notes</h3>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="status-badge connected" id="ai-notes-quota-badge">0 / 20 AI Notes Used</span>
+            <button onclick="window.openBYOKeysModal()" style="padding:7px 14px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; gap:6px;">
+              <i data-lucide="key" style="width:14px; height:14px;"></i> 🔑 Enter Your API Keys
+            </button>
+          </div>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- YouTube Search Input -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="study-search-input" placeholder="Search developer tutorials or YouTube playlists (e.g. system design, nextjs 14)..." oninput="window.onStudySearchInput(this.value)" onkeydown="if(event.key==='Enter') window.executeStudySearch()" style="flex:1; min-width:280px; padding:12px 16px; border:3px solid var(--black); border-radius:10px; font-size:14px; font-family:'Space Grotesk', sans-serif; font-weight:700; background:var(--bg-card); color:var(--text);" />
+            <button onclick="window.executeStudySearch()" style="padding:12px 24px; border:3px solid var(--black); border-radius:10px; background:var(--yellow); color:var(--black); font-weight:900; font-size:14px; cursor:pointer; box-shadow:3px 3px 0 var(--black); display:flex; align-items:center; gap:6px;">
+              <i data-lucide="search" style="width:16px; height:16px;"></i> Search Videos
+            </button>
+          </div>
+
+          <!-- Videos Grid -->
+          <div id="study-videos-grid" class="devhub-scroll-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; max-height:540px; overflow-y:auto; padding-right:6px; width:100%;">
+            <p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">Type a tutorial topic above to discover & stream YouTube study courses!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- GitHub Integration Card -->
+      <div class="devhub-card" id="hub-card-github" style="width: 100%;">
+        <div class="card-header">
+          <h3><i data-lucide="github"></i> GitHub Profile</h3>
+          <span class="status-badge disconnected" id="github-badge">Disconnected</span>
+        </div>
+        <div class="card-body">
+          <div id="github-setup" class="setup-section">
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+              Connect your GitHub account to showcase your repositories, monitor pull requests, and display your contribution activity.
+            </p>
+            <button class="btn-primary ripple" onclick="initiateOAuth('github')" style="width: 100%; border: 3px solid var(--black); background: var(--yellow); color: var(--black); font-weight: 800; padding: 12px; box-shadow: 4px 4px 0 var(--black);">
+              <i data-lucide="link"></i> Connect GitHub
+            </button>
+          </div>
+          <div id="github-content" class="content-section" style="display: none; width: 100%;">
+            
+            <!-- GitHub Sub-Tab Navigation -->
+            <div class="github-sub-tab-bar" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px; border-bottom: 3px solid var(--black); user-select: none; justify-content: center; flex-wrap: wrap;">
+              <button class="github-sub-tab-btn active" data-tab="overview" onclick="window.switchGithubSubTab('overview')"><i data-lucide="info" style="width:15px; height:15px;"></i> Overview</button>
+              <button class="github-sub-tab-btn" data-tab="search" onclick="window.switchGithubSubTab('search')"><i data-lucide="search" style="width:15px; height:15px;"></i> Search Repositories</button>
+              <button class="github-sub-tab-btn" data-tab="repos" onclick="window.switchGithubSubTab('repos')"><i data-lucide="folder" style="width:15px; height:15px;"></i> My Repositories</button>
+              <button class="github-sub-tab-btn" data-tab="collab" onclick="window.switchGithubSubTab('collab')"><i data-lucide="git-pull-request" style="width:15px; height:15px;"></i> PRs & Issues</button>
+              <button class="github-sub-tab-btn" data-tab="devops" onclick="window.switchGithubSubTab('devops')"><i data-lucide="package" style="width:15px; height:15px;"></i> CI/CD & DevOps</button>
+              <button class="github-sub-tab-btn" data-tab="activity" onclick="window.switchGithubSubTab('activity')"><i data-lucide="activity" style="width:15px; height:15px;"></i> Activity & Orgs</button>
+            </div>
+
+            <!-- Offline / Cache State Alert -->
+            <div id="github-offline-warning" style="display: none; background: var(--red); color: white; border: 3px solid var(--black); border-radius: 12px; padding: 12px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; box-shadow: 3px 3px 0 var(--black); margin-bottom: 16px; align-items: center; gap: 8px;">
+              <i data-lucide="alert-triangle"></i> Offline Mode (Viewing Cached Data from <span id="github-cache-time">N/A</span>)
+            </div>
+
+            <!-- Panel 0: Search GitHub Repositories -->
+            <div id="github-panel-search" class="github-panel" style="width: 100%; display: none;">
+              <div style="background: var(--bg-body); border: 3px solid var(--black); border-radius: 12px; padding: 20px; box-shadow: 4px 4px 0 var(--black); margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 17px; color: var(--text);">🔍 Search GitHub Repositories</h4>
+                <p style="margin: 0 0 16px 0; font-size: 13px; color: var(--text-muted);">Explore open-source projects, libraries, and frameworks across all of GitHub.</p>
+
+                <!-- Search Input Bar -->
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <input type="text" id="github-global-search-input" placeholder="Search any GitHub project (e.g. react, machine learning, express)..." oninput="window.onGitHubSearchInput(this.value)" onkeydown="if(event.key==='Enter') window.executeGitHubGlobalSearch()" style="flex: 1; min-width: 280px; padding: 12px 16px; border: 3px solid var(--black); border-radius: 10px; font-size: 14px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; background: var(--bg-card); color: var(--text);" />
+                  <button onclick="window.executeGitHubGlobalSearch()" style="padding: 12px 24px; border: 3px solid var(--black); border-radius: 10px; background: var(--yellow); color: var(--black); font-weight: 900; font-size: 14px; cursor: pointer; box-shadow: 3px 3px 0 var(--black); display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="search" style="width: 16px; height: 16px;"></i> Search Repos
+                  </button>
+                </div>
+
+                <!-- Popular Tag Chips -->
+                <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Popular:</span>
+                  <button onclick="window.searchGitHubTag('react')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#react</button>#react</button>
+                  <button onclick="window.searchGitHubTag('node')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#node</button>#node</button>
+                  <button onclick="window.searchGitHubTag('python')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#python</button>#python</button>
+                  <button onclick="window.searchGitHubTag('machine-learning')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#machine-learning</button>#machine-learning</button>
+                  <button onclick="window.searchGitHubTag('rust')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#rust</button>#rust</button>
+                  <button onclick="window.searchGitHubTag('system-design')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#system-design</button>#system-design</button>
+                </div>
+              </div>
+
+              <!-- Search Results Grid -->
+              <div id="github-search-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; width: 100%;">
+                <p style="text-align: center; font-size: 14px; font-weight: 800; color: var(--text-muted); padding: 40px 0; grid-column: 1/-1;">Type a repository query above or click a tag to search open-source projects on GitHub!</p>
+              </div>
+            </div>
+
+            <!-- Panel 1: Overview -->
+            <div id="github-panel-overview" class="github-panel" style="width: 100%;">
+              <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+                
+                <!-- Left: Profile & Heatmap -->
+                <div style="flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 16px;">
+                  <a id="github-profile-link" href="" target="_blank" style="text-decoration: none; display: flex; align-items: center; gap: 18px; border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); transition: transform 0.15s ease, box-shadow 0.15s ease;">
+                    <img id="github-avatar" src="" alt="GitHub Avatar" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--black); box-shadow: 3px 3px 0 var(--black);" />
+                    <div>
+                      <h4 id="github-username" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 20px; color: var(--text);">Username</h4>
+                      <p id="github-bio" style="margin: 6px 0 0 0; font-size: 13px; line-height: 1.4; color: var(--text-muted);"></p>
+                    </div>
+                  </a>
+
+                  <!-- Contributions Heatmap -->
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                      <h5 style="margin: 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Contribution Calendar</h5>
+                      <span id="github-total-contribs-badge" style="background:var(--yellow); color:var(--black); border:2px solid var(--black); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:800; font-family:'Space Grotesk';">0 contribs</span>
+                    </div>
+                    <div style="overflow-x: auto; width: 100%; text-align: center; padding: 10px 0;">
+                      <img id="github-contrib-graph" src="" alt="GitHub Contributions" style="width: 720px; min-width: 720px; max-width: none; height: auto; display: block; margin: 0 auto;" />
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-top:12px; border-top: 2px dashed var(--black); padding-top:12px;">
+                      <div style="text-align:center;">
+                        <span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Current Streak</span>
+                        <span id="github-current-streak" style="font-size:18px; font-family:'Space Grotesk'; font-weight:900; display:block; color:var(--text);">0 days</span>
+                      </div>
+                      <div style="text-align:center;">
+                        <span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Longest Streak</span>
+                        <span id="github-longest-streak" style="font-size:18px; font-family:'Space Grotesk'; font-weight:900; display:block; color:var(--text);">0 days</span>
+                      </div>
+                      <div style="text-align:center;">
+                        <span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Daily Average</span>
+                        <span id="github-avg-contribs" style="font-size:18px; font-family:'Space Grotesk'; font-weight:900; display:block; color:var(--text);">0.0 / day</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: KPI Grid Cards -->
+                <div style="flex: 1.2; min-width: 340px; display: flex; flex-direction: column; gap: 16px;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%;">
+                    <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Developer KPIs</h5>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                      <div style="border:2.5px solid var(--black); border-radius:8px; padding:10px; text-align:center; background:var(--bg-card); box-shadow:2px 2px 0 var(--black);">
+                        <span id="kpi-total-repos" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                        <span style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);">Repositories</span>
+                      </div>
+                      <div style="border:2.5px solid var(--black); border-radius:8px; padding:10px; text-align:center; background:var(--bg-card); box-shadow:2px 2px 0 var(--black);">
+                        <span id="kpi-stars-received" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                        <span style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);">Stars Received</span>
+                      </div>
+                      <div style="border:2.5px solid var(--black); border-radius:8px; padding:10px; text-align:center; background:var(--bg-card); box-shadow:2px 2px 0 var(--black);">
+                        <span id="kpi-forks-received" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                        <span style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);">Forks Received</span>
+                      </div>
+                      <div style="border:2.5px solid var(--black); border-radius:8px; padding:10px; text-align:center; background:var(--bg-card); box-shadow:2px 2px 0 var(--black);">
+                        <span id="kpi-total-prs" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                        <span style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);">Pull Requests</span>
+                      </div>
+                      <div style="border:2.5px solid var(--black); border-radius:8px; padding:10px; text-align:center; background:var(--bg-card); box-shadow:2px 2px 0 var(--black);">
+                        <span id="kpi-total-issues" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                        <span style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);">Authored Issues</span>
+                      </div>
+                      <div style="border:2.5px solid var(--black); border-radius:8px; padding:10px; text-align:center; background:var(--bg-card); box-shadow:2px 2px 0 var(--black);">
+                        <span id="kpi-total-releases" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                        <span style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);">Releases Published</span>
+                      </div>
+                    </div>
+
+                    <!-- Profile Metadata List -->
+                    <div style="margin-top:16px; border-top:2px dashed rgba(0,0,0,0.12); padding-top:12px; display:flex; flex-direction:column; gap:7px; font-size:12px; font-weight:700; background:rgba(100,100,180,0.03); border-radius:8px; padding:12px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:5px;"><i data-lucide="map-pin" style="width:11px;height:11px;"></i> Location:</span><span id="meta-location">N/A</span></div>
+                      <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:5px;"><i data-lucide="building-2" style="width:11px;height:11px;"></i> Company:</span><span id="meta-company">N/A</span></div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;"><span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:5px; flex-shrink:0;"><i data-lucide="mail" style="width:11px;height:11px;"></i> Email:</span><span id="meta-email" style="display:inline-flex; align-items:center; gap:4px;">N/A</span></div>
+                      <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:5px;"><i data-lucide="globe" style="width:11px;height:11px;"></i> Website:</span><span id="meta-website">N/A</span></div>
+                      <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:5px;"><i data-lucide="calendar" style="width:11px;height:11px;"></i> Account Age:</span><span id="meta-age">N/A</span></div>
+                      <div style="border-top:1.5px dashed rgba(0,0,0,0.1); padding-top:8px; margin-top:2px;">
+                        <div style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Social Accounts</div>
+                        <div id="meta-socials" style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center;">—</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 2: Repositories -->
+            <div id="github-panel-repos" class="github-panel" style="display: none; width: 100%;">
+              <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+                
+                <!-- Left: Repository Controls & Listing -->
+                <div style="flex: 1.4; min-width: 360px; display: flex; flex-direction: column;">
+                  <div style="border: 2.5px solid #3f4352; border-radius: 12px; padding: 16px; background: #282a32; box-shadow: 4px 4px 0 #121317; height: 100%; display: flex; flex-direction: column;">
+                    
+                    <!-- Search & Filter Controls -->
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px; border-bottom:2px dashed var(--black); padding-bottom:14px;">
+                      <div style="display:flex; gap:10px;">
+                        <input type="text" id="github-repo-search" placeholder="Search repositories by name..." oninput="window.filterAndRenderRepos()" style="flex:1; padding:8px 12px; border:2.5px solid var(--black); border-radius:8px; font-size:12px; font-family:inherit; background:var(--bg-card); color:var(--text); box-shadow:2px 2px 0 var(--black); outline:none;" />
+                        <select id="github-repo-sort-select" onchange="window.filterAndRenderRepos()" style="padding:8px; border:2.5px solid var(--black); border-radius:8px; font-size:12px; font-family:inherit; font-weight:800; background:var(--bg-card); color:var(--text); box-shadow:2px 2px 0 var(--black); cursor:pointer;">
+                          <option value="original">Original Order</option>
+                          <option value="updated">Latest Activity</option>
+                          <option value="created">Recently Created</option>
+                          <option value="stars">Most Stars</option>
+                          <option value="forks">Most Forks</option>
+                          <option value="commits">Most Commits</option>
+                          <option value="size">Largest Size</option>
+                        </select>
+                      </div>
+                      <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                        <span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-right:4px;">Filter:</span>
+                        <button class="btn-ghost" id="repo-filter-all" onclick="window.setRepoFilter('all')" style="padding:4px 10px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--yellow); color:var(--black);">All</button>
+                        <button class="btn-ghost" id="repo-filter-original" onclick="window.setRepoFilter('original')" style="padding:4px 10px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black);">Original</button>
+                        <button class="btn-ghost" id="repo-filter-forked" onclick="window.setRepoFilter('forked')" style="padding:4px 10px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black);">Forks</button>
+                        <button class="btn-ghost" id="repo-filter-archived" onclick="window.setRepoFilter('archived')" style="padding:4px 10px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black);">Archived</button>
+                        
+                        <div style="flex-grow:1;"></div>
+                        <!-- Language selector -->
+                        <select id="github-repo-lang-select" onchange="window.filterAndRenderRepos()" style="padding:4px 8px; border:2px solid var(--black); border-radius:6px; font-size:11px; font-weight:800; background:var(--bg-card); color:var(--text); cursor:pointer;">
+                          <option value="all">All Languages</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Repos list (scrollable) -->
+                    <div id="github-repos-board" class="devhub-scroll-list repos-list-container" style="max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 6px; flex-grow: 1;"></div>
+                    
+                    <!-- Pagination Controls -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:2px dashed var(--black); padding-top:10px;">
+                      <button class="btn-ghost" id="repo-page-prev" onclick="window.changeRepoPage(-1)" style="padding:4px 10px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1px 1px 0 var(--black); cursor:pointer;">Previous</button>
+                      <span id="repo-page-label" style="font-size:11px; font-weight:800; color:var(--text);">Page 1 of 1</span>
+                      <button class="btn-ghost" id="repo-page-next" onclick="window.changeRepoPage(1)" style="padding:4px 10px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1px 1px 0 var(--black); cursor:pointer;">Next</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Languages Breakdown -->
+                <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                  <div style="border: 2.5px solid #3f4352; border-radius: 12px; padding: 16px; background: #282a32; box-shadow: 4px 4px 0 #121317; height: 100%; display:flex; flex-direction:column;">
+                    <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Languages Distribution</h5>
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:12px; text-transform:uppercase;">Byte volumes across original repositories</div>
+                    <div id="github-languages-breakdown" style="display:flex; flex-direction:column; gap:12px; flex-grow:1; overflow-y:auto; max-height:480px; padding-right:4px;">
+                      <!-- Populated dynamically -->
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Panel 3: PRs & Issues -->
+            <div id="github-panel-collab" class="github-panel" style="display: none; width: 100%;">
+              <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+                
+                <!-- Left: PRs authored -->
+                <div style="flex: 1.2; min-width: 320px; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                      <h5 style="margin: 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Recent Pull Requests</h5>
+                      <span id="github-prs-count-badge" style="background:var(--yellow); color:var(--black); border:2px solid var(--black); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:800; font-family:'Space Grotesk';">0 PRs</span>
+                    </div>
+                    
+                    <!-- PR Stats metrics -->
+                    <div style="background:var(--bg-card); border:2.5px solid var(--black); border-radius:8px; padding:12px; box-shadow:2px 2px 0 var(--black); margin-bottom:12px; display:flex; flex-direction:column; gap:8px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800;">
+                        <span>PR Merge Rate:</span>
+                        <span id="pr-merge-rate-value" style="color:var(--text);">0%</span>
+                      </div>
+                      <div style="width:100%; height:12px; background:var(--bg-body); border:2px solid var(--black); border-radius:6px; overflow:hidden;">
+                        <div id="pr-merge-rate-bar" style="width:0%; height:100%; background:var(--green); transition: width 0.3s ease;"></div>
+                      </div>
+                      <div style="display:flex; justify-content:space-around; font-size:10px; font-weight:800; color:var(--text-muted); margin-top:4px;">
+                        <span id="pr-stats-open">🟢 0 Open</span>
+                        <span id="pr-stats-merged">💜 0 Merged</span>
+                        <span id="pr-stats-closed">🔴 0 Closed</span>
+                      </div>
+                    </div>
+
+                    <div id="github-prs-list" class="devhub-scroll-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex-grow:1;"></div>
+                  </div>
+                </div>
+
+                <!-- Right: Issues authored -->
+                <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                      <h5 style="margin: 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Recent Issues</h5>
+                      <span id="github-issues-count-badge" style="background:var(--yellow); color:var(--black); border:2px solid var(--black); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:800; font-family:'Space Grotesk';">0 Issues</span>
+                    </div>
+
+                    <!-- Issues status distribution -->
+                    <div style="display:flex; gap:10px; margin-bottom:12px; font-size:11px; font-weight:800;">
+                      <div style="flex:1; border:2px solid var(--black); border-radius:6px; padding:6px; text-align:center; background:var(--bg-card); box-shadow:1.5px 1.5px 0 var(--black);">
+                        <span style="color:var(--green);" id="issue-stats-open">0 Open</span>
+                      </div>
+                      <div style="flex:1; border:2px solid var(--black); border-radius:6px; padding:6px; text-align:center; background:var(--bg-card); box-shadow:1.5px 1.5px 0 var(--black);">
+                        <span style="color:var(--text-muted);" id="issue-stats-closed">0 Closed</span>
+                      </div>
+                    </div>
+
+                    <div id="github-issues-list" class="devhub-scroll-list" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex-grow:1;"></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Panel 4: CI/CD & DevOps -->
+            <div id="github-panel-devops" class="github-panel" style="display: none; width: 100%;">
+              <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+                
+                <!-- Left: CI/CD Actions Workflows (Lazy-loaded) -->
+                <div style="flex: 1.3; min-width: 340px; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                      <h5 style="margin: 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">CI/CD Actions Activity</h5>
+                      
+                      <!-- Repo selector for Actions (large/boxy) -->
+                      <select id="github-actions-repo-select" onchange="window.loadWorkflowRunsForSelectedRepo()" style="padding:8px 14px; border:2.5px solid var(--black); border-radius:8px; font-size:13px; font-weight:800; background:linear-gradient(135deg, var(--bg-card) 0%, rgba(220,220,240,0.3) 100%); color:var(--text); cursor:pointer; box-shadow:2px 2px 0 var(--black); min-width:200px; max-width:260px; font-family:'Space Grotesk', sans-serif;">
+                        <option value="">📁 Select Repository...</option>
+                      </select>
+                    </div>
+
+                    <div id="github-actions-runs-list" class="devhub-scroll-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex-grow:1;">
+                      <p style="text-align:center; font-size:12px; color:var(--text-muted); padding:30px 0;">Please select a repository above to load workflow runs.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Releases & Deployments -->
+                <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 16px;">
+                  
+                  <!-- Releases timeline -->
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); display:flex; flex-direction:column;">
+                    <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Published Releases</h5>
+                    <div id="github-releases-list" class="devhub-scroll-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                      <p style="text-align:center; font-size:11px; color:var(--text-muted); padding:10px 0;">No published version releases detected.</p>
+                    </div>
+                  </div>
+
+                  <!-- Deployments list -->
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); display:flex; flex-direction:column;">
+                    <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Recent Deployments</h5>
+                    <div id="github-deployments-list" class="devhub-scroll-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                      <p style="text-align:center; font-size:11px; color:var(--text-muted); padding:10px 0;">No recent environment deployments detected.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Panel 5: Activity & Orgs -->
+            <div id="github-panel-activity" class="github-panel" style="display: none; width: 100%;">
+              <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+                
+                <!-- Left: Events Timeline -->
+                <div style="flex: 1.3; min-width: 340px; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%; display:flex; flex-direction:column;">
+                    <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Recent Event Feed</h5>
+                    <div id="github-activity-timeline" class="devhub-scroll-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex-grow:1;">
+                      <p style="text-align:center; font-size:11px; color:var(--text-muted); padding:10px 0;">No recent event feeds detected.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Organizations list -->
+                <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%; display:flex; flex-direction:column;">
+                    <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">My Organizations</h5>
+                    <div id="github-orgs-grid" class="devhub-scroll-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; max-height: 380px; overflow-y: auto; flex-grow:1; align-content:start;">
+                      <p style="text-align:center; font-size:11px; color:var(--text-muted); padding:10px 0; grid-column:1/-1;">No organization memberships detected.</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+
+            <!-- Dashboard Control Buttons -->
+            <div class="devhub-control-buttons" style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap;">
+              <button class="btn-primary ripple" id="github-refresh-btn" onclick="window.refreshGithubAnalyticsData()" style="flex:1 1 200px; border: 3px solid var(--black); background: var(--green); color: white; font-weight: 900; padding: 12px 16px; box-shadow: 4px 4px 0 var(--black); display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; min-width:0;">
+                <i data-lucide="refresh-cw" id="github-refresh-icon"></i> Refresh Analytics Data
+              </button>
+              <button class="btn-ghost ripple" onclick="disconnectService('github')" style="flex:1 1 160px; border: 3px solid var(--red); color: var(--red); font-size: 13px; font-weight: 900; padding: 12px 16px; box-shadow: 3px 3px 0 var(--red); cursor:pointer; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px;">
+                <i data-lucide="unlink"></i> Disconnect GitHub
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Google Calendar (Read-Only) Card -->
+      <div class="devhub-card" id="hub-card-google" style="display: none;">
+        <div class="card-header">
+          <h3><i data-lucide="calendar"></i> Google Calendar</h3>
+          <span class="status-badge disconnected" id="google-badge">Disconnected</span>
+        </div>
+        <div class="card-body">
+          <div id="google-setup" class="setup-section">
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+              Link your Google Calendar to load your daily schedule directly into the dashboard.
+            </p>
+            <button class="btn-primary ripple" onclick="initiateOAuth('google')" style="width: 100%; border: 3px solid var(--black); background: var(--yellow); color: var(--black); font-weight: 800; padding: 12px; box-shadow: 4px 4px 0 var(--black);">
+              <i data-lucide="link"></i> Connect Calendar
+            </button>
+          </div>
+          <div id="google-content" class="content-section" style="display: none; width: 100%;">
+            <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+              
+              <!-- Left Column: Branding/Summary -->
+              <div style="flex: 1; min-width: 300px; border: 3px solid var(--black); border-radius: 12px; padding: 20px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px;">
+                <i data-lucide="calendar" style="width: 48px; height: 48px; color: var(--purple);"></i>
+                <div>
+                  <h4 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 18px;">Calendar Connected</h4>
+                  <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                    Your calendar events are fetched in real-time. Use Google Calendar to schedule events.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Right Column: Day Schedule List -->
+              <div style="flex: 1.5; min-width: 360px; display: flex; flex-direction: column;">
+                <div style="border: 3px solid var(--black); border-radius: 12px; padding: 20px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height: 100%; display: flex; flex-direction: column; gap: 12px;">
+                  <h5 style="margin: 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Today's Schedule</h5>
+                  <div id="google-events" class="devhub-scroll-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 6px; flex-grow: 1;"></div>
+                </div>
+              </div>
+
+            </div>
+            <button class="btn-ghost ripple" onclick="disconnectService('google')" style="margin-top: 24px; width: 100%; border: 3px solid var(--red); color: var(--red); font-size: 13px; font-weight: 900; padding: 10px; box-shadow: 3px 3px 0 var(--red); display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i data-lucide="unlink"></i> Disconnect Calendar
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- Stack Overflow Card -->
+      <div class="devhub-card" id="hub-card-stackoverflow" style="display: none; width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <h3><i data-lucide="help-circle"></i> Stack Overflow</h3>
+          <span class="status-badge disconnected" id="stackoverflow-badge">Disconnected</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Sub-tab bar -->
+          <div class="github-sub-tab-bar" style="display:flex; gap:0; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:center; position:relative; user-select:none;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px;">
+              <button class="github-sub-tab-btn active" id="stackoverflow-subtab-public" onclick="switchStackOverflowSubTab('public')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+                <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Questions
+              </button>
+              <button class="github-sub-tab-btn" id="stackoverflow-subtab-personal" onclick="switchStackOverflowSubTab('personal')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+                <i data-lucide="user" style="width:14px; height:14px;"></i> My Activity
+              </button>
+            </div>
+            <button class="btn-ghost" onclick="window.refreshStackOverflowActiveFeed()" style="position: absolute; right: 0; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+              <i data-lucide="refresh-cw" id="stackoverflow-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Public Questions Panel -->
+          <div id="stackoverflow-public-panel" style="width: 100%;">
+            <!-- Tag Search & Quick Filter Bar -->
+            <div style="margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="so-tag-search-input" placeholder="Search by tag (e.g. javascript, python, react)..." onkeydown="if(event.key==='Enter') searchSOTag()" style="flex:1; padding: 8px 12px; border: 2px solid var(--black); border-radius: 8px; font-size: 12px; font-family: 'Inter', sans-serif; background: var(--bg-card); color: var(--text);" />
+                <button onclick="searchSOTag()" style="padding: 8px 16px; border: 2px solid var(--black); border-radius: 8px; background: var(--yellow); color: var(--black); font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 2px 2px 0 var(--black);">
+                  Search Tag
+                </button>
+              </div>
+              <!-- Quick Filter Pills -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px;">
+                <span style="font-weight: 800; color: var(--text-muted);">Popular Tags:</span>
+                <button onclick="filterSOTag('')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">All</button>All</button>
+                <button onclick="filterSOTag('javascript')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#javascript</button>#javascript</button>
+                <button onclick="filterSOTag('python')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#python</button>#python</button>
+                <button onclick="filterSOTag('reactjs')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#reactjs</button>#reactjs</button>
+                <button onclick="filterSOTag('node.js')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#node.js</button>#node.js</button>
+                <button onclick="filterSOTag('typescript')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#typescript</button>#typescript</button>
+                <button onclick="filterSOTag('css')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#css</button>#css</button>
+              </div>
+            </div>
+
+            <!-- Questions list container -->
+            <div id="so-public-questions" class="devhub-scroll-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-height: 480px; overflow-y: auto; padding-right: 6px; width: 100%;">
+              <p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">Loading questions...</p>
+            </div>
+          </div>
+
+          <!-- Personal Activity Panel -->
+          <div id="stackoverflow-personal-panel" style="display: none; width: 100%;">
+            <div id="stackoverflow-setup" class="setup-section">
+              <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+                Add your Stack Overflow user profile to display your reputation standing and badge achievements.
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 8px; max-width: 400px; margin: 0 auto;">
+                <input type="text" id="stackoverflow-user-id" placeholder="Stack Overflow User ID (e.g. 120534)..." style="padding: 10px; border: 3px solid var(--black); border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; background: var(--bg-card); color: var(--text);" />
+                <button class="btn-primary ripple" onclick="connectStackOverflow()" style="border: 3px solid var(--black); background: var(--yellow); color: var(--black); font-weight: 800; padding: 10px; box-shadow: 4px 4px 0 var(--black);">
+                  Link Profile
+                </button>
+              </div>
+            </div>
+            <div id="stackoverflow-content" class="content-section" style="display: none; width: 100%;">
+              <div class="devhub-two-col" style="display: flex; gap: 24px; flex-wrap: wrap; width: 100%;">
+                
+                <!-- Left Column: User Standing & Badges -->
+                <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 16px;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 20px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); text-align: center;">
+                    <span id="so-reputation" style="font-size: 36px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--text); display: block;">0</span>
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">Reputation Score</span>
+                  </div>
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 20px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); display: flex; flex-direction: column; gap: 10px;">
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 900; color: var(--text-muted); text-align: center; border-bottom: 2px dashed var(--black); padding-bottom: 6px;">Earned Badges</span>
+                    <div style="display: flex; justify-content: space-around; align-items: center; gap: 8px;">
+                      <span class="so-badge-display gold" id="so-gold-badges">🥇 0</span>
+                      <span class="so-badge-display silver" id="so-silver-badges">🥈 0</span>
+                      <span class="so-badge-display bronze" id="so-bronze-badges">🥉 0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Column: Recent Answers -->
+                <div style="flex: 1.5; min-width: 360px; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 20px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height: 100%; display: flex; flex-direction: column; gap: 12px;">
+                    <h5 style="margin: 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Recent Answered Questions</h5>
+                    <div id="so-answers" class="devhub-scroll-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 6px; flex-grow: 1;"></div>
+                  </div>
+                </div>
+
+              </div>
+              <button class="btn-ghost ripple" onclick="disconnectService('stackoverflow')" style="margin-top: 24px; width: 100%; border: 3px solid var(--red); color: var(--red); font-size: 13px; font-weight: 900; padding: 10px; box-shadow: 3px 3px 0 var(--red); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="unlink"></i> Disconnect Stack Overflow
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dev.to Integration Card -->
+      <div class="devhub-card" id="hub-card-devto" style="display: none; width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <h3><i data-lucide="book-open"></i> Dev.to Community Feed</h3>
+          <span class="status-badge disconnected" id="devto-badge">Disconnected</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Dev.to Internal Sub-Tab Bar -->
+          <div class="github-sub-tab-bar" style="display: flex; gap: 0; border-bottom: 2px dashed rgba(0,0,0,0.12); padding-bottom: 12px; user-select: none; justify-content: center; align-items: center; position: relative;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px;">
+              <button class="github-sub-tab-btn active" id="devto-subtab-public" onclick="switchDevToSubTab('public')" style="padding: 9px 22px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed</button>
+              <button class="github-sub-tab-btn" id="devto-subtab-personal" onclick="switchDevToSubTab('personal')" style="padding: 9px 22px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="user" style="width:14px; height:14px;"></i> My Articles</button>
+            </div>
+            <button class="btn-ghost" onclick="window.refreshDevToActiveFeed()" style="position: absolute; right: 0; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+              <i data-lucide="refresh-cw" id="devto-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Tab 1: Public Feed Content -->
+          <div id="devto-public-panel" style="width: 100%;">
+            <!-- Tag Search & Quick Filter Bar -->
+            <div style="margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="devto-tag-search-input" placeholder="Search by tag (e.g. javascript, beginners, webdev)..." onkeydown="if(event.key==='Enter') searchDevToTag()" style="flex:1; padding: 8px 12px; border: 2px solid var(--black); border-radius: 8px; font-size: 12px; font-family: 'Inter', sans-serif; background: var(--bg-card); color: var(--text);" />
+                <button onclick="searchDevToTag()" style="padding: 8px 16px; border: 2px solid var(--black); border-radius: 8px; background: var(--yellow); color: var(--black); font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 2px 2px 0 var(--black);">
+                  Search Tag
+                </button>
+              </div>
+              <!-- Quick Filter Pills -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px;">
+                <span style="font-weight: 800; color: var(--text-muted);">Popular Tags:</span>
+                <button onclick="filterDevToTag('')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">All</button>All</button>
+                <button onclick="filterDevToTag('javascript')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#javascript</button>#javascript</button>
+                <button onclick="filterDevToTag('webdev')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#webdev</button>#webdev</button>
+                <button onclick="filterDevToTag('beginners')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#beginners</button>#beginners</button>
+                <button onclick="filterDevToTag('python')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#python</button>#python</button>
+                <button onclick="filterDevToTag('react')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#react</button>#react</button>
+              </div>
+            </div>
+            <div id="devto-public-posts" class="devhub-scroll-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-height: 480px; overflow-y: auto; padding-right: 6px; width: 100%;">
+              <p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">Loading trending articles...</p>
+            </div>
+          </div>
+
+          <!-- Tab 2: Personal Articles Content (Requires Connection) -->
+          <div id="devto-personal-panel" style="display: none; width: 100%;">
+            <div id="devto-setup" class="setup-section" style="width:100%;">
+              <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+                Enter your Dev.to username to fetch and display your personal articles.
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 8px; max-width: 400px; margin: 0 auto;">
+                <input type="text" id="devto-username" placeholder="Dev.to Username..." style="padding: 10px; border: 3px solid var(--black); border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; background: var(--bg-card); color: var(--text);" />
+                <button class="btn-primary ripple" onclick="connectDevTo()" style="border: 3px solid var(--black); background: var(--yellow); color: var(--black); font-weight: 800; padding: 10px; box-shadow: 4px 4px 0 var(--black);">
+                  Connect Profile
+                </button>
+              </div>
+            </div>
+            
+            <div id="devto-content" class="content-section" style="display: none; width: 100%; flex-direction: column; gap: 16px;">
+              <div id="devto-posts" class="devhub-scroll-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-height: 480px; overflow-y: auto; padding-right: 6px; width: 100%;"></div>
+              <button class="btn-ghost ripple" onclick="disconnectService('devto')" style="margin-top: 14px; width: 100%; border: 3px solid var(--red); color: var(--red); font-size: 13px; font-weight: 900; padding: 10px; box-shadow: 3px 3px 0 var(--red); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="unlink"></i> Disconnect Dev.to Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medium Integration Card -->
+      <div class="devhub-card" id="hub-card-medium" style="display: none; width: 100%;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <h3><i data-lucide="edit"></i> Medium Publications</h3>
+          <span class="status-badge disconnected" id="medium-badge">Disconnected</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+
+          <!-- Sub-tab bar -->
+          <div class="github-sub-tab-bar" style="display:flex; gap:0; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:center; position:relative; user-select:none;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px;">
+              <button class="github-sub-tab-btn active" id="medium-subtab-public" onclick="switchMediumSubTab('public')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+                <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed
+              </button>
+              <button class="github-sub-tab-btn" id="medium-subtab-personal" onclick="switchMediumSubTab('personal')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+                <i data-lucide="user" style="width:14px; height:14px;"></i> My Articles
+              </button>
+            </div>
+            <button class="btn-ghost" onclick="window.refreshMediumActiveFeed()" style="position: absolute; right: 0; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+              <i data-lucide="refresh-cw" id="medium-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Public feed panel (always visible / default) -->
+          <div id="medium-public-panel" style="width:100%;">
+            <!-- Tag Search & Quick Filter Bar -->
+            <div style="margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="medium-tag-search-input" placeholder="Search by tag (e.g. javascript, startup, programming)..." onkeydown="if(event.key==='Enter') searchMediumTag()" style="flex:1; padding: 8px 12px; border: 2px solid var(--black); border-radius: 8px; font-size: 12px; font-family: 'Inter', sans-serif; background: var(--bg-card); color: var(--text);" />
+                <button onclick="searchMediumTag()" style="padding: 8px 16px; border: 2px solid var(--black); border-radius: 8px; background: var(--yellow); color: var(--black); font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 2px 2px 0 var(--black);">
+                  Search Tag
+                </button>
+              </div>
+              <!-- Quick Filter Pills -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px;">
+                <span style="font-weight: 800; color: var(--text-muted);">Popular Tags:</span>
+                <button onclick="filterMediumTag('')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">All</button>All</button>
+                <button onclick="filterMediumTag('javascript')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#javascript</button>#javascript</button>
+                <button onclick="filterMediumTag('startup')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#startup</button>#startup</button>
+                <button onclick="filterMediumTag('technology')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#technology</button>#technology</button>
+                <button onclick="filterMediumTag('programming')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#programming</button>#programming</button>
+                <button onclick="filterMediumTag('blockchain')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#blockchain</button>#blockchain</button>
+              </div>
+            </div>
+            <div id="medium-public-posts" class="devhub-scroll-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; max-height:480px; overflow-y:auto; padding-right:6px; width:100%;">
+              <p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">Loading public feed...</p>
+            </div>
+          </div>
+
+          <!-- Personal articles panel (shown when tab selected) -->
+          <div id="medium-personal-panel" style="display:none; width:100%; flex-direction:column; gap:16px;">
+            <!-- Setup section (shown when not connected) -->
+            <div id="medium-setup" class="setup-section" style="width:100%;">
+              <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:14px;">
+                Connect your Medium account to fetch and display your personal articles.
+              </p>
+              <div style="display:flex; flex-direction:column; gap:8px; max-width:400px; margin:0 auto;">
+                <input type="text" id="medium-username" placeholder="Medium Username (e.g. @username)..." style="padding:10px; border:3px solid var(--black); border-radius:8px; font-size:13px; font-family:'Inter',sans-serif; background:var(--bg-card); color:var(--text);" />
+                <button class="btn-primary ripple" onclick="connectMedium()" style="border:3px solid var(--black); background:var(--yellow); color:var(--black); font-weight:800; padding:10px; box-shadow:4px 4px 0 var(--black);">
+                  Connect Medium Profile
+                </button>
+              </div>
+            </div>
+            <!-- Content section (shown when connected) -->
+            <div id="medium-content" class="content-section" style="display:none; width:100%; flex-direction:column; gap:16px;">
+              <div id="medium-posts" class="devhub-scroll-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; max-height:480px; overflow-y:auto; padding-right:6px; width:100%;"></div>
+              <button class="btn-ghost ripple" onclick="disconnectService('medium')" style="margin-top:14px; width:100%; border:3px solid var(--red); color:var(--red); font-size:13px; font-weight:900; padding:10px; box-shadow:3px 3px 0 var(--red); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="unlink"></i> Disconnect Medium Profile
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+
   <!-- ===== MODAL: Add New Day ===== -->
   <div class="modal-overlay" id="modal-add-day" onclick="closeModalOnOverlay(event, 'modal-add-day')">
     <div class="modal">
@@ -1988,6 +2943,10 @@
       <button class="bottom-nav-btn" id="bnav-pomodoro" onclick="showPage('pomodoro')">
         <span class="bnav-icon"><i data-lucide="clock"></i></span>
         <span>Focus</span>
+      </button>
+      <button class="bottom-nav-btn" id="bnav-devhub" onclick="showPage('devhub')">
+        <span class="bnav-icon"><i data-lucide="terminal"></i></span>
+        <span>Dev Hub</span>
       </button>
       <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
         <span class="bnav-icon"><i data-lucide="trophy"></i></span>
@@ -3241,6 +4200,8 @@
   <script type="module" src="js/modules/groups.js"></script>
   <script type="module" src="js/modules/chat.js"></script>
   <script type="module" src="js/modules/leetcode.js"></script>
+  <script type="module" src="js/modules/githubService.js"></script>
+  <script type="module" src="js/modules/devHub.js"></script>
   <script type="module" src="js/modules/achievements.js"></script>
   <script type="module" src="js/modules/scratchpad.js"></script>
   <script type="module" src="js/modules/profile.js"></script>
@@ -3666,5 +4627,280 @@
       }
     })();
   </script>
+<!-- ===== Article Reader Modal ===== -->
+<div id="article-reader-overlay" onclick="closeArticleReader(event)" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; backdrop-filter:blur(4px); animation:fadeIn 0.18s ease;">
+  <div id="article-reader-panel" style="position:absolute; right:0; top:0; bottom:0; width:min(680px,100vw); background:var(--bg-card,#fff); box-shadow:-8px 0 40px rgba(0,0,0,0.18); display:flex; flex-direction:column; overflow:hidden; animation:slideInRight 0.22s ease;">
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:2px solid rgba(0,0,0,0.08); flex-shrink:0; background:var(--bg-card,#fff);">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <span id="reader-source-badge" style="font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:3px 9px; border-radius:20px; background:var(--yellow,#ffd60a); color:var(--black,#0a0a0a); flex-shrink:0;"></span>
+        <span id="reader-author" style="font-size:12px; font-weight:700; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <a id="reader-ext-link" href="#" target="_blank" rel="noopener" title="Open in new tab" style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:800; color:var(--text); text-decoration:none; padding:5px 10px; border:2px solid rgba(0,0,0,0.12); border-radius:7px; background:rgba(0,0,0,0.04); transition:background 0.12s;">
+          <i data-lucide="external-link" style="width:13px; height:13px;"></i> Open
+        </a>
+        <button onclick="closeArticleReaderBtn()" style="border:none; background:rgba(0,0,0,0.07); border-radius:7px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; line-height:1; color:var(--text);">✕</button>
+      </div>
+    </div>
+    <!-- Scrollable content area -->
+    <div style="overflow-y:auto; flex:1; padding:24px 28px 40px;">
+      <h1 id="reader-title" style="margin:0 0 12px; font-size:22px; font-weight:900; line-height:1.35; color:var(--text); font-family:'Space Grotesk',sans-serif;"></h1>
+      <div id="reader-meta" style="display:flex; gap:14px; align-items:center; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:18px; padding-bottom:14px; border-bottom:1.5px dashed rgba(0,0,0,0.1);"></div>
+      <!-- Cover image (inside scroll container) -->
+      <div id="reader-cover" style="display:none; margin-bottom:20px; border-radius:12px; overflow:hidden; border:1.5px solid rgba(0,0,0,0.1); background:rgba(0,0,0,0.03);">
+        <img id="reader-cover-img" src="" alt="" style="width:100%; max-height:420px; object-fit:contain; display:block;" />
+      </div>
+      <div id="reader-body" style="font-size:14px; line-height:1.75; color:var(--text); font-family:'Inter',sans-serif;"></div>
+      <div id="reader-loading" style="text-align:center; padding:60px 0; color:var(--text-muted); font-size:13px; font-weight:700;">Loading article...</div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+#article-reader-overlay { overscroll-behavior: none; }
+#reader-body img { max-width: 100%; border-radius: 8px; margin: 12px 0; display: block; }
+#reader-body h1, #reader-body h2, #reader-body h3, #reader-body h4 { font-family: 'Space Grotesk', sans-serif; margin: 20px 0 8px; color: var(--text); line-height: 1.3; }
+#reader-body h1 { font-size: 20px; font-weight: 900; }
+#reader-body h2 { font-size: 17px; font-weight: 800; }
+#reader-body h3 { font-size: 15px; font-weight: 800; }
+#reader-body p { margin: 0 0 14px; }
+#reader-body pre { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 14px; overflow-x: auto; font-size: 12px; line-height: 1.6; margin: 12px 0; }
+#reader-body code { background: rgba(0,0,0,0.06); border-radius: 4px; padding: 1px 6px; font-size: 12px; font-family: monospace; }
+#reader-body pre code { background: none; padding: 0; }
+#reader-body blockquote { border-left: 4px solid var(--yellow,#ffd60a); margin: 14px 0; padding: 8px 16px; background: rgba(0,0,0,0.03); border-radius: 0 6px 6px 0; }
+#reader-body a { color: var(--purple,#7c3aed); text-decoration: underline; }
+#reader-body ul, #reader-body ol { padding-left: 22px; margin: 10px 0; }
+#reader-body li { margin-bottom: 6px; }
+#reader-body figure { margin: 14px 0; text-align: center; }
+#reader-body figcaption { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+
+/* Mobile Responsive Adjustments for Content Viewer & DevHub */
+@media (max-width: 768px) {
+  #cv-header {
+    padding: 8px 12px !important;
+    gap: 6px !important;
+  }
+  #cv-title {
+    font-size: 13px !important;
+  }
+  #cv-source-badge {
+    display: none !important;
+  }
+  #cv-main {
+    padding: 12px 12px !important;
+  }
+  #cv-sidebar {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 82vw !important;
+    max-width: 300px !important;
+    z-index: 100 !important;
+    box-shadow: 6px 0 24px rgba(0,0,0,0.3) !important;
+    background: var(--bg-card) !important;
+    border-right: 3px solid var(--black) !important;
+  }
+  #cv-youtube {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    gap: 12px !important;
+  }
+  #cv-youtube > div:first-child {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    width: calc(100% + 24px) !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+  }
+  .devhub-tab-bar, .github-sub-tab-bar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+  }
+  .devhub-tab-btn, .github-sub-tab-btn {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+</style>
+
+<!-- ── DEVHUB MODALS ───────────────────────────────────────── -->
+
+<!-- 0. Universal Content Viewer (Full-screen in-app viewer with Neo-Brutalist Geometric Theme) -->
+<div id="content-viewer-overlay" class="devhub-modal-overlay" style="padding:0; align-items:stretch; justify-content:stretch; overflow:hidden; z-index:10001; background:var(--bg-body) !important; backdrop-filter:none !important;">
+  <div style="width:100vw; height:100vh; display:flex; flex-direction:column; position:relative; background:var(--bg-body); background-image:radial-gradient(rgba(150,150,150,0.18) 2px, transparent 2px); background-size:32px 32px; overflow:hidden;">
+    
+    <!-- Decorative Colorful Neo-Brutalist Background Shapes -->
+    <div style="position:absolute; top:80px; right:60px; width:120px; height:120px; border:3px solid var(--black); background:rgba(255,214,10,0.25); border-radius:50%; pointer-events:none; z-index:0; box-shadow:4px 4px 0 rgba(0,0,0,0.1);"></div>
+    <div style="position:absolute; bottom:60px; left:40px; width:110px; height:110px; border:3px solid var(--black); background:rgba(124,58,237,0.18); border-radius:18px; transform:rotate(12deg); pointer-events:none; z-index:0; box-shadow:4px 4px 0 rgba(0,0,0,0.1);"></div>
+    <div style="position:absolute; bottom:140px; right:180px; width:75px; height:75px; border:3px solid var(--black); background:rgba(239,68,68,0.18); border-radius:12px; transform:rotate(-10deg); pointer-events:none; z-index:0;"></div>
+
+    <div id="cv-header" style="display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:var(--bg-card); border-bottom:3.5px solid var(--black); box-shadow:0 4px 0 var(--black); flex-shrink:0; z-index:10; position:relative; width:100%;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button onclick="window.closeContentViewer()" style="padding:7px 14px; border:2.5px solid var(--black); border-radius:8px; background:var(--bg-body); font-weight:900; font-size:12.5px; cursor:pointer; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; gap:4px;">&#8592; Back</button>
+        <button id="cv-tree-toggle-btn" onclick="window._toggleCVSidebar()" style="display:none; padding:7px 12px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black);">&#128193; Files</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="cv-bookmark-btn" style="padding:7px 14px; border:2.5px solid var(--black); border-radius:8px; background:var(--bg-card); color:var(--text); font-weight:900; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black);">&#128278; Save</button>
+        <a id="cv-ext-link" href="#" target="_blank" rel="noopener" title="Open External &#8599;" style="align-self:stretch; width:36px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:16px; box-shadow:2px 2px 0 var(--black); text-decoration:none; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">&#8599;</a>
+      </div>
+    </div>
+    <div style="display:flex; flex:1; overflow:hidden; min-height:0; position:relative; z-index:1;">
+      <div id="cv-sidebar" style="display:none; width:290px; flex-shrink:0; border-right:3.5px solid var(--black); overflow-y:auto; background:var(--bg-card); padding:16px; box-shadow:3px 0 0 rgba(0,0,0,0.04);">
+        <div style="font-weight:900; font-size:11.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; letter-spacing:0.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+          <span>&#128193; Repository Files</span>
+          <button onclick="window._toggleCVSidebar()" id="cv-sidebar-toggle-btn" title="Collapse Sidebar" style="padding:2px 7px; border:1.5px solid var(--black); border-radius:5px; background:var(--yellow); color:var(--black); font-weight:900; font-size:10px; cursor:pointer; box-shadow:1px 1px 0 var(--black);">&#9664; Hide</button>
+        </div>
+        <div id="cv-filetree" style="font-size:12px; font-family:monospace; line-height:1.8;"></div>
+      </div>
+      <div id="cv-main" style="flex:1; overflow-y:auto; padding:32px 40px; min-width:0;">
+        <div id="cv-loading" style="display:flex; align-items:center; justify-content:center; height:100%; flex-direction:column; gap:14px;">
+          <div style="width:48px; height:48px; border:4px solid var(--black); border-top:4px solid var(--yellow); border-radius:50%; animation:spin 0.7s linear infinite; box-shadow:2px 2px 0 var(--black);"></div>
+          <span style="font-weight:900; color:var(--text); font-size:15px; font-family:'Space Grotesk',sans-serif;">Loading content...</span>
+        </div>
+        <div id="cv-content" style="display:none; max-width:860px; margin:0 auto;"></div>
+        <div id="cv-youtube" style="display:none; max-width:940px; margin:0 auto; flex-direction:column; gap:16px;">
+          <div style="text-align:center; padding:0 10px;">
+            <h2 id="cv-yt-title" style="margin:0 0 6px 0; font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:900; color:var(--text); text-align:center; word-break:break-word;"></h2>
+            <span id="cv-yt-channel" style="font-size:12.5px; font-weight:800; color:var(--text-muted);"></span>
+          </div>
+          <div style="position:relative; padding-bottom:56.25%; height:0; border:3.5px solid var(--black); border-radius:14px; overflow:hidden; box-shadow:6px 6px 0 var(--black);">
+            <iframe id="cv-yt-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen="true" style="position:absolute; top:0; left:0; width:100%; height:100%;"></iframe>
+          </div>
+          <div id="cv-yt-meta" style="display:flex; flex-direction:column; gap:12px; background:var(--bg-card); border:3px solid var(--black); border-radius:14px; padding:18px; box-shadow:4px 4px 0 var(--black); text-align:center;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 1. Add Bookmark Modal -->
+<div id="bookmark-modal-overlay" class="devhub-modal-overlay" style="display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); backdrop-filter:blur(3px); z-index:10050;">
+  <div class="modal-content" style="width:100%; max-width:480px; background:var(--bg-card); border:3.5px solid var(--black); border-radius:14px; box-shadow:8px 8px 0 var(--black); padding:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:900;"><i data-lucide="bookmark"></i> Save Bookmark & Note</h3>
+      <button onclick="window.closeBookmarkModal()" style="border:2px solid var(--black); background:var(--red); color:white; border-radius:6px; width:28px; height:28px; font-weight:800; cursor:pointer;">✕</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:11px; font-weight:800; text-transform:uppercase;">Title *</label>
+        <input type="text" id="bm-input-title" style="width:100%; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:13px; font-weight:700; background:var(--bg-body); color:var(--text);" />
+      </div>
+      <div>
+        <label style="font-size:11px; font-weight:800; text-transform:uppercase;">URL Link *</label>
+        <input type="text" id="bm-input-url" oninput="window.autoDetectServiceFromUrlInput(this.value)" style="width:100%; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:13px; font-family:monospace; background:var(--bg-body); color:var(--text);" />
+      </div>
+      <div>
+        <label style="font-size:11px; font-weight:800; text-transform:uppercase;">Service Type</label>
+        <select id="bm-input-service" style="width:100%; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:13px; font-weight:700; background:var(--bg-body); color:var(--text);">
+          <option value="Custom">Custom Link</option>
+          <option value="GitHub">GitHub</option>
+          <option value="Stack Overflow">Stack Overflow</option>
+          <option value="Dev.to">Dev.to</option>
+          <option value="Medium">Medium</option>
+          <option value="YouTube">YouTube</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px; font-weight:800; text-transform:uppercase;">Note / Description (Max 200 chars)</label>
+        <textarea id="bm-input-desc" maxlength="200" placeholder="Add personal summary or notes..." style="width:100%; height:70px; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:12px; background:var(--bg-body); color:var(--text);"></textarea>
+      </div>
+      <div>
+        <label style="font-size:11px; font-weight:800; text-transform:uppercase;">Tags (Comma Separated)</label>
+        <input type="text" id="bm-input-tags" placeholder="e.g. react, architecture, tutorial" style="width:100%; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:12px; background:var(--bg-body); color:var(--text);" />
+      </div>
+      <button onclick="window.submitBookmarkModal()" style="margin-top:8px; width:100%; padding:10px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:13px; cursor:pointer; box-shadow:3px 3px 0 var(--black);">Save Bookmark</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Embedded YouTube Study Player Modal -->
+<div id="study-player-overlay" class="devhub-modal-overlay" style="display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:10050;">
+  <div class="modal-content" style="width:100%; max-width:840px; background:var(--bg-card); border:3.5px solid var(--black); border-radius:14px; box-shadow:10px 10px 0 var(--black); padding:20px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 id="study-player-title" style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:900; line-height:1.3; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:12px;">YouTube Study Stream</h3>
+      <button onclick="window.closeStudyPlayerModal()" style="border:2px solid var(--black); background:var(--red); color:white; border-radius:6px; width:30px; height:30px; font-weight:800; cursor:pointer;">✕</button>
+    </div>
+    <div style="position:relative; padding-bottom:56.25%; height:0; border:3px solid var(--black); border-radius:10px; overflow:hidden; background:#000;">
+      <iframe id="study-player-iframe" src="" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <span id="study-player-channel" style="font-size:12px; font-weight:800; color:var(--text-muted);"></span>
+      <button id="study-generate-ai-btn" onclick="" style="padding:8px 16px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; gap:6px;">
+        ✨ Generate AI Study Notes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. AI Notes Viewer Modal -->
+<div id="ai-notes-overlay" class="devhub-modal-overlay" style="display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:10050;">
+  <div class="modal-content" style="width:100%; max-width:720px; max-height:85vh; background:var(--bg-card); border:3.5px solid var(--black); border-radius:14px; box-shadow:10px 10px 0 var(--black); padding:24px; display:flex; flex-direction:column; gap:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:900;"><i data-lucide="sparkles"></i> AI Generated Study Notes</h3>
+      <button onclick="window.closeAINotesModal()" style="border:2px solid var(--black); background:var(--red); color:white; border-radius:6px; width:30px; height:30px; font-weight:800; cursor:pointer;">✕</button>
+    </div>
+    <div id="ai-notes-content" style="overflow-y:auto; flex:1; border:2.5px solid var(--black); border-radius:10px; padding:18px; font-family:'Inter',sans-serif; font-size:13px; line-height:1.6; background:var(--bg-body); color:var(--text);"></div>
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button onclick="window.copyAINotesText()" style="padding:8px 16px; border:2px solid var(--black); border-radius:6px; background:var(--bg-card); font-weight:800; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black);">Copy Notes</button>
+      <button id="ai-notes-save-bm-btn" onclick="" style="padding:6px 14px; border:1.5px solid #3f4352; border-radius:6px; background:#202228; color:#f1f5f9; font-weight:800; font-size:12px; cursor:pointer;">Save to Bookmarks</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. BYO Custom API Keys Modal -->
+<div id="byo-keys-overlay" class="devhub-modal-overlay" style="display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:10050;">
+  <div class="modal-content" style="width:100%; max-width:620px; max-height:90vh; overflow-y:auto; background:var(--bg-card); border:3.5px solid var(--black); border-radius:14px; box-shadow:10px 10px 0 var(--black); padding:24px; display:flex; flex-direction:column; gap:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:900;"><i data-lucide="key"></i> BYO API Keys (Unlimited Access)</h3>
+      <button onclick="window.closeBYOKeysModal()" style="border:2px solid var(--black); background:var(--red); color:white; border-radius:6px; width:30px; height:30px; font-weight:800; cursor:pointer;">✕</button>
+    </div>
+    
+    <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.5;">
+      Providing your own free API keys grants <strong>UNLIMITED personal access</strong> to YouTube Search and Gemini AI Video Notes generation!
+    </p>
+
+    <!-- Key Fields -->
+    <div style="display:flex; flex-direction:column; gap:14px; border-top:2px dashed rgba(0,0,0,0.15); border-bottom:2px dashed rgba(0,0,0,0.15); padding:16px 0;">
+      <div>
+        <label style="font-size:12px; font-weight:900; text-transform:uppercase;">1. YouTube Data API v3 Key</label>
+        <input type="password" id="byo-yt-key-input" placeholder="AIzaSy..." style="width:100%; margin-top:4px; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:12px; font-family:monospace; background:var(--bg-body); color:var(--text);" />
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:900; text-transform:uppercase;">2. Google Gemini API Key</label>
+        <input type="password" id="byo-gemini-key-input" placeholder="AIzaSy..." style="width:100%; margin-top:4px; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:12px; font-family:monospace; background:var(--bg-body); color:var(--text);" />
+      </div>
+    </div>
+
+    <!-- Step-by-Step Instructions -->
+    <div style="background:var(--bg-body); border:2px solid var(--black); border-radius:10px; padding:14px; font-size:11px; line-height:1.6;">
+      <h5 style="margin:0 0 6px 0; font-size:12px; font-weight:900; text-transform:uppercase; color:var(--purple);">📖 Step-by-Step Instructions:</h5>
+      <p style="margin:0 0 4px 0;"><strong>How to get a Free YouTube API Key:</strong></p>
+      <ol style="margin:0 0 8px 0; padding-left:18px;">
+        <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>.</li>
+        <li>Create a new project & enable <strong>YouTube Data API v3</strong> under <em>APIs & Services</em>.</li>
+        <li>Create an <strong>API Key</strong> under Credentials and paste it above!</li>
+      </ol>
+      <p style="margin:0 0 4px 0;"><strong>How to get a Free Gemini API Key:</strong></p>
+      <ol style="margin:0; padding-left:18px;">
+        <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.</li>
+        <li>Click <strong>"Get API Key"</strong> and copy your key to paste it above!</li>
+      </ol>
+    </div>
+
+    <button onclick="window.saveBYOKeys()" style="padding:10px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:13px; cursor:pointer; box-shadow:3px 3px 0 var(--black);">Save API Keys</button>
+  </div>
+</div>
+
 </body>
 </html>

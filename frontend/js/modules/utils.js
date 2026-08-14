@@ -413,6 +413,7 @@ function showPage(page) {
   }
   if (page === 'achievements' && typeof window.loadAchievements === 'function') window.loadAchievements();
   if (page === 'leaderboard' && typeof window.loadLeaderboard === 'function')   window.loadLeaderboard(true);
+  if (page === 'devhub' && typeof window.loadDevHub === 'function')             window.loadDevHub();
 }
 window.showPage = showPage;
 

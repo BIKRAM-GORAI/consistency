@@ -8,6 +8,7 @@
 [data-theme="premium-aurora"] {
   /* ── Body Background (Soft Warm White with Lavender Tint) ── */
   --bg:                  #f0eef8;
+  --bg-body:             #f0eef8;
   /* ── Card Background (Noticeably Distinct, Frosted Glass) ── */
   --bg-card:             rgba(255, 255, 255, 0.62);
   --bg-input:            rgba(255, 255, 255, 0.85);

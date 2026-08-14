@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
+const https   = require('https');
+const http    = require('http');
 const connectDB = require('./config/db');
 const { authenticateToken } = require('./middleware/auth');
 const { generalLimiter, authLimiter, dataModificationLimiter, readOnlyLimiter } = require('./middleware/rateLimit');
@@ -26,6 +28,7 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const reportRoutes       = require('./routes/reportRoutes');
 const canvasWorkflowRoutes = require('./routes/canvasWorkflowRoutes');
 const friendRoutes       = require('./routes/friendRoutes');
+const integrationRoutes  = require('./routes/integrationRoutes');
 
 
 // ── App setup ──────────────────────────────────────────────
@@ -98,11 +101,16 @@ app.use((req, res, next) => {
     "'self'",
     "https://*.firebaseio.com",
     "https://*.firebasedatabase.app",
-    "https://*.googleapis.com",
-    "wss://*.firebaseio.com",
-    "wss://*.firebasedatabase.app",
     "https://firestore.googleapis.com",
+    "https://*.googleapis.com",
+    "https://api.github.com",
+    "https://api.stackexchange.com",
+    "https://dev.to",
+    "https://api.allorigins.win",
+    "https://api.codetabs.com",
     "https://cdnjs.cloudflare.com",
+    "https://fonts.googleapis.com",
+    "https://fonts.gstatic.com",
     "https://fonts.googleapis.com",
     "https://fonts.gstatic.com",
     "https://res.cloudinary.com",
@@ -110,6 +118,8 @@ app.use((req, res, next) => {
     "https://assets.leetcode.com",
     "https://www.gstatic.com",
     "https://apis.google.com",
+    "wss://*.firebaseio.com",
+    "wss://*.firebasedatabase.app",
     "https://unpkg.com",
     "https://via.placeholder.com",
     "https://placehold.co",
@@ -222,6 +232,64 @@ app.use('/api/subscriptions', authenticateToken, dataModificationLimiter, subscr
 app.use('/api/reports',       authenticateToken, dataModificationLimiter, reportRoutes);
 app.use('/api/canvas-workflows', canvasWorkflowRoutes);
 app.use('/api/friends',       authenticateToken, dataModificationLimiter, friendRoutes);
+app.use('/api/integrations',  integrationRoutes);
+app.use('/api/devhub',        require('./routes/devHubRoutes'));
+
+// ── Generic server-side HTTP proxy helper ─────────────────────────────────
+function serverProxy(targetUrl, res, extraHeaders = {}) {
+  const parsedUrl = new URL(targetUrl);
+  const lib = parsedUrl.protocol === 'https:' ? https : http;
+  const options = {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.pathname + parsedUrl.search,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; DevHubProxy/1.0)',
+      'Accept': '*/*',
+      ...extraHeaders
+    }
+  };
+  const req = lib.get(options, (proxyRes) => {
+    if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+      return serverProxy(proxyRes.headers.location, res, extraHeaders);
+    }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(proxyRes.statusCode);
+    // Forward content-type from origin
+    if (proxyRes.headers['content-type']) {
+      res.setHeader('Content-Type', proxyRes.headers['content-type']);
+    }
+    proxyRes.pipe(res);
+  });
+  req.on('error', (e) => { if (!res.headersSent) res.status(502).json({ error: e.message }); });
+  req.setTimeout(12000, () => { req.destroy(); if (!res.headersSent) res.status(504).json({ error: 'Upstream timeout' }); });
+}
+
+// Medium RSS Proxy — user feed: ?username=bikram77620 | public: ?tag=programming
+app.get('/api/proxy/medium-rss', (req, res) => {
+  let targetUrl;
+  if (req.query.username) {
+    const clean = req.query.username.replace(/^@/, '');
+    targetUrl = `https://medium.com/feed/@${clean}`;
+  } else if (req.query.tag) {
+    targetUrl = `https://medium.com/feed/tag/${encodeURIComponent(req.query.tag)}`;
+  } else {
+    return res.status(400).json({ error: 'Provide username or tag query param' });
+  }
+  serverProxy(targetUrl, res, { 'Accept': 'application/rss+xml, text/xml, */*' });
+});
+
+// Dev.to API Proxy — avoids browser CSP/cache issues
+// ?endpoint=/api/articles&username=bikram_gorai&per_page=12
+app.get('/api/proxy/devto', (req, res) => {
+  const endpoint = req.query.endpoint || '/api/articles';
+  const qs = Object.entries(req.query)
+    .filter(([k]) => k !== 'endpoint')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+  const targetUrl = `https://dev.to${endpoint}${qs ? '?' + qs : ''}`;
+  serverProxy(targetUrl, res, { 'Accept': 'application/json' });
+});
 
 
 // ── Serve static frontend files ────────────────────────────
