@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Day = require('../models/Day');
 const axios = require('axios');
+const { getLeetCodeProfileDirect, getProblemDetailsDirect, getUserAcceptedSubmissionsDirect } = require('../utils/leetcodeGraphql');
 
 // Configuration
 const LEETCODE_API_BASE_URL = process.env.LEETCODE_API_BASE_URL || 'https://alfa-leetcode-api.onrender.com';
@@ -333,25 +334,20 @@ function generateRandomCode() {
 }
 
 /**
- * Get LeetCode user profile
+ * Get LeetCode user profile (Direct GraphQL with fallback)
  */
 async function getLeetCodeProfile(username) {
   try {
     console.log(`Fetching LeetCode profile for: ${username}`);
-
-    const response = await axios.get(`${LEETCODE_API_BASE_URL}/${username}`, {
-      timeout: 10000
-    });
-
-    const profileData = response.data;
+    const profileData = await getLeetCodeProfileDirect(username);
     console.log('Profile data received:', { username, hasAbout: !!profileData.about });
-
     return profileData;
   } catch (error) {
     console.error('Error getting LeetCode profile:', error.message);
-    if (error.response) {
-      console.error('API response status:', error.response.status);
-      console.error('API response data:', error.response.data);
+    if (error.status === 404) {
+      const err = new Error('LeetCode profile not found');
+      err.response = { status: 404 };
+      throw err;
     }
     throw new Error('Failed to get LeetCode profile');
   }
@@ -391,54 +387,28 @@ function extractProblemTitle(url) {
 }
 
 /**
- * Get problem details from alfa-leetcode-api
+ * Get problem details from direct GraphQL with fallback
  */
 async function getProblemDetails(problemTitle) {
   try {
-    console.log('Fetching problem details from API:', `${LEETCODE_API_BASE_URL}/select`);
-
-    const response = await axios.get(`${LEETCODE_API_BASE_URL}/select`, {
-      params: { titleSlug: problemTitle },
-      timeout: 10000
-    });
-
-    const problemData = response.data;
-    // alfa-leetcode-api /select returns 'questionTitle', not 'title'
-    const title = problemData.questionTitle || problemData.title;
-    console.log('Problem data received:', { title, difficulty: problemData.difficulty });
-
-    return {
-      title,
-      difficulty: problemData.difficulty,
-      topicTags: problemData.topicTags || []
-    };
+    console.log('Fetching problem details for:', problemTitle);
+    const problemData = await getProblemDetailsDirect(problemTitle);
+    console.log('Problem data received:', { title: problemData.title, difficulty: problemData.difficulty });
+    return problemData;
   } catch (error) {
     console.error('Error getting problem details:', error.message);
-    if (error.response) {
-      console.error('API response status:', error.response.status);
-      console.error('API response data:', error.response.data);
-    }
     throw new Error('Failed to get problem details');
   }
 }
 
 /**
- * Get user's accepted submissions
+ * Get user's accepted submissions via direct GraphQL with fallback
  */
 async function getUserAcceptedSubmissions(username) {
   try {
     console.log('Fetching accepted submissions for user:', username);
-
-    // Get more submissions to cover a wider date range
-    const response = await axios.get(`${LEETCODE_API_BASE_URL}/${username}/acSubmission`, {
-      params: { limit: 50 }, // Get 50 recent accepted submissions
-      timeout: 10000
-    });
-
-    const submissions = response.data.submission || [];
+    const submissions = await getUserAcceptedSubmissionsDirect(username, 50);
     console.log('Received accepted submissions:', submissions.length);
-
-    // Log first few submissions for debugging
     if (submissions.length > 0) {
       console.log('Sample submissions:', submissions.slice(0, 3).map(s => ({
         title: s.title,
@@ -447,10 +417,9 @@ async function getUserAcceptedSubmissions(username) {
         timestamp: s.timestamp
       })));
     }
-
     return submissions;
   } catch (error) {
-    console.error('Error getting user submissions:', error);
+    console.error('Error getting user submissions:', error.message);
     throw new Error('Failed to get user submissions');
   }
 }

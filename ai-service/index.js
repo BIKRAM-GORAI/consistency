@@ -926,8 +926,45 @@ async function updateStreakForUser(User, Day, userId, yesterdayStr) {
   return currentStreak;
 }
 
-// ── LeetCode Public API helper ──
+// ── LeetCode Direct GraphQL Helper ──
 async function fetchLeetCodeSubmissions(username, limit = 20) {
+  const query = `
+    query getRecentAcSubmissions($username: String!, $limit: Int!) {
+      recentAcSubmissionList(username: $username, limit: $limit) {
+        title
+        titleSlug
+        timestamp
+      }
+    }
+  `;
+  try {
+    const resp = await fetch('https://leetcode.com/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://leetcode.com'
+      },
+      body: JSON.stringify({ query, variables: { username, limit: Number(limit) || 20 } }),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const list = data?.data?.recentAcSubmissionList;
+      if (Array.isArray(list)) {
+        return list.map(sub => ({
+          title: sub.title,
+          titleSlug: sub.titleSlug,
+          timestamp: sub.timestamp,
+          statusDisplay: 'Accepted'
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn(`Direct GraphQL fetch failed for ${username}, trying fallback:`, err.message);
+  }
+
+  // Fallback to Alfa API
   const url = `https://alfa-leetcode-api.onrender.com/${encodeURIComponent(username)}/acSubmission?limit=${limit}`;
   const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!resp.ok) throw new Error(`LeetCode API error: ${resp.status}`);
@@ -936,6 +973,34 @@ async function fetchLeetCodeSubmissions(username, limit = 20) {
 }
 
 async function fetchProblemDifficulty(titleSlug) {
+  const query = `
+    query getQuestionDetails($titleSlug: String!) {
+      question(titleSlug: $titleSlug) {
+        difficulty
+      }
+    }
+  `;
+  try {
+    const resp = await fetch('https://leetcode.com/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://leetcode.com'
+      },
+      body: JSON.stringify({ query, variables: { titleSlug } }),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const diff = data?.data?.question?.difficulty;
+      if (diff) return diff;
+    }
+  } catch (err) {
+    console.warn(`Direct GraphQL difficulty fetch failed for ${titleSlug}, trying fallback:`, err.message);
+  }
+
+  // Fallback to Alfa API
   const url = `https://alfa-leetcode-api.onrender.com/select?titleSlug=${encodeURIComponent(titleSlug)}`;
   const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!resp.ok) return 'Medium';
