@@ -8,6 +8,7 @@
 [data-theme="claymorphism"] {
   /* ── Page Background (Medium Pastel Mint, not too light) ── */
   --bg:                  #b7e4c7;
+  --bg-body:             #b7e4c7;
   --bg-card:             #f4f4f4;
   --bg-input:            #d4edde;
   --bg-muted:            #c8e6d3;

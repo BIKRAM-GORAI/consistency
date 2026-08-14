@@ -22,6 +22,60 @@
 :root {
   /* ── Background ── */
   --bg:        #ebe4e4;
+  --bg-body:   #ebe4e4;
+  --bg-card:   #ffffff;
+  --bg-input:  #ffffff;
+  --bg-muted:  #f5f2eb;
+  --bg-readonly: #f8f8f8;
+  --graph-empty: #d8d4c9;
+
+  /* ── Text ── */
+  --text:      #0a0a0a;
+  --text-muted:#4a4a4a;
+  --text-light:#888888;
+
+  /* ── Brand Colors (solid, no gradients) ── */
+  --yellow:    #FFD60A;
+  --pink:      #FF3EA5;
+  --teal:      #64FFDA;
+  --coral:     #FF6B35;
+  --purple:    #7B5EA7;
+  --lime:      #B5FF4D;
+  --blue:      #3B82F6;
+  --red:       #EF4444;
+  --green:     #22C55E;
+  --amber:     #F59E0B;
+  --orange:    #F97316;
+
+  /* ── Brutalism Core ── */
+  --black:     #0a0a0a;
+  --border:    3px solid #0a0a0a;
+  --border-2:  2px solid #0a0a0a;
+  --shadow:    4px 4px 0px #0a0a0a;
+  --shadow-lg: 6px 6px 0px #0a0a0a;
+  --shadow-sm: 3px 3px 0px #0a0a0a;
+  --shadow-xl: 8px 8px 0px #0a0a0a;
+
+  /* ── Radii (minimal — brutalism = square) ── */
+  --r-sm:  4px;
+  --r-md:  8px;
+  --r-lg:  12px;
+  --r-xl:  16px;
+  --r-full: 9999px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --t:    0.15s;
+
+  /* ── Extra Backgrounds ── */
+  --bg-goal-completed: #f0fdf4;
+  --bg-goal-completed-overdue: #fffbeb;
+  --bg-goal-overdue: #fef2f2;
+  --bg-cat-input:      #fff9c4;
+  --bg-ach-section:    #fffbf0;
+  --bg-ach-note:       #f0ece4;
+
+  --distraction-green: #10B981; /* highly bright, visible green in light mode */
+  --bg-body:   #ebe4e4;
   --bg-card:   #ffffff;
   --bg-input:  #ffffff;
   --bg-muted:  #f5f2eb;
@@ -85,21 +139,25 @@
 }
 
 [data-theme="dark"] {
-  --bg:        #212121;
-  --bg-card:   #2d2d2d;
-  --bg-input:  #333333;
-  --bg-muted:  #292929;
-  --bg-readonly: #262626;
-  --graph-empty: #3a3a3a;
-  --chat-messages-bg: #1c1c1c;
+  --bg:        #1f2127;
+  --bg-body:   #1f2127;
+  --bg-card:   #282a32;
+  --bg-input:  #202228;
+  --bg-muted:  #24262e;
+  --bg-readonly: #17181b;
+  --graph-empty: #2e313a;
+  --chat-messages-bg: #1b1c20;
   --day-card-dot-color: rgba(255, 255, 255, 0.09);
   --weekly-card-stripe-color: rgba(34, 197, 94, 0.07);
   --weekly-btn-stripe-color: rgba(168, 85, 247, 0.06);
   --monthly-grid-color: rgba(236, 72, 153, 0.06);
 
-  --text:      #e0e0e0;
-  --text-muted:#b0b0b0;
-  --text-light:#888888;
+  --text:      #f1f5f9;
+  --text-muted:#94a3b8;
+  --text-light:#64748b;
+  --yellow:    #f59e0b;
+  --black:     #121317;
+  --border-color: #3f4352;
 
   --bg-goal-completed: #1b2e1f;
   --bg-goal-completed-overdue: #2d240a;
@@ -109,10 +167,10 @@
   --bg-ach-note:       #222222;
 
   --black:     #000000;
-  --border-color: #333333;
+  --border-color: #000000;
 
-  --distraction-green: #39FF14; /* neon bright green in dark mode */
-  --distraction-red: #FF3131;   /* neon bright red in dark mode */
+  --distraction-green: #39FF14;
+  --distraction-red: #FF3131;
   --bg-distraction-green: rgba(57, 255, 20, 0.15);
   --bg-distraction-red: rgba(255, 49, 49, 0.15);
 }
@@ -121,9 +179,6 @@
   color: var(--text);
 }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-muted); }
 ::-webkit-scrollbar-thumb { background: var(--black); border-radius: 12px; }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
@@ -1274,6 +1329,26 @@ body {
 
 .modal-overlay.open { display: flex; }
 
+/* -- DevHub Modals � always position:fixed overlay ----------- */
+.devhub-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+#content-viewer-overlay {
+  z-index: 10001;
+  background: #f1f5f9 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 .modal {
   background: var(--bg-card);
   border: var(--border);
@@ -1883,9 +1958,19 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   .goal-meta { flex-direction: row; align-items: center; flex-wrap: wrap; }
   .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
   .header-motivation { align-self: flex-start; }
-  #add-goal-header-btn { padding: 8px 14px; font-size: 13px; }
   .btn-primary { font-size: 13px; padding: 9px 16px; }
   .btn-ghost   { font-size: 13px; padding: 8px 14px; }
+
+  @media (max-width: 640px) {
+    .devhub-control-buttons {
+      flex-direction: column !important;
+      gap: 10px !important;
+    }
+    .devhub-control-buttons button {
+      width: 100% !important;
+      flex: none !important;
+    }
+  }
 
   /* Modal — slide up from bottom on mobile */
   .modal-overlay {
@@ -6814,4 +6899,838 @@ body.is-offline [data-requires-network="true"] {
   animation: pulse-red 2s infinite ease-in-out;
 }
 
+/* ==========================================================================
+   DEVELOPER HUB PAGES & WIDGETS
+   ========================================================================== */
+.devhub-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  padding-bottom: 80px;
+}
 
+.devhub-card {
+  background: var(--bg-card);
+  border: 4px solid var(--black);
+  border-radius: 12px;
+  box-shadow: 6px 6px 0 var(--black);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.devhub-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--black);
+}
+
+.devhub-card .card-header {
+  background: var(--bg-body);
+  border-bottom: 4px solid var(--black);
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.devhub-card .card-header h3 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.devhub-card .card-body {
+  padding: 18px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+}
+
+.status-badge {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 2px solid var(--black);
+  letter-spacing: 0.5px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.3;
+}
+
+.status-badge.connected {
+  background: #22c55e;
+  color: #fff;
+}
+
+.status-badge.disconnected {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+}
+
+/* WakaTime stats boxes */
+.wakatime-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.stat-box {
+  flex: 1;
+  border: 3px solid var(--black);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg-body);
+  text-align: center;
+}
+
+.stat-val {
+  font-size: 18px;
+  font-weight: 900;
+  display: block;
+}
+
+.stat-lbl {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+/* Stack Overflow Badge UI */
+.so-badge-display {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 2px solid var(--black);
+}
+
+.so-badge-display.gold { background: #fef3c7; color: #b45309; }
+.so-badge-display.silver { background: #f3f4f6; color: #4b5563; }
+.so-badge-display.bronze { background: #ffedd5; color: #c2410c; }
+
+/* Custom Developer Lists */
+.devhub-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-body);
+  border: 2.5px solid var(--black);
+  border-radius: 8px;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.devhub-list-item:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--black);
+  background: var(--bg-card);
+}
+
+.devhub-list-item .item-title {
+  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.devhub-list-item .item-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+/* Progress bar for languages */
+.lang-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lang-bar-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lang-bar-wrapper {
+  height: 8px;
+  background: var(--bg-body);
+  border: 2px solid var(--black);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.lang-bar-fill {
+  height: 100%;
+  background: var(--purple);
+}
+
+/* Developer search layout */
+.devhub-search-container input:focus {
+  border-color: var(--purple) !important;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.1);
+}
+
+/* Aurora Glass adaptations */
+[data-theme="premium-aurora"] .devhub-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+[data-theme="premium-aurora"] .devhub-card .card-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+[data-theme="premium-aurora"] .devhub-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+}
+[data-theme="premium-aurora"] .devhub-list-item,
+[data-theme="premium-aurora"] .stat-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+[data-theme="premium-aurora"] .devhub-list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+[data-theme="premium-aurora"] .status-badge {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+[data-theme="premium-aurora"] .so-badge-display {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Claymorphism adaptations */
+[data-theme="claymorphism"] .devhub-card {
+  background: var(--bg-card);
+  border: none;
+  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.05), -8px -8px 16px rgba(255, 255, 255, 0.8), inset 2px 2px 4px rgba(255, 255, 255, 0.4), inset -2px -2px 4px rgba(0, 0, 0, 0.05);
+}
+[data-theme="claymorphism"] .devhub-card .card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: transparent;
+}
+[data-theme="claymorphism"] .devhub-list-item,
+[data-theme="claymorphism"] .stat-box {
+  border: none;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.05), inset -2px -2px 5px rgba(255,255,255,0.7);
+}
+
+/* ──────────────────────────────────────────────────────────
+   HORIZONTAL SUB-TABS & GRADIENT REPO CARDS
+   ────────────────────────────────────────────────────────── */
+
+/* Horizontal Tab Buttons active/inactive states */
+.devhub-tab-btn {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 3px solid var(--black);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 3px 3px 0 var(--black);
+  transition: all 0.15s ease;
+}
+
+.devhub-tab-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+.devhub-tab-btn.active {
+  background: var(--yellow) !important;
+  color: var(--black) !important;
+  box-shadow: 1px 1px 0 var(--black) !important;
+  transform: translate(2px, 2px) !important;
+}
+
+/* Minimalist Repository Cards */
+.repo-card-minimal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px;
+  border: 3px solid var(--black);
+  border-radius: 12px;
+  text-decoration: none;
+  background: radial-gradient(rgba(0, 0, 0, 0.05) 1.5px, transparent 1.5px), linear-gradient(135deg, #ffffff 0%, #eef2f6 100%);
+  background-size: 8px 8px, 100% 100%;
+  color: var(--text) !important;
+  box-shadow: 4px 4px 0 var(--black);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.repo-card-minimal:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--black);
+}
+
+/* Repositories List Container Grid/Box */
+.repos-list-container {
+  background: linear-gradient(180deg, #f5f5f7 0%, #e9e9ed 100%);
+  border: 3px solid var(--black);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: inset 1px 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.repo-card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.repo-card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 3px;
+}
+
+.repo-card-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.repo-card-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.repo-card-stats i {
+  color: var(--text-muted);
+}
+
+.repo-card-lang {
+  background: var(--bg-body);
+  color: var(--text);
+  padding: 4px 10px;
+  border: 2.5px solid var(--black);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Space Grotesk', sans-serif;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+/* Custom Scrollbar for repository list */
+.devhub-scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+.devhub-scroll-list::-webkit-scrollbar-track {
+  background: var(--bg-body);
+  border-radius: 8px;
+}
+.devhub-scroll-list::-webkit-scrollbar-thumb {
+  background: var(--black);
+  border-radius: 8px;
+}
+
+/* Theme overrides for premium modes */
+[data-theme="premium-aurora"] .devhub-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  box-shadow: none;
+}
+[data-theme="premium-aurora"] .devhub-tab-btn.active {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+[data-theme="premium-aurora"] .repo-card-minimal {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
+}
+[data-theme="premium-aurora"] .repo-card-lang {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+[data-theme="premium-aurora"] .devhub-scroll-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+[data-theme="premium-aurora"] .repos-list-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+[data-theme="claymorphism"] .devhub-tab-btn {
+  border: none;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.05), -4px -4px 8px rgba(255,255,255,0.8);
+}
+[data-theme="claymorphism"] .devhub-tab-btn.active {
+  background: var(--yellow) !important;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.2) !important;
+}
+[data-theme="claymorphism"] .repo-card-minimal {
+  border: 2px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.04);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1.5px, transparent 1.5px);
+}
+[data-theme="claymorphism"] .repo-card-lang {
+  border: none !important;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05) !important;
+}
+[data-theme="claymorphism"] .repos-list-container {
+  background: linear-gradient(180deg, #f1f3f5 0%, #e2e6ea 100%) !important;
+  border: 2px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* GitHub Analytics Dashboard Sub-Tabs & Utilities */
+.github-sub-tab-btn {
+  background: var(--bg-card);
+  border: 3px solid var(--black);
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 3px 3px 0 var(--black);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  color: var(--text);
+  outline: none;
+}
+
+.github-sub-tab-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+.github-sub-tab-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1.5px 1.5px 0 var(--black);
+}
+
+.github-sub-tab-btn.active {
+  background: var(--yellow) !important;
+  color: var(--black) !important;
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0 var(--black) !important;
+}
+
+/* Spinner Keyframe animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-ring {
+  display: inline-block;
+  border-radius: 50%;
+  border-style: solid;
+  animation: spin 1s linear infinite;
+}
+
+/* Theme overrides for sub-tabs */
+[data-theme="premium-aurora"] .github-sub-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: none;
+}
+
+[data-theme="premium-aurora"] .github-sub-tab-btn.active {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="claymorphism"] .github-sub-tab-btn {
+  border: none;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.05), -4px -4px 8px rgba(255,255,255,0.8);
+  background: var(--bg-card);
+}
+
+[data-theme="claymorphism"] .github-sub-tab-btn.active {
+  background: var(--yellow) !important;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.2) !important;
+}
+
+/* ── GitHub Dashboard Skeleton Shimmer ─────────────────────────── */
+@keyframes gh-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.gh-skeleton {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(200, 200, 210, 0.35) 0%,
+    rgba(220, 220, 235, 0.65) 40%,
+    rgba(200, 200, 210, 0.35) 80%
+  );
+  background-size: 800px 100%;
+  animation: gh-shimmer 1.4s ease-in-out infinite;
+  display: inline-block;
+}
+
+
+/* ============================================================
+   VOLTAGE MONO — Dark Neo-Brutalist DevHub & Reader Design System
+   (Generated via Stitch MCP)
+   ============================================================ */
+
+[data-theme="dark"] #page-devhub {
+  background: #1f2127 !important;
+  color: #f1f5f9 !important;
+  font-family: 'Space Grotesk', 'Inter', sans-serif !important;
+}
+
+[data-theme="dark"] .devhub-card {
+  background: #282a32 !important;
+  border: 2.5px solid #3f4352 !important;
+  box-shadow: 4px 4px 0px #121317 !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="dark"] .devhub-tab-btn {
+  background: #282a32 !important;
+  color: #cbd5e1 !important;
+  border: 2px solid #474c5c !important;
+  box-shadow: 2.5px 2.5px 0px #121317 !important;
+  font-weight: 900 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  border-radius: 8px !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+[data-theme="dark"] .devhub-tab-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 3.5px 3.5px 0px #121317 !important;
+  background: #323540 !important;
+  color: #ffffff !important;
+  border-color: #5c6276 !important;
+}
+
+[data-theme="dark"] .devhub-tab-btn.active {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+  border: 2px solid #121317 !important;
+  box-shadow: 3px 3px 0px #121317 !important;
+}
+
+[data-theme="dark"] .github-sub-tab-btn {
+  background: #282a32 !important;
+  color: #cbd5e1 !important;
+  border: 2px solid #474c5c !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .github-sub-tab-btn.active {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+  border: 2px solid #121317 !important;
+  box-shadow: 2.5px 2.5px 0px #121317 !important;
+}
+
+[data-theme="dark"] #content-viewer-overlay {
+  background: #1f2127 !important;
+}
+
+[data-theme="dark"] #cv-header {
+  background: #282a32 !important;
+  border-bottom: 3px solid #3f4352 !important;
+  box-shadow: 0 4px 0px #121317 !important;
+}
+
+[data-theme="dark"] #cv-header button {
+  background: #202228 !important;
+  color: #f1f5f9 !important;
+  border: 2px solid #3f4352 !important;
+  box-shadow: 2px 2px 0px #121317 !important;
+}
+
+[data-theme="dark"] #cv-sidebar {
+  background: #282a32 !important;
+  border-right: 3px solid #3f4352 !important;
+}
+
+/* Fix Contribution Graph Invert Filter for Dark Mode */
+[data-theme="dark"] #github-contrib-graph {
+  filter: invert(0.88) hue-rotate(180deg) brightness(1.1) contrast(1.2) !important;
+  mix-blend-mode: screen !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+/* Fix Dropdown Select & Options Contrast in Dark Mode */
+[data-theme="dark"] select,
+[data-theme="dark"] select option {
+  background: #202228 !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid #3f4352 !important;
+}
+
+/* Fix Card Save Buttons Contrast */
+[data-theme="dark"] #cv-bookmark-btn,
+[data-theme="dark"] .uni-save-btn {
+  background: #202228 !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid #3f4352 !important;
+}
+
+
+/* ============================================================
+   NAVBAR ZOOM & OVERFLOW FIX
+   ============================================================ */
+.navbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 200 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  height: 60px !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.nav-brand {
+  flex-shrink: 0 !important;
+}
+
+.nav-streak {
+  flex-shrink: 0 !important;
+}
+
+.nav-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.nav-actions::-webkit-scrollbar {
+  display: none !important;
+}
+
+.nav-btn {
+  flex-shrink: 0 !important;
+  padding: 5px 8px !important;
+  font-size: 11.5px !important;
+}
+
+.nav-user-area {
+  flex-shrink: 0 !important;
+  gap: 10px !important;
+}
+
+/* Popular Tag Buttons Contrast */
+[data-theme="dark"] .gh-popular-tag-btn,
+[data-theme="dark"] #hub-card-github .btn-ghost {
+  background: #282a32 !important;
+  color: #fbbf24 !important;
+  border: 1.5px solid #3f4352 !important;
+  font-weight: 800 !important;
+}
+
+
+/* ============================================================
+   DEV HUB CONTRAST & SAVE BUTTON FIXES
+   ============================================================ */
+
+/* 1. Popular Tags & Filter Pills Contrast */
+[data-theme="dark"] .gh-popular-tag-btn,
+[data-theme="dark"] .so-tag-btn,
+[data-theme="dark"] .medium-tag-btn,
+[data-theme="dark"] .devto-tag-btn,
+[data-theme="dark"] #hub-card-github .btn-ghost,
+[data-theme="dark"] #hub-card-medium .btn-ghost,
+[data-theme="dark"] #hub-card-stackoverflow .btn-ghost,
+[data-theme="dark"] #hub-card-devto .btn-ghost {
+  background: #2e323d !important;
+  color: #fbbf24 !important;
+  border: 1.5px solid #474c5c !important;
+  font-weight: 800 !important;
+}
+
+/* 2. Plain Text Save Button (No Emojis, No Icons) */
+[data-theme="dark"] .uni-save-btn,
+[data-theme="dark"] #cv-bookmark-btn,
+[data-theme="dark"] #ai-notes-save-bm-btn {
+  background: #202228 !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid #3f4352 !important;
+  font-weight: 800 !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="dark"] .uni-save-btn:hover,
+[data-theme="dark"] #cv-bookmark-btn:hover,
+[data-theme="dark"] #ai-notes-save-bm-btn:hover {
+  background: #2e323d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .uni-save-btn.is-saved,
+[data-theme="dark"] #cv-bookmark-btn.is-saved,
+[data-theme="dark"] #ai-notes-save-bm-btn.is-saved {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+  border: 1.5px solid #000000 !important;
+  font-weight: 900 !important;
+}
+
+/* 3. My Repositories Dark Theme Container Fix */
+[data-theme="dark"] #github-panel-repos {
+  background: transparent !important;
+}
+
+[data-theme="dark"] #github-repos-board,
+[data-theme="dark"] .repos-list-container {
+  background: transparent !important;
+}
+
+[data-theme="dark"] .repo-card-minimal {
+  background: #202228 !important;
+  border: 2px solid #3f4352 !important;
+  box-shadow: 3px 3px 0px #121317 !important;
+}
+
+
+/* ============================================================
+   POPULAR TAG BUTTONS CONTRAST OVERRIDE
+   ============================================================ */
+button[onclick*="Tag"],
+button[onclick*="filter"],
+.gh-popular-tag-btn,
+.so-tag-btn,
+.medium-tag-btn,
+.devto-tag-btn,
+#hub-card-github .btn-ghost,
+#hub-card-medium .btn-ghost,
+#hub-card-stackoverflow .btn-ghost,
+#hub-card-devto .btn-ghost {
+  color: #fbbf24 !important;
+  background-color: #2e323d !important;
+  border: 1.5px solid #474c5c !important;
+  font-weight: 800 !important;
+}
+
+button[onclick*="Tag"]:hover,
+button[onclick*="filter"]:hover,
+.gh-popular-tag-btn:hover,
+.so-tag-btn:hover,
+.medium-tag-btn:hover,
+.devto-tag-btn:hover {
+  background-color: #3b404e !important;
+  color: #fef08a !important;
+  border-color: #f59e0b !important;
+}
+
+
+/* ============================================================
+   DEV TOOLBOX & SEARCH SEPARATION CARDS
+   ============================================================ */
+
+/* Dev Toolbox Buttons Contrast */
+[data-theme="dark"] #hub-card-toolbox .btn-ghost,
+[data-theme="dark"] #hub-card-toolbox button:not(.btn-primary) {
+  background: #2e323d !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid #474c5c !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] #hub-card-toolbox button:not(.btn-primary):hover {
+  background: #3b404e !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+}
+
+[data-theme="dark"] #hub-card-toolbox .btn-primary {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+  border: 1.5px solid #000000 !important;
+  font-weight: 900 !important;
+}
+
+/* Dedicated Search Header Box */
+.devhub-search-box-card {
+  background: #202228 !important;
+  border: 2.5px solid #3f4352 !important;
+  border-radius: 12px !important;
+  padding: 18px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 3px 3px 0px #121317 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* Dedicated Main Articles Grid Container Box */
+.devhub-articles-grid-card {
+  background: #202228 !important;
+  border: 2.5px solid #3f4352 !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  box-shadow: 4px 4px 0px #121317 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}

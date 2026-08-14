@@ -1440,6 +1440,33 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Developer Hub Integrations
+    githubOAuth: {
+      accessToken: { type: String, default: null },
+      refreshToken: { type: String, default: null },
+      expiry: { type: Date, default: null }
+    },
+    googleCalendarOAuth: {
+      accessToken: { type: String, default: null },
+      refreshToken: { type: String, default: null },
+      expiry: { type: Date, default: null }
+    },
+    wakaTimeKey: {
+      type: String,
+      default: null
+    },
+    stackOverflowId: {
+      type: String,
+      default: null
+    },
+    devtoUsername: {
+      type: String,
+      default: null
+    },
+    mediumUsername: {
+      type: String,
+      default: null
+    },
     // OTP fields for Forgot Password
     resetOtp: {
       type: String,
@@ -1893,6 +1920,28 @@ const UserSchema = new mongoose.Schema(
     emailVerificationOtpSentAt: {
       type: Date,
       default: null,
+    },
+    bookmarks: [
+      {
+        title: { type: String, required: true },
+        url: { type: String, required: true },
+        serviceType: { type: String, default: 'Custom' },
+        description: { type: String, default: '', maxlength: 200 },
+        tags: [{ type: String }],
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
+    aiNotesCount: {
+      type: Number,
+      default: 0
+    },
+    customYouTubeApiKey: {
+      type: String,
+      default: ''
+    },
+    customGeminiApiKey: {
+      type: String,
+      default: ''
     },
   },
   { timestamps: true },
