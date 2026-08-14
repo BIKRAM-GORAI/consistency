@@ -111,8 +111,9 @@ const githubCallback = async (req, res) => {
     await user.save();
 
     // Redirect to frontend devhub tab
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
-    res.redirect(`${frontendUrl}/?tab=devhub&connected=github`);
+    const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    const baseUrl = rawFrontendUrl.replace(/\/+(index\.html)?$/i, '');
+    res.redirect(`${baseUrl}/index.html?tab=devhub&connected=github`);
   } catch (error) {
     console.error('GitHub Callback exchange error:', error);
     res.status(500).send('GitHub connection failed: ' + error.message);
@@ -193,8 +194,9 @@ const googleCallback = async (req, res) => {
     };
     await user.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
-    res.redirect(`${frontendUrl}/?tab=devhub&connected=google`);
+    const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    const baseUrl = rawFrontendUrl.replace(/\/+(index\.html)?$/i, '');
+    res.redirect(`${baseUrl}/index.html?tab=devhub&connected=google`);
   } catch (error) {
     console.error('Google Callback exchange error:', error);
     res.status(500).send('Google connection failed: ' + error.message);
