@@ -330,11 +330,32 @@ function sortGoals() {
 }
 window.sortGoals = sortGoals;
 
+function decodeEntities(str) {
+  if (!str) return '';
+  let s = String(str);
+  for (let i = 0; i < 4; i++) {
+    if (!/&(amp|lt|gt|quot|#39|#x2F);/i.test(s)) break;
+    s = s
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x2F;/gi, '/');
+  }
+  return s;
+}
+window.decodeEntities = decodeEntities;
+
 function escHtml(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const decoded = decodeEntities(str);
+  return decoded
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 window.escHtml = escHtml;
 

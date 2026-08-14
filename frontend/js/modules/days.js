@@ -758,6 +758,37 @@ function buildDayCard(day, preLoadedAchievements = null) {
     `;
   }
 
+  const totalTasks = (day.categories || []).reduce((acc, cat) => acc + (cat.tasks || []).length, 0);
+  const dayAchsList = (preLoadedAchievements && preLoadedAchievements.length > 0)
+    ? preLoadedAchievements
+    : (window.allAchievements || []).filter(a => a.dayId === day._id);
+  const isMilestoneOnlyDay = totalTasks === 0 && dayAchsList.length > 0;
+
+  let progressSectionHTML = '';
+  if (isMilestoneOnlyDay) {
+    progressSectionHTML = `
+      <div class="progress-section milestone-progress-section" style="padding: 4px 0 10px 0;">
+        <div class="progress-meta" style="justify-content: flex-start;">
+          <span class="milestone-day-badge" style="font-size: 11px; font-weight: 900; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #ffffff; padding: 4px 10px; border-radius: 6px; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="trophy" style="width: 14px; height: 14px;"></i> Goal Milestone Day
+          </span>
+        </div>
+      </div>
+    `;
+  } else {
+    progressSectionHTML = `
+      <div class="progress-section">
+        <div class="progress-meta">
+          <span class="progress-label">Progress</span>
+          <span class="progress-pct" id="pct-text-${day._id}" style="color:${window.progressColor(pct)}">${pct}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill ${window.progressClass(pct)}" id="pct-fill-${day._id}" style="width:0%"></div>
+        </div>
+      </div>
+    `;
+  }
+
   card.innerHTML = `
     <div class="card-header">
       <div class="card-date-wrap">
@@ -774,18 +805,10 @@ function buildDayCard(day, preLoadedAchievements = null) {
       </div>
     </div>
 
-    <div class="progress-section">
-      <div class="progress-meta">
-        <span class="progress-label">Progress</span>
-        <span class="progress-pct" id="pct-text-${day._id}" style="color:${window.progressColor(pct)}">${pct}%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill ${window.progressClass(pct)}" id="pct-fill-${day._id}" style="width:0%"></div>
-      </div>
-    </div>
+    ${progressSectionHTML}
 
     <div class="categories-list" id="cat-list-${day._id}">
-      ${categoriesHTML || '<p style="color:var(--text-3);font-size:14px;padding:4px 0">No categories yet.</p>'}
+      ${categoriesHTML || (isMilestoneOnlyDay ? '' : '<p style="color:var(--text-3);font-size:14px;padding:4px 0">No categories yet.</p>')}
     </div>
 
     ${addCatBtn}

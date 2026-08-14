@@ -1,5 +1,21 @@
 const Goal = require('../models/Goal');
 
+function decodeEntities(str) {
+  if (!str) return '';
+  let s = String(str);
+  for (let i = 0; i < 4; i++) {
+    if (!/&(amp|lt|gt|quot|#39|#x2F);/i.test(s)) break;
+    s = s
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x2F;/gi, '/');
+  }
+  return s;
+}
+
 /**
  * GET /api/goals
  * Retrieve all goals for the authenticated user sorted by deadline ascending
@@ -98,15 +114,17 @@ const updateGoal = async (req, res) => {
       const deadlineStr = new Date(updated.deadline).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
       let description = `Goal Deadline: ${deadlineStr}\n\nTasks:\n`;
       updated.tasks.forEach(t => {
-        description += `✅ ${t.title}\n`;
+        const cleanTaskTitle = decodeEntities(t.title);
+        description += `✅ ${cleanTaskTitle}\n`;
       });
 
+      const cleanGoalTitle = decodeEntities(updated.title);
       const achievement = new Achievement({
         userId,
         dayId: day._id,
         date: todayStr,
-        title: `Goal Achieved: ${updated.title}`,
-        description: description.trim(),
+        title: `Goal Achieved: ${cleanGoalTitle}`,
+        description: decodeEntities(description.trim()),
         links: []
       });
       await achievement.save();
