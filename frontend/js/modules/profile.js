@@ -1331,7 +1331,7 @@ function renderContributionGraph(data, targetId = 'public-profile-graph', isPrem
   container.innerHTML = svg;
 }
 
-function buildReadOnlyDayCard(day) {
+function buildReadOnlyDayCard(day, allAchievements = []) {
   const card = document.createElement('div');
   card.className = 'qp-activity-item';
   card.style.background = 'var(--bg-muted)';
@@ -1343,8 +1343,8 @@ function buildReadOnlyDayCard(day) {
   
   let totalTasks = 0, completedTasks = 0;
   let tasksHtml = '<div style="margin-top:12px; display:none; flex-direction:column; gap:8px;" class="public-day-tasks">';
-  day.categories.forEach(cat => {
-    if (cat.tasks.length > 0) {
+  (day.categories || []).forEach(cat => {
+    if (cat.tasks && cat.tasks.length > 0) {
       tasksHtml += `<div style="font-size:13px; font-weight:700; color:var(--text); margin-top:4px;">${cat.name}</div>`;
       cat.tasks.forEach(t => {
         totalTasks++;
@@ -1353,7 +1353,7 @@ function buildReadOnlyDayCard(day) {
         tasksHtml += `
           <div style="display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--text-muted);">
             <div style="margin-top:2px; font-weight:bold; color:${t.completed ? '#22c55e' : '#ccc'};">${t.completed ? '✓' : '○'}</div>
-            <div style="flex:1;">${t.title}</div>
+            <div style="flex:1;">${escHtml(t.title)}</div>
           </div>
         `;
       });
@@ -1361,17 +1361,34 @@ function buildReadOnlyDayCard(day) {
   });
   tasksHtml += '</div>';
   
+  const dayDateStr = (day.date || '').split('T')[0];
+  const hasAchsOnDay = (allAchievements || []).some(a => (a.date || '').split('T')[0] === dayDateStr || String(a.dayId) === String(day._id));
+  const isMilestoneOnly = totalTasks === 0 && (hasAchsOnDay || day.hasAchievement || day.isMilestoneDay || true);
+
+  let statusPill = '';
+  if (isMilestoneOnly && totalTasks === 0) {
+    statusPill = `
+      <span class="milestone-day-badge" style="font-size: 11px; font-weight: 900; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #ffffff; padding: 4px 10px; border-radius: 6px; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="trophy" style="width: 14px; height: 14px;"></i> Goal Milestone Day
+      </span>
+    `;
+  } else {
+    statusPill = `
+      <span style="font-size:14px; font-weight:600; padding:2px 8px; border-radius:12px; background:${completedTasks === totalTasks && totalTasks > 0 ? '#22c55e' : 'var(--bg-muted)'}; color:var(--text);">
+        ${completedTasks}/${totalTasks} Tasks
+      </span>
+      <button class="btn-ghost ripple toggle-tasks-btn" style="padding:4px 8px; font-size:12px;" onclick="this.parentElement.parentElement.nextElementSibling.style.display = this.parentElement.parentElement.nextElementSibling.style.display === 'none' ? 'flex' : 'none'">▼</button>
+    `;
+  }
+
   card.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h4 style="margin:0; font-size:16px;">${formatDisplayDate(day.date)}</h4>
       <div style="display:flex; gap:8px; align-items:center;">
-        <span style="font-size:14px; font-weight:600; padding:2px 8px; border-radius:12px; background:${completedTasks === totalTasks && totalTasks > 0 ? '#22c55e' : 'var(--bg-muted)'}; color:var(--text);">
-          ${completedTasks}/${totalTasks} Tasks
-        </span>
-        <button class="btn-ghost ripple toggle-tasks-btn" style="padding:4px 8px; font-size:12px;" onclick="this.parentElement.parentElement.nextElementSibling.style.display = this.parentElement.parentElement.nextElementSibling.style.display === 'none' ? 'flex' : 'none'">▼</button>
+        ${statusPill}
       </div>
     </div>
-    ${tasksHtml}
+    ${totalTasks > 0 ? tasksHtml : ''}
   `;
   return card;
 }

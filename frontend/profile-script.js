@@ -540,6 +540,14 @@ function renderDays(days, append = false) {
       done += c.tasks.filter(t => t.completed).length;
     });
 
+    const pillHTML = total === 0
+      ? `<div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); border:2px solid #111111; border-radius:10px; padding:6px 14px; font-weight:900; font-size:12px; color:#ffffff; box-shadow:3px 3px 0px #111111; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
+          🏆 Goal Milestone Day
+        </div>`
+      : `<div style="background:#ffffff; border:2px solid #111111; border-radius:10px; padding:6px 14px; font-weight:900; font-size:14px; color:#111111; box-shadow:3px 3px 0px #111111;">
+          ${done}/${total} Tasks
+        </div>`;
+
     return `
       <div class="day-item" style="background:${bgColor} !important; border:3px solid #111111; box-shadow:6px 6px 0px rgba(0,0,0,0.05); transition:transform 0.2s ease;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -547,9 +555,7 @@ function renderDays(days, append = false) {
             <h3 style="font-family:'Space Grotesk'; font-weight:900; font-size:20px; color:#111111;">${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h3>
             <p style="font-size:12px; font-weight:700; color:#666666; text-transform:uppercase; letter-spacing:1px;">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
           </div>
-          <div style="background:#ffffff; border:2px solid #111111; border-radius:10px; padding:6px 14px; font-weight:900; font-size:14px; color:#111111; box-shadow:3px 3px 0px #111111;">
-            ${done}/${total} Tasks
-          </div>
+          ${pillHTML}
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           ${day.categories.map(cat => `
