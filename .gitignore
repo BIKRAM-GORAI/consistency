@@ -44,3 +44,10 @@ PROJECT_AUDIT_REPORT.json
 /persistent-companion
 
 interview/
+
+# Temporary Planning & Work Tracking Docs
+implementation_plan.md
+integration_analysis.md
+progress.md
+tracker.md
+walkthrough.md
