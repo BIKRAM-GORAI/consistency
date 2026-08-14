@@ -1797,13 +1797,8 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 /* ============================================================
-   BOTTOM NAV (mobile only)
+   UNIVERSAL FLOATING DOCK & MOBILE RESPONSIVENESS
    ============================================================ */
-.bottom-nav-container,
-.bottom-nav {
-  display: none;
-}
-
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .bottom-nav {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
@@ -1830,19 +1825,6 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   .brand-name { font-size: 14px; }
   .brand-icon { font-size: 18px; }
   .brand-icon .lucide { width: 18px; height: 18px; }
-
-  .bottom-nav-container {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 300;
-    background: var(--bg-card);
-    border-top: var(--border);
-    box-shadow: 0 -4px 0 var(--black);
-    padding: 0;
-  }
 
   /* Bottom navigation bar */
   .bottom-nav {
