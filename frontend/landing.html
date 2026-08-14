@@ -3143,27 +3143,50 @@
       }
     }
 
-    let allReviewsData = [];
     let reviewsCurrentPage = 1;
-    const REVIEWS_PER_PAGE = 5;
+    let reviewsHasMore = false;
+    let reviewsAdminPassword = '';
+    const REVIEWS_PER_PAGE = 6;
 
     async function openViewReviewsModal() {
       try {
         const modeRes = await fetch(API + '/api/reviews/access-mode');
         const modeData = await modeRes.json();
 
-        let password = '';
+        reviewsAdminPassword = '';
         if (modeData.mode === 'private') {
-          password = prompt('This section is private. Please enter the admin password:');
-          if (password === null) return;
+          reviewsAdminPassword = prompt('This section is private. Please enter the admin password:');
+          if (reviewsAdminPassword === null) return;
         }
 
+        reviewsCurrentPage = 1;
+        document.getElementById('view-reviews-modal').classList.add('show');
+        
+        const container = document.getElementById('reviews-container');
+        container.innerHTML = '<div style="text-align:center; padding:30px; font-weight:700; color:var(--black);">Loading reviews...</div>';
+        document.getElementById('reviews-pagination-footer').style.display = 'none';
+
+        await fetchAndRenderReviewsPage(1, false);
+      } catch (err) {
+        alert('Failed to fetch reviews');
+      }
+    }
+
+    async function fetchAndRenderReviewsPage(page = 1, append = false) {
+      const container = document.getElementById('reviews-container');
+      const footerBtn = document.getElementById('btn-load-more-reviews');
+      if (footerBtn) {
+        footerBtn.disabled = true;
+        footerBtn.textContent = 'Loading...';
+      }
+
+      try {
         const headers = {};
-        if (modeData.mode === 'private') {
-          headers['x-admin-password'] = password;
+        if (reviewsAdminPassword) {
+          headers['x-admin-password'] = reviewsAdminPassword;
         }
 
-        const res = await fetch(API + '/api/reviews', { headers });
+        const res = await fetch(`${API}/api/reviews?page=${page}&limit=${REVIEWS_PER_PAGE}`, { headers });
         const data = await res.json();
 
         if (!res.ok) {
@@ -3171,38 +3194,52 @@
           return;
         }
 
-        allReviewsData = data;
-        reviewsCurrentPage = 1;
-        
-        renderReviews();
-        document.getElementById('view-reviews-modal').classList.add('show');
+        let reviewsList = [];
+        if (Array.isArray(data)) {
+          reviewsList = data;
+          reviewsHasMore = false;
+        } else {
+          reviewsList = data.reviews || [];
+          reviewsHasMore = !!data.hasMore;
+        }
+
+        renderReviewCards(reviewsList, append);
+
+        const footer = document.getElementById('reviews-pagination-footer');
+        if (footer) {
+          footer.style.display = reviewsHasMore ? 'block' : 'none';
+        }
       } catch (err) {
-        alert('Failed to fetch reviews');
+        console.error('Error fetching reviews page:', err);
+        alert('Failed to load reviews');
+      } finally {
+        if (footerBtn) {
+          footerBtn.disabled = false;
+          footerBtn.textContent = 'Load More Reviews';
+        }
       }
     }
 
-    function loadMoreReviews() {
+    async function loadMoreReviews() {
+      if (!reviewsHasMore) return;
       reviewsCurrentPage++;
-      renderReviews(true);
+      await fetchAndRenderReviewsPage(reviewsCurrentPage, true);
     }
 
     function closeViewReviewsModal() {
       document.getElementById('view-reviews-modal').classList.remove('show');
     }
 
-    function renderReviews(append = false) {
+    function renderReviewCards(reviewsList, append = false) {
       const container = document.getElementById('reviews-container');
       if (!append) container.innerHTML = '';
-      
-      if (!Array.isArray(allReviewsData) || allReviewsData.length === 0) {
-        container.innerHTML = '<p style="font-weight:600;">No reviews yet.</p>';
-        document.getElementById('reviews-pagination-footer').style.display = 'none';
+
+      if (!Array.isArray(reviewsList) || reviewsList.length === 0) {
+        if (!append) {
+          container.innerHTML = '<p style="font-weight:600; text-align:center; padding:20px;">No reviews yet.</p>';
+        }
         return;
       }
-
-      const startIndex = (reviewsCurrentPage - 1) * REVIEWS_PER_PAGE;
-      const endIndex = startIndex + REVIEWS_PER_PAGE;
-      const paginatedReviews = allReviewsData.slice(startIndex, endIndex);
 
       // Pastel colors for Neo-Brutalist cards
       const cardColors = ['#fdf2f2', '#f0fdf4', '#eff6ff', '#fffbeb', '#faf5ff'];
@@ -3226,9 +3263,9 @@
         'Fixed': '#4ade80'
       };
 
-      paginatedReviews.forEach((r, index) => {
+      reviewsList.forEach((r, index) => {
         const d = new Date(r.createdAt).toLocaleString();
-        const color = cardColors[(startIndex + index) % cardColors.length];
+        const color = cardColors[index % cardColors.length];
 
         const badgesHtml = (r.userBadges || []).map(b => `
           <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 2px 8px; border: 2px solid var(--black); border-radius: 4px; background: ${badgeColors[b] || '#eee'}; display: inline-block; box-shadow: 2px 2px 0 var(--black);">${b}</span>
@@ -3254,18 +3291,10 @@
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">${badgesHtml}</div>
           </div>
           <div class="review-card-date" style="margin-bottom: 16px; opacity: 0.7;">${d}</div>
-          <div class="review-card-text" style="font-weight: 600; line-height: 1.6; color: #111;">${r.description.replace(/\n/g, '<br>')}</div>
+          <div class="review-card-text" style="font-weight: 600; line-height: 1.6; color: #111;">${(r.description || '').replace(/\n/g, '<br>')}</div>
         `;
         container.appendChild(card);
       });
-
-      // Show/Hide Load More
-      const footer = document.getElementById('reviews-pagination-footer');
-      if (endIndex >= allReviewsData.length) {
-        footer.style.display = 'none';
-      } else {
-        footer.style.display = 'block';
-      }
     }
 
     // ── Lightbox Logic ──

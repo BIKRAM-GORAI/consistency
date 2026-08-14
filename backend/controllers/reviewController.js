@@ -56,7 +56,7 @@ async function submitReview(req, res) {
 }
 
 /**
- * Fetch all reviews
+ * Fetch reviews with server-side pagination
  */
 async function getReviews(req, res) {
   try {
@@ -77,9 +77,31 @@ async function getReviews(req, res) {
       }
     }
 
-    // Exclude the email field from the response to prevent data leaks in the network tab
-    const reviews = await Review.find().select('-email').sort({ createdAt: -1 });
-    res.json(reviews);
+    // Backward compatibility for legacy callers requesting raw array
+    if (req.query.all === 'true') {
+      const reviews = await Review.find().select('-email').sort({ createdAt: -1 });
+      return res.json(reviews);
+    }
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, Math.min(50, parseInt(req.query.limit, 10) || 6));
+    const skip = (page - 1) * limit;
+
+    const totalReviews = await Review.countDocuments();
+    const reviews = await Review.find()
+      .select('-email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      reviews,
+      page,
+      limit,
+      totalReviews,
+      totalPages: Math.ceil(totalReviews / limit),
+      hasMore: page * limit < totalReviews
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
