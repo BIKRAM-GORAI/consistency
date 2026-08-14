@@ -4917,5 +4917,12 @@
   </button>
 </div>
 
+<script>
+  // Re-render Lucide icons for bottom nav (placed after main lucide.createIcons() call)
+  if (window.lucide) {
+    lucide.createIcons({ root: document.querySelector('.bottom-nav-container') });
+  }
+</script>
+
 </body>
 </html>

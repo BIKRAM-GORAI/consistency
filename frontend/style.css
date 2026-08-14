@@ -1832,32 +1832,21 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   .brand-icon .lucide { width: 18px; height: 18px; }
 
   .bottom-nav-container {
-    display: block !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    z-index: 10000 !important;
-    background: var(--bg-card) !important;
-    border-top: var(--border) !important;
-    box-shadow: 0 -4px 0 var(--black) !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    pointer-events: auto !important;
-  }
-
-  /* Prevent bottom fixed navigation bar from covering page content */
-  .main-content,
-  .container,
-  .page,
-  #page-home {
-    padding-bottom: 90px !important;
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 300;
+    background: var(--bg-card);
+    border-top: var(--border);
+    box-shadow: 0 -4px 0 var(--black);
+    padding: 0;
   }
 
   /* Bottom navigation bar */
   .bottom-nav {
-    display: flex !important;
+    display: flex;
     position: relative;
     bottom: auto;
     left: auto;
@@ -2079,7 +2068,6 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
    ≥ 769px
    ============================================================ */
 @media (min-width: 769px) {
-  .bottom-nav-container,
   .bottom-nav { display: none !important; }
   .nav-actions { display: flex; }
 }
