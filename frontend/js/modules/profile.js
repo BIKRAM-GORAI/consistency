@@ -46,6 +46,7 @@ async function openProfileModal() {
   const storedLcPending = localStorage.getItem('leetcodePendingUsername') || '';
   const storedLcCode = localStorage.getItem('leetcodeVerificationCode') || '';
   const storedLcStatus = localStorage.getItem('leetcodeVerificationStatus') || 'none';
+  const storedLcRetryScheduled = localStorage.getItem('leetcodeRetryScheduledAt') || null;
   const storedLcPic = localStorage.getItem('leetcodeProfilePicture') || '';
 
   const baselineUser = {
@@ -61,6 +62,7 @@ async function openProfileModal() {
     leetcodePendingUsername: storedLcPending,
     leetcodeVerificationCode: storedLcCode,
     leetcodeVerificationStatus: storedLcStatus,
+    leetcodeRetryScheduledAt: storedLcRetryScheduled,
     leetcodeProfilePicture: storedLcPic,
     leetcodeUsernameChangeCount: 0,
     leetcodeLastVerifiedAt: storedLcStatus === 'verified' ? new Date().toISOString() : null
@@ -208,15 +210,9 @@ function renderProfileData(user) {
   const leetcodeAutoSyncToggle = document.getElementById('leetcode-auto-sync-toggle');
   if (leetcodeAutoSyncToggle) {
     leetcodeAutoSyncToggle.checked = !!user.leetcodeAutoSync;
-    if (!isPremium) {
-      leetcodeAutoSyncToggle.disabled = true;
-      leetcodeAutoSyncToggle.parentElement.classList.add('disabled');
-      leetcodeAutoSyncToggle.title = 'Premium Subscription Required';
-    } else {
-      leetcodeAutoSyncToggle.disabled = false;
-      leetcodeAutoSyncToggle.parentElement.classList.remove('disabled');
-      leetcodeAutoSyncToggle.title = '';
-    }
+    leetcodeAutoSyncToggle.disabled = false;
+    leetcodeAutoSyncToggle.parentElement.classList.remove('disabled');
+    leetcodeAutoSyncToggle.title = '';
   }
 
   const globalReminderToggle = document.getElementById('global-streak-reminder-toggle');

@@ -310,6 +310,7 @@ async function getProfileSettings(req, res) {
       leetcodePendingUsername: user.leetcodePendingUsername || null,
       leetcodeVerificationCode: user.leetcodeVerificationCode || null,
       leetcodeVerificationStatus: user.leetcodeVerificationStatus || 'none',
+      leetcodeRetryScheduledAt: user.leetcodeRetryScheduledAt || null,
       leetcodeLastVerifiedAt: user.leetcodeLastVerifiedAt || null,
       leetcodeProfilePicture: user.leetcodeProfilePicture || '',
       leetcodeUsernameChangeCount: user.leetcodeUsernameChangeCount || 0,
@@ -346,11 +347,6 @@ async function setProfileSettings(req, res) {
     }
 
     if (typeof leetcodeAutoSync === 'boolean') {
-      const isPremiumCheck = user.subscriptionTier === 'premium' && 
-        (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
-      if (leetcodeAutoSync && !isPremiumCheck) {
-        return res.status(403).json({ message: 'Auto-sync LeetCode submissions requires a premium subscription.' });
-      }
       user.leetcodeAutoSync = leetcodeAutoSync;
     }
 

@@ -40,7 +40,7 @@ function resetLeetCodeProfileModalState() {
   document.getElementById('leetcode-not-connected').style.display = 'block';
 
   const leetcodeStatus = document.getElementById('leetcode-status');
-  setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+  setLcStatus(leetcodeStatus, 'error', '<i data-lucide="x-circle"></i> Not connected');
 }
 
 
@@ -194,8 +194,14 @@ function showPendingRetryUI(retryAvailableAt, retryExpiresAt) {
   setLcStatus(leetcodeStatus, 'pending', '<i data-lucide="refresh-cw"></i> Verification pending');
 
   // Show the verification code in the pending section so user can double-check their bio
-  const codeText = document.getElementById('leetcode-verification-code').textContent;
-  document.getElementById('leetcode-pending-code-display').textContent = codeText || '(your code)';
+  const codeText = document.getElementById('leetcode-verification-code')?.textContent || '';
+  const pendingCodeDisplay = document.getElementById('leetcode-pending-code-display');
+  if (pendingCodeDisplay) pendingCodeDisplay.textContent = codeText || '(your code)';
+
+  // Persist pending retry status and scheduled time in localStorage
+  localStorage.setItem('leetcodeVerificationStatus', 'pending_retry');
+  const scheduledTime = new Date(new Date(retryAvailableAt).getTime() - (5 * 60 * 1000)).toISOString();
+  localStorage.setItem('leetcodeRetryScheduledAt', scheduledTime);
 
   startRetryCountdown(retryAvailableAt, retryExpiresAt);
 }
@@ -236,12 +242,22 @@ function startRetryCountdown(retryAvailableAt, retryExpiresAt) {
       const remMs  = availMs - now;
       const rMins  = Math.floor(remMs / 60000);
       const rSecs  = Math.floor((remMs % 60000) / 1000);
-      if (timerEl) timerEl.innerHTML = `<i data-lucide="clock"></i> Check available in ${rMins}:${rSecs.toString().padStart(2, '0')}`;
+      if (timerEl) {
+        timerEl.innerHTML = `<i data-lucide="clock"></i> Check available in ${rMins}:${rSecs.toString().padStart(2, '0')}`;
+        if (window.lucide) window.lucide.createIcons({ root: timerEl });
+      }
       if (btn) btn.disabled = true;
     } else {
       // Phase 2: button enabled
-      if (timerEl) timerEl.innerHTML = '<i data-lucide="check-circle"></i> Ready — click Check Status below';
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Check Status'; }
+      if (timerEl) {
+        timerEl.innerHTML = '<i data-lucide="check-circle"></i> Ready — click Check Status below';
+        if (window.lucide) window.lucide.createIcons({ root: timerEl });
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="refresh-cw"></i> Check Status';
+        if (window.lucide) window.lucide.createIcons({ root: btn });
+      }
     }
   }
 
@@ -252,7 +268,11 @@ function startRetryCountdown(retryAvailableAt, retryExpiresAt) {
 // Called when user clicks "Check Status" button (re-uses the same verify endpoint)
 async function checkLeetCodeVerificationStatus() {
   const btn = document.getElementById('leetcode-check-status-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="clock"></i> Checking...'; }
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="clock"></i> Checking...';
+    if (window.lucide) window.lucide.createIcons({ root: btn });
+  }
 
   try {
     const data = await apiFetch(`${window.API}/api/leetcode/verify-profile`, {
@@ -266,6 +286,7 @@ async function checkLeetCodeVerificationStatus() {
         clearInterval(window.leetcodeRetryTimerInterval);
         window.leetcodeRetryTimerInterval = null;
       }
+      localStorage.removeItem('leetcodeRetryScheduledAt');
       showToast('LeetCode profile verified!', 'success');
       await loadLeetCodeProfileStatus();
     } else if (data.finalFailure) {
@@ -274,12 +295,17 @@ async function checkLeetCodeVerificationStatus() {
         clearInterval(window.leetcodeRetryTimerInterval);
         window.leetcodeRetryTimerInterval = null;
       }
+      localStorage.removeItem('leetcodeRetryScheduledAt');
       showToast(data.message || 'Verification failed. Please check your bio and try again.', 'error');
       await loadLeetCodeProfileStatus();
     }
   } catch (error) {
     // Re-enable button so user can try again
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Check Status'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="refresh-cw"></i> Check Status';
+      if (window.lucide) window.lucide.createIcons({ root: btn });
+    }
     if (error.status === 429 || (error.message && error.message.includes('429'))) {
       showToast('Please wait for the timer before retrying', 'warn');
     } else {
@@ -574,6 +600,9 @@ function renderLeetCodeUI(user) {
   if (user.leetcodePendingUsername !== undefined) localStorage.setItem('leetcodePendingUsername', user.leetcodePendingUsername || '');
   if (user.leetcodeVerificationCode !== undefined) localStorage.setItem('leetcodeVerificationCode', user.leetcodeVerificationCode || '');
   if (user.leetcodeVerificationStatus !== undefined) localStorage.setItem('leetcodeVerificationStatus', user.leetcodeVerificationStatus || 'none');
+  if (user.leetcodeRetryScheduledAt !== undefined) {
+    localStorage.setItem('leetcodeRetryScheduledAt', user.leetcodeRetryScheduledAt ? new Date(user.leetcodeRetryScheduledAt).toISOString() : '');
+  }
   if (user.leetcodeProfilePicture !== undefined) localStorage.setItem('leetcodeProfilePicture', user.leetcodeProfilePicture || '');
   
   const leetcodeUsernameDisplay = document.getElementById('leetcode-username-display');
@@ -601,16 +630,17 @@ function renderLeetCodeUI(user) {
     });
   }
 
-  const isPendingRetryActive = user.leetcodeVerificationStatus === 'pending_retry' && 
-                               user.leetcodeRetryScheduledAt && 
-                               Date.now() < (new Date(user.leetcodeRetryScheduledAt).getTime() + 15 * 60 * 1000);
+  const retryScheduledVal = user.leetcodeRetryScheduledAt || localStorage.getItem('leetcodeRetryScheduledAt');
+  const isPendingRetryActive = (user.leetcodeVerificationStatus === 'pending_retry' || localStorage.getItem('leetcodeVerificationStatus') === 'pending_retry') && 
+                               retryScheduledVal && 
+                               Date.now() < (new Date(retryScheduledVal).getTime() + 15 * 60 * 1000);
 
   if (isPendingRetryActive) {
-    const scheduledMs    = new Date(user.leetcodeRetryScheduledAt).getTime();
+    const scheduledMs    = new Date(retryScheduledVal).getTime();
     const retryAvailMs   = scheduledMs + 5  * 60 * 1000;
     const retryExpiresMs = scheduledMs + 15 * 60 * 1000;
 
-    setLcStatus(leetcodeStatus, 'pending', '🔄 Verification pending');
+    setLcStatus(leetcodeStatus, 'pending', '<i data-lucide="refresh-cw"></i> Verification pending');
 
     if (user.leetcodeVerificationCode) {
       const vCode = document.getElementById('leetcode-verification-code');
@@ -633,7 +663,7 @@ function renderLeetCodeUI(user) {
     updateLeetCodeButtonsStatus(false);
 
   } else if (isVerified) {
-    setLcStatus(leetcodeStatus, 'verified', '✅ Verified');
+    setLcStatus(leetcodeStatus, 'verified', '<i data-lucide="check-circle"></i> Verified');
 
     hideAllSections();
     const connSec = document.getElementById('leetcode-connected');
@@ -696,7 +726,7 @@ function renderLeetCodeUI(user) {
 
   } else {
     if (leetcodeUsernameDisplay) leetcodeUsernameDisplay.textContent = 'Not connected';
-    setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+    setLcStatus(leetcodeStatus, 'error', '<i data-lucide="x-circle"></i> Not connected');
     if (leetcodeProfilePic) leetcodeProfilePic.style.display = 'none';
     hideAllSections();
     const ncSec = document.getElementById('leetcode-not-connected');
@@ -760,7 +790,7 @@ function changeLeetCodeUsername() {
 
   // Reset status
   const leetcodeStatus = document.getElementById('leetcode-status');
-  setLcStatus(leetcodeStatus, 'error', '❌ Not connected');
+  setLcStatus(leetcodeStatus, 'error', '<i data-lucide="x-circle"></i> Not connected');
 
   showToast('Enter your new username and generate a new verification code', 'info');
 }
@@ -796,6 +826,7 @@ async function disconnectLeetCodeProfile() {
     localStorage.removeItem('leetcodePendingUsername');
     localStorage.removeItem('leetcodeVerificationCode');
     localStorage.removeItem('leetcodeVerificationStatus');
+    localStorage.removeItem('leetcodeRetryScheduledAt');
     localStorage.removeItem('leetcodeProfilePicture');
 
     // Update Dexie localDb

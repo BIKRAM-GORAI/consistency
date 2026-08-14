@@ -465,7 +465,14 @@ window.leetcodeRetryTimerInterval = null;
 function setLcStatus(el, state, text) {
   if (!el) return;
   el.className = `lc-status-badge lc-status-${state}`;
-  el.textContent = text;
+  el.innerHTML = text;
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    try {
+      window.lucide.createIcons({ root: el });
+    } catch (e) {
+      console.warn('Lucide icon render warning in setLcStatus:', e);
+    }
+  }
 }
 window.setLcStatus = setLcStatus;
 

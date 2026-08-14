@@ -2236,8 +2236,8 @@
 
             <!-- Show if verification retry is pending -->
             <div id="leetcode-pending-retry" class="lc-panel lc-panel-pending-retry" style="display:none;">
-              <p style="margin:0 0 6px 0; font-weight:700; color:#854d0e; font-size:14px;"><i data-lucide="hourglass"></i> Verification Pending</p>
-              <p style="margin:0 0 10px 0; font-size:13px; color:#713f12; line-height:1.5;">
+              <p class="lc-pending-title"><i data-lucide="hourglass"></i> Verification Pending</p>
+              <p class="lc-pending-text">
                 Code not found yet — this may be a caching delay. Make sure
                 <strong id="leetcode-pending-code-display" class="lc-pending-code"></strong>
                 is in your LeetCode bio, then click "Check Status" once the timer is ready.
@@ -2248,15 +2248,14 @@
 
               <!-- Check Status button -->
               <button id="leetcode-check-status-btn"
-                      class="btn-primary ripple"
-                      style="width:100%; margin-bottom:8px;"
+                      class="btn-primary ripple lc-check-status-btn"
                       onclick="checkLeetCodeVerificationStatus()"
                       disabled>
-                🔄 Check Status
+                <i data-lucide="refresh-cw"></i> Check Status
               </button>
 
               <!-- Window expiry countdown -->
-              <p style="margin:0; font-size:12px; color:#92400e; text-align:center;">
+              <p class="lc-pending-footer">
                 Window closes in <strong id="leetcode-window-countdown"></strong> — after that you can generate a new code
               </p>
             </div>
@@ -2282,7 +2281,7 @@
                     <span class="toggle-track"><span class="toggle-thumb"></span></span>
                   </label>
                 </div>
-                <p class="form-hint" style="margin: 0; line-height: 1.4; font-size: 11px;">Automatically sync yesterday's solved challenges (Premium).</p>
+                <p class="form-hint" style="margin: 0; line-height: 1.4; font-size: 11px;">Automatically sync yesterday's solved challenges.</p>
               </div>
               <button class="btn-ghost ripple" style="width:100%; padding:8px 12px; border:2px solid #10b981; color:#10b981; margin-bottom:8px;" onclick="changeLeetCodeUsername()">
                 Change Username

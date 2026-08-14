@@ -396,6 +396,7 @@ function updateStreak() {
 
 async function renderDays(appendOnly = false) {
   const container = document.getElementById('cards-container');
+  if (!container) return;
   
   // Filter for only the new days if appending
   let daysToRender = [...window.allDays];

@@ -245,18 +245,17 @@ const autoSyncLeetcodeSubmissions = async (req, res) => {
 
     console.log(`[LeetCode Auto-Sync] Syncing for date: ${yesterdayStr}`);
 
-    // Find all premium users with auto-sync enabled and connected username
-    const premiumUsers = await User.find({
-      subscriptionTier: 'premium',
+    // Find all users with auto-sync enabled and connected username
+    const eligibleUsers = await User.find({
       leetcodeUsername: { $ne: null },
       leetcodeAutoSync: true
     });
 
-    console.log(`[LeetCode Auto-Sync] Found ${premiumUsers.length} premium users to process.`);
+    console.log(`[LeetCode Auto-Sync] Found ${eligibleUsers.length} users to process.`);
 
     const results = [];
 
-    for (const user of premiumUsers) {
+    for (const user of eligibleUsers) {
       console.log(`[LeetCode Auto-Sync] Syncing user: ${user.username} (${user.leetcodeUsername})`);
       
       // Throttle delay to respect LeetCode rate limit (e.g. 500ms between requests)
@@ -364,7 +363,7 @@ const autoSyncLeetcodeSubmissions = async (req, res) => {
     res.json({
       message: `LeetCode auto-sync completed.`,
       date: yesterdayStr,
-      processedCount: premiumUsers.length,
+      processedCount: eligibleUsers.length,
       results
     });
 

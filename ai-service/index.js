@@ -970,18 +970,17 @@ app.get('/api/cron/sync-leetcode', async (req, res) => {
 
       console.log(`[LeetCode Auto-Sync] [Background] Running for date: ${yesterdayStr}`);
 
-      // Find all premium users with auto-sync enabled and a connected LeetCode username
-      const premiumUsers = await User.find({
-        subscriptionTier: 'premium',
+      // Find all users with auto-sync enabled and a connected LeetCode username
+      const eligibleUsers = await User.find({
         leetcodeUsername: { $ne: null, $exists: true },
         leetcodeAutoSync: true
       }).lean(false); // lean(false) keeps save() method
 
-      console.log(`[LeetCode Auto-Sync] [Background] ${premiumUsers.length} eligible premium users found.`);
+      console.log(`[LeetCode Auto-Sync] [Background] ${eligibleUsers.length} eligible users found.`);
 
       const results = [];
 
-      for (const user of premiumUsers) {
+      for (const user of eligibleUsers) {
         // Throttle: 600ms between external API calls to avoid rate-limiting
         await new Promise(r => setTimeout(r, 600));
 
@@ -1072,7 +1071,7 @@ app.get('/api/cron/sync-leetcode', async (req, res) => {
         }
       }
 
-      console.log(`[LeetCode Auto-Sync] [Background] Finished. Date: ${yesterdayStr}, Processed Count: ${premiumUsers.length}`);
+      console.log(`[LeetCode Auto-Sync] [Background] Finished. Date: ${yesterdayStr}, Processed Count: ${eligibleUsers.length}`);
 
     } catch (err) {
       console.error('[LeetCode Auto-Sync] [Background] Fatal error:', err);
