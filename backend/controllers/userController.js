@@ -400,9 +400,11 @@ async function getLeaderboard(req, res) {
 }
 
 async function getPublicConfig(req, res) {
+  const enableDarkBrutalistTheme = String(process.env.ENABLE_DARK_BRUTALIST_THEME).toLowerCase() === 'true';
   res.json({
     maxRankingsShown: parseInt(process.env.MAX_RANKINGS_SHOWN) || 100,
-    chatReadThresholdPct: parseInt(process.env.CHAT_READ_THRESHOLD_PCT) || 10
+    chatReadThresholdPct: parseInt(process.env.CHAT_READ_THRESHOLD_PCT) || 10,
+    enableDarkBrutalistTheme
   });
 }
 

@@ -270,6 +270,11 @@ async function deleteTemplate(templateId) {
 }
 
 async function toggleAppTheme(theme, skipApi = false) {
+  if (theme === 'dark' && !(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme)) {
+    console.warn('Dark Brutalist theme is disabled via environment config. Falling back to default Light theme.');
+    theme = 'light';
+  }
+
   if (theme === 'premium-aurora') {
     document.documentElement.setAttribute('data-theme', 'premium-aurora');
     localStorage.setItem('theme', 'premium-aurora');
@@ -385,23 +390,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const savedTheme = localStorage.getItem('theme') || 'light';
+  const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
+  const effectiveTheme = (savedTheme === 'dark' && !isDarkAllowed) ? 'light' : savedTheme;
   const themeSelect = document.getElementById('theme-select');
-  if (savedTheme === 'dark') {
+
+  if (effectiveTheme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-  } else if (savedTheme === 'premium-aurora') {
+  } else if (effectiveTheme === 'premium-aurora') {
     document.documentElement.setAttribute('data-theme', 'premium-aurora');
-  } else if (savedTheme === 'minimalistic') {
+  } else if (effectiveTheme === 'minimalistic') {
     document.documentElement.setAttribute('data-theme', 'minimalistic');
-  } else if (savedTheme === 'claymorphism') {
+  } else if (effectiveTheme === 'claymorphism') {
     document.documentElement.setAttribute('data-theme', 'claymorphism');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
   if (themeSelect) {
-    themeSelect.value = savedTheme;
+    themeSelect.value = effectiveTheme;
   }
 
   await fetchConfig();
+  if (typeof window.applyThemeConfigRules === 'function') {
+    window.applyThemeConfigRules();
+  }
   initFirebaseChat();
 
   // Today's date subtitle

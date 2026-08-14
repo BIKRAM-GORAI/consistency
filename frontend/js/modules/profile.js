@@ -276,13 +276,18 @@ function renderProfileData(user) {
   }
 
   const themeSelect = document.getElementById('theme-select');
+  if (typeof window.applyThemeConfigRules === 'function') {
+    window.applyThemeConfigRules();
+  }
   if (themeSelect && user.theme) {
-    themeSelect.value = user.theme;
+    const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
+    const effectiveUserTheme = (user.theme === 'dark' && !isDarkAllowed) ? 'light' : user.theme;
+    themeSelect.value = effectiveUserTheme;
     
     // Automatically apply synced theme to the layout if it differs from current local theme
     const currentTheme = localStorage.getItem('theme') || 'light';
-    if (user.theme !== currentTheme && typeof window.toggleAppTheme === 'function') {
-      window.toggleAppTheme(user.theme);
+    if (effectiveUserTheme !== currentTheme && typeof window.toggleAppTheme === 'function') {
+      window.toggleAppTheme(effectiveUserTheme);
     }
   }
 

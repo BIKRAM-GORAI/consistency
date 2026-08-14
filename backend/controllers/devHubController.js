@@ -4,14 +4,13 @@ const axios = require('axios');
 // Helper to determine bookmark and AI notes quota based on user status
 const getQuotas = (user) => {
   const isPremium = user.isSubscriptionActive || false;
-  
-  const bookmarkLimit = isPremium
-    ? parseInt(process.env.PAID_TIER_BOOKMARK_LIMIT || '250', 10)
-    : parseInt(process.env.FREE_TIER_BOOKMARK_LIMIT || '50', 10);
-    
-  const aiNotesQuota = isPremium
-    ? parseInt(process.env.PAID_AI_NOTES_QUOTA || '50', 10)
-    : parseInt(process.env.FREE_AI_NOTES_QUOTA || '20', 10);
+  const freeBookmarkLimit = parseInt(process.env.FREE_BOOKMARK_LIMIT || '75', 10);
+  const premiumBookmarkLimit = parseInt(process.env.PREMIUM_BOOKMARK_LIMIT || '500', 10);
+  const freeAiNotesQuota = parseInt(process.env.FREE_AI_NOTES_QUOTA || '200', 10);
+  const premiumAiNotesQuota = parseInt(process.env.PREMIUM_AI_NOTES_QUOTA || '500', 10);
+
+  const bookmarkLimit = isPremium ? premiumBookmarkLimit : freeBookmarkLimit;
+  const aiNotesQuota = isPremium ? premiumAiNotesQuota : freeAiNotesQuota;
 
   return { bookmarkLimit, aiNotesQuota, isPremium };
 };
@@ -116,7 +115,8 @@ exports.deleteBookmark = async (req, res) => {
  */
 exports.updateUserKeys = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const userId = req.user.userId || req.user.id || req.user._id;
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { customYouTubeApiKey, customGeminiApiKey } = req.body;
@@ -124,40 +124,64 @@ exports.updateUserKeys = async (req, res) => {
     if (customGeminiApiKey !== undefined) user.customGeminiApiKey = customGeminiApiKey.trim();
 
     await user.save();
+
     res.json({
-      message: 'API Keys updated successfully',
+      message: 'API keys updated successfully',
       hasCustomYouTubeKey: !!user.customYouTubeApiKey,
-      hasCustomGeminiKey: !!user.customGeminiApiKey
+      hasCustomGeminiKey: !!user.customGeminiApiKey,
+      customYouTubeKey: user.customYouTubeApiKey || '',
+      customGeminiKey: user.customGeminiApiKey || ''
     });
   } catch (err) {
-    console.error('Error updating keys:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('Error updating user keys:', err);
+    res.status(500).json({ message: 'Failed to update API keys' });
   }
 };
 
-/**
- * GET /api/devhub/keys
- * Return user key status
- */
 exports.getUserKeys = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const userId = req.user.userId || req.user.id || req.user._id;
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const { aiNotesQuota, isPremium } = getQuotas(user);
 
     res.json({
       hasCustomYouTubeKey: !!user.customYouTubeApiKey,
       hasCustomGeminiKey: !!user.customGeminiApiKey,
       customYouTubeKey: user.customYouTubeApiKey || '',
-      customGeminiKey: user.customGeminiApiKey || '',
-      aiNotesUsed: user.aiNotesCount || 0,
-      aiNotesQuota,
-      isPremium
+      customGeminiKey: user.customGeminiApiKey || ''
     });
   } catch (err) {
-    console.error('Error fetching key status:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('Error fetching user keys:', err);
+    res.status(500).json({ message: 'Failed to fetch API keys' });
+  }
+};
+
+exports.deleteUserKey = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id || req.user._id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { service } = req.params;
+    if (service === 'youtube') {
+      user.customYouTubeApiKey = undefined;
+    } else if (service === 'gemini') {
+      user.customGeminiApiKey = undefined;
+    } else {
+      return res.status(400).json({ message: 'Invalid key service' });
+    }
+
+    await user.save();
+    res.json({
+      message: `${service.toUpperCase()} API key removed successfully`,
+      hasCustomYouTubeKey: !!user.customYouTubeApiKey,
+      hasCustomGeminiKey: !!user.customGeminiApiKey,
+      customYouTubeKey: user.customYouTubeApiKey || '',
+      customGeminiKey: user.customGeminiApiKey || ''
+    });
+  } catch (err) {
+    console.error('Error deleting user key:', err);
+    res.status(500).json({ message: 'Failed to delete API key' });
   }
 };
 
@@ -245,13 +269,31 @@ Include:
 
 Format in clean GitHub-style Markdown with clear headings and bullet points.`;
 
-    const geminiRes = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-      {
-        contents: [{ parts: [{ text: prompt }] }]
-      },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+    const modelsToTry = Array.from(new Set([primaryModel, 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest']));
+    let geminiRes = null;
+    let lastError = null;
+
+    for (const model of modelsToTry) {
+      try {
+        geminiRes = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            contents: [{ parts: [{ text: prompt }] }]
+          },
+          { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+        );
+        if (geminiRes && geminiRes.data) break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Gemini model ${model} failed:`, err.response?.data?.error?.message || err.message);
+      }
+    }
+
+    if (!geminiRes || !geminiRes.data) {
+      const errMsg = lastError?.response?.data?.error?.message || lastError?.message || 'Gemini API call failed.';
+      return res.status(500).json({ message: `AI Notes Generation error: ${errMsg}` });
+    }
 
     const notesText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || 'No notes generated.';
 

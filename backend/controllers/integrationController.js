@@ -252,7 +252,7 @@ const getIntegrationStatus = async (req, res) => {
     let githubConnected = !!(user.githubOAuth && user.githubOAuth.accessToken);
     let githubToken = githubConnected ? decrypt(user.githubOAuth.accessToken) : null;
 
-    // Google Calendar removed from app — always not connected
+    // Google Calendar removed from app ï¿½ always not connected
     let googleConnected = false;
     let googleToken = null;
 
@@ -303,7 +303,12 @@ const disconnectService = async (req, res) => {
     }
 
     if (service === 'github') {
-      user.githubOAuth = { accessToken: null, refreshToken: null, expiry: null };
+      user.githubOAuth = undefined;
+      user.githubAccessToken = undefined;
+      user.githubUsername = undefined;
+      user.githubId = undefined;
+      user.githubAvatarUrl = undefined;
+      user.githubProfileUrl = undefined;
     } else if (service === 'google') {
       user.googleCalendarOAuth = { accessToken: null, refreshToken: null, expiry: null };
     } else if (service === 'wakatime') {

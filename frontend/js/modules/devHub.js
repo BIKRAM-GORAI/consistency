@@ -163,6 +163,9 @@ window.runDevSearch = async function () {
 
 // Switch between horizontal tabs in the Developer Hub
 window.switchDevHubTab = function (tabName) {
+  if (tabName === 'studymode') {
+    tabName = 'universal';
+  }
   // Update active tab buttons
   document.querySelectorAll('.devhub-tab-btn').forEach(btn => {
     btn.classList.remove('active');
@@ -177,6 +180,24 @@ window.switchDevHubTab = function (tabName) {
   const activeCard = document.getElementById(`hub-card-${tabName}`);
   if (activeCard) {
     activeCard.style.display = 'flex';
+  }
+
+  // Ensure active sub-tab button within the selected card is properly highlighted
+  if (tabName === 'stackoverflow') {
+    const activeSub = document.querySelector('#hub-card-stackoverflow .github-sub-tab-btn.active');
+    if (!activeSub && typeof window.switchStackOverflowSubTab === 'function') {
+      window.switchStackOverflowSubTab('public');
+    }
+  } else if (tabName === 'devto') {
+    const activeSub = document.querySelector('#hub-card-devto .github-sub-tab-btn.active');
+    if (!activeSub && typeof window.switchDevToSubTab === 'function') {
+      window.switchDevToSubTab('public');
+    }
+  } else if (tabName === 'medium') {
+    const activeSub = document.querySelector('#hub-card-medium .github-sub-tab-btn.active');
+    if (!activeSub && typeof window.switchMediumSubTab === 'function') {
+      window.switchMediumSubTab('public');
+    }
   }
 
   // Save selected tab in local storage
@@ -305,8 +326,8 @@ window.switchGithubSubTab = function (tabName) {
     ctrlBtns.style.display = (tabName === 'overview') ? 'flex' : 'none';
   });
 
-  // Set active tab button style — match by data-tab attribute for reliability
-  document.querySelectorAll('.github-sub-tab-btn').forEach(btn => {
+  // Set active tab button style — scoped strictly to GitHub sub-tabs
+  document.querySelectorAll('#hub-card-github .github-sub-tab-btn').forEach(btn => {
     btn.classList.remove('active');
     if (btn.dataset.tab === tabName) {
       btn.classList.add('active');
@@ -570,7 +591,7 @@ window.filterAndRenderRepos = function () {
     card.style.borderRadius = '12px';
     card.style.border = '2.5px solid var(--black)';
     card.style.boxShadow = '3px 3px 0 var(--black)';
-    card.style.background = '#202228'; card.style.border = '2px solid #3f4352'; card.style.boxShadow = '3px 3px 0 #121317';
+    card.style.background = 'var(--bg-card)';
     card.style.color = 'var(--text)';
     card.style.position = 'relative';
     card.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease';
@@ -1637,7 +1658,7 @@ window.loadMoreStackOverflowPublic = function() {
 
 function renderSOQuestionCard(q) {
   const tagsHtml = (q.tags || []).slice(0, 3).map(t =>
-    `<button onclick="filterSOTag('${t}')" style="display:inline-block;background:rgba(245,158,11,0.16);border:1px solid rgba(245,158,11,0.4);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:800;color:#fbbf24;margin-right:3px;cursor:pointer;">#${t}</button>`
+    `<button onclick="filterSOTag('${t}')" style="display:inline-block; background:var(--bg-muted); border:1.5px solid var(--black); border-radius:12px; padding:2px 8px; font-size:10px; font-weight:800; color:var(--text); margin-right:4px; margin-bottom:4px; cursor:pointer;">#${t}</button>`
   ).join('');
 
   const dateStr = q.creation_date ? new Date(q.creation_date * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
@@ -1653,7 +1674,7 @@ function renderSOQuestionCard(q) {
   const safeKey = encodeURIComponent(cacheKey);
 
   return `
-    <div style="display:flex;flex-direction:column;border:1.5px solid rgba(0,0,0,0.09);border-radius:14px;overflow:hidden;background:var(--bg-card,#fff);box-shadow:0 2px 10px rgba(0,0,0,0.05);transition:transform 0.15s,box-shadow 0.15s;max-width:360px;width:100%;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(0,0,0,0.05)'">
+    <div class="article-card-box" style="display:flex;flex-direction:column;border:2.5px solid var(--black);border-radius:14px;overflow:hidden;background:#f8f5ee;box-shadow:3.5px 3.5px 0 var(--black);transition:transform 0.15s ease,box-shadow 0.15s ease;max-width:360px;width:100%;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='4.5px 4.5px 0 var(--black)'" onmouseleave="this.style.transform='';this.style.boxShadow='3.5px 3.5px 0 var(--black)'">
       <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex-grow:1;">
         <!-- Title -->
         <h4 style="margin:0;font-size:13px;font-weight:900;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
@@ -1698,7 +1719,7 @@ function renderArticleCard(article, type) {
   const tagsList = article.tag_list || article.categories || [];
   const tagsHtml = tagsList.slice(0, 3).map(t => {
     const cleanT = t.replace(/[^a-zA-Z0-9-]/g,'');
-    return `<button onclick="filter${type === 'Dev.to' ? 'DevTo' : 'Medium'}Tag('${cleanT}')" style="display:inline-block;background:rgba(245,158,11,0.16);border:1px solid rgba(245,158,11,0.4);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800;color:#fbbf24;margin-right:3px;cursor:pointer;">#${cleanT}</button>`;
+    return `<button onclick="filter${type === 'Dev.to' ? 'DevTo' : 'Medium'}Tag('${cleanT}')" style="display:inline-block; background:var(--bg-muted); border:1.5px solid var(--black); border-radius:12px; padding:2px 8px; font-size:10px; font-weight:800; color:var(--text); margin-right:4px; margin-bottom:4px; cursor:pointer;">#${cleanT}</button>`;
   }).join('');
 
   // For dev.to: only use cover_image (NOT social_image which is auto-generated text art)
@@ -1722,7 +1743,7 @@ function renderArticleCard(article, type) {
   const safeKey = encodeURIComponent(cacheKey);
 
   return `
-    <div style="display:flex;flex-direction:column;border:1.5px solid rgba(0,0,0,0.09);border-radius:14px;overflow:hidden;background:var(--bg-card,#fff);box-shadow:0 2px 10px rgba(0,0,0,0.05);transition:transform 0.15s,box-shadow 0.15s;max-width:360px;width:100%;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(0,0,0,0.05)'">
+    <div class="article-card-box" style="display:flex;flex-direction:column;border:2.5px solid var(--black);border-radius:14px;overflow:hidden;background:#f8f5ee;box-shadow:3.5px 3.5px 0 var(--black);transition:transform 0.15s ease,box-shadow 0.15s ease;max-width:360px;width:100%;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='4.5px 4.5px 0 var(--black)'" onmouseleave="this.style.transform='';this.style.boxShadow='3.5px 3.5px 0 var(--black)'">
       ${imageHtml}
       <div style="padding:13px 14px 12px;display:flex;flex-direction:column;gap:6px;flex-grow:1;">
         <h4 style="margin:0;font-size:13px;font-weight:900;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);">${article.title}</h4>
@@ -1749,105 +1770,36 @@ function renderArticleCard(article, type) {
   `;
 }
 
-// ── Article Reader Modal ──────────────────────────────────────
 window.openArticleReader = async function(safeKey) {
   const cacheKey = decodeURIComponent(safeKey);
   const article = _articleCache.get(cacheKey);
   if (!article) return;
 
-  const overlay = document.getElementById('article-reader-overlay');
-  const titleEl  = document.getElementById('reader-title');
-  const metaEl   = document.getElementById('reader-meta');
-  const bodyEl   = document.getElementById('reader-body');
-  const loadingEl= document.getElementById('reader-loading');
-  const coverDiv = document.getElementById('reader-cover');
-  const coverImg = document.getElementById('reader-cover-img');
-  const extLink  = document.getElementById('reader-ext-link');
-  const badge    = document.getElementById('reader-source-badge');
-  const authorEl = document.getElementById('reader-author');
+  const overlay = document.getElementById('content-viewer-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  _cvShowLoading();
 
-  if (!overlay) return;
+  const sourceLabel = article.type || article.sourceLabel || (article.source ? article.source.toUpperCase() : 'ARTICLE');
+  _cvSetHeader(article.title, sourceLabel, '#f59e0b', article.url || article.link, article);
 
-  // Set static info immediately
-  const authorName = article.user ? article.user.name : (article.author || article.type);
-  const dateStr = (article.published_at || article.date) ? new Date(article.published_at || article.date).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : '';
-  const coverUrl = article.type === 'Dev.to' ? (article.cover_image || '') : (article.cover_image || article.imageUrl || '');
+  const aiBtn = document.getElementById('cv-ai-notes-btn');
+  if (aiBtn) aiBtn.style.display = 'none';
+  const treeBtn = document.getElementById('cv-tree-toggle-btn');
+  if (treeBtn) treeBtn.style.display = 'none';
 
-  titleEl.textContent = article.title;
-  badge.textContent   = article.type;
-  authorEl.textContent = `${authorName}${dateStr ? '  ·  ' + dateStr : ''}`;
-  extLink.href = article.url || article.link || '#';
+  const itemToRender = {
+    ...article,
+    questionId: article.question_id || article.id,
+    url: article.url || article.link,
+    source: article.type === 'Dev.to' ? 'devto' : (article.type === 'Stack Overflow' ? 'stackoverflow' : (article.source || 'medium'))
+  };
 
-  const tagsList = article.tag_list || article.categories || [];
-  const tagsHtml = tagsList.slice(0, 5).map(t => `<span style="background:rgba(245,158,11,0.16);border:1px solid rgba(245,158,11,0.4);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800;color:#fbbf24;">#${t.replace(/[^a-zA-Z0-9]/g,'')}</span>`).join(' ');
-  metaEl.innerHTML = tagsHtml || '';
-
-  if (coverUrl) {
-    coverImg.src = coverUrl;
-    coverImg.alt = article.title;
-    coverDiv.style.display = 'block';
+  if (article.type === 'Stack Overflow' || article.question_id) {
+    await _renderSOViewer(itemToRender);
   } else {
-    coverDiv.style.display = 'none';
+    await _renderArticleViewer(itemToRender);
   }
-
-  bodyEl.innerHTML  = '';
-  loadingEl.style.display = 'block';
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  if (window.lucide) window.lucide.createIcons();
-
-  try {
-    const cleanBodyHtml = (rawHtml) => {
-      if (!rawHtml) return '';
-      const tmp = document.createElement('div');
-      tmp.innerHTML = rawHtml;
-      // Strip leading figure/image that duplicates cover photo
-      const firstImg = tmp.querySelector('figure, img');
-      if (firstImg) {
-        const wrapper = firstImg.closest('figure') || (firstImg.parentElement && firstImg.parentElement.tagName === 'P' && firstImg.parentElement.children.length === 1 ? firstImg.parentElement : firstImg);
-        if (wrapper) wrapper.remove();
-      }
-      // Strip leading heading if it duplicates article title
-      const firstH = tmp.querySelector('h1, h2, h3, h4');
-      if (firstH && firstH.textContent.trim().length < 200) {
-        firstH.remove();
-      }
-      return tmp.innerHTML;
-    };
-
-    if (article.type === 'Dev.to' && article.id) {
-      // Fetch full article body from dev.to via our backend proxy
-      const backendUrl = getResolvedAPI();
-      const res = await fetch(`${backendUrl}/api/proxy/devto?endpoint=/api/articles/${article.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        const html = data.body_html || `<p>${data.description || 'No content available.'}</p>`;
-        bodyEl.innerHTML = cleanBodyHtml(html);
-        // Fetch and render Dev.to user comments
-        await fetchAndRenderDevToComments(article.id, bodyEl);
-      } else {
-        bodyEl.innerHTML = `<p style="color:var(--red)">Failed to load article content (${res.status}). <a href="${article.url}" target="_blank">Open externally →</a></p>`;
-      }
-    } else if (article.type === 'Stack Overflow' && article.id) {
-      // Fetch Stack Overflow question body and answers
-      await fetchAndRenderSOQuestionAndAnswers(article.id, bodyEl, article.url);
-    } else if (article.type === 'Medium' && article.contentHtml) {
-      bodyEl.innerHTML = cleanBodyHtml(article.contentHtml);
-      renderMediumCommentsBanner(bodyEl, article.url || article.link);
-    } else {
-      bodyEl.innerHTML = `<p>Full content not available. <a href="${article.url || article.link}" target="_blank">Read externally →</a></p>`;
-    }
-  } catch(err) {
-    console.error('Reader fetch error:', err);
-    bodyEl.innerHTML = `<p style="color:var(--red)">Failed to load: ${err.message}. <a href="${article.url || article.link}" target="_blank">Open externally →</a></p>`;
-  } finally {
-    loadingEl.style.display = 'none';
-    // Force all links in article body and comments/answers to open in a new tab
-    bodyEl.querySelectorAll('a').forEach(a => {
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-    });
-  }
+  setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 150);
 };
 
 // Helper: Fetch and render Dev.to comments
@@ -2439,14 +2391,14 @@ window.executeUniversalSearch = async function() {
 
   results.forEach((resItem, idx) => {
     const tagsHtml = (resItem.tags || []).slice(0, 3).map(t =>
-      `<span style="display:inline-block; background:rgba(0,0,0,0.06); border-radius:12px; padding:2px 8px; font-size:10px; font-weight:700; color:var(--purple); margin-right:4px;">#${t}</span>`
+      `<span style="display:inline-block; background:var(--bg-muted); border:1.5px solid var(--black); border-radius:12px; padding:2px 8px; font-size:10px; font-weight:800; color:var(--text); margin-right:4px;">#${t}</span>`
     ).join('');
 
     const cardHtml = `
       <div class="uni-result-card" data-source="${resItem.source}" style="display:flex; flex-direction:column; border:2px solid var(--black); border-radius:12px; padding:14px; background:var(--bg-card); box-shadow:3px 3px 0 var(--black); gap:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:10px; font-weight:900; padding:2px 8px; border-radius:6px; background:${resItem.badgeBg}; color:white; font-family:Space Grotesk,sans-serif;">${resItem.sourceLabel}</span>
-          <button onclick="window.bookmarkUniversalResult(${idx})" title="Bookmark Link" class="uni-save-btn" style="padding:5px 12px; border:1.5px solid #3f4352; border-radius:6px; background:#202228; color:#f1f5f9; cursor:pointer; font-size:11px; font-weight:800;">Save</button>
+          <button onclick="window.bookmarkUniversalResult(${idx})" title="Bookmark Link" class="uni-save-btn" style="padding:5px 12px; border:2px solid var(--black); border-radius:6px; background:var(--bg-card); color:var(--text); cursor:pointer; font-size:11px; font-weight:800; box-shadow:2px 2px 0 var(--black);">Save</button>
         </div>
         <h4 style="margin:0; font-size:13.5px; font-weight:900; line-height:1.4; color:var(--text);">${resItem.title}</h4>
         <p style="margin:0; font-size:11.5px; line-height:1.55; color:var(--text-muted); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; overflow-wrap:anywhere; max-height:4.6em;">${resItem.description}</p>
@@ -2883,6 +2835,29 @@ window.executeGitHubGlobalSearch = async function() {
   }
 };
 
+window.openGitHubRepoByName = function(owner, repoName, url, stars = 0, forks = 0) {
+  if (!owner || !repoName) {
+    if (url && url.includes('github.com')) {
+      const parts = url.replace(/\/$/, '').split('/');
+      owner = owner || parts[parts.length - 2];
+      repoName = repoName || parts[parts.length - 1];
+    }
+  }
+  const syntheticItem = {
+    title: `${owner || 'GitHub'} / ${repoName || 'Repository'}`,
+    url: url || `https://github.com/${owner}/${repoName}`,
+    source: 'github',
+    sourceLabel: 'GitHub Repo',
+    repoOwner: owner,
+    repoName: repoName,
+    stars: stars,
+    forks: forks
+  };
+  if (!window._uniSearchResults) window._uniSearchResults = [];
+  window._uniSearchResults.push(syntheticItem);
+  window.openContentViewer(window._uniSearchResults.length - 1);
+};
+
 window.openGitHubSearchResultViewer = function(idx) {
   const item = (window._githubSearchResults || [])[idx];
   if (!item) return;
@@ -3137,7 +3112,13 @@ window.closeStudyPlayerModal = function() {
 window.generateAINotesForVideo = async function(videoId, titleEnc, descEnc) {
   const videoTitle = decodeURIComponent(titleEnc);
   const videoDescription = decodeURIComponent(descEnc || '');
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
+  const notesContainer = document.getElementById('cv-yt-notes-container');
+  if (notesContainer) {
+    notesContainer.style.display = 'flex';
+    notesContainer.innerHTML = '<div style="text-align:center; padding:24px; color:var(--text-muted); font-weight:900; font-size:14px;">✨ Generating AI Study Notes for tutorial...</div>';
+  }
   showToast('Generating AI Study Notes...', 'info');
 
   try {
@@ -3155,25 +3136,94 @@ window.generateAINotesForVideo = async function(videoId, titleEnc, descEnc) {
     if (!res.ok) {
       if (data.error === 'QUOTA_EXCEEDED' || data.error === 'NO_GEMINI_KEY') {
         showToast(data.message, 'error');
+        if (notesContainer) {
+          notesContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--red); font-weight:800;">${data.message}<br/><button onclick="window.openBYOKeysModal()" style="margin-top:12px; padding:8px 16px; border:2px solid var(--black); border-radius:6px; background:var(--yellow); font-weight:900; cursor:pointer;">🔑 Open API Key Settings</button></div>`;
+        }
         window.openBYOKeysModal();
         return;
       }
       throw new Error(data.message || `Status ${res.status}`);
     }
 
-    const contentDiv = document.getElementById('ai-notes-content');
-    contentDiv.innerHTML = data.notes.replace(/\n/g, '<br/>');
+    const notesText = data.notes || '';
+    window._lastGeneratedAINote = { videoId, videoTitle, videoUrl, notesText };
 
-    const saveBtn = document.getElementById('ai-notes-save-bm-btn');
-    saveBtn.onclick = () => {
-      window.promptSaveBookmark(titleEnc, `https://www.youtube.com/watch?v=${videoId}`, 'YouTube', encodeURIComponent(data.notes.slice(0, 180)));
-    };
+    const renderedNotesHtml = _mdToHtml(notesText);
 
-    document.getElementById('ai-notes-overlay').style.display = 'flex';
+    if (notesContainer) {
+      notesContainer.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2.5px dashed rgba(0,0,0,0.15); padding-bottom:12px; flex-wrap:wrap; gap:10px;">
+          <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:6px;">
+            ✨ Generated AI Study Notes
+          </h3>
+          <button onclick="window.copyAINotesText()" style="padding:6px 14px; border:2px solid var(--black); border-radius:6px; background:var(--bg-body); color:var(--text); font-weight:900; font-size:11.5px; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">
+            📋 Copy Notes
+          </button>
+        </div>
+        <div id="ai-notes-content" style="font-size:14px; line-height:1.85; color:var(--text); word-break:break-word; overflow-wrap:anywhere;">
+          ${renderedNotesHtml}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; padding-top:16px; border-top:2.5px dashed rgba(0,0,0,0.15); margin-top:12px;">
+          <label style="font-size:12px; font-weight:900; text-transform:uppercase; color:var(--text);">💾 Save Note Title & Link:</label>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="cv-yt-note-title-input" value="${videoTitle.replace(/"/g, '&quot;')}" placeholder="Enter Note Title" style="flex:1; min-width:220px; padding:10px 14px; border:2.5px solid var(--black); border-radius:8px; font-size:13px; font-weight:800; background:var(--bg-body); color:var(--text);" />
+            <button onclick="window.saveYTAINoteToBookmarks()" style="padding:10px 22px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:13px; cursor:pointer; box-shadow:3px 3px 0 var(--black); display:inline-flex; align-items:center; gap:6px;">
+              💾 Save to My Notes
+            </button>
+          </div>
+          <span style="font-size:11.5px; font-weight:800; color:var(--text-muted);">
+            🔗 Video Link: <a href="${videoUrl}" target="_blank" rel="noopener" style="color:var(--purple); font-weight:900;">${videoUrl}</a>
+          </span>
+        </div>
+      `;
+    }
+    showToast('AI Study Notes generated below!', 'success');
     window.loadUserKeyStatus();
   } catch (err) {
     console.error('AI Notes error:', err);
-    showToast('Failed to generate AI notes: ' + err.message, 'error');
+    showToast(`AI Notes Error: ${err.message}`, 'error');
+    if (notesContainer) {
+      notesContainer.innerHTML = `<div style="text-align:center; padding:16px; color:var(--red); font-weight:800;">Failed to generate notes: ${err.message}</div>`;
+    }
+  }
+};
+
+window.saveYTAINoteToBookmarks = async function() {
+  const noteData = window._lastGeneratedAINote;
+  if (!noteData) {
+    showToast('No generated note found to save.', 'error');
+    return;
+  }
+  const titleInput = document.getElementById('cv-yt-note-title-input');
+  const customTitle = titleInput ? titleInput.value.trim() : noteData.videoTitle;
+  const fullTitle = customTitle || noteData.videoTitle;
+  const videoUrl = noteData.videoUrl;
+  const fullNoteText = `${noteData.notesText}\n\n🎥 Video Link: ${videoUrl}`;
+
+  try {
+    const backendUrl = getResolvedAPI();
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${backendUrl}/api/devhub/bookmarks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: fullTitle,
+        url: videoUrl,
+        service: 'YouTube',
+        author: noteData.videoTitle,
+        note: fullNoteText
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `Status ${res.status}`);
+    showToast('AI Note saved to your Bookmarks & Notes collection!', 'success');
+    if (window.loadBookmarks) window.loadBookmarks();
+  } catch (err) {
+    console.error('Save AI Note error:', err);
+    showToast(`Save Note Error: ${err.message}`, 'error');
   }
 };
 
@@ -3187,6 +3237,58 @@ window.copyAINotesText = function() {
   showToast('AI Notes copied to clipboard!', 'success');
 };
 
+window.loadUserKeyStatus = async function() {
+  try {
+    const backendUrl = getResolvedAPI();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const res = await fetch(`${backendUrl}/api/devhub/keys`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.customYouTubeKey) {
+        localStorage.setItem('customYouTubeApiKey', data.customYouTubeKey);
+      } else {
+        localStorage.removeItem('customYouTubeApiKey');
+      }
+      if (data.customGeminiKey) {
+        localStorage.setItem('customGeminiApiKey', data.customGeminiKey);
+      } else {
+        localStorage.removeItem('customGeminiApiKey');
+      }
+    }
+  } catch (err) {
+    console.error('Load user key status error:', err);
+  }
+};
+
+window.deleteBYOKey = async function(service) {
+  try {
+    const backendUrl = getResolvedAPI();
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${backendUrl}/api/devhub/keys/${service}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    if (service === 'youtube') {
+      const input = document.getElementById('byo-yt-key-input');
+      if (input) input.value = '';
+      localStorage.removeItem('customYouTubeApiKey');
+    } else if (service === 'gemini') {
+      const input = document.getElementById('byo-gemini-key-input');
+      if (input) input.value = '';
+      localStorage.removeItem('customGeminiApiKey');
+    }
+    showToast(`${service.toUpperCase()} API Key removed successfully!`, 'info');
+    window.loadUserKeyStatus();
+  } catch (err) {
+    console.error('Delete key error:', err);
+    showToast(`Failed to remove ${service} API key.`, 'error');
+  }
+};
+
 window.openBYOKeysModal = async function() {
   try {
     const backendUrl = getResolvedAPI();
@@ -3196,17 +3298,23 @@ window.openBYOKeysModal = async function() {
     });
     if (res.ok) {
       const data = await res.json();
-      document.getElementById('byo-yt-key-input').value = data.customYouTubeKey || '';
-      document.getElementById('byo-gemini-key-input').value = data.customGeminiKey || '';
+      const ytInput = document.getElementById('byo-yt-key-input');
+      const gemInput = document.getElementById('byo-gemini-key-input');
+      if (ytInput) ytInput.value = data.customYouTubeKey || '';
+      if (gemInput) gemInput.value = data.customGeminiKey || '';
+      if (data.customYouTubeKey) localStorage.setItem('customYouTubeApiKey', data.customYouTubeKey);
+      if (data.customGeminiKey) localStorage.setItem('customGeminiApiKey', data.customGeminiKey);
     }
   } catch (err) {
     console.error('Fetch keys error:', err);
   }
-  document.getElementById('byo-keys-overlay').style.display = 'flex';
+  const modal = document.getElementById('byo-keys-overlay');
+  if (modal) modal.style.display = 'flex';
 };
 
 window.closeBYOKeysModal = function() {
-  document.getElementById('byo-keys-overlay').style.display = 'none';
+  const modal = document.getElementById('byo-keys-overlay');
+  if (modal) modal.style.display = 'none';
 };
 
 window.saveBYOKeys = async function() {
@@ -3225,7 +3333,14 @@ window.saveBYOKeys = async function() {
       body: JSON.stringify({ customYouTubeApiKey, customGeminiApiKey })
     });
     if (!res.ok) throw new Error(`Status ${res.status}`);
-    showToast('API Keys saved successfully! Unlimited access enabled.', 'success');
+
+    if (customYouTubeApiKey) localStorage.setItem('customYouTubeApiKey', customYouTubeApiKey);
+    else localStorage.removeItem('customYouTubeApiKey');
+
+    if (customGeminiApiKey) localStorage.setItem('customGeminiApiKey', customGeminiApiKey);
+    else localStorage.removeItem('customGeminiApiKey');
+
+    showToast('API Keys saved successfully! Permanent access active.', 'success');
     window.closeBYOKeysModal();
     window.loadUserKeyStatus();
   } catch (err) {
@@ -3367,6 +3482,12 @@ async function _renderYouTubeViewer(item) {
   const chEl = document.getElementById('cv-yt-channel');
   if (chEl) chEl.textContent = '📺 ' + (item.channelTitle || item.author || 'YouTube');
 
+  const notesContainer = document.getElementById('cv-yt-notes-container');
+  if (notesContainer) {
+    notesContainer.style.display = 'none';
+    notesContainer.innerHTML = '';
+  }
+
   const metaEl = document.getElementById('cv-yt-meta');
   if (metaEl) {
     metaEl.innerHTML =
@@ -3426,23 +3547,43 @@ async function _renderGitHubViewer(item) {
   let readmeHtml = '';
 
   try {
-    const readmeRes = await fetch('https://api.github.com/repos/' + owner + '/' + repo + '/readme');
+    const readmeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`);
     if (readmeRes.ok) {
       const readmeData = await readmeRes.json();
-      const readmeContent = decodeURIComponent(escape(atob(readmeData.content.replace(/\n/g,''))));
+      let rawMarkdown = '';
+      if (readmeData.download_url) {
+        try {
+          const rawFetch = await fetch(readmeData.download_url);
+          if (rawFetch.ok) rawMarkdown = await rawFetch.text();
+        } catch(e) {}
+      }
+      if (!rawMarkdown && readmeData.content) {
+        try {
+          const cleanB64 = readmeData.content.replace(/\s/g, '');
+          const binaryStr = atob(cleanB64);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          rawMarkdown = new TextDecoder('utf-8').decode(bytes);
+        } catch(e) {
+          console.error('B64 decode error:', e);
+        }
+      }
+      const renderedHtml = _mdToHtml(rawMarkdown || 'No readable README content found.');
       readmeHtml = `
-        <div style="border:3.5px solid var(--black);border-radius:14px;padding:22px;background:var(--bg-card);box-shadow:6px 6px 0 var(--black);max-width:100%;box-sizing:border-box;word-break:break-word;overflow-wrap:anywhere;">
-          <h3 style="margin:0 0 16px 0;font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px;">
+        <div style="border:3.5px solid var(--black);border-radius:14px;padding:24px;background:var(--bg-card);box-shadow:6px 6px 0 var(--black);max-width:100%;box-sizing:border-box;word-break:break-word;overflow-wrap:anywhere;">
+          <h3 style="margin:0 0 16px 0;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px;border-bottom:2.5px dashed rgba(0,0,0,0.12);padding-bottom:12px;">
             <span>📋 README.md</span>
           </h3>
-          <div style="font-size:14px;line-height:1.75;color:var(--text);max-width:100%;overflow-x:hidden;word-break:break-word;overflow-wrap:anywhere;">${_mdToHtml(readmeContent)}</div>
+          <div class="github-readme-body">${renderedHtml}</div>
         </div>
       `;
     } else {
       readmeHtml = `
         <div style="border:3px dashed var(--black);border-radius:14px;padding:36px;text-align:center;background:var(--bg-card);box-shadow:4px 4px 0 var(--black);">
           <div style="font-size:32px;margin-bottom:8px;">📁</div>
-          <h3 style="margin:0 0 6px 0;font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:900;">Repository File Explorer</h3>
+          <h3 style="margin:0 0 6px 0;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:900;">Repository File Explorer</h3>
           <p style="margin:0;font-size:13px;color:var(--text-muted);font-weight:700;">No README found in this repository. Select any file from the sidebar tree on the left to view its source code.</p>
         </div>
       `;
@@ -3580,7 +3721,7 @@ async function _renderSOViewer(item) {
     const aRes = await fetch('https://api.stackexchange.com/2.3/questions/' + qId + '/answers?site=stackoverflow&filter=withbody&order=desc&sort=votes&pagesize=10');
     const aData = await aRes.json();
     const answers = aData.items||[];
-    const tagsHtml = (q.tags||[]).map(t => '<span style="display:inline-block;background:rgba(245,158,11,0.16);border:1px solid rgba(245,158,11,0.4);border-radius:12px;padding:2px 9px;font-size:11px;font-weight:800;color:#fbbf24 !important;margin-right:5px;">#'+t+'</span>').join('');
+    const tagsHtml = (q.tags||[]).map(t => '<span style="display:inline-block; background:var(--yellow,#f59e0b); border:1.5px solid #000000; border-radius:12px; padding:3px 10px; font-size:11px; font-weight:900; color:#000000 !important; margin-right:5px; margin-bottom:4px; box-shadow:1px 1px 0 #000000;">#'+t+'</span>').join('');
     let answersHtml = answers.length===0 ? '<p style="color:var(--text-muted);font-weight:800;text-align:center;padding:24px;">No answers yet.</p>' : '';
     answers.forEach(a => {
       const accepted = a.is_accepted ? '<span style="font-size:11px;font-weight:900;background:#22c55e;color:#fff;padding:2px 8px;border-radius:6px;margin-left:8px;">&#10003; Accepted</span>' : '';
@@ -3617,9 +3758,9 @@ async function _renderArticleViewer(item) {
   content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-weight:800;">Loading article...</div>';
   _cvShowContent();
   const backendUrl = getResolvedAPI();
-  let articleBody = '', coverUrl = '', authorName = item.author||'', publishDate = '';
+  let articleBody = item.contentHtml || item.content || item.body_markdown || item.body || '', coverUrl = item.imageUrl || item.cover_image || '', authorName = item.author||'', publishDate = item.date || item.published_at || '';
   try {
-    if (item.source === 'devto' && item.url) {
+    if (item.source === 'devto' && item.url && !articleBody) {
       const parts = item.url.replace(/\/$/, '').split('/');
       const slug = parts[parts.length-1];
       const username = parts[parts.length-2];
@@ -3627,33 +3768,73 @@ async function _renderArticleViewer(item) {
         const res = await fetch(backendUrl + '/api/proxy/devto?endpoint=' + encodeURIComponent('/api/articles/' + username + '/' + slug));
         if (res.ok) {
           const data = await res.json();
-          articleBody = data.body_markdown || '';
-          coverUrl = data.cover_image || '';
-          publishDate = data.published_at || '';
-          authorName = data.user ? data.user.name : item.author;
+          articleBody = data.body_markdown || data.body_html || '';
+          coverUrl = coverUrl || data.cover_image || '';
+          publishDate = publishDate || data.published_at || '';
+          authorName = authorName || (data.user ? data.user.name : item.author);
         }
       }
     }
   } catch(e) { console.warn('Article fetch:', e); }
+
+  const isMedium = (item.source === 'medium' || (item.sourceLabel || '').toLowerCase().includes('medium') || (item.url || '').includes('medium.com'));
   const dateStr = publishDate ? new Date(publishDate).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '';
+  const tagsList = item.tag_list || item.categories || item.tags || [];
+  const tagsHtml = tagsList.length > 0 ? ('<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;">' + tagsList.slice(0, 6).map(t => '<span style="display:inline-block; background:var(--yellow,#f59e0b); border:1.5px solid #000000; border-radius:12px; padding:3px 10px; font-size:11px; font-weight:900; color:#000000 !important; box-shadow:1px 1px 0 #000000;">#'+String(t).replace(/[^a-zA-Z0-9]/g,'')+'</span>').join('') + '</div>') : '';
+
+  const bodyToRender = articleBody || item.description || '';
+  let renderedBodyHtml = (bodyToRender.includes('<p>') || bodyToRender.includes('<div') || bodyToRender.includes('<span') || bodyToRender.includes('<figure'))
+    ? bodyToRender
+    : _mdToHtml(bodyToRender);
+
+  // Strictly deduplicate leading image if coverUrl is shown or for Medium articles
+  if ((coverUrl || isMedium) && renderedBodyHtml) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderedBodyHtml;
+    // Remove all leading figure/img tags before body text so photo is never duplicated
+    const leadImgs = tmp.querySelectorAll('figure, img');
+    leadImgs.forEach((el, idx) => {
+      if (idx < 2) {
+        const parentFig = el.closest('figure');
+        if (parentFig) parentFig.remove();
+        else el.remove();
+      }
+    });
+    renderedBodyHtml = tmp.innerHTML;
+  }
+
+  const mediumNotice = isMedium ? `
+    <div style="margin-top:28px; padding:20px; border:3px solid var(--black); border-radius:12px; background:#fff3c4; box-shadow:4px 4px 0 var(--black); text-align:center;">
+      <div style="font-size:15px; font-weight:900; color:#000; margin-bottom:6px;">📖 Medium Feed Notice</div>
+      <p style="font-size:13px; font-weight:700; color:#4b5563; margin-bottom:14px; line-height:1.5;">
+        Medium RSS feeds provide a preview snippet for publication & member articles. Click below to read the full story directly on Medium!
+      </p>
+      <a href="${item.url || item.link || '#'}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 24px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:#000000; font-weight:900; font-size:13px; text-decoration:none; box-shadow:2.5px 2.5px 0 var(--black);">
+        Continue Reading Full Story on Medium ↗
+      </a>
+    </div>
+  ` : '';
+
+  const openOriginalBtn = isMedium ? '' : `
+    <div style="text-align:center;margin-top:28px;padding-top:20px;border-top:2px dashed rgba(0,0,0,0.1);">
+      <a href="${item.url || item.link || '#'}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 30px;border:3px solid var(--black);border-radius:10px;background:var(--yellow);color:#0f172a;font-weight:900;font-size:14px;font-family:Space Grotesk,sans-serif;text-decoration:none;box-shadow:3.5px 3.5px 0 var(--black);white-space:nowrap;">Open Original Article ↗</a>
+    </div>
+  `;
+
   content.innerHTML =
     '<div style="background:var(--bg-card);border:2.5px solid var(--black);border-radius:14px;padding:32px;box-shadow:4px 4px 0 var(--black);overflow:hidden;word-break:break-word;overflow-wrap:anywhere;">' +
       (coverUrl ? '<img src="' + coverUrl + '" alt="" style="width:100%;max-height:360px;object-fit:cover;border-radius:10px;border:2px solid var(--black);margin-bottom:24px;" />' : '') +
       '<h1 style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:900;margin:0 0 16px 0;line-height:1.35;color:var(--text);text-align:center;word-break:break-word;overflow-wrap:anywhere;">' + item.title + '</h1>' +
-      '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:2.5px dashed rgba(0,0,0,0.12);flex-wrap:wrap;">' +
+      '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:2.5px dashed rgba(0,0,0,0.12);flex-wrap:wrap;">' +
         '<span style="font-size:13px;font-weight:800;color:var(--text-muted);">&#128100; ' + authorName + '</span>' +
         (dateStr ? '<span style="font-size:13px;font-weight:800;color:var(--text-muted);">&#128197; ' + dateStr + '</span>' : '') +
-        '<span style="font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;background:var(--yellow);color:var(--black);">' + (item.sourceLabel || '') + '</span>' +
+        '<span style="font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;background:var(--yellow);color:var(--black);">' + (item.sourceLabel || (item.source ? item.source.toUpperCase() : 'ARTICLE')) + '</span>' +
       '</div>' +
-      (articleBody
-        ? '<div style="font-size:15px;line-height:1.8;color:var(--text);word-break:break-word;overflow-wrap:anywhere;">' + _mdToHtml(articleBody) + '</div>'
-        : '<div style="text-align:left;padding:22px;background:var(--bg-body);border:2.5px solid var(--black);box-shadow:3px 3px 0 var(--black);border-radius:12px;margin-bottom:24px;word-break:break-word;overflow-wrap:anywhere;line-height:1.7;font-size:14px;color:var(--text);">' +
-            '<div style="font-weight:900;font-size:12px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.5px;">📝 Saved Note / Description</div>' +
-            '<div style="white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;">' + (item.description || 'No additional note content.') + '</div>' +
-          '</div>' +
-          '<div style="text-align:center;">' +
-            '<a href="' + item.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 30px;border:3px solid var(--black);border-radius:10px;background:var(--yellow);color:#0f172a;font-weight:900;font-size:14px;font-family:Space Grotesk,sans-serif;text-decoration:none;box-shadow:3.5px 3.5px 0 var(--black);white-space:nowrap;">Open Article Link &#8599;</a>' +
-          '</div>'
-      ) +
+      tagsHtml +
+      '<div class="article-body-content" style="margin-top:24px;font-size:15px;line-height:1.85;color:var(--text);word-break:break-word;overflow-wrap:anywhere;">' +
+        (renderedBodyHtml || '<p style="text-align:center;color:var(--text-muted);font-weight:700;">Full article content not directly embeddable.</p>') +
+      '</div>' +
+      mediumNotice +
+      openOriginalBtn +
     '</div>';
 }

@@ -422,9 +422,9 @@
 
     <div class="nav-user-area" style="display:flex; align-items:center; gap: 16px;">
       <!-- Search Bar -->
-      <div class="nav-search-container" style="position: relative;">
+      <div class="nav-search-container" style="position: relative; z-index: 99999;">
         <input type="text" id="nav-search-input" placeholder="🔍" style="padding: 0; text-align: center; border: none; border-radius: 18px; font-family: 'Inter', sans-serif; font-size: 16px; outline: none; width: 36px; height: 36px; transition: all 0.3s ease; background: rgba(0,0,0,0.08); color: var(--text); cursor: pointer;" onfocus="this.style.width=window.innerWidth <= 480 ? '130px' : '160px'; this.style.padding='8px 12px'; this.style.textAlign='left'; this.style.cursor='text'; this.style.background='rgba(0,0,0,0.12)'; this.placeholder='🔍 Search...';" onblur="if(!this.value.trim()) { this.style.background='rgba(0,0,0,0.08)'; window.collapseSearchInput(); }" autocomplete="off" />
-        <div id="nav-search-dropdown" style="display: none; position: absolute; top: 110%; right: 0; background: var(--bg-card); border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); width: 250px; max-height: 300px; overflow-y: auto; z-index: 1000; flex-direction: column;">
+        <div id="nav-search-dropdown" style="display: none; position: absolute; top: 110%; right: 0; background: var(--bg-card); border: 2.5px solid var(--black); border-radius: 12px; box-shadow: 4px 4px 0 var(--black); width: 260px; max-height: 320px; overflow-y: auto; z-index: 99999; flex-direction: column;">
           <!-- Suggestions injected here -->
         </div>
       </div>
@@ -1462,8 +1462,8 @@
       </div>
     </div>
 
-    <!-- Dedicated Study Mode & AI Banner (Separate Section) -->
-    <div style="margin-bottom: 16px; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 214, 10, 0.15) 100%); border: 3px solid var(--black); border-radius: 12px; padding: 14px 20px; box-shadow: 4px 4px 0 var(--black); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <!-- Dedicated Study Mode & AI Banner (Separate Section - Hidden for Production) -->
+    <div id="devhub-youtube-banner" style="display: none !important; margin-bottom: 16px; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 214, 10, 0.15) 100%); border: 3px solid var(--black); border-radius: 12px; padding: 14px 20px; box-shadow: 4px 4px 0 var(--black); align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div style="background: var(--yellow); border: 2px solid var(--black); border-radius: 10px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 0 var(--black);">
           <i data-lucide="graduation-cap" style="width: 22px; height: 22px; color: var(--black);"></i>
@@ -1720,8 +1720,8 @@
         </div>
       </div>
 
-      <!-- 4. Study Mode & AI Notes Card -->
-      <div class="devhub-card" id="hub-card-studymode" style="display: none; width: 100%;">
+      <!-- 4. Study Mode & AI Notes Card (Hidden for Production) -->
+      <div class="devhub-card" id="hub-card-studymode" style="display: none !important; width: 100%;">
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <h3><i data-lucide="graduation-cap"></i> YouTube Study Mode & AI Notes</h3>
           <div style="display:flex; gap:8px; align-items:center;">
@@ -1750,7 +1750,7 @@
       <!-- GitHub Integration Card -->
       <div class="devhub-card" id="hub-card-github" style="width: 100%;">
         <div class="card-header">
-          <h3><i data-lucide="github"></i> GitHub Profile</h3>
+          <h3><i data-lucide="code-2"></i> GitHub Profile</h3>
           <span class="status-badge disconnected" id="github-badge">Disconnected</span>
         </div>
         <div class="card-body">
@@ -1796,12 +1796,12 @@
                 <!-- Popular Tag Chips -->
                 <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center;">
                   <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Popular:</span>
-                  <button onclick="window.searchGitHubTag('react')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#react</button>#react</button>
-                  <button onclick="window.searchGitHubTag('node')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#node</button>#node</button>
-                  <button onclick="window.searchGitHubTag('python')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#python</button>#python</button>
-                  <button onclick="window.searchGitHubTag('machine-learning')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#machine-learning</button>#machine-learning</button>
-                  <button onclick="window.searchGitHubTag('rust')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#rust</button>#rust</button>
-                  <button onclick="window.searchGitHubTag('system-design')" class="gh-popular-tag-btn" style="padding:4px 12px; border:1.5px solid #474c5c; border-radius:20px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#system-design</button>#system-design</button>
+                  <button onclick="window.searchGitHubTag('react')" class="gh-popular-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#react</button>
+                  <button onclick="window.searchGitHubTag('node')" class="gh-popular-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#node</button>
+                  <button onclick="window.searchGitHubTag('python')" class="gh-popular-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#python</button>
+                  <button onclick="window.searchGitHubTag('machine-learning')" class="gh-popular-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#machine-learning</button>
+                  <button onclick="window.searchGitHubTag('rust')" class="gh-popular-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#rust</button>
+                  <button onclick="window.searchGitHubTag('system-design')" class="gh-popular-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#system-design</button>
                 </div>
               </div>
 
@@ -1906,7 +1906,7 @@
                 
                 <!-- Left: Repository Controls & Listing -->
                 <div style="flex: 1.4; min-width: 360px; display: flex; flex-direction: column;">
-                  <div style="border: 2.5px solid #3f4352; border-radius: 12px; padding: 16px; background: #282a32; box-shadow: 4px 4px 0 #121317; height: 100%; display: flex; flex-direction: column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height: 100%; display: flex; flex-direction: column;">
                     
                     <!-- Search & Filter Controls -->
                     <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px; border-bottom:2px dashed var(--black); padding-bottom:14px;">
@@ -1951,7 +1951,7 @@
 
                 <!-- Right: Languages Breakdown -->
                 <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
-                  <div style="border: 2.5px solid #3f4352; border-radius: 12px; padding: 16px; background: #282a32; box-shadow: 4px 4px 0 #121317; height: 100%; display:flex; flex-direction:column;">
+                  <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height: 100%; display:flex; flex-direction:column;">
                     <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Languages Distribution</h5>
                     <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:12px; text-transform:uppercase;">Byte volumes across original repositories</div>
                     <div id="github-languages-breakdown" style="display:flex; flex-direction:column; gap:12px; flex-grow:1; overflow-y:auto; max-height:480px; padding-right:4px;">
@@ -2074,7 +2074,7 @@
                 <div style="flex: 1.3; min-width: 340px; display: flex; flex-direction: column;">
                   <div style="border: 3px solid var(--black); border-radius: 12px; padding: 16px; background: var(--bg-body); box-shadow: 4px 4px 0 var(--black); height:100%; display:flex; flex-direction:column;">
                     <h5 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">Recent Event Feed</h5>
-                    <div id="github-activity-timeline" class="devhub-scroll-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex-grow:1;">
+                    <div id="github-activity-timeline" class="devhub-scroll-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex-grow:1; padding-right: 14px;">
                       <p style="text-align:center; font-size:11px; color:var(--text-muted); padding:10px 0;">No recent event feeds detected.</p>
                     </div>
                   </div>
@@ -2190,13 +2190,13 @@
               <!-- Quick Filter Pills -->
               <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px;">
                 <span style="font-weight: 800; color: var(--text-muted);">Popular Tags:</span>
-                <button onclick="filterSOTag('')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">All</button>All</button>
-                <button onclick="filterSOTag('javascript')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#javascript</button>#javascript</button>
-                <button onclick="filterSOTag('python')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#python</button>#python</button>
-                <button onclick="filterSOTag('reactjs')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#reactjs</button>#reactjs</button>
-                <button onclick="filterSOTag('node.js')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#node.js</button>#node.js</button>
-                <button onclick="filterSOTag('typescript')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#typescript</button>#typescript</button>
-                <button onclick="filterSOTag('css')" class="so-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#css</button>#css</button>
+                <button onclick="filterSOTag('')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">All</button>
+                <button onclick="filterSOTag('javascript')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#javascript</button>
+                <button onclick="filterSOTag('python')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#python</button>
+                <button onclick="filterSOTag('reactjs')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#reactjs</button>
+                <button onclick="filterSOTag('node.js')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#node.js</button>
+                <button onclick="filterSOTag('typescript')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#typescript</button>
+                <button onclick="filterSOTag('css')" class="so-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#css</button>
               </div>
             </div>
 
@@ -2286,12 +2286,12 @@
               <!-- Quick Filter Pills -->
               <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px;">
                 <span style="font-weight: 800; color: var(--text-muted);">Popular Tags:</span>
-                <button onclick="filterDevToTag('')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">All</button>All</button>
-                <button onclick="filterDevToTag('javascript')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#javascript</button>#javascript</button>
-                <button onclick="filterDevToTag('webdev')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#webdev</button>#webdev</button>
-                <button onclick="filterDevToTag('beginners')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#beginners</button>#beginners</button>
-                <button onclick="filterDevToTag('python')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#python</button>#python</button>
-                <button onclick="filterDevToTag('react')" class="devto-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#react</button>#react</button>
+                <button onclick="filterDevToTag('')" class="devto-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">All</button>
+                <button onclick="filterDevToTag('javascript')" class="devto-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#javascript</button>
+                <button onclick="filterDevToTag('webdev')" class="devto-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#webdev</button>
+                <button onclick="filterDevToTag('beginners')" class="devto-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#beginners</button>
+                <button onclick="filterDevToTag('python')" class="devto-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#python</button>
+                <button onclick="filterDevToTag('react')" class="devto-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#react</button>
               </div>
             </div>
             <div id="devto-public-posts" class="devhub-scroll-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-height: 480px; overflow-y: auto; padding-right: 6px; width: 100%;">
@@ -2359,12 +2359,12 @@
               <!-- Quick Filter Pills -->
               <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 11px;">
                 <span style="font-weight: 800; color: var(--text-muted);">Popular Tags:</span>
-                <button onclick="filterMediumTag('')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">All</button>All</button>
-                <button onclick="filterMediumTag('javascript')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#javascript</button>#javascript</button>
-                <button onclick="filterMediumTag('startup')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#startup</button>#startup</button>
-                <button onclick="filterMediumTag('technology')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#technology</button>#technology</button>
-                <button onclick="filterMediumTag('programming')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#programming</button>#programming</button>
-                <button onclick="filterMediumTag('blockchain')" class="medium-tag-btn" style="padding:3px 10px; border:1.5px solid #474c5c; border-radius:14px; background:#2e323d; color:#fbbf24 !important; font-size:11px; font-weight:800; cursor:pointer;">#blockchain</button>#blockchain</button>
+                <button onclick="filterMediumTag('')" class="medium-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">All</button>
+                <button onclick="filterMediumTag('javascript')" class="medium-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#javascript</button>
+                <button onclick="filterMediumTag('startup')" class="medium-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#startup</button>
+                <button onclick="filterMediumTag('technology')" class="medium-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#technology</button>
+                <button onclick="filterMediumTag('programming')" class="medium-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#programming</button>
+                <button onclick="filterMediumTag('blockchain')" class="medium-tag-btn" style="padding:4px 12px; border:2px solid var(--black); border-radius:14px; background:var(--bg-card); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; box-shadow:1.5px 1.5px 0 var(--black);">#blockchain</button>
               </div>
             </div>
             <div id="medium-public-posts" class="devhub-scroll-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; max-height:480px; overflow-y:auto; padding-right:6px; width:100%;">
@@ -4702,12 +4702,13 @@
     top: 0 !important;
     left: 0 !important;
     bottom: 0 !important;
-    width: 82vw !important;
-    max-width: 300px !important;
-    z-index: 100 !important;
-    box-shadow: 6px 0 24px rgba(0,0,0,0.3) !important;
-    background: var(--bg-card) !important;
-    border-right: 3px solid var(--black) !important;
+    width: 85vw !important;
+    max-width: 320px !important;
+    z-index: 500 !important;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.4) !important;
+    background: #ffffff !important;
+    color: #0a0a0a !important;
+    border-right: 3.5px solid #000000 !important;
   }
   #cv-youtube {
     max-width: 100% !important;
@@ -4742,7 +4743,7 @@
 <!-- ── DEVHUB MODALS ───────────────────────────────────────── -->
 
 <!-- 0. Universal Content Viewer (Full-screen in-app viewer with Neo-Brutalist Geometric Theme) -->
-<div id="content-viewer-overlay" class="devhub-modal-overlay" style="padding:0; align-items:stretch; justify-content:stretch; overflow:hidden; z-index:10001; background:var(--bg-body) !important; backdrop-filter:none !important;">
+<div id="content-viewer-overlay" class="devhub-modal-overlay" style="padding:0; display:none; align-items:stretch; justify-content:stretch; overflow:hidden; z-index:10001;">
   <div style="width:100vw; height:100vh; display:flex; flex-direction:column; position:relative; background:var(--bg-body); background-image:radial-gradient(rgba(150,150,150,0.18) 2px, transparent 2px); background-size:32px 32px; overflow:hidden;">
     
     <!-- Decorative Colorful Neo-Brutalist Background Shapes -->
@@ -4761,7 +4762,7 @@
       </div>
     </div>
     <div style="display:flex; flex:1; overflow:hidden; min-height:0; position:relative; z-index:1;">
-      <div id="cv-sidebar" style="display:none; width:290px; flex-shrink:0; border-right:3.5px solid var(--black); overflow-y:auto; background:var(--bg-card); padding:16px; box-shadow:3px 0 0 rgba(0,0,0,0.04);">
+      <div id="cv-sidebar" style="display:none; width:290px; flex-shrink:0; border-right:3.5px solid #000000; overflow-y:auto; background:#ffffff !important; color:#0a0a0a !important; padding:16px; box-shadow:4px 0 20px rgba(0,0,0,0.12); z-index:500;">
         <div style="font-weight:900; font-size:11.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; letter-spacing:0.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
           <span>&#128193; Repository Files</span>
           <button onclick="window._toggleCVSidebar()" id="cv-sidebar-toggle-btn" title="Collapse Sidebar" style="padding:2px 7px; border:1.5px solid var(--black); border-radius:5px; background:var(--yellow); color:var(--black); font-weight:900; font-size:10px; cursor:pointer; box-shadow:1px 1px 0 var(--black);">&#9664; Hide</button>
@@ -4779,10 +4780,11 @@
             <h2 id="cv-yt-title" style="margin:0 0 6px 0; font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:900; color:var(--text); text-align:center; word-break:break-word;"></h2>
             <span id="cv-yt-channel" style="font-size:12.5px; font-weight:800; color:var(--text-muted);"></span>
           </div>
-          <div style="position:relative; padding-bottom:56.25%; height:0; border:3.5px solid var(--black); border-radius:14px; overflow:hidden; box-shadow:6px 6px 0 var(--black);">
-            <iframe id="cv-yt-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen="true" style="position:absolute; top:0; left:0; width:100%; height:100%;"></iframe>
+          <div style="position:relative; padding-bottom:56.25%; height:0; border:3.5px solid var(--black); border-radius:14px; overflow:hidden; box-shadow:6px 6px 0 var(--black); z-index:20; pointer-events:auto;">
+            <iframe id="cv-yt-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen="true" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:21; pointer-events:auto;"></iframe>
           </div>
           <div id="cv-yt-meta" style="display:flex; flex-direction:column; gap:12px; background:var(--bg-card); border:3px solid var(--black); border-radius:14px; padding:18px; box-shadow:4px 4px 0 var(--black); text-align:center;"></div>
+          <div id="cv-yt-notes-container" style="display:none; flex-direction:column; gap:14px; background:var(--bg-card); border:3.5px solid var(--black); border-radius:14px; padding:24px; box-shadow:6px 6px 0 var(--black); margin-top:8px;"></div>
         </div>
       </div>
     </div>
@@ -4879,11 +4881,17 @@
     <!-- Key Fields -->
     <div style="display:flex; flex-direction:column; gap:14px; border-top:2px dashed rgba(0,0,0,0.15); border-bottom:2px dashed rgba(0,0,0,0.15); padding:16px 0;">
       <div>
-        <label style="font-size:12px; font-weight:900; text-transform:uppercase;">1. YouTube Data API v3 Key</label>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="font-size:12px; font-weight:900; text-transform:uppercase;">1. YouTube Data API v3 Key</label>
+          <button onclick="window.deleteBYOKey('youtube')" title="Remove YouTube API Key" style="padding:2px 8px; border:1.5px solid var(--black); border-radius:5px; background:var(--red); color:white; font-size:10px; font-weight:800; cursor:pointer;">🗑️ Remove Key</button>
+        </div>
         <input type="password" id="byo-yt-key-input" placeholder="AIzaSy..." style="width:100%; margin-top:4px; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:12px; font-family:monospace; background:var(--bg-body); color:var(--text);" />
       </div>
       <div>
-        <label style="font-size:12px; font-weight:900; text-transform:uppercase;">2. Google Gemini API Key</label>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="font-size:12px; font-weight:900; text-transform:uppercase;">2. Google Gemini API Key</label>
+          <button onclick="window.deleteBYOKey('gemini')" title="Remove Gemini API Key" style="padding:2px 8px; border:1.5px solid var(--black); border-radius:5px; background:var(--red); color:white; font-size:10px; font-weight:800; cursor:pointer;">🗑️ Remove Key</button>
+        </div>
         <input type="password" id="byo-gemini-key-input" placeholder="AIzaSy..." style="width:100%; margin-top:4px; padding:8px 12px; border:2px solid var(--black); border-radius:6px; font-size:12px; font-family:monospace; background:var(--bg-body); color:var(--text);" />
       </div>
     </div>

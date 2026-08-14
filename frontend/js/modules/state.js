@@ -437,8 +437,48 @@ window.lbHasMore = false;
 window.lbIsLoading = false;
 window.globalConfig = {
   maxRankingsShown: 100,
-  chatReadThresholdPct: 10
+  chatReadThresholdPct: 10,
+  enableDarkBrutalistTheme: false
 };
+
+function applyThemeConfigRules() {
+  const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
+  
+  // 1. Update option visibility in theme selection dropdown
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect) {
+    const darkOption = themeSelect.querySelector('option[value="dark"]');
+    if (darkOption) {
+      if (isDarkAllowed) {
+        darkOption.hidden = false;
+        darkOption.disabled = false;
+        darkOption.style.display = '';
+      } else {
+        darkOption.hidden = true;
+        darkOption.disabled = true;
+        darkOption.style.display = 'none';
+        if (themeSelect.value === 'dark') {
+          themeSelect.value = 'light';
+        }
+      }
+    }
+  }
+
+  // 2. Check if dark theme is currently active or saved, and fallback to light if disabled
+  const currentAttribute = document.documentElement.getAttribute('data-theme');
+  const savedTheme = localStorage.getItem('theme');
+  
+  if (!isDarkAllowed && (currentAttribute === 'dark' || savedTheme === 'dark')) {
+    if (typeof window.toggleAppTheme === 'function') {
+      window.toggleAppTheme('light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+      if (themeSelect) themeSelect.value = 'light';
+    }
+  }
+}
+window.applyThemeConfigRules = applyThemeConfigRules;
 
 async function fetchConfig() {
   try {
@@ -452,9 +492,14 @@ async function fetchConfig() {
       if (config.chatReadThresholdPct !== undefined) {
         window.globalConfig.chatReadThresholdPct = config.chatReadThresholdPct;
       }
+      if (config.enableDarkBrutalistTheme !== undefined) {
+        window.globalConfig.enableDarkBrutalistTheme = !!config.enableDarkBrutalistTheme;
+      }
+      applyThemeConfigRules();
     }
   } catch (err) {
     console.error('Failed to fetch config:', err);
+    applyThemeConfigRules();
   }
 }
 window.fetchConfig = fetchConfig;

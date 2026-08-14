@@ -11,6 +11,7 @@ router.delete('/bookmarks/:id', authenticateToken, devHubController.deleteBookma
 // BYO API Keys management
 router.get('/keys', authenticateToken, devHubController.getUserKeys);
 router.post('/keys', authenticateToken, devHubController.updateUserKeys);
+router.delete('/keys/:service', authenticateToken, devHubController.deleteUserKey);
 
 // YouTube Study Mode & AI Notes
 router.post('/youtube-search', authenticateToken, devHubController.searchYouTube);

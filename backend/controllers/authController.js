@@ -343,7 +343,12 @@ async function setProfileSettings(req, res) {
     if (typeof isPublicProfile === 'boolean') user.isPublicProfile = isPublicProfile;
     if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) {
-      user.theme = theme;
+      const isDarkAllowed = String(process.env.ENABLE_DARK_BRUTALIST_THEME).toLowerCase() === 'true';
+      if (theme === 'dark' && !isDarkAllowed) {
+        user.theme = 'light';
+      } else {
+        user.theme = theme;
+      }
     }
 
     if (typeof leetcodeAutoSync === 'boolean') {
