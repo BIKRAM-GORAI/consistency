@@ -2922,58 +2922,52 @@
     </div>
   </div>
 
-  <!-- Mobile bottom navigation bar (shown only on ≤768px via CSS) -->
+  <!-- Universal Floating Aurora Glass Bottom Dock -->
   <div class="bottom-nav-container">
-    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
-      <button class="bottom-nav-btn active" id="bnav-home" onclick="showPage('home')">
+    <nav class="bottom-nav aurora-floating-dock" id="bottom-nav" aria-label="Main Navigation Dock">
+      <button class="bottom-nav-btn dock-btn active" id="bnav-home" onclick="showPage('home')" title="Daily Habits & Tasks">
         <span class="bnav-icon"><i data-lucide="calendar"></i></span>
-        <span>Daily</span>
+        <span class="dock-text">Daily</span>
       </button>
-      <button class="bottom-nav-btn" id="bnav-goals" onclick="showPage('goals')">
+      <button class="bottom-nav-btn dock-btn" id="bnav-goals" onclick="showPage('goals')" title="Long-term Goals & Target Milestones">
         <span class="bnav-icon"><i data-lucide="target"></i></span>
-        <span>Goals</span>
+        <span class="dock-text">Goals</span>
       </button>
-      <button class="bottom-nav-btn" id="bnav-groups" onclick="showPage('groups')">
+      <button class="bottom-nav-btn dock-btn" id="bnav-groups" onclick="showPage('groups')" title="Private Teams & Public Communities">
         <span class="bnav-icon" style="position:relative; display:inline-flex;">
           <i data-lucide="users"></i>
           <span class="notif-dot" id="bnav-groups-notif-dot" style="display:none; top:-3px; right:-3px; border-color:#fff;"></span>
         </span>
-        <span>Groups</span>
+        <span class="dock-text">Groups</span>
       </button>
-      <button class="bottom-nav-btn" id="bnav-messages" onclick="showPage('messages')">
+      <button class="bottom-nav-btn dock-btn" id="bnav-messages" onclick="showPage('messages')" title="Direct Messages & Friend Chat">
         <span class="bnav-icon" style="position:relative; display:inline-flex;">
           <i data-lucide="message-square"></i>
           <span class="notif-dot" id="bnav-messages-notif-dot" style="display:none; top:-3px; right:-3px; border-color:#fff;"></span>
         </span>
-        <span>Messages</span>
+        <span class="dock-text">Messages</span>
       </button>
-      <button class="bottom-nav-btn" id="bnav-pomodoro" onclick="showPage('pomodoro')">
-        <span class="bnav-icon"><i data-lucide="clock"></i></span>
-        <span>Focus</span>
-      </button>
-      <button class="bottom-nav-btn" id="bnav-devhub" onclick="showPage('devhub')">
-        <span class="bnav-icon"><i data-lucide="terminal"></i></span>
-        <span>Dev Hub</span>
-      </button>
-      <button class="bottom-nav-btn" id="bnav-achievements" onclick="showPage('achievements')">
+      <button class="bottom-nav-btn dock-btn" id="bnav-achievements" onclick="showPage('achievements')" title="Wins & Badges">
         <span class="bnav-icon"><i data-lucide="trophy"></i></span>
-        <span>Wins</span>
+        <span class="dock-text">Wins</span>
       </button>
-      <button class="bottom-nav-btn" id="bnav-leaderboard" onclick="showPage('leaderboard')">
+      <button class="bottom-nav-btn dock-btn" id="bnav-leaderboard" onclick="showPage('leaderboard')" title="Community Rankings & Leaderboard">
         <span class="bnav-icon"><i data-lucide="crown"></i></span>
-        <span>Rankings</span>
+        <span class="dock-text">Rankings</span>
       </button>
-      <button class="bottom-nav-btn" id="bnav-canvas" onclick="navigateToCanvas()">
+      <button class="bottom-nav-btn dock-btn" id="bnav-pomodoro" onclick="showPage('pomodoro')" title="Focus Pomodoro & Timer">
+        <span class="bnav-icon"><i data-lucide="clock"></i></span>
+        <span class="dock-text">Pomodoro</span>
+      </button>
+      <button class="bottom-nav-btn dock-btn" id="bnav-devhub" onclick="showPage('devhub')" title="Developer Hub & Tech Search">
+        <span class="bnav-icon"><i data-lucide="terminal"></i></span>
+        <span class="dock-text">Dev Hub</span>
+      </button>
+      <button class="bottom-nav-btn dock-btn" id="bnav-canvas" onclick="navigateToCanvas()" title="Interactive Whiteboard & Flowcharts">
         <span class="bnav-icon"><i data-lucide="palette"></i></span>
-        <span>Canvas</span>
+        <span class="dock-text">Canvas</span>
       </button>
     </nav>
-    <button class="bnav-scroll-indicator scroll-left" id="bnav-scroll-left" onclick="scrollBottomNav('left')" style="display: none;" aria-label="Scroll left">
-      <i data-lucide="chevron-left"></i>
-    </button>
-    <button class="bnav-scroll-indicator scroll-right" id="bnav-scroll-right" onclick="scrollBottomNav('right')" aria-label="Scroll right">
-      <i data-lucide="chevron-right"></i>
-    </button>
   </div>
 
   <!-- ===== MODAL: Add Achievement ===== -->
