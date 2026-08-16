@@ -6389,18 +6389,6 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 /* Android Native Status Bar Notch Padding Overrides */
-body.native-android::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top, 28px);
-  background-color: #FF8C00 !important; /* Solid vibrant orange status bar fill behind status bar icons */
-  z-index: 999999;
-  pointer-events: none;
-}
-
 body.native-android .navbar {
   padding-top: env(safe-area-inset-top, 24px) !important;
   height: calc(58px + env(safe-area-inset-top, 24px)) !important; /* Mobile height + status bar padding */
@@ -7919,3 +7907,62 @@ body.is-offline [data-requires-network="true"] {
   border-color: #3f4352 !important;
   box-shadow: 4px 4px 0 #121317 !important;
 }
+
+/* ── Content Viewer & Article Reader Overflow Prevention ── */
+#reader-body,
+#cv-content,
+#cv-main,
+#article-reader-panel,
+.devhub-card,
+.modal-body {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+#reader-body pre,
+#cv-content pre,
+#reader-body code,
+#cv-content code {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  word-wrap: break-word !important;
+  box-sizing: border-box !important;
+}
+
+#reader-body img,
+#cv-content img,
+#reader-body table,
+#cv-content table,
+#reader-body iframe,
+#cv-content iframe {
+  max-width: 100% !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+}
+
+#reader-body table,
+#cv-content table {
+  display: block !important;
+  overflow-x: auto !important;
+}
+
+/* ── Sub-Tab Bar Mobile Overlap Fix ── */
+@media (max-width: 768px) {
+  .github-sub-tab-bar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    position: static !important;
+  }
+  .github-sub-tab-bar .btn-ghost {
+    position: static !important;
+    right: auto !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+  }
+}
+

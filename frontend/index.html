@@ -2163,16 +2163,16 @@
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
           <!-- Sub-tab bar -->
-          <div class="github-sub-tab-bar" style="display:flex; gap:0; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:center; position:relative; user-select:none;">
-            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px;">
-              <button class="github-sub-tab-btn active" id="stackoverflow-subtab-public" onclick="switchStackOverflowSubTab('public')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+          <div class="github-sub-tab-bar" style="display:flex; gap:10px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; width:100%; user-select:none;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px; flex-wrap: wrap;">
+              <button class="github-sub-tab-btn active" id="stackoverflow-subtab-public" onclick="switchStackOverflowSubTab('public')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
                 <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Questions
               </button>
-              <button class="github-sub-tab-btn" id="stackoverflow-subtab-personal" onclick="switchStackOverflowSubTab('personal')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+              <button class="github-sub-tab-btn" id="stackoverflow-subtab-personal" onclick="switchStackOverflowSubTab('personal')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
                 <i data-lucide="user" style="width:14px; height:14px;"></i> My Activity
               </button>
             </div>
-            <button class="btn-ghost" onclick="window.refreshStackOverflowActiveFeed()" style="position: absolute; right: 0; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <button class="btn-ghost" onclick="window.refreshStackOverflowActiveFeed()" style="margin-left:auto; padding:7px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
               <i data-lucide="refresh-cw" id="stackoverflow-refresh-icon" style="width:11px; height:11px;"></i> Refresh
             </button>
           </div>
@@ -2263,12 +2263,12 @@
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
           <!-- Dev.to Internal Sub-Tab Bar -->
-          <div class="github-sub-tab-bar" style="display: flex; gap: 0; border-bottom: 2px dashed rgba(0,0,0,0.12); padding-bottom: 12px; user-select: none; justify-content: center; align-items: center; position: relative;">
-            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px;">
-              <button class="github-sub-tab-btn active" id="devto-subtab-public" onclick="switchDevToSubTab('public')" style="padding: 9px 22px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed</button>
-              <button class="github-sub-tab-btn" id="devto-subtab-personal" onclick="switchDevToSubTab('personal')" style="padding: 9px 22px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="user" style="width:14px; height:14px;"></i> My Articles</button>
+          <div class="github-sub-tab-bar" style="display:flex; gap:10px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; width:100%; user-select:none;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px; flex-wrap: wrap;">
+              <button class="github-sub-tab-btn active" id="devto-subtab-public" onclick="switchDevToSubTab('public')" style="padding: 9px 18px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed</button>
+              <button class="github-sub-tab-btn" id="devto-subtab-personal" onclick="switchDevToSubTab('personal')" style="padding: 9px 18px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="user" style="width:14px; height:14px;"></i> My Articles</button>
             </div>
-            <button class="btn-ghost" onclick="window.refreshDevToActiveFeed()" style="position: absolute; right: 0; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <button class="btn-ghost" onclick="window.refreshDevToActiveFeed()" style="margin-left:auto; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
               <i data-lucide="refresh-cw" id="devto-refresh-icon" style="width:11px; height:11px;"></i> Refresh
             </button>
           </div>
@@ -2332,16 +2332,16 @@
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
 
           <!-- Sub-tab bar -->
-          <div class="github-sub-tab-bar" style="display:flex; gap:0; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:center; position:relative; user-select:none;">
-            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px;">
-              <button class="github-sub-tab-btn active" id="medium-subtab-public" onclick="switchMediumSubTab('public')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+          <div class="github-sub-tab-bar" style="display:flex; gap:10px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; width:100%; user-select:none;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px; flex-wrap: wrap;">
+              <button class="github-sub-tab-btn active" id="medium-subtab-public" onclick="switchMediumSubTab('public')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
                 <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed
               </button>
-              <button class="github-sub-tab-btn" id="medium-subtab-personal" onclick="switchMediumSubTab('personal')" style="padding:9px 22px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
+              <button class="github-sub-tab-btn" id="medium-subtab-personal" onclick="switchMediumSubTab('personal')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
                 <i data-lucide="user" style="width:14px; height:14px;"></i> My Articles
               </button>
             </div>
-            <button class="btn-ghost" onclick="window.refreshMediumActiveFeed()" style="position: absolute; right: 0; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <button class="btn-ghost" onclick="window.refreshMediumActiveFeed()" style="margin-left:auto; padding:7px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
               <i data-lucide="refresh-cw" id="medium-refresh-icon" style="width:11px; height:11px;"></i> Refresh
             </button>
           </div>
@@ -4613,24 +4613,21 @@
 @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 #article-reader-overlay { overscroll-behavior: none; }
-#reader-body, #cv-content { word-break: break-word; overflow-wrap: anywhere; overflow-x: hidden; width: 100%; max-width: 100%; box-sizing: border-box; }
-#reader-body *, #cv-content * { max-width: 100%; box-sizing: border-box; }
-#reader-body img, #cv-content img { max-width: 100% !important; height: auto !important; border-radius: 8px; margin: 12px 0; display: block; object-fit: contain; }
-#reader-body h1, #reader-body h2, #reader-body h3, #reader-body h4 { font-family: 'Space Grotesk', sans-serif; margin: 20px 0 8px; color: var(--text); line-height: 1.3; word-break: break-word; }
+#reader-body img { max-width: 100%; border-radius: 8px; margin: 12px 0; display: block; }
+#reader-body h1, #reader-body h2, #reader-body h3, #reader-body h4 { font-family: 'Space Grotesk', sans-serif; margin: 20px 0 8px; color: var(--text); line-height: 1.3; }
 #reader-body h1 { font-size: 20px; font-weight: 900; }
 #reader-body h2 { font-size: 17px; font-weight: 800; }
 #reader-body h3 { font-size: 15px; font-weight: 800; }
-#reader-body p { margin: 0 0 14px; word-break: break-word; overflow-wrap: anywhere; }
-#reader-body pre, #cv-content pre { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 14px; overflow-x: auto !important; -webkit-overflow-scrolling: touch; font-size: 12px; line-height: 1.6; margin: 12px 0; max-width: 100% !important; box-sizing: border-box !important; white-space: pre !important; }
-#reader-body code, #cv-content code { background: rgba(0,0,0,0.06); border-radius: 4px; padding: 1px 6px; font-size: 12px; font-family: monospace; word-break: break-word; overflow-wrap: anywhere; }
-#reader-body pre code, #cv-content pre code { background: none; padding: 0; white-space: pre !important; word-break: normal !important; }
+#reader-body p { margin: 0 0 14px; }
+#reader-body pre { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 14px; overflow-x: auto; font-size: 12px; line-height: 1.6; margin: 12px 0; }
+#reader-body code { background: rgba(0,0,0,0.06); border-radius: 4px; padding: 1px 6px; font-size: 12px; font-family: monospace; }
+#reader-body pre code { background: none; padding: 0; }
 #reader-body blockquote { border-left: 4px solid var(--yellow,#ffd60a); margin: 14px 0; padding: 8px 16px; background: rgba(0,0,0,0.03); border-radius: 0 6px 6px 0; }
-#reader-body a { color: var(--purple,#7c3aed); text-decoration: underline; word-break: break-all; }
+#reader-body a { color: var(--purple,#7c3aed); text-decoration: underline; }
 #reader-body ul, #reader-body ol { padding-left: 22px; margin: 10px 0; }
-#reader-body li { margin-bottom: 6px; word-break: break-word; }
+#reader-body li { margin-bottom: 6px; }
 #reader-body figure { margin: 14px 0; text-align: center; }
 #reader-body figcaption { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
-#reader-body table, #cv-content table { display: block !important; width: 100% !important; max-width: 100% !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
 
 /* Mobile Responsive Adjustments for Content Viewer & DevHub */
 @media (max-width: 768px) {
