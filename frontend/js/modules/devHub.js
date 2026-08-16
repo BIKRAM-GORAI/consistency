@@ -753,11 +753,17 @@ function showSkeletonDashboard() {
     if (el) el.innerHTML = '<span class="gh-skeleton" style="width:90px;height:13px;display:inline-block;"></span>';
   });
 
-  // Contribution graph
+  // Contribution graph skeleton
   const graphImg = document.getElementById('github-contrib-graph');
   if (graphImg) {
     graphImg.style.visibility = 'hidden';
-    graphImg.parentElement.innerHTML += '<div class="gh-skeleton" id="gh-graph-skeleton" style="width:100%;height:90px;border-radius:8px;margin:8px 0;"></div>';
+    if (!document.getElementById('gh-graph-skeleton')) {
+      const skel = document.createElement('div');
+      skel.id = 'gh-graph-skeleton';
+      skel.className = 'gh-skeleton';
+      skel.style.cssText = 'width:100%;height:90px;border-radius:8px;margin:8px 0;';
+      graphImg.parentElement.appendChild(skel);
+    }
   }
 
   // Repos board placeholder
@@ -871,6 +877,14 @@ function renderOverviewPanel(payload) {
   // Heatmap image
   const graphImg = document.getElementById('github-contrib-graph');
   if (graphImg) {
+    const skel = document.getElementById('gh-graph-skeleton');
+    const removeSkelAndShow = () => {
+      if (skel) skel.remove();
+      graphImg.style.visibility = 'visible';
+      graphImg.style.display = 'block';
+    };
+    graphImg.onload = removeSkelAndShow;
+    graphImg.onerror = removeSkelAndShow;
     graphImg.src = `https://ghchart.rshah.org/40c463/${payload.user.login}`;
   }
 
