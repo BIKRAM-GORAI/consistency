@@ -71,13 +71,13 @@ public class MainActivity extends BridgeActivity {
         }
 
         // ─── SOLID STATUS BAR STYLING & FIT SYSTEM WINDOWS ───
-        // We set the system status bar to be solid and color it purple (#a855f7) to match the brand.
+        // We set the system status bar to be solid and color it vibrant orange (#FF8C00).
         // By setting fitsSystemWindows to true on the WebView, the Android OS natively offsets
-        // the WebView below the status bar, preventing any headers (including Razorpay) from ever overlapping.
+        // the WebView below the status bar, preventing headers from overlapping.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            getWindow().setStatusBarColor(android.graphics.Color.parseColor("#a855f7")); // Match premium purple theme
+            getWindow().setStatusBarColor(android.graphics.Color.parseColor("#FF8C00")); // Sleek vibrant orange status bar theme
             
             if (this.bridge != null && this.bridge.getWebView() != null) {
                 this.bridge.getWebView().setFitsSystemWindows(true);

@@ -6395,9 +6395,12 @@ body.native-android .navbar {
 }
 
 body.native-android #modal-group-chat .modal-header,
-body.native-android #modal-direct-chat .modal-header {
-  padding-top: calc(8px + env(safe-area-inset-top, 24px)) !important; /* Pushes the chat header content below the camera notch/status bar */
-  min-height: calc(48px + env(safe-area-inset-top, 24px)) !important;
+body.native-android #modal-direct-chat .modal-header,
+body.native-android #cv-header,
+body.native-android #article-reader-panel > div:first-child,
+body.native-android .devhub-modal-overlay .modal-header {
+  padding-top: calc(10px + env(safe-area-inset-top, 28px)) !important; /* Pushes header content cleanly below the status bar/notch */
+  min-height: calc(52px + env(safe-area-inset-top, 28px)) !important;
 }
 
 body.native-android #video-call-header {
