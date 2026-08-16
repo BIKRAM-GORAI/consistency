@@ -70,15 +70,19 @@ public class MainActivity extends BridgeActivity {
             this.bridge.getWebView().getSettings().setCacheMode(android.webkit.WebSettings.LOAD_CACHE_ELSE_NETWORK);
         }
 
-        // ─── SOLID STATUS BAR STYLING & FIT SYSTEM WINDOWS ───
-        // We set the system status bar to be solid and color it vibrant orange (#FF8C00).
-        // By setting fitsSystemWindows to true on the WebView, the Android OS natively offsets
-        // the WebView below the status bar, preventing headers from overlapping.
+        // ─── SOLID ORANGE STATUS BAR STYLING & FIT SYSTEM WINDOWS ───
+        // We set the system status bar to be solid vibrant orange (#FF8C00).
+        // On Android M (6.0+), we set light status bar flags so the battery, clock, and date icons render in crisp dark text.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            getWindow().setStatusBarColor(android.graphics.Color.parseColor("#FF8C00")); // Sleek vibrant orange status bar theme
+            getWindow().setStatusBarColor(android.graphics.Color.parseColor("#FF8C00")); // Vibrant orange status bar theme
             
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                android.view.View decorView = getWindow().getDecorView();
+                decorView.setSystemUiVisibility(decorView.getSystemUiVisibility() | android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+
             if (this.bridge != null && this.bridge.getWebView() != null) {
                 this.bridge.getWebView().setFitsSystemWindows(true);
             }

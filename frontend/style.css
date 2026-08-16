@@ -6389,6 +6389,18 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 }
 
 /* Android Native Status Bar Notch Padding Overrides */
+body.native-android::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 28px);
+  background-color: #FF8C00 !important; /* Solid vibrant orange status bar fill behind status bar icons */
+  z-index: 999999;
+  pointer-events: none;
+}
+
 body.native-android .navbar {
   padding-top: env(safe-area-inset-top, 24px) !important;
   height: calc(58px + env(safe-area-inset-top, 24px)) !important; /* Mobile height + status bar padding */
