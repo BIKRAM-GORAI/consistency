@@ -250,11 +250,15 @@ async function checkForAppUpdate() {
           }
         }
       }
+    } else {
+      console.log(`[UpdateCheck] App is up to date (running: ${runningAppVersion}, latest: ${data.latestVersion})`);
     }
   } catch (err) {
     console.warn('[UpdateCheck] Failed to check for app update:', err.message);
   }
 }
+window.checkForAppUpdate = checkForAppUpdate;
+
 // Run the update check immediately on page load
 checkForAppUpdate();
 

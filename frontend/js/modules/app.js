@@ -1173,38 +1173,8 @@ function installPWA() {
    Capacitor Native APK Auto-Update System
    ========================================================================== */
 async function checkNativeAppUpdates() {
-  if (!isAndroidNative) return;
-  
-  try {
-    const res = await fetch('https://consistency-daily.vercel.app/app-version.json');
-    if (!res.ok) return;
-    const data = await res.json();
-    
-    const latest = data.latestVersion;
-    const current = window.runningAppVersion;
-    
-    // Simple helper to parse version blocks and compare (e.g. "1.1" > "1.0")
-    const compareVersions = (v1, v2) => {
-      const parts1 = String(v1).split('.').map(Number);
-      const parts2 = String(v2).split('.').map(Number);
-      const maxLen = Math.max(parts1.length, parts2.length);
-      for (let i = 0; i < maxLen; i++) {
-        const val1 = parts1[i] || 0;
-        const val2 = parts2[i] || 0;
-        if (val1 > val2) return 1;
-        if (val1 < val2) return -1;
-      }
-      return 0;
-    };
-    
-    if (compareVersions(latest, current) > 0) {
-      console.log(`[Native APK Update] New version available: ${latest} (running: ${current})`);
-      showUpdateModal(latest, data.apkUrl, data.forceUpdate, data.releaseNotes);
-    } else {
-      console.log(`[Native APK Update] App is up to date (running: ${current})`);
-    }
-  } catch (err) {
-    console.warn('[Native APK Update] Failed to check for native updates:', err);
+  if (typeof window.checkForAppUpdate === 'function') {
+    return window.checkForAppUpdate();
   }
 }
 
