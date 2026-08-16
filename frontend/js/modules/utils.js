@@ -962,4 +962,48 @@ function checkEmailVerificationBlocked() {
 }
 window.checkEmailVerificationBlocked = checkEmailVerificationBlocked;
 
+// ── Universal External URL Opener ────────────────────────────
+// On native Android, we set window.location.href which triggers
+// shouldOverrideUrlLoading in MainActivity → openInSystemBrowser via Intent.ACTION_VIEW.
+// On web, we use window.open with noopener/noreferrer for security.
+function openExternalUrl(url) {
+  if (!url) return;
+  const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                      navigator.userAgent.includes("Capacitor");
+  if (isNativeApp) {
+    // Navigate via location.href so shouldOverrideUrlLoading in MainActivity
+    // catches it and routes to system browser via Intent.ACTION_VIEW.
+    window.location.href = url;
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+}
+window.openExternalUrl = openExternalUrl;
+
+// ── Native Mobile External Link Click Interceptor ────────────
+// Capture phase listener intercepts ALL external <a> clicks before they
+// reach the WebView's default navigation handler on native Android.
+document.addEventListener('click', (e) => {
+  const isNativeApp = (window.Capacitor && window.Capacitor.isNativePlatform()) || 
+                      navigator.userAgent.includes("Capacitor");
+  if (!isNativeApp) return;
+
+  const anchor = e.target.closest('a');
+  if (!anchor) return;
+
+  const href = anchor.getAttribute('href');
+  const target = anchor.getAttribute('target');
+
+  if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+    // Allow internal app origin through normally
+    const isAppOrigin = href.includes('consistency-daily.vercel.app') ||
+                        href.startsWith(window.location.origin);
+    if (target === '_blank' || !isAppOrigin) {
+      e.preventDefault();
+      e.stopPropagation();
+      openExternalUrl(href);
+    }
+  }
+}, true);
+
 console.log("[Module] utils.js loaded and utility helpers bound to window");

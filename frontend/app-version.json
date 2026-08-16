@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.8",
+  "latestVersion": "2.9",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
   "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.8:\n• 🔔 Smarter Notifications: All selected tasks now appear individually in notifications — no more truncated messages, every task gets its own line.\n• 📋 Daily Reminder Redesign: Reminders now show tasks grouped inside styled category cards, making it easy to see and select tasks at a glance.\n• ✅ Category Quick-Select: Tap a category in the reminder to instantly select all tasks inside it.\n• 🏷️ Fixed Reminder Labels: Corrected the alert-type label shown in reminder settings (no more 'Standard Notif' text).\n• 🐛 Bug Fixes & Stability improvements."
+  "releaseNotes": "✨ What's new in v2.9:\n• 🌐 External Browser Integration: All external links from Stack Overflow, Dev.to, Medium, GitHub repositories, and Bookmarks now open directly in your device's default external browser.\n• 🔑 Seamless GitHub OAuth: Fixed GitHub authorization & OAuth connect flow to launch safely in system browser.\n• ⚡ Performance & Stability: Enhanced native Android WebView handling and custom scheme navigation.\n• 🐛 Bug Fixes & Improvements."
 }

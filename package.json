@@ -8,6 +8,7 @@
     "dev": "nodemon backend/server.js"
   },
   "dependencies": {
+    "@capacitor/browser": "^8.0.4",
     "@capacitor/push-notifications": "^8.1.1",
     "@capawesome/capacitor-google-sign-in": "^0.1.2",
     "axios": "^1.15.2",

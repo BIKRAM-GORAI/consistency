@@ -21,6 +21,9 @@ const getResolvedAPI = () => {
 };
 
 // Initiate OAuth flow by redirecting the browser
+// On web: browser navigates to the OAuth URL normally.
+// On native Android: MainActivity.shouldOverrideUrlLoading intercepts github.com/accounts.google.com
+// and opens them in the system browser via Intent.ACTION_VIEW.
 window.initiateOAuth = function (service) {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -28,7 +31,8 @@ window.initiateOAuth = function (service) {
     return;
   }
   const backendUrl = getResolvedAPI();
-  window.location.href = `${backendUrl}/api/integrations/${service}/auth?token=${token}`;
+  const authUrl = `${backendUrl}/api/integrations/${service}/auth?token=${token}`;
+  window.location.href = authUrl;
 };
 
 // Disconnect an integration

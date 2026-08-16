@@ -92,12 +92,22 @@ public class MainActivity extends BridgeActivity {
                 if (handleCustomScheme(url)) {
                     return true;
                 }
+                // Open external developer/content links in the system browser
+                if (shouldOpenInSystemBrowser(url)) {
+                    openInSystemBrowser(url);
+                    return true;
+                }
                 return super.shouldOverrideUrlLoading(view, request);
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (handleCustomScheme(url)) {
+                    return true;
+                }
+                // Open external developer/content links in the system browser
+                if (shouldOpenInSystemBrowser(url)) {
+                    openInSystemBrowser(url);
                     return true;
                 }
                 return super.shouldOverrideUrlLoading(view, url);
@@ -113,34 +123,45 @@ public class MainActivity extends BridgeActivity {
         this.bridge.getWebView().setWebChromeClient(new com.getcapacitor.BridgeWebChromeClient(this.bridge) {
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                // Temporary WebView used only to receive the popup URL via the transport
+                // Temporary WebView used only to receive the popup URL via the transport.
+                // We use onPageStarted (not shouldOverrideUrlLoading) because
+                // shouldOverrideUrlLoading is NOT called for the very first URL load
+                // in a popup WebView created via WebViewTransport — onPageStarted is.
                 WebView popupWebView = new WebView(MainActivity.this);
                 popupWebView.setWebViewClient(new WebViewClient() {
+
                     @Override
-                    public boolean shouldOverrideUrlLoading(WebView popupView, WebResourceRequest request) {
-                        String url = request.getUrl().toString();
-                        
-                        // If the popup target is an APK download, launch it via native intent in the system browser
+                    public void onPageStarted(WebView popupView, String url, android.graphics.Bitmap favicon) {
+                        // Stop the popup from loading anything further
+                        popupView.stopLoading();
+
+                        // APK download → system intent
                         if (url.endsWith(".apk") || url.contains("Consistency.Daily.apk")) {
-                            android.util.Log.d("PaymentPopup", "Intercepted APK download popup → launching system browser: " + url);
+                            android.util.Log.d("Popup", "APK popup → system browser: " + url);
                             try {
                                 android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
                                 MainActivity.this.startActivity(intent);
                             } catch (Exception e) {
-                                android.util.Log.e("PaymentPopup", "Failed to launch native intent for APK download", e);
+                                android.util.Log.e("Popup", "Failed to open APK URL", e);
                             }
-                            return true;
+                            return;
                         }
-                        
-                        // Handle native deep-link schemes (PhonePe, GPay, Paytm, etc.) gracefully
+
+                        // Custom schemes (PhonePe, GPay, Paytm, etc.)
                         if (handleCustomScheme(url)) {
-                            return true;
+                            return;
                         }
-                        
-                        // Redirect the URL into the main app WebView (for Razorpay popup redirects)
-                        android.util.Log.d("PaymentPopup", "Intercepted popup → loading in main WebView: " + url);
+
+                        // External developer/content links → system browser
+                        if (shouldOpenInSystemBrowser(url)) {
+                            android.util.Log.d("Popup", "External popup → system browser: " + url);
+                            openInSystemBrowser(url);
+                            return;
+                        }
+
+                        // Default: Razorpay and other payment popups → load in main WebView
+                        android.util.Log.d("Popup", "Payment popup → main WebView: " + url);
                         MainActivity.this.bridge.getWebView().loadUrl(url);
-                        return true;
                     }
                 });
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
@@ -323,6 +344,57 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 android.widget.Toast.makeText(this, "Cannot open download URL", android.widget.Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    /**
+     * Returns true if the URL should be opened in the system browser (external browser)
+     * rather than navigated to inside the app WebView.
+     *
+     * Logic: open EVERYTHING externally EXCEPT our app's own domains and payment processors.
+     * This ensures all Dev Hub links (GitHub, Stack Overflow, Medium, Dev.to, bookmarks, etc.)
+     * open in the device's system browser regardless of the specific domain.
+     */
+    private boolean shouldOpenInSystemBrowser(String url) {
+        if (url == null) return false;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
+
+        // Keep these URLs inside the app WebView (internal app + payment processors)
+        String[] internalDomains = {
+            "consistency-daily.vercel.app",
+            "localhost",
+            "razorpay.com",
+            "razorpay.in",
+            "rzp.io",
+            "cardsecure.com",
+            "api.razorpay.com",
+            // Firebase auth / Google sign-in handled natively — keep in WebView
+            "firebaseapp.com",
+            "web.app"
+        };
+        for (String domain : internalDomains) {
+            if (url.contains(domain)) return false;
+        }
+
+        // Everything else is external — open in system browser
+        return true;
+    }
+
+
+    /**
+     * Opens a URL in the device's configured default/system browser using an Android Intent.
+     */
+    private void openInSystemBrowser(String url) {
+        try {
+            android.content.Intent intent = new android.content.Intent(
+                android.content.Intent.ACTION_VIEW,
+                android.net.Uri.parse(url)
+            );
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            android.util.Log.d("ExternalBrowser", "Opened in system browser: " + url);
+        } catch (Exception e) {
+            android.util.Log.e("ExternalBrowser", "Failed to open system browser for: " + url, e);
         }
     }
 
