@@ -2157,23 +2157,23 @@
 
       <!-- Stack Overflow Card -->
       <div class="devhub-card" id="hub-card-stackoverflow" style="display: none; width: 100%;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-          <h3><i data-lucide="help-circle"></i> Stack Overflow</h3>
-          <span class="status-badge disconnected" id="stackoverflow-badge">Disconnected</span>
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3><i data-lucide="help-circle"></i> Stack Overflow</h3>
+            <span class="status-badge disconnected" id="stackoverflow-badge">Disconnected</span>
+          </div>
+          <button class="btn-ghost" onclick="window.refreshStackOverflowActiveFeed()" style="padding:6px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
+            <i data-lucide="refresh-cw" id="stackoverflow-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+          </button>
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
-          <!-- Sub-tab bar -->
-          <div class="github-sub-tab-bar" style="display:flex; gap:10px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; width:100%; user-select:none;">
-            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px; flex-wrap: wrap;">
-              <button class="github-sub-tab-btn active" id="stackoverflow-subtab-public" onclick="switchStackOverflowSubTab('public')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
-                <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Questions
-              </button>
-              <button class="github-sub-tab-btn" id="stackoverflow-subtab-personal" onclick="switchStackOverflowSubTab('personal')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
-                <i data-lucide="user" style="width:14px; height:14px;"></i> My Activity
-              </button>
-            </div>
-            <button class="btn-ghost" onclick="window.refreshStackOverflowActiveFeed()" style="margin-left:auto; padding:7px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
-              <i data-lucide="refresh-cw" id="stackoverflow-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+          <!-- Sub-tab bar: 100% full width side-by-side -->
+          <div class="github-sub-tab-bar" style="display:flex; width:100%; gap:6px; background:rgba(0,0,0,0.05); border-radius:10px; padding:4px; border-bottom:none; user-select:none; box-sizing:border-box;">
+            <button class="github-sub-tab-btn active" id="stackoverflow-subtab-public" onclick="switchStackOverflowSubTab('public')" style="flex:1; text-align:center; justify-content:center; padding:9px 12px; font-size:12.5px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;">
+              <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Questions
+            </button>
+            <button class="github-sub-tab-btn" id="stackoverflow-subtab-personal" onclick="switchStackOverflowSubTab('personal')" style="flex:1; text-align:center; justify-content:center; padding:9px 12px; font-size:12.5px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;">
+              <i data-lucide="user" style="width:14px; height:14px;"></i> My Activity
             </button>
           </div>
 
@@ -2257,20 +2257,20 @@
 
       <!-- Dev.to Integration Card -->
       <div class="devhub-card" id="hub-card-devto" style="display: none; width: 100%;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-          <h3><i data-lucide="book-open"></i> Dev.to Community Feed</h3>
-          <span class="status-badge disconnected" id="devto-badge">Disconnected</span>
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3><i data-lucide="book-open"></i> Dev.to Community Feed</h3>
+            <span class="status-badge disconnected" id="devto-badge">Disconnected</span>
+          </div>
+          <button class="btn-ghost" onclick="window.refreshDevToActiveFeed()" style="padding:6px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
+            <i data-lucide="refresh-cw" id="devto-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+          </button>
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
-          <!-- Dev.to Internal Sub-Tab Bar -->
-          <div class="github-sub-tab-bar" style="display:flex; gap:10px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; width:100%; user-select:none;">
-            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px; flex-wrap: wrap;">
-              <button class="github-sub-tab-btn active" id="devto-subtab-public" onclick="switchDevToSubTab('public')" style="padding: 9px 18px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed</button>
-              <button class="github-sub-tab-btn" id="devto-subtab-personal" onclick="switchDevToSubTab('personal')" style="padding: 9px 18px; font-size: 13px; font-weight: 800; border-radius: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="user" style="width:14px; height:14px;"></i> My Articles</button>
-            </div>
-            <button class="btn-ghost" onclick="window.refreshDevToActiveFeed()" style="margin-left:auto; padding: 7px 12px; font-size: 11px; font-weight: 800; border-width: 2px; box-shadow: 1.5px 1.5px 0 var(--black); background: var(--bg-card); color: var(--text); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-              <i data-lucide="refresh-cw" id="devto-refresh-icon" style="width:11px; height:11px;"></i> Refresh
-            </button>
+          <!-- Dev.to Internal Sub-Tab Bar: 100% full width side-by-side -->
+          <div class="github-sub-tab-bar" style="display:flex; width:100%; gap:6px; background:rgba(0,0,0,0.05); border-radius:10px; padding:4px; border-bottom:none; user-select:none; box-sizing:border-box;">
+            <button class="github-sub-tab-btn active" id="devto-subtab-public" onclick="switchDevToSubTab('public')" style="flex:1; text-align:center; justify-content:center; padding:9px 12px; font-size:12.5px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;"><i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed</button>
+            <button class="github-sub-tab-btn" id="devto-subtab-personal" onclick="switchDevToSubTab('personal')" style="flex:1; text-align:center; justify-content:center; padding:9px 12px; font-size:12.5px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;"><i data-lucide="user" style="width:14px; height:14px;"></i> My Articles</button>
           </div>
 
           <!-- Tab 1: Public Feed Content -->
@@ -2325,24 +2325,23 @@
 
       <!-- Medium Integration Card -->
       <div class="devhub-card" id="hub-card-medium" style="display: none; width: 100%;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-          <h3><i data-lucide="edit"></i> Medium Publications</h3>
-          <span class="status-badge disconnected" id="medium-badge">Disconnected</span>
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3><i data-lucide="edit"></i> Medium Publications</h3>
+            <span class="status-badge disconnected" id="medium-badge">Disconnected</span>
+          </div>
+          <button class="btn-ghost" onclick="window.refreshMediumActiveFeed()" style="padding:6px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
+            <i data-lucide="refresh-cw" id="medium-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+          </button>
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
-
-          <!-- Sub-tab bar -->
-          <div class="github-sub-tab-bar" style="display:flex; gap:10px; border-bottom:2px dashed rgba(0,0,0,0.12); padding-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; width:100%; user-select:none;">
-            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px; flex-wrap: wrap;">
-              <button class="github-sub-tab-btn active" id="medium-subtab-public" onclick="switchMediumSubTab('public')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
-                <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed
-              </button>
-              <button class="github-sub-tab-btn" id="medium-subtab-personal" onclick="switchMediumSubTab('personal')" style="padding:9px 18px; font-size:13px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px;">
-                <i data-lucide="user" style="width:14px; height:14px;"></i> My Articles
-              </button>
-            </div>
-            <button class="btn-ghost" onclick="window.refreshMediumActiveFeed()" style="margin-left:auto; padding:7px 12px; font-size:11px; font-weight:800; border-width:2px; box-shadow:1.5px 1.5px 0 var(--black); background:var(--bg-card); color:var(--text); border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:4px;">
-              <i data-lucide="refresh-cw" id="medium-refresh-icon" style="width:11px; height:11px;"></i> Refresh
+          <!-- Sub-tab bar: 100% full width side-by-side -->
+          <div class="github-sub-tab-bar" style="display:flex; width:100%; gap:6px; background:rgba(0,0,0,0.05); border-radius:10px; padding:4px; border-bottom:none; user-select:none; box-sizing:border-box;">
+            <button class="github-sub-tab-btn active" id="medium-subtab-public" onclick="switchMediumSubTab('public')" style="flex:1; text-align:center; justify-content:center; padding:9px 12px; font-size:12.5px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;">
+              <i data-lucide="globe" style="width:14px; height:14px;"></i> Public Feed
+            </button>
+            <button class="github-sub-tab-btn" id="medium-subtab-personal" onclick="switchMediumSubTab('personal')" style="flex:1; text-align:center; justify-content:center; padding:9px 12px; font-size:12.5px; font-weight:800; border-radius:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;">
+              <i data-lucide="user" style="width:14px; height:14px;"></i> My Articles
             </button>
           </div>
 

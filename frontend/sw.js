@@ -55,8 +55,7 @@ const STATIC_ASSETS = [
   'about9.png',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js',
   'https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js',
-  'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap'
+  'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js'
 ];
 
 // 1. INSTALL: Pre-cache essential assets (resilient - a single 404 won't abort install)

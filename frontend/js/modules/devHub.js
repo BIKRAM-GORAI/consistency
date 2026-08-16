@@ -3743,16 +3743,16 @@ async function _renderSOViewer(item) {
     let answersHtml = answers.length===0 ? '<p style="color:var(--text-muted);font-weight:800;text-align:center;padding:24px;">No answers yet.</p>' : '';
     answers.forEach(a => {
       const accepted = a.is_accepted ? '<span style="font-size:11px;font-weight:900;background:#22c55e;color:#fff;padding:2px 8px;border-radius:6px;margin-left:8px;">&#10003; Accepted</span>' : '';
-      answersHtml += '<div style="border:2px solid ' + (a.is_accepted?'#22c55e':'rgba(0,0,0,0.1)') + ';border-radius:10px;padding:18px;margin-bottom:14px;background:var(--bg-card);">' +
+      answersHtml += '<div style="border:2px solid ' + (a.is_accepted?'#22c55e':'rgba(0,0,0,0.1)') + ';border-radius:10px;padding:18px;margin-bottom:14px;background:var(--bg-card);width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden;word-break:break-word;overflow-wrap:anywhere;">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">' +
           '<span style="font-size:13px;font-weight:900;background:rgba(0,0,0,0.06);padding:3px 10px;border-radius:6px;">&#9650; ' + a.score + '</span>' +
           '<span style="font-size:12px;font-weight:700;color:var(--text-muted);">by ' + (a.owner?a.owner.display_name:'Anonymous') + '</span>' + accepted +
         '</div>' +
-        '<div style="font-size:13.5px;line-height:1.75;color:var(--text);">' + (a.body||'') + '</div></div>';
+        '<div style="font-size:13.5px;line-height:1.75;color:var(--text);width:100%;max-width:100%;box-sizing:border-box;word-break:break-word;overflow-wrap:anywhere;">' + (a.body||'') + '</div></div>';
     });
     content.innerHTML =
-      '<div style="margin-bottom:24px;padding-bottom:18px;border-bottom:3px solid var(--black);">' +
-        '<h1 style="font-family:Space Grotesk,sans-serif;font-size:22px;font-weight:900;margin:0 0 10px 0;line-height:1.4;">' + q.title + '</h1>' +
+      '<div style="margin-bottom:24px;padding-bottom:18px;border-bottom:3px solid var(--black);width:100%;max-width:100%;box-sizing:border-box;">' +
+        '<h1 style="font-family:Space Grotesk,sans-serif;font-size:22px;font-weight:900;margin:0 0 10px 0;line-height:1.4;word-break:break-word;overflow-wrap:anywhere;">' + q.title + '</h1>' +
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
           '<span style="font-size:12px;font-weight:800;background:rgba(0,0,0,0.06);padding:3px 10px;border-radius:6px;">&#9650; ' + q.score + '</span>' +
           '<span style="font-size:12px;font-weight:800;background:rgba(0,0,0,0.06);padding:3px 10px;border-radius:6px;">&#128172; ' + q.answer_count + ' answers</span>' +
@@ -3760,9 +3760,9 @@ async function _renderSOViewer(item) {
         '</div>' +
         '<div style="margin-top:10px;">' + tagsHtml + '</div>' +
       '</div>' +
-      '<div style="border:2.5px solid var(--black);border-radius:12px;padding:20px;background:var(--bg-card);margin-bottom:24px;">' +
+      '<div style="border:2.5px solid var(--black);border-radius:12px;padding:20px;background:var(--bg-card);margin-bottom:24px;width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden;word-break:break-word;overflow-wrap:anywhere;">' +
         '<div style="font-size:13px;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">&#10067; Question</div>' +
-        '<div style="font-size:14px;line-height:1.75;color:var(--text);">' + (q.body||'') + '</div>' +
+        '<div style="font-size:14px;line-height:1.75;color:var(--text);width:100%;max-width:100%;box-sizing:border-box;word-break:break-word;overflow-wrap:anywhere;">' + (q.body||'') + '</div>' +
         '<div style="margin-top:14px;font-size:11px;color:var(--text-muted);font-weight:700;">Asked by ' + (q.owner?q.owner.display_name:'Anonymous') + '</div>' +
       '</div>' +
       '<h3 style="font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:900;margin:0 0 14px 0;">&#128172; ' + answers.length + ' Answers</h3>' +

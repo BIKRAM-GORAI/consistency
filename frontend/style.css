@@ -7910,25 +7910,36 @@ body.is-offline [data-requires-network="true"] {
 
 /* ── Content Viewer & Article Reader Overflow Prevention ── */
 #reader-body,
+#reader-body *,
 #cv-content,
+#cv-content *,
 #cv-main,
+#cv-main *,
 #article-reader-panel,
 .devhub-card,
 .modal-body {
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
 }
 
 #reader-body pre,
 #cv-content pre,
 #reader-body code,
-#cv-content code {
+#cv-content code,
+#cv-content p,
+#reader-body p,
+.s-code-block,
+.prettyprint,
+pre.prettyprint,
+#cv-content div {
   max-width: 100% !important;
-  overflow-x: auto !important;
+  box-sizing: border-box !important;
   white-space: pre-wrap !important;
   word-break: break-all !important;
   word-wrap: break-word !important;
-  box-sizing: border-box !important;
+  overflow-x: auto !important;
 }
 
 #reader-body img,
