@@ -674,23 +674,37 @@ window.changeRepoPage = function (delta) {
   window.filterAndRenderRepos();
 };
 
+// Session flag: Ensures GitHub analytics API is only fetched on hard refresh / initial load, NOT on every tab switch
+let isGitHubDataLoadedThisSession = false;
+
 // Load fresh GitHub data directly from backend credentials token
 async function loadGitHubData(accessToken) {
   githubAccessTokenCached = accessToken;
   window.githubService.setToken(accessToken);
 
-  // ── Stale-While-Revalidate ─────────────────────────────────────
-  // 1. Try to render cached data immediately so the UI never shows zeros
+  // 1. Try to render cached data immediately
   const cached = window.githubService.getCachedData();
-  if (cached) {
+
+  if (isGitHubDataLoadedThisSession && cached) {
+    // Already fetched during this session — render cached data cleanly without re-fetching on tab switch
     renderFullGitHubDashboard(cached);
-    showRefreshingBanner(true);      // show subtle "Updating..." indicator
-  } else {
-    showSkeletonDashboard();         // no cache at all → show skeletons
+    showRefreshingBanner(false);
+    return;
   }
 
-  // 2. Fetch fresh data silently in the background
-  await window.refreshGithubAnalyticsData();
+  if (cached) {
+    renderFullGitHubDashboard(cached);
+    showRefreshingBanner(true); // show subtle "Updating..." indicator
+  } else {
+    showSkeletonDashboard(); // no cache at all → show skeletons
+  }
+
+  // 2. Fetch fresh data silently in the background (only on first load / hard refresh)
+  try {
+    await window.refreshGithubAnalyticsData(true);
+  } catch (err) {
+    console.error('Error refreshing GitHub analytics:', err);
+  }
 }
 
 // Show a thin non-intrusive banner while fresh data is loading
@@ -812,7 +826,7 @@ function loadCachedOfflineData() {
 }
 
 // Master refresh method that pulls fresh data from APIs, caches them, and updates panels
-window.refreshGithubAnalyticsData = async function () {
+window.refreshGithubAnalyticsData = async function (isSilent = false) {
   if (!githubAccessTokenCached) return;
 
   const refreshBtn = document.getElementById('github-refresh-btn');
@@ -834,11 +848,17 @@ window.refreshGithubAnalyticsData = async function () {
 
     renderFullGitHubDashboard(payload);
     showRefreshingBanner(false);
-    showToast('GitHub analytics refreshed!', 'success');
+    isGitHubDataLoadedThisSession = true;
+
+    if (!isSilent) {
+      showToast('GitHub analytics refreshed!', 'success');
+    }
   } catch (err) {
     console.error('Error refreshing GitHub analytics:', err);
     showRefreshingBanner(false);
-    showToast('Could not refresh GitHub data — showing cached version.', 'warning');
+    if (!isSilent) {
+      showToast('Could not refresh GitHub data — showing cached version.', 'warning');
+    }
     loadCachedOfflineData();
   } finally {
     if (refreshBtn) refreshBtn.disabled = false;
