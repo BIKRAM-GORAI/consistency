@@ -50,6 +50,8 @@ function getModels() {
     highestStreak: { type: Number, default: 0 },
     lastCompletedDate: String,
     lastActiveAt: Date,
+    voiceAssistantCount: { type: Number, default: 0 },
+    voiceAssistantResetTime: { type: Date, default: Date.now },
   }, { strict: false });
 
   const TaskSchema = new mongoose.Schema({
@@ -88,7 +90,7 @@ function cleanJsonResponse(text) {
   
   // Remove markdown code block wrappers if present
   if (cleaned.startsWith('```')) {
-    const match = cleaned.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    const match = cleaned.match(/^```(?:json)?\s*([\s\S]*?)(?:```|$)/i);
     if (match) {
       cleaned = match[1].trim();
     }
@@ -98,6 +100,33 @@ function cleanJsonResponse(text) {
   cleaned = cleaned.replace(/^`+|`+$/g, '').trim();
   
   return cleaned;
+}
+
+function repairTruncatedJson(jsonStr) {
+  if (!jsonStr) return '{}';
+  let str = cleanJsonResponse(jsonStr);
+
+  try {
+    JSON.parse(str);
+    return str;
+  } catch (_) {}
+
+  // Auto-repair truncated JSON string
+  let quotes = (str.match(/"/g) || []).length;
+  if (quotes % 2 !== 0) {
+    str += '"';
+  }
+
+  str = str.replace(/,?\s*$/, '');
+  str = str.replace(/:\s*"?$/, ': ""');
+
+  let openBrackets = (str.match(/\[/g) || []).length - (str.match(/\]/g) || []).length;
+  let openBraces = (str.match(/\{/g) || []).length - (str.match(/\}/g) || []).length;
+
+  for (let i = 0; i < Math.max(0, openBrackets); i++) str += ']';
+  for (let i = 0; i < Math.max(0, openBraces); i++) str += '}';
+
+  return str;
 }
 
 /**
@@ -1144,6 +1173,364 @@ app.get('/api/cron/sync-leetcode', async (req, res) => {
   })();
 });
 
+// ── Centralized AI Voice Assistant Endpoint ──
+/**
+ * Centralized AI Voice Assistant Endpoint
+ * Hosted on Render to prevent 10s serverless timeout issues.
+ * Accepts audio file -> Transcribes with Groq Whisper -> Extracts Goals & Daily Cards with LLM -> Inserts into MongoDB.
+ */
+app.post('/process-voice-command', (req, res, next) => {
+  const cType = req.headers['content-type'] || '';
+  if (cType.includes('multipart/form-data')) {
+    return upload.single('audio')(req, res, next);
+  }
+  next();
+}, async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim() || req.body?.token || req.query?.token;
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!token || !jwtSecret) {
+      return res.status(401).json({ error: 'Unauthorized: Missing verification token or server secret.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (err) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired generation token.' });
+    }
+
+    if (decoded.action !== 'voice_assistant' || !decoded.userId) {
+      return res.status(403).json({ error: 'Forbidden: Ticket token action is invalid.' });
+    }
+
+    const userIdStr = decoded.userId;
+
+    let transcript = (req.body?.textPrompt || req.body?.text || '').trim();
+
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) {
+      return res.status(500).json({ error: 'Configuration Error: GROQ_API_KEY missing from environment.' });
+    }
+
+    if (!transcript) {
+      // If no text prompt provided, require audio file and transcribe via Groq Whisper API
+      if (!req.file || !req.file.buffer) {
+        return res.status(400).json({ error: 'Bad Request: Either textPrompt or audio file is required.' });
+      }
+
+      console.log(`[AI-Service] [Voice Assistant] Transcribing ${req.file.size} bytes audio clip for user ${userIdStr}...`);
+
+      const formData = new FormData();
+      const audioBlob = new Blob([req.file.buffer], { type: req.file.mimetype || 'audio/webm' });
+      formData.append('file', audioBlob, req.file.originalname || 'speech.webm');
+      formData.append('model', 'whisper-large-v3');
+      formData.append('temperature', '0.0');
+
+      const whisperRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqKey}`
+        },
+        body: formData
+      });
+
+      if (!whisperRes.ok) {
+        const errText = await whisperRes.text();
+        console.error(`[AI-Service] Groq Whisper error ${whisperRes.status}:`, errText);
+        return res.status(500).json({ error: 'Failed to transcribe audio clip.', details: errText });
+      }
+
+      const whisperData = await whisperRes.json();
+      transcript = (whisperData.text || '').trim();
+    } else {
+      console.log(`[AI-Service] [Voice Assistant] Direct text prompt received for user ${userIdStr}: "${transcript}"`);
+    }
+
+    if (!transcript) {
+      return res.status(200).json({
+        success: false,
+        message: 'No text or speech content detected.',
+        goals: [],
+        dailyCards: []
+      });
+    }
+
+    console.log(`[AI-Service] [Voice Assistant] Effective Transcript: "${transcript}"`);
+
+    // Calculate dates
+    const todayObj = new Date();
+    const todayStr = todayObj.toISOString().split('T')[0];
+    
+    // Default 2-month target date
+    const twoMonthsDate = new Date(todayObj);
+    twoMonthsDate.setMonth(twoMonthsDate.getMonth() + 2);
+    const twoMonthsDefaultStr = twoMonthsDate.toISOString().split('T')[0];
+
+    // 2. Prompt LLM to extract Goals and Daily Cards
+    // 2. Prompt LLM to extract Goals and Daily Cards
+    const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const systemPrompt = 
+      `You are an AI Personal Goal & Productivity Coach for a habit tracking application.\n` +
+      `Today's date is ${todayStr} (YYYY-MM-DD).\n\n` +
+      `Analyze the user's spoken voice transcript below:\n` +
+      `"${transcript}"\n\n` +
+      `Extract and structure two types of items into a SINGLE JSON object:\n\n` +
+      `1. "goals" (Array of long-term goals/aspirations):\n` +
+      `   - "title": Concise, inspiring goal title.\n` +
+      `   - "deadline": Target completion date in YYYY-MM-DD format.\n` +
+      `     * If user explicitly mentioned a target timeline (e.g., "30 days", "in 1 year", "6 months", "by December"), compute the exact YYYY-MM-DD date from ${todayStr}.\n` +
+      `     * IF THE USER HAS NOT SPECIFIED A TIMELINE, DEFAULT THE DEADLINE TO EXACTLY 2 MONTHS FROM TODAY (${twoMonthsDefaultStr}).\n` +
+      `   - "tasks": Array of CONCISE, ACTIONABLE, AND PROGRESSABLE subtasks to achieve this goal.\n` +
+      `     * CRITICAL SUBTASK RULES (MAX 12 SUBTASKS PER GOAL):\n` +
+      `       a) FOR DAILY HABITS (e.g., "walk 30 mins daily", "read 20 pages every night", "exercise every day"): Do NOT list out 30 identical daily lines. Instead, group by WEEKLY MILESTONES (e.g., "Week 1: Walk 30 mins daily", "Week 2: Walk 30 mins daily", "Week 3: Walk 30 mins daily", "Week 4: Walk 30 mins daily").\n` +
+      `       b) FOR DAILY / QUANTITATIVE CHALLENGES (e.g., "30 DSA in 30 days", "100 problems in 100 days"): Generate a maximum of 10 to 12 representative, progressable milestone subtasks (e.g., "Day 1-3: Arrays & Strings", "Day 4-7: Two Pointers & Sliding Window", ..., "Day 25-30: Dynamic Programming & Capstone").\n` +
+      `       c) FOR LONG-TERM MULTI-MONTH / YEARLY GOALS: Break down subtasks BY MONTH OR WEEK (e.g., "Month 1: HTML, CSS & JS", "Month 2: React Architecture").\n` +
+      `       d) MAXIMUM 12 SUBTASKS PER GOAL. Keep each subtask title short, actionable, and under 80 characters.\n\n` +
+      `2. "dailyCards" (Array of daily tasks/activities for today and upcoming days):\n` +
+      `   - "date": YYYY-MM-DD date of the task (e.g. today ${todayStr}, tomorrow, etc.).\n` +
+      `   - "category": Category name (e.g., "Tasks", "Work", "Personal", "Study", "Fitness"). Default to "Tasks".\n` +
+      `   - "taskTitle": Actionable task title starting with a verb.\n` +
+      `   - STRICT RULES FOR DAILY CARDS:\n` +
+      `     * MUST ONLY BE FOR TODAY (${todayStr}) AND FUTURE DATES. DO NOT ALTER OR CREATE TASKS FOR PAST DATES.\n` +
+      `     * MAXIMUM OF 7 DAILY CARDS/TASKS TOTAL IN THIS REQUEST. If user mentioned more than 7, select the top 7 most important ones.\n\n` +
+      `3. "summary": A friendly 1-sentence summary of what goals and daily tasks were extracted.\n\n` +
+      `You MUST output ONLY a valid JSON object matching this schema:\n` +
+      `{\n` +
+      `  "goals": [\n` +
+      `    {\n` +
+      `      "title": "Goal Title",\n` +
+      `      "deadline": "YYYY-MM-DD",\n` +
+      `      "tasks": ["Subtask 1", "Subtask 2"]\n` +
+      `    }\n` +
+      `  ],\n` +
+      `  "dailyCards": [\n` +
+      `    {\n` +
+      `      "date": "YYYY-MM-DD",\n` +
+      `      "category": "Tasks",\n` +
+      `      "taskTitle": "Task description"\n` +
+      `    }\n` +
+      `  ],\n` +
+      `  "summary": "Summary string"\n` +
+      `}\n`;
+
+    const llmRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${groqKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Voice transcript: "${transcript}"` }
+        ],
+        temperature: 0.1,
+        max_tokens: 4096
+      })
+    });
+
+    if (!llmRes.ok) {
+      const errTxt = await llmRes.text();
+      console.error(`[AI-Service] LLM API error ${llmRes.status}:`, errTxt);
+      return res.status(500).json({ error: 'LLM structuring failed.', details: errTxt });
+    }
+
+    const llmData = await llmRes.json();
+    const rawContent = llmData.choices?.[0]?.message?.content || '';
+    let cleanedText = cleanJsonResponse(rawContent);
+
+    let parsed = { goals: [], dailyCards: [], summary: '' };
+    try {
+      parsed = JSON.parse(cleanedText);
+    } catch (pErr) {
+      console.warn('[AI-Service] Initial JSON parse failed, attempting auto-repair on truncated response...');
+      try {
+        const repairedText = repairTruncatedJson(rawContent);
+        parsed = JSON.parse(repairedText);
+        console.log('[AI-Service] JSON successfully auto-repaired!');
+      } catch (repairErr) {
+        console.error('[AI-Service] Failed to parse JSON from LLM:', cleanedText);
+        return res.status(500).json({ error: 'Invalid structured response from AI.', raw: cleanedText });
+      }
+    }
+
+    // Increment usage quota token in MongoDB upon successful AI response generation
+    let generationsLeft = 0;
+    try {
+      await getMongoose();
+      const { User } = getModels();
+      const userDoc = await User.findById(userIdStr);
+
+      if (userDoc) {
+        const now = new Date();
+        const lastReset = userDoc.voiceAssistantResetTime ? new Date(userDoc.voiceAssistantResetTime) : new Date(0);
+        if (now.toDateString() !== lastReset.toDateString()) {
+          userDoc.voiceAssistantCount = 0;
+          userDoc.voiceAssistantResetTime = now;
+        }
+
+        userDoc.voiceAssistantCount = (userDoc.voiceAssistantCount || 0) + 1;
+
+        const isPrem = userDoc.subscriptionTier === 'premium' && (!userDoc.subscriptionExpiresAt || new Date(userDoc.subscriptionExpiresAt) > new Date());
+        if (isPrem) {
+          if (!userDoc.premiumUsageLogs) userDoc.premiumUsageLogs = [];
+          userDoc.premiumUsageLogs.forEach(log => {
+            if (!log.actionType || !['voice_parse', 'grace_apply', 'photo_extract', 'voice_assistant'].includes(log.actionType)) {
+              log.actionType = 'voice_parse';
+            }
+          });
+          userDoc.premiumUsageLogs.push({
+            actionType: 'voice_assistant',
+            timestamp: new Date(),
+            details: 'Executed Centralized AI Voice Command',
+            razorpayPaymentId: userDoc.razorpayPaymentId
+          });
+        }
+        userDoc.markModified('voiceAssistantCount');
+        userDoc.markModified('voiceAssistantResetTime');
+        if (isPrem) userDoc.markModified('premiumUsageLogs');
+        await userDoc.save();
+
+        const limit = isPrem ? (parseInt(process.env.PREMIUM_DAILY_VOICE_LIMIT, 10) || 5) : (parseInt(process.env.FREE_DAILY_VOICE_LIMIT, 10) || 2);
+        generationsLeft = Math.max(0, limit - userDoc.voiceAssistantCount);
+        console.log(`[AI-Service] [Voice Assistant Quota] Deducted 1 token for user ${userIdStr}. Remaining: ${generationsLeft}/${limit}`);
+      }
+    } catch (uErr) {
+      console.warn('[AI-Service] Failed to increment voice count on userDoc:', uErr.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      transcription: transcript,
+      goals: parsed.goals || [],
+      dailyCards: parsed.dailyCards || [],
+      summary: parsed.summary || `Extracted ${parsed.goals?.length || 0} goal(s) and ${parsed.dailyCards?.length || 0} daily task(s).`,
+      generationsLeft
+    });
+
+  } catch (err) {
+    console.error('[AI-Service] process-voice-command error:', err);
+    return res.status(500).json({ error: 'Internal Server Error during voice assistant processing.', details: err.message });
+  }
+});
+
+/**
+ * Commit User-Confirmed Voice Assistant Items
+ * Saves user-edited and approved Goals and Daily Cards to MongoDB.
+ */
+app.post('/commit-voice-command', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim() || req.body?.token || req.query?.token;
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!token || !jwtSecret) {
+      return res.status(401).json({ error: 'Unauthorized: Missing verification token.' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (err) {
+      return res.status(401).json({ error: 'Unauthorized: Token expired or invalid.' });
+    }
+
+    if (decoded.action !== 'voice_assistant' || !decoded.userId) {
+      return res.status(403).json({ error: 'Forbidden: Ticket action invalid.' });
+    }
+
+    const userIdStr = decoded.userId;
+    const { goals, dailyCards } = req.body || {};
+
+    await getMongoose();
+    const { User, Day } = getModels();
+
+    const GoalSchema = new mongoose.Schema({
+      userId: { type: mongoose.Schema.Types.ObjectId, required: true },
+      title: { type: String, required: true },
+      deadline: { type: Date, required: true },
+      tasks: [{ title: String, completed: { type: Boolean, default: false } }],
+      completedAt: Date
+    }, { timestamps: true, strict: false });
+    const Goal = mongoose.models.Goal || mongoose.model('Goal', GoalSchema);
+
+    const userIdObj = new mongoose.Types.ObjectId(userIdStr);
+    const todayObj = new Date();
+    const todayStr = todayObj.toISOString().split('T')[0];
+    const twoMonthsDate = new Date(todayObj);
+    twoMonthsDate.setMonth(twoMonthsDate.getMonth() + 2);
+
+    const createdGoals = [];
+    if (Array.isArray(goals)) {
+      for (const g of goals) {
+        if (!g.title) continue;
+        let dDate = g.deadline ? new Date(g.deadline) : null;
+        if (!dDate || isNaN(dDate.getTime())) {
+          dDate = twoMonthsDate;
+        }
+        const goalSubtasks = (Array.isArray(g.tasks) ? g.tasks : []).map(st => ({
+          title: typeof st === 'string' ? st : (st.title || 'Subtask'),
+          completed: false
+        }));
+
+        const newGoal = await Goal.create({
+          userId: userIdObj,
+          title: g.title,
+          deadline: dDate,
+          tasks: goalSubtasks
+        });
+        createdGoals.push(newGoal);
+      }
+    }
+
+    const createdDailyCards = [];
+    if (Array.isArray(dailyCards)) {
+      const validDailyTasks = dailyCards
+        .filter(c => c.date && c.taskTitle && c.date >= todayStr)
+        .slice(0, 7);
+
+      for (const c of validDailyTasks) {
+        let dayDoc = await Day.findOne({ userId: userIdObj, date: c.date });
+        const catName = c.category || 'Tasks';
+        if (!dayDoc) {
+          dayDoc = new Day({
+            userId: userIdObj,
+            date: c.date,
+            categories: [{ name: catName, tasks: [{ title: c.taskTitle, completed: false }] }]
+          });
+        } else {
+          if (!dayDoc.categories) dayDoc.categories = [];
+          let targetCat = dayDoc.categories.find(cat => cat.name && cat.name.toLowerCase() === catName.toLowerCase());
+          if (!targetCat) {
+            dayDoc.categories.push({ name: catName, tasks: [{ title: c.taskTitle, completed: false }] });
+          } else {
+            targetCat.tasks.push({ title: c.taskTitle, completed: false });
+          }
+        }
+        await dayDoc.save();
+        createdDailyCards.push({ date: c.date, category: catName, taskTitle: c.taskTitle });
+      }
+    }
+
+    console.log(`[AI-Service] [Voice Assistant Commit] Successfully committed items for user ${userIdStr}! Goals: ${createdGoals.length}, DailyCards: ${createdDailyCards.length}`);
+
+    return res.status(200).json({
+      success: true,
+      goals: createdGoals,
+      dailyCards: createdDailyCards,
+      summary: `Successfully created ${createdGoals.length} goal(s) and ${createdDailyCards.length} daily task(s).`
+    });
+
+  } catch (err) {
+    console.error('[AI-Service] commit-voice-command error:', err);
+    return res.status(500).json({ error: 'Internal Server Error during voice assistant commit.', details: err.message });
+  }
+});
+
 // Start listening
 app.listen(PORT, () => {
   console.log(`🤖 Standalone AI Microservice running on port ${PORT}`);
@@ -1151,6 +1538,7 @@ app.listen(PORT, () => {
   console.log(`👉 Generation endpoint active at POST http://localhost:${PORT}/api/ai/generate`);
   console.log(`👉 JWT Summary generation endpoint active at POST http://localhost:${PORT}/api/ai/generate-summary`);
   console.log(`👉 Voice parsing endpoint active at POST http://localhost:${PORT}/api/ai/voice-to-task`);
+  console.log(`👉 Centralized Voice Assistant active at POST http://localhost:${PORT}/process-voice-command`);
   console.log(`👉 Group moderation endpoint active at POST http://localhost:${PORT}/api/ai/moderate-group`);
   console.log(`👉 LeetCode sync cron active at GET http://localhost:${PORT}/api/cron/sync-leetcode`);
 });

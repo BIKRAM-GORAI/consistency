@@ -1587,6 +1587,128 @@ exports.commitCanvasMsg = async (req, res) => {
   }
 };
 
+// ── Centralized AI Voice Assistant Helpers & Controllers ──
+
+const getVoiceAssistantLimit = (user) => {
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  let limit;
+  if (isPremium) {
+    limit = parseInt(process.env.PREMIUM_DAILY_VOICE_LIMIT, 10);
+    if (isNaN(limit)) limit = 5;
+  } else {
+    limit = parseInt(process.env.FREE_DAILY_VOICE_LIMIT, 10);
+    if (isNaN(limit)) limit = 2;
+  }
+  return limit;
+};
+
+const checkVoiceAssistantLimit = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const now = new Date();
+  const lastReset = user.voiceAssistantResetTime ? new Date(user.voiceAssistantResetTime) : new Date(0);
+
+  if (now.toDateString() !== lastReset.toDateString()) {
+    user.voiceAssistantCount = 0;
+    user.voiceAssistantResetTime = now;
+    await user.save();
+  }
+
+  const limit = getVoiceAssistantLimit(user);
+  const generationsLeft = Math.max(0, limit - (user.voiceAssistantCount || 0));
+  return { user, generationsLeft, limit };
+};
+
+const incrementVoiceAssistantLimit = async (user) => {
+  user.voiceAssistantCount = (user.voiceAssistantCount || 0) + 1;
+  const isPremium = user && user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+  if (isPremium) {
+    if (!user.premiumUsageLogs) user.premiumUsageLogs = [];
+
+    // Sanitize existing log entries to prevent Mongoose enum validation errors
+    user.premiumUsageLogs.forEach(log => {
+      if (!log.actionType || !['voice_parse', 'grace_apply', 'photo_extract', 'voice_assistant'].includes(log.actionType)) {
+        log.actionType = 'voice_parse';
+      }
+    });
+
+    user.premiumUsageLogs.push({
+      actionType: 'voice_assistant',
+      timestamp: new Date(),
+      details: 'Executed Centralized AI Voice Command',
+      razorpayPaymentId: user.razorpayPaymentId
+    });
+  }
+  await user.save();
+  const limit = getVoiceAssistantLimit(user);
+  return Math.max(0, limit - user.voiceAssistantCount);
+};
+
+/**
+ * POST /api/ai/authorize-voice-assistant
+ * Validates user daily AI Voice Assistant quota and issues a 5-minute signed JWT ticket
+ * for the ai-service microservice running on Render.
+ */
+exports.authorizeVoiceAssistant = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { user, generationsLeft, limit } = await checkVoiceAssistantLimit(userId);
+
+    if (generationsLeft <= 0) {
+      return res.status(429).json({
+        message: `Daily AI Voice Assistant limit reached. You can execute up to ${limit} voice commands per day.`
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Vercel-Backend] JWT_SECRET is missing from environment.');
+      return res.status(500).json({ message: 'AI configuration error on server.' });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        action: 'voice_assistant'
+      },
+      jwtSecret,
+      { expiresIn: '5m' }
+    );
+
+    res.status(200).json({
+      token,
+      aiServiceUrl: process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002',
+      generationsLeft,
+      limit
+    });
+  } catch (error) {
+    console.error('[Vercel-Backend] authorizeVoiceAssistant error:', error.message);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+/**
+ * GET /api/ai/voice-assistant-limits
+ * Fetches remaining daily AI Voice Assistant quota for the authenticated user.
+ */
+exports.getVoiceAssistantLimits = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { user, generationsLeft, limit } = await checkVoiceAssistantLimit(userId);
+    const tier = (user.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date())) ? 'premium' : 'free';
+    res.status(200).json({ generationsLeft, limit, tier });
+  } catch (error) {
+    console.error('[Vercel-Backend] getVoiceAssistantLimits error:', error.message);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+};
+
+
 
 
 

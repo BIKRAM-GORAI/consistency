@@ -7959,21 +7959,38 @@ pre.prettyprint,
   overflow-x: auto !important;
 }
 
-/* ── Sub-Tab Bar Mobile Overlap Fix ── */
-@media (max-width: 768px) {
-  .github-sub-tab-bar {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-    position: static !important;
+/* ── Centralized AI Voice Assistant Button & Modal Styling ── */
+#central-voice-btn:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 12px 36px 0 rgba(255, 65, 108, 0.5), 5px 5px 0 var(--black), inset 0 1px 3px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+#central-voice-btn:active {
+  transform: scale(0.96) translateY(1px);
+  box-shadow: 2px 2px 0 var(--black), inset 0 0 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+@keyframes pulseWave {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
   }
-  .github-sub-tab-bar .btn-ghost {
-    position: static !important;
-    right: auto !important;
-    margin-left: auto !important;
-    flex-shrink: 0 !important;
+  70% {
+    box-shadow: 0 0 0 16px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  #central-voice-btn-container {
+    bottom: 80px !important;
+  }
+}
+
 

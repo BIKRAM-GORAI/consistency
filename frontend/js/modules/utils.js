@@ -415,6 +415,16 @@ function showPage(page) {
   const bnavBtn = document.getElementById(`bnav-${page}`);
   if (bnavBtn) bnavBtn.classList.add('active');
 
+  // Toggle Centralized AI Voice Assistant Mic Button (Visible ONLY on Daily Cards ['home'] & 'goals' pages)
+  const voiceBtnContainer = document.getElementById('central-voice-btn-container');
+  if (voiceBtnContainer) {
+    if (page === 'home' || page === 'goals') {
+      voiceBtnContainer.style.display = 'flex';
+    } else {
+      voiceBtnContainer.style.display = 'none';
+    }
+  }
+
   if (page === 'goals' && typeof window.loadGoals === 'function')             window.loadGoals();
   if (page === 'groups') {
     if (typeof window.loadGroups === 'function') window.loadGroups();

@@ -1821,7 +1821,7 @@ const UserSchema = new mongoose.Schema(
       {
         actionType: {
           type: String,
-          enum: ["voice_parse", "grace_apply", "photo_extract"],
+          enum: ["voice_parse", "grace_apply", "photo_extract", "voice_assistant"],
         },
         timestamp: { type: Date, default: Date.now },
         details: String,
@@ -1942,6 +1942,14 @@ const UserSchema = new mongoose.Schema(
     customGeminiApiKey: {
       type: String,
       default: ''
+    },
+    voiceAssistantCount: {
+      type: Number,
+      default: 0
+    },
+    voiceAssistantResetTime: {
+      type: Date,
+      default: Date.now
     },
   },
   { timestamps: true },
