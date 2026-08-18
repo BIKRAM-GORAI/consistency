@@ -1349,7 +1349,13 @@
         const data = await res.json();
 
         if (!res.ok) {
-          showError('register', data.message || 'Registration failed.');
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+          let errMsg = data.message || 'Registration failed.';
+          if (Array.isArray(data.errors) && data.errors.length > 0) {
+            errMsg = data.errors.map(e => e.message || e.msg).join(' ');
+          }
+          showError('register', errMsg);
           return;
         }
 

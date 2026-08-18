@@ -23,8 +23,7 @@ const registerValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Name is required')
-    .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters')
-    .matches(/^[a-zA-Z\s\-']+$/).withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
+    .isLength({ min: 1, max: 60 }).withMessage('Name must be between 1 and 60 characters'),
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')

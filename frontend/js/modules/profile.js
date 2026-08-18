@@ -2644,7 +2644,7 @@ function updateEmailVerificationUI(user) {
     statusHtml = `
       <div style="background: #fdf2f2; border: 2.5px solid var(--black); padding: 10px 14px; border-radius: 8px; font-weight: 800; font-size: 12px; color: var(--red); box-shadow: 2px 2px 0 var(--black); margin-bottom: 12px; line-height: 1.4;">
         <i data-lucide="alert-triangle" style="width: 15px; height: 15px; vertical-align: middle; margin-right: 4px;"></i> 
-        GRACE PERIOD EXPIRED. Please verify your email to unlock all features (creating cards, goals, and chatting). (Check your spam folder if you do not see the email.)
+        GRACE PERIOD EXPIRED. Please verify your email to unlock all features (creating cards, goals, and chatting). (Check your spam folder if you do not see the email.)<br><span style="font-weight: 700; font-size: 11px; margin-top: 4px; display: block; color: var(--text);">If you are having problems, you can file a report from the profile page below and your issue will be resolved within 1-2 days.</span>
       </div>
     `;
   } else {
@@ -2657,7 +2657,7 @@ function updateEmailVerificationUI(user) {
     statusHtml = `
       <div style="background: #fffbeb; border: 2.5px solid var(--black); padding: 10px 14px; border-radius: 8px; font-weight: 800; font-size: 12px; color: #d97706; box-shadow: 2px 2px 0 var(--black); margin-bottom: 12px; line-height: 1.4;">
         <i data-lucide="clock" style="width: 15px; height: 15px; vertical-align: middle; margin-right: 4px;"></i> 
-        UNVERIFIED: You have ${remainingText} remaining to verify your email before access is restricted. (Check your spam folder if you do not see the email.)
+        UNVERIFIED: You have ${remainingText} remaining to verify your email before access is restricted. (Check your spam folder if you do not see the email.)<br><span style="font-weight: 700; font-size: 11px; margin-top: 4px; display: block; color: var(--text);">If you are having problems, you can file a report from the profile page below and your issue will be resolved within 1-2 days.</span>
       </div>
     `;
   }
