@@ -130,6 +130,125 @@ function repairTruncatedJson(jsonStr) {
 }
 
 /**
+ * Executes LLM prompt with automatic multi-model & cross-provider fallback:
+ * 1. Primary Model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
+ * 2. Groq Fallback 1: 'openai/gpt-oss-20b' (Fast 20B OpenAI OSS model)
+ * 3. Groq Fallback 2: 'groq/compound' (70K TPM / NO Daily Token Limit)
+ * 4. Groq Fallback 3: 'qwen/qwen3.6-27b'
+ * 5. Cross-Provider Ultimate Fallback: Google Gemini API ('gemini-3.1-flash-lite', 1,000,000 TPM)
+ */
+async function queryLLMWithFallback({ systemPrompt, userPrompt, temperature = 0.1, max_tokens = 4096, jsonMode = false }) {
+  const groqApiKey = process.env.GROQ_API_KEY;
+  const primaryModel = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+  const groqModels = [
+    primaryModel,
+    'openai/gpt-oss-20b',
+    'groq/compound',
+    'qwen/qwen3.6-27b'
+  ].filter((v, i, a) => a.indexOf(v) === i);
+
+  let lastError = null;
+
+  // 1. Try Groq Model Fallback Chain
+  if (groqApiKey) {
+    for (const model of groqModels) {
+      try {
+        console.log(`[AI-Service] Attempting LLM query with Groq model: ${model}...`);
+        const payload = {
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature,
+          max_tokens
+        };
+        if (jsonMode) {
+          payload.response_format = { type: 'json_object' };
+        }
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            console.log(`[AI-Service] LLM query SUCCESS using Groq model: ${model}`);
+            return { content, provider: 'groq', model };
+          }
+        }
+
+        const errText = await res.text();
+        console.warn(`[AI-Service] Groq model ${model} status ${res.status}: ${errText}`);
+        lastError = new Error(`Groq API (${model}) returned status ${res.status}: ${errText}`);
+
+        // If rate limited (429) or service overload/error (5xx), fallback to next model
+        if (res.status === 429 || res.status >= 500) {
+          console.log(`[AI-Service] Rate limit or server error on ${model}. Switching to next fallback model...`);
+          continue;
+        } else {
+          // If auth or bad request error, re-throw to break loop
+          throw lastError;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`[AI-Service] Error querying Groq model ${model}: ${err.message}`);
+      }
+    }
+  }
+
+  // 2. Ultimate Fallback: Google Gemini API (Cross-Provider Safety Net)
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+    console.log(`[AI-Service] Groq fallback models exhausted or rate-limited. Falling over to Google Gemini API (${geminiModel})...`);
+
+    try {
+      const bodyObj = {
+        contents: [{
+          parts: [
+            { text: systemPrompt },
+            { text: userPrompt }
+          ]
+        }]
+      };
+      if (jsonMode) {
+        bodyObj.generationConfig = { response_mime_type: 'application/json' };
+      }
+
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyObj)
+      });
+
+      if (geminiRes.ok) {
+        const gData = await geminiRes.json();
+        const gContent = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (gContent) {
+          console.log(`[AI-Service] LLM query SUCCESS using Google Gemini fallback (${geminiModel})`);
+          return { content: gContent, provider: 'gemini', model: geminiModel };
+        }
+      }
+      const gErrText = await geminiRes.text();
+      console.error(`[AI-Service] Gemini fallback API returned status ${geminiRes.status}: ${gErrText}`);
+    } catch (gErr) {
+      console.error(`[AI-Service] Gemini fallback execution error: ${gErr.message}`);
+    }
+  }
+
+  throw lastError || new Error('All AI models and providers failed or hit rate limits.');
+}
+
+/**
  * GET /health
  * Lightweight health check endpoint to prevent Render scaling-down (for Uptime Robot)
  */
@@ -163,59 +282,24 @@ app.post('/api/ai/generate', async (req, res) => {
       return res.status(400).json({ error: 'Bad Request: systemPrompt and userPrompt are required' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      console.error('[AI-Service] Configuration Error: GROQ_API_KEY is not set in environment.');
-      return res.status(500).json({ error: 'Internal Server Error: AI provider configuration missing.' });
-    }
-
-    const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-    console.log(`[AI-Service] Querying Groq model ${modelName}...`);
-
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500
-      })
+    const { content } = await queryLLMWithFallback({
+      systemPrompt,
+      userPrompt,
+      temperature: 0.7,
+      max_tokens: 1500,
+      jsonMode: false
     });
 
-    if (!groqResponse.ok) {
-      const errorText = await groqResponse.text();
-      console.error(`[AI-Service] Groq API returned status ${groqResponse.status}:`, errorText);
-      return res.status(groqResponse.status).json({
-        error: 'Groq API error',
-        details: errorText
-      });
-    }
-
-    const data = await groqResponse.json();
-    const resultText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-
-    if (!resultText) {
-      console.error('[AI-Service] Malformed Groq API response:', JSON.stringify(data));
-      return res.status(502).json({ error: 'Bad Gateway: Empty response from AI provider' });
-    }
-
-    res.status(200).json({ result: resultText });
+    res.status(200).json({ result: content });
   } catch (error) {
-    console.error('[AI-Service] Execution error:', error);
+    console.error('[AI-Service] Execution error in /api/ai/generate:', error);
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 });
 
 /**
  * POST /api/ai/generate-summary
- * Securely forwards completion requests to the Groq API using JWT authorization token verified by JWT_SECRET
+ * Securely forwards completion requests to the AI provider using JWT authorization token verified by JWT_SECRET
  */
 app.post('/api/ai/generate-summary', async (req, res) => {
   try {
@@ -248,52 +332,17 @@ app.post('/api/ai/generate-summary', async (req, res) => {
       return res.status(400).json({ error: 'Bad Request: systemPrompt and userPrompt are required' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      console.error('[AI-Service] Configuration Error: GROQ_API_KEY is not set in environment.');
-      return res.status(500).json({ error: 'Internal Server Error: AI provider configuration missing.' });
-    }
-
-    const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-    console.log(`[AI-Service] [Auth-Token Verified] Querying Groq model ${modelName}...`);
-
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500
-      })
+    const { content } = await queryLLMWithFallback({
+      systemPrompt,
+      userPrompt,
+      temperature: 0.7,
+      max_tokens: 1500,
+      jsonMode: false
     });
 
-    if (!groqResponse.ok) {
-      const errorText = await groqResponse.text();
-      console.error(`[AI-Service] Groq API returned status ${groqResponse.status}:`, errorText);
-      return res.status(groqResponse.status).json({
-        error: 'Groq API error',
-        details: errorText
-      });
-    }
-
-    const data = await groqResponse.json();
-    const resultText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-
-    if (!resultText) {
-      console.error('[AI-Service] Malformed Groq API response:', JSON.stringify(data));
-      return res.status(502).json({ error: 'Bad Gateway: Empty response from AI provider' });
-    }
-
-    res.status(200).json({ result: resultText });
+    res.status(200).json({ result: content });
   } catch (error) {
-    console.error('[AI-Service] Execution error:', error);
+    console.error('[AI-Service] Execution error in /api/ai/generate-summary:', error);
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 });
@@ -525,8 +574,7 @@ app.post('/api/ai/voice-to-task', upload.single('audio'), async (req, res) => {
     }
 
     // Now, send the transcript to the LLM to structure into `{ categories: [ { name: "", tasks: [] } ] }`
-    const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-    console.log(`[AI-Service] Prompting LLM (${modelName}) to structure tasks JSON...`);
+    console.log('[AI-Service] Structuring voice transcript into daily tasks JSON...');
 
     const systemPrompt = 
       "You are an expert personal productivity assistant.\n" +
@@ -551,46 +599,20 @@ app.post('/api/ai/voice-to-task', upload.single('audio'), async (req, res) => {
       "2. Do not include any explanation, conversational filler, markdown codeblocks (e.g. ```json), or wrapping. Output only the raw valid JSON.\n" +
       "3. If no clear tasks are found or if the text is irrelevant, return {\"categories\": []}.";
 
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analyze this voice transcription: "${transcript}"` }
-        ],
-        temperature: 0.1,
-        response_format: { type: "json_object" }
-      })
+    const { content } = await queryLLMWithFallback({
+      systemPrompt,
+      userPrompt: `Analyze this voice transcription: "${transcript}"`,
+      temperature: 0.1,
+      max_tokens: 1500,
+      jsonMode: true
     });
-
-    if (!groqResponse.ok) {
-      const errorText = await groqResponse.text();
-      console.error(`[AI-Service] Groq Chat API returned status ${groqResponse.status}:`, errorText);
-      return res.status(groqResponse.status).json({
-        error: 'Groq Chat API error during parsing',
-        details: errorText
-      });
-    }
-
-    const chatData = await groqResponse.json();
-    const resultText = chatData.choices && chatData.choices[0] && chatData.choices[0].message && chatData.choices[0].message.content;
-
-    if (!resultText) {
-      console.error('[AI-Service] Malformed Groq Chat response:', JSON.stringify(chatData));
-      return res.status(502).json({ error: 'Bad Gateway: Empty response from AI parsing provider' });
-    }
 
     let parsedResult;
     try {
-      parsedResult = JSON.parse(resultText.trim());
+      parsedResult = JSON.parse(cleanJsonResponse(content));
     } catch (parseError) {
-      console.warn(`[AI-Service] Raw response text is not valid JSON:`, resultText);
-      return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: resultText });
+      console.warn(`[AI-Service] Raw response text is not valid JSON:`, content);
+      return res.status(502).json({ error: 'Bad Gateway: AI response is not valid JSON', raw: content });
     }
 
     res.status(200).json(parsedResult);
@@ -1316,31 +1338,14 @@ app.post('/process-voice-command', (req, res, next) => {
       `  "summary": "Summary string"\n` +
       `}\n`;
 
-    const llmRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Voice transcript: "${transcript}"` }
-        ],
-        temperature: 0.1,
-        max_tokens: 4096
-      })
+    const { content: rawContent } = await queryLLMWithFallback({
+      systemPrompt,
+      userPrompt: `Voice transcript: "${transcript}"`,
+      temperature: 0.1,
+      max_tokens: 4096,
+      jsonMode: true
     });
 
-    if (!llmRes.ok) {
-      const errTxt = await llmRes.text();
-      console.error(`[AI-Service] LLM API error ${llmRes.status}:`, errTxt);
-      return res.status(500).json({ error: 'LLM structuring failed.', details: errTxt });
-    }
-
-    const llmData = await llmRes.json();
-    const rawContent = llmData.choices?.[0]?.message?.content || '';
     let cleanedText = cleanJsonResponse(rawContent);
 
     let parsed = { goals: [], dailyCards: [], summary: '' };
