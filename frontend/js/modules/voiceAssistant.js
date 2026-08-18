@@ -81,9 +81,34 @@ function stopAudioPlayback() {
 }
 
 /**
+ * Clears typed/pasted text prompt input
+ */
+export function clearVoiceAssistantText() {
+  const txtEl = document.getElementById('va-text-input');
+  const counterEl = document.getElementById('va-char-counter');
+  const clearBtn = document.getElementById('va-clear-text-btn');
+  if (txtEl) {
+    txtEl.value = '';
+    txtEl.style.height = 'auto';
+  }
+  if (counterEl) {
+    counterEl.textContent = '0 / 5000';
+    counterEl.style.color = 'var(--text-muted)';
+  }
+  if (clearBtn) {
+    clearBtn.style.display = 'none';
+  }
+}
+
+/**
  * Opens the Voice Assistant Modal
  */
 export function openVoiceAssistantModal() {
+  if (!navigator.onLine) {
+    showVoiceAssistantAlert('You are offline. Please connect to the internet to use AI Voice Assistant.', 'warn');
+    return;
+  }
+
   const modal = document.getElementById('voice-assistant-modal');
   if (!modal) return;
   modal.style.display = 'flex';
@@ -91,23 +116,27 @@ export function openVoiceAssistantModal() {
   fetchVoiceAssistantLimits();
   resetVoiceAssistantUI();
 
-  // Attach textarea auto-expand logic
+  // Attach textarea auto-expand & clear button logic
   setTimeout(() => {
     const txtEl = document.getElementById('va-text-input');
+    const clearBtn = document.getElementById('va-clear-text-btn');
     if (txtEl && !txtEl.dataset.autoExpandBound) {
       txtEl.dataset.autoExpandBound = 'true';
       txtEl.addEventListener('input', () => {
         txtEl.style.height = 'auto';
         txtEl.style.height = Math.min(txtEl.scrollHeight, 140) + 'px';
         const counterEl = document.getElementById('va-char-counter');
+        const len = txtEl.value.length;
         if (counterEl) {
-          const len = txtEl.value.length;
           counterEl.textContent = `${len} / 5000`;
           if (len >= 4800) {
             counterEl.style.color = '#ff0000';
           } else {
             counterEl.style.color = 'var(--text-muted)';
           }
+        }
+        if (clearBtn) {
+          clearBtn.style.display = len > 0 ? 'inline-flex' : 'none';
         }
       });
       txtEl.addEventListener('keydown', (e) => {
@@ -140,6 +169,32 @@ export function closeVoiceAssistantModal() {
 }
 
 /**
+ * Shows prominent warning / error alert both on top of popup via toast and inside modal inline banner
+ */
+function showVoiceAssistantAlert(msg, type = 'warn') {
+  if (typeof window.showToast === 'function') {
+    window.showToast(msg, type);
+  }
+  const alertEl = document.getElementById('va-inline-alert');
+  if (alertEl) {
+    alertEl.style.display = 'block';
+    alertEl.textContent = msg;
+    if (type === 'error') {
+      alertEl.style.background = 'rgba(239, 68, 68, 0.12)';
+      alertEl.style.borderColor = '#ef4444';
+      alertEl.style.color = '#ef4444';
+    } else {
+      alertEl.style.background = 'rgba(245, 158, 11, 0.12)';
+      alertEl.style.borderColor = '#f59e0b';
+      alertEl.style.color = '#d97706';
+    }
+    setTimeout(() => {
+      if (alertEl) alertEl.style.display = 'none';
+    }, 4500);
+  }
+}
+
+/**
  * Resets the modal UI state to IDLE
  */
 export function resetVoiceAssistantUI() {
@@ -158,6 +213,9 @@ export function resetVoiceAssistantUI() {
     ticketToken: '',
     aiServiceUrl: ''
   };
+
+  const alertEl = document.getElementById('va-inline-alert');
+  if (alertEl) alertEl.style.display = 'none';
 
   setViewState('idle');
 }
@@ -321,6 +379,14 @@ export function reRecordVoiceCommand() {
  * Sends recorded audio clip to backend authorization and Render ai-service to extract items (NO DB COMMITS YET)
  */
 export async function sendVoiceCommand() {
+  if (!navigator.onLine) {
+    const msg = 'You are offline. Connect to the internet to process AI voice commands.';
+    if (typeof window.showToast === 'function') window.showToast(msg, 'warn');
+    else alert(msg);
+    resetVoiceAssistantUI();
+    return;
+  }
+
   if (!currentAudioBlob) {
     alert('No audio recording found.');
     return;
@@ -405,7 +471,11 @@ export async function sendVoiceCommand() {
 
   } catch (err) {
     console.error('[VoiceAssistant] Send command failed:', err);
-    alert(`Failed to process voice command: ${err.message}`);
+    const isOfflineErr = !navigator.onLine || err.message.includes('Failed to fetch') || err.message.includes('NetworkError');
+    const errMsg = isOfflineErr 
+      ? 'Network connection lost. Please check your internet connection and try again.'
+      : `Failed to process voice command: ${err.message}`;
+    showVoiceAssistantAlert(errMsg, 'error');
     resetVoiceAssistantUI();
   }
 }
@@ -517,12 +587,160 @@ export function renderDraftConfirmationView() {
 }
 
 /**
+ * Saves draft Goals & Daily Cards to local IndexedDB & syncQueue when offline or on network failure
+ */
+async function saveDraftVoiceDataOffline() {
+  const createdGoals = [];
+  const createdDailyCards = [];
+  const localDb = window.localDb;
+
+  try {
+    // 1. Save Goals Offline to IndexedDB & syncQueue
+    if (Array.isArray(draftVoiceData.goals) && draftVoiceData.goals.length > 0) {
+      for (const g of draftVoiceData.goals) {
+        if (!g.title) continue;
+        const tempGoalId = `temp_goal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        let dDate = g.deadline ? new Date(g.deadline) : null;
+        if (!dDate || isNaN(dDate.getTime())) {
+          dDate = new Date();
+          dDate.setMonth(dDate.getMonth() + 2);
+        }
+        const goalSubtasks = (Array.isArray(g.tasks) ? g.tasks : []).map(st => ({
+          title: typeof st === 'string' ? st : (st.title || 'Subtask'),
+          completed: false
+        }));
+
+        const localGoalObj = {
+          _id: tempGoalId,
+          userId: window.userId || localStorage.getItem('userId'),
+          title: g.title,
+          deadline: dDate,
+          tasks: goalSubtasks,
+          completedAt: null,
+          createdAt: new Date().toISOString()
+        };
+
+        if (localDb && localDb.goals) {
+          await localDb.goals.put(localGoalObj);
+        }
+        if (window.syncManager) {
+          window.syncManager.addToQueue('POST', 'goals', null, {
+            title: g.title,
+            deadline: dDate,
+            tasks: goalSubtasks
+          }, tempGoalId);
+        }
+        createdGoals.push(localGoalObj);
+      }
+    }
+
+    // 2. Save Daily Cards Offline to IndexedDB & syncQueue
+    if (Array.isArray(draftVoiceData.dailyCards) && draftVoiceData.dailyCards.length > 0) {
+      const todayStr = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+      const validCards = draftVoiceData.dailyCards.filter(c => c.date && c.taskTitle && c.date >= todayStr).slice(0, 7);
+
+      for (const c of validCards) {
+        const catName = c.category || 'Tasks';
+        let dayDoc = null;
+        if (window.allDays) {
+          dayDoc = window.allDays.find(d => (d.date || '').split('T')[0] === c.date);
+        }
+
+        if (!dayDoc && localDb && localDb.days) {
+          const cached = await localDb.days.toArray();
+          dayDoc = cached.find(d => (d.date || '').split('T')[0] === c.date);
+        }
+
+        if (!dayDoc) {
+          const tempDayId = `temp_day_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          dayDoc = {
+            _id: tempDayId,
+            date: c.date,
+            userId: window.userId || localStorage.getItem('userId'),
+            categories: [{
+              _id: `temp_cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              name: catName,
+              tasks: [{
+                _id: `temp_task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                title: c.taskTitle,
+                completed: false
+              }]
+            }],
+            summary: ''
+          };
+          if (window.allDays) window.allDays.push(dayDoc);
+          if (localDb && localDb.days) await localDb.days.put(dayDoc);
+          if (window.syncManager) {
+            window.syncManager.addToQueue('POST', 'days', null, {
+              date: c.date,
+              categories: dayDoc.categories,
+              summary: ''
+            }, tempDayId);
+          }
+        } else {
+          if (!dayDoc.categories) dayDoc.categories = [];
+          let targetCat = dayDoc.categories.find(cat => cat.name && cat.name.toLowerCase() === catName.toLowerCase());
+          if (!targetCat) {
+            targetCat = {
+              _id: `temp_cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              name: catName,
+              tasks: [{
+                _id: `temp_task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                title: c.taskTitle,
+                completed: false
+              }]
+            };
+            dayDoc.categories.push(targetCat);
+          } else {
+            if (!targetCat.tasks) targetCat.tasks = [];
+            targetCat.tasks.push({
+              _id: `temp_task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              title: c.taskTitle,
+              completed: false
+            });
+          }
+          dayDoc.lastLocalEdit = Date.now();
+          if (localDb && localDb.days) await localDb.days.put(dayDoc);
+          if (window.syncManager) {
+            window.syncManager.addToQueue('PUT', 'days', dayDoc._id, { categories: dayDoc.categories });
+          }
+        }
+        createdDailyCards.push({ date: c.date, category: catName, taskTitle: c.taskTitle });
+      }
+    }
+
+    // 3. Refresh Local UI
+    if (typeof window.renderDays === 'function') window.renderDays();
+    if (typeof window.loadGoals === 'function') window.loadGoals();
+
+    renderSuccessResults({
+      summary: `(Offline Mode) Created ${createdGoals.length} goal(s) and ${createdDailyCards.length} daily task(s). They will auto-sync when online.`,
+      transcription: draftVoiceData.transcription,
+      goals: createdGoals,
+      dailyCards: createdDailyCards
+    });
+
+    setViewState('success');
+  } catch (err) {
+    console.error('[VoiceAssistant] Offline save failed:', err);
+    alert(`Failed to save offline items: ${err.message}`);
+    resetVoiceAssistantUI();
+  }
+}
+
+/**
  * Submits final user-approved and edited Goals and Daily Cards to Render ai-service to commit to DB
  */
 export async function commitVoiceCommand() {
   if ((!draftVoiceData.goals || draftVoiceData.goals.length === 0) && (!draftVoiceData.dailyCards || draftVoiceData.dailyCards.length === 0)) {
     alert('No items remaining to create.');
     resetVoiceAssistantUI();
+    return;
+  }
+
+  // If currently offline, commit directly to local IndexedDB & syncQueue
+  if (!navigator.onLine) {
+    await saveDraftVoiceDataOffline();
     return;
   }
 
@@ -596,6 +814,12 @@ export async function commitVoiceCommand() {
 
   } catch (err) {
     console.error('[VoiceAssistant] Commit failed:', err);
+    // If network connection failed during commit, fallback to local IndexedDB save
+    if (!navigator.onLine || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      console.log('[VoiceAssistant] Network connection lost during commit. Falling back to local offline commit...');
+      await saveDraftVoiceDataOffline();
+      return;
+    }
     alert(`Failed to save items: ${err.message}`);
     resetVoiceAssistantUI();
   }
@@ -683,6 +907,7 @@ if (typeof window !== 'undefined') {
   window.sendTextVoiceCommand = sendTextVoiceCommand;
   window.reRecordVoiceCommand = reRecordVoiceCommand;
   window.resetVoiceAssistantUI = resetVoiceAssistantUI;
+  window.clearVoiceAssistantText = clearVoiceAssistantText;
 
   window.commitVoiceCommand = commitVoiceCommand;
   window.removeDraftGoal = removeDraftGoal;
@@ -696,6 +921,13 @@ if (typeof window !== 'undefined') {
  * Sends typed/pasted text prompt directly to AI processing pipeline (bypassing Groq Whisper API)
  */
 export async function sendTextVoiceCommand() {
+  if (!navigator.onLine) {
+    const msg = 'You are offline. Connect to the internet to process AI voice commands.';
+    if (typeof window.showToast === 'function') window.showToast(msg, 'warn');
+    else alert(msg);
+    return;
+  }
+
   const textInputEl = document.getElementById('va-text-input');
   const text = textInputEl ? textInputEl.value.trim() : '';
 
@@ -788,7 +1020,11 @@ export async function sendTextVoiceCommand() {
 
   } catch (err) {
     console.error('[VoiceAssistant] Send text prompt failed:', err);
-    alert(`Failed to process text prompt: ${err.message}`);
+    const isOfflineErr = !navigator.onLine || err.message.includes('Failed to fetch') || err.message.includes('NetworkError');
+    const errMsg = isOfflineErr 
+      ? 'Network connection lost. Please check your internet connection and try again.'
+      : `Failed to process prompt: ${err.message}`;
+    showVoiceAssistantAlert(errMsg, 'error');
     resetVoiceAssistantUI();
   }
 }

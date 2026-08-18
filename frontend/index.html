@@ -4944,6 +4944,9 @@
       </div>
     </div>
 
+    <!-- Inline Alert Banner inside Modal -->
+    <div id="va-inline-alert" style="display: none; width: 100%; margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; color: #ef4444; font-size: 12px; font-weight: 800; text-align: center; box-sizing: border-box;"></div>
+
     <!-- VIEW 1: IDLE STATE -->
     <div id="va-view-idle" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 8px 0;">
       <div style="background: rgba(255, 107, 53, 0.08); border: 2px dashed #ff6b35; border-radius: 14px; padding: 14px; width: 100%;">
@@ -4971,7 +4974,12 @@
       <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label style="font-size: 11px; font-weight: 800; color: var(--text-muted);">PROMPT TEXT</label>
-          <span id="va-char-counter" style="font-size: 10px; font-weight: 900; font-family: monospace; color: var(--text-muted);">0 / 5000</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="va-clear-text-btn" onclick="window.clearVoiceAssistantText()" style="display: none; background: transparent; border: none; font-size: 11px; font-weight: 900; color: #ef4444; cursor: pointer; padding: 0; align-items: center; gap: 3px;">
+              <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Clear
+            </button>
+            <span id="va-char-counter" style="font-size: 10px; font-weight: 900; font-family: monospace; color: var(--text-muted);">0 / 5000</span>
+          </div>
         </div>
         <textarea id="va-text-input" maxlength="5000" placeholder="Type or copy-paste your prompt text here (up to 5000 chars)..." rows="2" style="width: 100%; border: 2.5px solid var(--black); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; font-family: 'Inter', sans-serif; resize: none; max-height: 140px; overflow-y: auto; background: var(--bg-body); color: var(--text); box-shadow: 2px 2px 0 var(--black); box-sizing: border-box; line-height: 1.4;"></textarea>
         
