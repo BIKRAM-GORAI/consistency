@@ -133,9 +133,8 @@ function repairTruncatedJson(jsonStr) {
  * Executes LLM prompt with automatic multi-model & cross-provider fallback:
  * 1. Primary Model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
  * 2. Groq Fallback 1: 'openai/gpt-oss-20b' (Fast 20B OpenAI OSS model)
- * 3. Groq Fallback 2: 'groq/compound' (70K TPM / NO Daily Token Limit)
- * 4. Groq Fallback 3: 'qwen/qwen3.6-27b'
- * 5. Cross-Provider Ultimate Fallback: Google Gemini API ('gemini-3.1-flash-lite', 1,000,000 TPM)
+ * 3. Groq Fallback 2: 'qwen/qwen3.6-27b' (27B parameter Qwen model)
+ * 4. Cross-Provider Ultimate Fallback: Google Gemini API ('gemini-3.1-flash-lite', 1,000,000 TPM)
  */
 async function queryLLMWithFallback({ systemPrompt, userPrompt, temperature = 0.1, max_tokens = 4096, jsonMode = false }) {
   const groqApiKey = process.env.GROQ_API_KEY;
@@ -144,7 +143,6 @@ async function queryLLMWithFallback({ systemPrompt, userPrompt, temperature = 0.
   const groqModels = [
     primaryModel,
     'openai/gpt-oss-20b',
-    'groq/compound',
     'qwen/qwen3.6-27b'
   ].filter((v, i, a) => a.indexOf(v) === i);
 

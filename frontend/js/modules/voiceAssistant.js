@@ -99,6 +99,16 @@ export function openVoiceAssistantModal() {
       txtEl.addEventListener('input', () => {
         txtEl.style.height = 'auto';
         txtEl.style.height = Math.min(txtEl.scrollHeight, 140) + 'px';
+        const counterEl = document.getElementById('va-char-counter');
+        if (counterEl) {
+          const len = txtEl.value.length;
+          counterEl.textContent = `${len} / 5000`;
+          if (len >= 4800) {
+            counterEl.style.color = '#ff0000';
+          } else {
+            counterEl.style.color = 'var(--text-muted)';
+          }
+        }
       });
       txtEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
