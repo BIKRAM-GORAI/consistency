@@ -610,6 +610,13 @@ function renderLeetCodeUI(user) {
   const leetcodeProfilePic     = document.getElementById('leetcode-profile-pic');
   const leetcodeUsernameInput  = document.getElementById('leetcode-username');
   const remainingChanges       = document.getElementById('leetcode-remaining-changes');
+  const leetcodeHeaderBadge    = document.getElementById('leetcode-header-badge');
+  const leetcodeConnectSection = document.getElementById('leetcode-connect-section');
+  const leetcodeHeaderToggleIcon = document.getElementById('leetcode-header-toggle-icon');
+
+  function updateHeaderBadge(state, text) {
+    if (leetcodeHeaderBadge) setLcStatus(leetcodeHeaderBadge, state, text);
+  }
   
   if (!leetcodeUsernameDisplay || !leetcodeStatus) return;
 
@@ -641,6 +648,9 @@ function renderLeetCodeUI(user) {
     const retryExpiresMs = scheduledMs + 15 * 60 * 1000;
 
     setLcStatus(leetcodeStatus, 'pending', '<i data-lucide="refresh-cw"></i> Verification pending');
+    updateHeaderBadge('pending', '<i data-lucide="refresh-cw"></i> Verification pending');
+    if (leetcodeConnectSection) leetcodeConnectSection.style.display = 'block';
+    if (leetcodeHeaderToggleIcon) leetcodeHeaderToggleIcon.textContent = '▲';
 
     if (user.leetcodeVerificationCode) {
       const vCode = document.getElementById('leetcode-verification-code');
@@ -664,6 +674,9 @@ function renderLeetCodeUI(user) {
 
   } else if (isVerified) {
     setLcStatus(leetcodeStatus, 'verified', '<i data-lucide="check-circle"></i> Verified');
+    updateHeaderBadge('verified', '<i data-lucide="check-circle"></i> Connected');
+    if (leetcodeConnectSection) leetcodeConnectSection.style.display = 'block';
+    if (leetcodeHeaderToggleIcon) leetcodeHeaderToggleIcon.textContent = '▲';
 
     hideAllSections();
     const connSec = document.getElementById('leetcode-connected');
@@ -692,13 +705,18 @@ function renderLeetCodeUI(user) {
     const isExpired = user.leetcodeVerificationExpiry &&
                       new Date() > new Date(user.leetcodeVerificationExpiry);
 
+    if (leetcodeConnectSection) leetcodeConnectSection.style.display = 'block';
+    if (leetcodeHeaderToggleIcon) leetcodeHeaderToggleIcon.textContent = '▲';
+
     if (isExpired) {
       setLcStatus(leetcodeStatus, 'error', '<i data-lucide="alert-circle"></i> Code expired');
+      updateHeaderBadge('error', '<i data-lucide="alert-circle"></i> Code expired');
       hideAllSections();
       const expSec = document.getElementById('leetcode-code-expired');
       if (expSec) expSec.style.display = 'block';
     } else {
       setLcStatus(leetcodeStatus, 'waiting', '<i data-lucide="clock"></i> Pending verification');
+      updateHeaderBadge('waiting', '<i data-lucide="clock"></i> Pending verification');
 
       const vCode = document.getElementById('leetcode-verification-code');
       if (vCode) {
@@ -727,6 +745,15 @@ function renderLeetCodeUI(user) {
   } else {
     if (leetcodeUsernameDisplay) leetcodeUsernameDisplay.textContent = 'Not connected';
     setLcStatus(leetcodeStatus, 'error', '<i data-lucide="x-circle"></i> Not connected');
+    updateHeaderBadge('error', '<i data-lucide="x-circle"></i> Not connected');
+    
+    if (leetcodeConnectSection && !window.leetcodeCardManuallyExpanded) {
+      leetcodeConnectSection.style.display = 'none';
+    }
+    if (leetcodeHeaderToggleIcon) {
+      leetcodeHeaderToggleIcon.textContent = (leetcodeConnectSection && leetcodeConnectSection.style.display === 'block') ? '▲' : '▼';
+    }
+
     if (leetcodeProfilePic) leetcodeProfilePic.style.display = 'none';
     hideAllSections();
     const ncSec = document.getElementById('leetcode-not-connected');
@@ -739,6 +766,24 @@ function renderLeetCodeUI(user) {
       `Remaining changes: ${window.MAX_USERNAME_CHANGES - (user.leetcodeUsernameChangeCount || 0)}`;
   }
 }
+
+function toggleLeetCodeCardCollapse() {
+  const section = document.getElementById('leetcode-connect-section');
+  const icon = document.getElementById('leetcode-header-toggle-icon');
+  if (!section) return;
+
+  const isCollapsed = section.style.display === 'none' || getComputedStyle(section).display === 'none';
+  if (isCollapsed) {
+    section.style.display = 'block';
+    if (icon) icon.textContent = '▲';
+    window.leetcodeCardManuallyExpanded = true;
+  } else {
+    section.style.display = 'none';
+    if (icon) icon.textContent = '▼';
+    window.leetcodeCardManuallyExpanded = false;
+  }
+}
+window.toggleLeetCodeCardCollapse = toggleLeetCodeCardCollapse;
 
 // Update all LeetCode buttons to show verification status
 function updateLeetCodeButtonsStatus(isVerified) {

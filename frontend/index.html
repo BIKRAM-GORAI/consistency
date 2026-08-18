@@ -3094,13 +3094,19 @@
           </button>
         </div>
 
-        <!-- 3. LEETCODE INTEGRATION (Always Shown) -->
-        <div style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase;"><i data-lucide="target"></i> LeetCode Integration</h3>
+        <!-- 3. LEETCODE INTEGRATION (Collapsible when Not Connected) -->
+        <div id="leetcode-card-container" style="padding: 16px; background: var(--bg-muted); border: var(--border-2); border-radius: 8px; margin-bottom: 20px;">
+          <div id="leetcode-card-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleLeetCodeCardCollapse()">
+            <h3 style="font-size: 14px; font-weight: 700; margin: 0; text-transform: uppercase; display: flex; align-items: center; gap: 6px;"><i data-lucide="target"></i> LeetCode Integration</h3>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div id="leetcode-header-badge" class="lc-status-badge lc-status-error" style="margin: 0; font-size: 11px; padding: 2px 8px;"><i data-lucide="x-circle"></i> Not connected</div>
+              <span id="leetcode-header-toggle-icon" style="font-size: 12px; font-weight: 800; color: var(--text-muted); transition: transform 0.2s ease;">▼</span>
+            </div>
+          </div>
 
-          <div id="leetcode-connect-section">
+          <div id="leetcode-connect-section" style="display: none; margin-top: 16px;">
             <!-- Status display -->
-            <div id="leetcode-status" class="lc-status-badge lc-status-error"></div>
+            <div id="leetcode-status" class="lc-status-badge lc-status-error" style="display: none;"></div>
 
             <!-- Profile picture display -->
             <img id="leetcode-profile-pic" style="width:60px; height:60px; border-radius:50%; object-fit:cover; display:none; margin:0 auto 12px; border:2px solid #ddd;" />
