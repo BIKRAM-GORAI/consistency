@@ -389,9 +389,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  const savedTheme = localStorage.getItem('theme') || 'light';
+  const savedTheme = localStorage.getItem('theme') || 'claymorphism';
   const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
-  const effectiveTheme = (savedTheme === 'dark' && !isDarkAllowed) ? 'light' : savedTheme;
+  const effectiveTheme = (savedTheme === 'dark' && !isDarkAllowed) ? 'claymorphism' : savedTheme;
   const themeSelect = document.getElementById('theme-select');
 
   if (effectiveTheme === 'dark') {

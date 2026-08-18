@@ -31,7 +31,7 @@ async function openProfileModal() {
   window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
   const themeSelect = document.getElementById('theme-select');
   if (themeSelect) {
-    themeSelect.value = localStorage.getItem('theme') || 'light';
+    themeSelect.value = localStorage.getItem('theme') || 'claymorphism';
   }
 
   // Synchronous baseline population from localStorage to ensure instant loading of username, email, photo, showcase status, and LeetCode details on refresh/offline
@@ -281,11 +281,11 @@ function renderProfileData(user) {
   }
   if (themeSelect && user.theme) {
     const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
-    const effectiveUserTheme = (user.theme === 'dark' && !isDarkAllowed) ? 'light' : user.theme;
+    const effectiveUserTheme = (user.theme === 'dark' && !isDarkAllowed) ? 'claymorphism' : (user.theme || 'claymorphism');
     themeSelect.value = effectiveUserTheme;
     
     // Automatically apply synced theme to the layout if it differs from current local theme
-    const currentTheme = localStorage.getItem('theme') || 'light';
+    const currentTheme = localStorage.getItem('theme') || 'claymorphism';
     if (effectiveUserTheme !== currentTheme && typeof window.toggleAppTheme === 'function') {
       window.toggleAppTheme(effectiveUserTheme);
     }

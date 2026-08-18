@@ -6,6 +6,9 @@
     if (!localStorage.getItem('userId')) {
       window.location.replace('landing.html' + window.location.search);
     }
+    // Initial Theme (Default: Claymorphism for new users)
+    const initialTheme = localStorage.getItem('theme') || 'claymorphism';
+    document.documentElement.setAttribute('data-theme', initialTheme);
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
@@ -3273,11 +3276,11 @@
             <div style="padding: 12px; background: var(--bg); border-radius: 6px; border: var(--border-2);">
               <label for="theme-select" style="font-weight: 600; color: var(--text); font-size: 13px; display: block; margin-bottom: 6px;">App Theme</label>
               <select id="theme-select" class="form-control" style="border: var(--border-2); background: var(--bg-card); color: var(--text); font-weight: 700; width: 100%; cursor: pointer;">
+                <option value="claymorphism">Claymorphism</option>
                 <option value="light">Light Brutalist</option>
                 <option value="dark">Dark Brutalist</option>
-                <option value="premium-aurora">✨ Aurora Glass</option>
-                <option value="minimalistic">🍃 Minimalistic</option>
-                <option value="claymorphism">🧸 Claymorphism</option>
+                <option value="premium-aurora">Aurora Glass</option>
+                <option value="minimalistic">Minimalistic</option>
               </select>
               <p class="form-hint" style="margin: 6px 0 0 0; line-height: 1.4; font-size: 11px;">Select the appearance theme of the dashboard.</p>
             </div>

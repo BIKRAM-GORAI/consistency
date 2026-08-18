@@ -8,14 +8,14 @@
     }
     
     // Core theme application
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem('theme') || 'claymorphism';
     if (savedTheme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
     } else if (savedTheme === 'premium-aurora') {
       document.documentElement.setAttribute('data-theme', 'premium-aurora');
     } else if (savedTheme === 'minimalistic') {
       document.documentElement.setAttribute('data-theme', 'minimalistic');
-    } else if (savedTheme === 'claymorphism') {
+    } else {
       document.documentElement.setAttribute('data-theme', 'claymorphism');
     }
   </script>
