@@ -1,0 +1,34 @@
+name: MongoDB Backup (Night)
+
+on:
+  schedule:
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MongoDB Database Tools
+        run: |
+          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+          sudo apt install ./mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+
+      - name: Set Date
+        run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Run mongodump
+        run: mongodump --uri="${{ secrets.MONGO_URI }}" --out=backup
+
+      - name: Zip backup
+        run: zip -r "backup-night-${{ env.DATE }}.zip" backup
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mongodb-backup-night-${{ env.DATE }}
+          path: backup-night-${{ env.DATE }}.zip
