@@ -1268,6 +1268,47 @@ body {
 
 .btn-primary:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--yellow); }
 
+.btn-danger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  background: var(--red) !important;
+  border: 2px solid var(--black) !important;
+  border-radius: var(--r-sm);
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: transform var(--t), box-shadow var(--t);
+  box-shadow: 3px 3px 0 var(--black) !important;
+  overflow: hidden;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--black) !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--black) !important;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background: var(--red) !important;
+  color: #ffffff !important;
+}
+
 .btn-ghost {
   position: relative;
   display: inline-flex;

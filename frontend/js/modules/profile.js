@@ -552,9 +552,14 @@ function proceedToDeleteConfirm() {
 
   document.getElementById('delete-username-hint').textContent = targetDeletionString;
   document.getElementById('delete-username-input').value = '';
-  document.getElementById('btn-final-delete').disabled = true;
-  document.getElementById('btn-final-delete').style.opacity = '0.5';
-  document.getElementById('btn-final-delete').style.cursor = 'not-allowed';
+  const finalBtn = document.getElementById('btn-final-delete');
+  if (finalBtn) {
+    finalBtn.disabled = true;
+    finalBtn.style.opacity = '0.5';
+    finalBtn.style.cursor = 'not-allowed';
+    finalBtn.style.backgroundColor = 'var(--red)';
+    finalBtn.style.color = '#ffffff';
+  }
   
   document.getElementById('modal-delete-confirm').classList.add('open');
 }
@@ -562,16 +567,21 @@ function proceedToDeleteConfirm() {
 function checkDeleteConfirmation() {
   const inputVal = document.getElementById('delete-username-input').value.trim();
   const btn = document.getElementById('btn-final-delete');
+  if (!btn) return;
   
   // Ensure the input matches and is NOT empty
   if (inputVal === targetDeletionString && inputVal !== '') {
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.cursor = 'pointer';
+    btn.style.backgroundColor = 'var(--red)';
+    btn.style.color = '#ffffff';
   } else {
     btn.disabled = true;
     btn.style.opacity = '0.5';
     btn.style.cursor = 'not-allowed';
+    btn.style.backgroundColor = 'var(--red)';
+    btn.style.color = '#ffffff';
   }
 }
 
