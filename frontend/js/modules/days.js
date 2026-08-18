@@ -2934,7 +2934,7 @@ function stopVoiceRecording() {
 function startRecordingTimer() {
   stopRecordingTimer();
   const timerText = document.getElementById('voice-timer');
-  const maxDuration = 60;
+  const maxDuration = 60; // 60 seconds (1 minute limit)
 
   window.voiceTimerInterval = setInterval(() => {
     const elapsed = Math.floor((Date.now() - window.recordingStartTime) / 1000);
@@ -2942,9 +2942,11 @@ function startRecordingTimer() {
 
     const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
     const secs = String(elapsed % 60).padStart(2, '0');
+    const maxMins = String(Math.floor(maxDuration / 60)).padStart(2, '0');
+    const maxSecs = String(maxDuration % 60).padStart(2, '0');
     
     if (timerText) {
-      timerText.textContent = `${mins}:${secs}`;
+      timerText.textContent = `${mins}:${secs} / ${maxMins}:${maxSecs}`;
       if (remaining <= 10) {
         timerText.style.color = '#ff0000';
         timerText.style.fontWeight = '900';
@@ -3213,7 +3215,7 @@ function resetVoiceUI() {
     statusText.style.color = '#0f0';
   }
   if (timerText) {
-    timerText.textContent = '00:00';
+    timerText.textContent = '00:00 / 01:00';
     timerText.style.color = 'var(--text)';
   }
   if (vizBars) vizBars.innerHTML = '';

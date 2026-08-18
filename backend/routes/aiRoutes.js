@@ -14,6 +14,10 @@ router.post('/commit-daily-summary', authenticateToken, aiController.commitDaily
 router.post('/authorize-task-extraction', authenticateToken, aiController.authorizeTaskExtraction);
 router.get('/photo-limits', authenticateToken, aiController.getPhotoLimits);
 
+// Route for Voice-to-Daily-Task authorization ticket and limit tracking
+router.post('/authorize-voice-to-task', authenticateToken, aiController.authorizeVoiceToTask);
+router.get('/voice-limits', authenticateToken, aiController.getVoiceLimits);
+
 // Routes for direct client-to-Render Centralized AI Voice Assistant flow
 router.post('/authorize-voice-assistant', authenticateToken, aiController.authorizeVoiceAssistant);
 router.get('/voice-assistant-limits', authenticateToken, aiController.getVoiceAssistantLimits);
