@@ -562,10 +562,37 @@ export async function commitVoiceCommand() {
 
     setViewState('success');
 
-    // Trigger immediate UI refresh for Daily Cards, Goals, and Dashboard
-    if (typeof window.loadDays === 'function') window.loadDays(1);
-    if (typeof window.loadGoals === 'function') window.loadGoals();
-    if (typeof window.fetchDashboardData === 'function') window.fetchDashboardData();
+    // Trigger immediate UI & IndexedDB refresh for Daily Cards, Goals, and Dashboard
+    try {
+      const backendUrl = typeof window.API !== 'undefined' ? window.API : '';
+      
+      // 1. Fetch fresh Days from server & update localDb cache & UI
+      if (typeof window.apiFetch === 'function') {
+        const freshData = await window.apiFetch(`${backendUrl}/api/days?page=1&limit=${window.daysPerPage || 30}`);
+        if (freshData && Array.isArray(freshData.days)) {
+          if (window.localDb && window.localDb.days) {
+            await window.localDb.days.bulkPut(freshData.days);
+          }
+          window.allDays = freshData.days;
+          if (typeof window.renderDays === 'function') {
+            window.renderDays();
+          }
+        }
+      }
+      
+      // 2. Fetch fresh Goals & update Goals UI
+      if (typeof window.loadGoals === 'function') {
+        await window.loadGoals();
+      }
+
+      // 3. Update Dashboard
+      if (typeof window.fetchDashboardData === 'function') {
+        window.fetchDashboardData();
+      }
+    } catch (refreshErr) {
+      console.warn('[VoiceAssistant] Post-commit sync error:', refreshErr);
+      if (typeof window.loadDays === 'function') window.loadDays(1);
+    }
 
   } catch (err) {
     console.error('[VoiceAssistant] Commit failed:', err);
