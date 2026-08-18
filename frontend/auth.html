@@ -1518,7 +1518,7 @@
 
   <script type="module">
     import { initializeApp } from "./libs/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, fetchSignInMethodsForEmail, signInWithCredential } from "./libs/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, fetchSignInMethodsForEmail, signInWithCredential, linkWithCredential } from "./libs/firebase-auth.js";
 
     console.log("[Auth Module] ES Module script loaded successfully!");
 
@@ -1582,8 +1582,8 @@
       }
     })();
 
-    async function handleOAuthLogin(providerName) {
-      console.log("[Auth Module] handleOAuthLogin execution triggered for provider:", providerName);
+    async function handleOAuthLogin(providerName, mode = 'login') {
+      console.log(`[Auth Module] handleOAuthLogin execution triggered for provider: ${providerName} | mode: ${mode}`);
       clearErrors();
       let provider;
       if (providerName === 'google') {
@@ -1593,9 +1593,8 @@
       }
       else if (providerName === 'github') {
         provider = new GithubAuthProvider();
-        // Forces GitHub's OAuth flow to always show the login page even if a session exists,
-        // preventing silent auto-sign-in with wrong/cached accounts.
-        provider.setCustomParameters({ allow_signup: 'false' });
+        // Allow signup only when registering on the Register tab
+        provider.setCustomParameters({ allow_signup: mode === 'register' ? 'true' : 'false' });
       }
       else if (providerName === 'facebook') {
         provider = new FacebookAuthProvider();
@@ -1627,7 +1626,7 @@
                   const credential = GoogleAuthProvider.credential(nativeRes.idToken);
                   const firebaseResult = await signInWithCredential(auth, credential);
                   if (firebaseResult && firebaseResult.user) {
-                    await processUserOAuth(firebaseResult.user, 'google');
+                    await processUserOAuth(firebaseResult.user, 'google', mode);
                     return; // Login finished successfully
                   }
                 }
@@ -1668,7 +1667,7 @@
           console.log("Standard browser detected. Proceeding with Popup Login for:", providerName);
           const result = await signInWithPopup(auth, provider);
           if (result && result.user) {
-            await processUserOAuth(result.user, providerName);
+            await processUserOAuth(result.user, providerName, mode);
           }
         }
       } catch (error) {
@@ -1678,7 +1677,20 @@
       }
     }
 
-    async function processUserOAuth(user, providerName) {
+    async function processUserOAuth(user, providerName, mode = 'login') {
+      // Attempt linking pending credential if returning from multi-provider flow
+      const pendingCredStr = sessionStorage.getItem('pending_oauth_cred');
+      if (pendingCredStr && typeof linkWithCredential === 'function') {
+        try {
+          const pendingCred = JSON.parse(pendingCredStr);
+          await linkWithCredential(user, pendingCred);
+          sessionStorage.removeItem('pending_oauth_cred');
+          console.log('[Auth Module] Successfully linked secondary provider credential to primary Firebase account!');
+        } catch (linkErr) {
+          console.warn('[Auth Module] Link credential info:', linkErr.message);
+        }
+      }
+
       const idToken = await user.getIdToken();
 
       // Send token to our backend for verification and account merge
@@ -1690,7 +1702,8 @@
           email: user.email,
           name: user.displayName || 'User',
           uid: user.uid,
-          provider: providerName
+          provider: providerName,
+          mode
         })
       });
 
@@ -1724,51 +1737,61 @@
 
       // Handle the specific error when an account exists with a different provider
       if (error.code === 'auth/account-exists-with-different-credential') {
-        try {
-          const pendingEmail = error.customData.email;
-          const methods = await fetchSignInMethodsForEmail(auth, pendingEmail);
-          
-          const providerMap = {
-            'google.com': 'Google',
-            'github.com': 'GitHub',
-            'facebook.com': 'Facebook',
-            'password': 'Email/Password'
-          };
-          
-          const existingProviders = methods.length > 0 
-            ? methods.map(m => providerMap[m] || m).join(' or ') 
-            : "your original provider (Google/Email)";
-            
-          errorMessage = `An account already exists with this email. Please sign in using original provider to link account`;
-        } catch(fetchErr) {
-          console.error('Failed to fetch sign in methods', fetchErr);
-          errorMessage = 'An account already exists with this email. Please sign in with your original provider.';
+        const pendingCred = (typeof OAuthProvider !== 'undefined' && OAuthProvider.credentialFromError) ? OAuthProvider.credentialFromError(error) : error.credential;
+        if (pendingCred) {
+          try {
+            sessionStorage.setItem('pending_oauth_cred', JSON.stringify(pendingCred));
+          } catch (_) {}
         }
+
+        let existingProviders = 'your original sign-in method (Google, GitHub, or Email/Password)';
+        try {
+          const pendingEmail = error.customData?.email;
+          if (pendingEmail && typeof fetchSignInMethodsForEmail === 'function') {
+            const methods = await fetchSignInMethodsForEmail(auth, pendingEmail);
+            const providerMap = {
+              'google.com': 'Google',
+              'github.com': 'GitHub',
+              'facebook.com': 'Facebook',
+              'password': 'Email/Password'
+            };
+            if (Array.isArray(methods) && methods.length > 0) {
+              existingProviders = methods.map(m => providerMap[m] || m).join(' or ');
+            }
+          }
+        } catch(fetchErr) {
+          console.warn('Failed to fetch sign in methods:', fetchErr);
+        }
+        errorMessage = `An account already exists with this email address. Please sign in using ${existingProviders} to link and merge your account.`;
       }
       
       // Show error visually
       const activeForm = document.querySelector('.auth-form.active');
       if (activeForm && activeForm.id === 'form-login') {
-        document.getElementById('login-error-msg').textContent = errorMessage;
-        document.getElementById('login-error').classList.add('visible');
+        const errEl = document.getElementById('login-error-msg');
+        if (errEl) errEl.textContent = errorMessage;
+        const errBox = document.getElementById('login-error');
+        if (errBox) errBox.classList.add('visible');
       } else if (activeForm && activeForm.id === 'form-register') {
-        document.getElementById('register-error-msg').textContent = errorMessage;
-        document.getElementById('register-error').classList.add('visible');
+        const errEl = document.getElementById('register-error-msg');
+        if (errEl) errEl.textContent = errorMessage;
+        const errBox = document.getElementById('register-error');
+        if (errBox) errBox.classList.add('visible');
       } else {
-        showError('login', 'OAuth Error: ' + errorMessage);
+        showError('login', errorMessage);
       }
     }
 
     // Attach event listeners to the newly added OAuth buttons
     console.log("[Auth Module] Attaching click listeners to buttons...");
     try {
-      const attachListener = (id, provider) => {
+      const attachListener = (id, provider, mode = 'login') => {
         const el = document.getElementById(id);
         if (el) {
           el.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log(`[Auth Module] Button ${id} clicked! Triggering OAuth flow for: ${provider}`);
-            handleOAuthLogin(provider);
+            console.log(`[Auth Module] Button ${id} clicked! Triggering OAuth flow for: ${provider} | mode: ${mode}`);
+            handleOAuthLogin(provider, mode);
           });
           console.log(`[Auth Module] Bound listener to #${id}`);
         } else {
@@ -1809,8 +1832,9 @@
 
       function confirmOAuthTnc() {
         if (!document.getElementById('oauth-tnc-checkbox').checked) return;
+        const providerToRun = pendingOAuthProvider;
         closeOAuthTncModal();
-        if (pendingOAuthProvider) handleOAuthLogin(pendingOAuthProvider);
+        if (providerToRun) handleOAuthLogin(providerToRun, 'register');
       }
 
       // Wire modal buttons via addEventListener (avoids module scope issue with inline handlers)
@@ -1824,10 +1848,10 @@
       });
 
       // Attach OAuth button listeners
-      // Login buttons — go directly (no T&C needed for login)
-      attachListener('oauth-login-google',   'google');
-      attachListener('oauth-login-github',   'github');
-      attachListener('oauth-login-facebook', 'facebook');
+      // Login buttons — mode: 'login'
+      attachListener('oauth-login-google',   'google',   'login');
+      attachListener('oauth-login-github',   'github',   'login');
+      attachListener('oauth-login-facebook', 'facebook', 'login');
 
       // Register buttons — show T&C modal first
       function attachRegisterOAuthListener(id, provider) {

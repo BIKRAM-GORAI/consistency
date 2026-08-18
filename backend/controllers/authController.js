@@ -16,6 +16,22 @@ const { sendEmail } = require('../utils/email');
 const saltRounds = 10;
 
 /**
+ * Helper to build a robust MongoDB query matching exact email or Gmail dot/alias variations
+ */
+const buildEmailQuery = (rawEmail) => {
+  if (!rawEmail || typeof rawEmail !== 'string') return { email: '' };
+  const trimmed = rawEmail.toLowerCase().trim();
+  const [local, domain] = trimmed.split('@');
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    const cleanLocal = local.replace(/\./g, '').split('+')[0];
+    const pattern = cleanLocal.split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\.?');
+    const regex = new RegExp('^' + pattern + '@(gmail|googlemail)\\.com$', 'i');
+    return { $or: [{ email: trimmed }, { email: regex }] };
+  }
+  return { email: trimmed };
+};
+
+/**
  * POST /api/auth/register
  */
 const register = async (req, res) => {
@@ -24,8 +40,8 @@ const register = async (req, res) => {
     if (!name || !email || !password || !username || !profilePicture) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-    const existing = await User.findOne({ email: email.toLowerCase().trim() });
-    if (existing) return res.status(400).json({ message: 'Email already exists' });
+    const existing = await User.findOne(buildEmailQuery(email));
+    if (existing) return res.status(400).json({ message: 'An account already exists with this email. Please log in using your existing account to merge.' });
     const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
     if (existingUser) return res.status(400).json({ message: 'Username already taken' });
 
@@ -108,8 +124,8 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.status(401).json({ message: 'Invalid email or password' });
+    const user = await User.findOne(buildEmailQuery(email));
+    if (!user) return res.status(404).json({ message: 'No account found with this email address. Please create an account on the Register page first.' });
 
     if (user.isBlacklisted) {
       if (!user.blacklistedUntil || new Date(user.blacklistedUntil) > new Date()) {
@@ -169,12 +185,17 @@ const login = async (req, res) => {
  */
 const oauthLogin = async (req, res) => {
   try {
-    const { idToken, email, name, provider, uid } = req.body;
+    const { idToken, email, name, provider, uid, mode } = req.body;
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     if (decodedToken.uid !== uid) return res.status(401).json({ message: 'Invalid token' });
 
-    const normalizedEmail = email.toLowerCase().trim();
-    let user = await User.findOne({ email: normalizedEmail });
+    const rawEmail = email || decodedToken.email;
+    if (!rawEmail) {
+      return res.status(400).json({ message: 'Email address is required from your social provider. Please make your email public in account settings.' });
+    }
+
+    const normalizedEmail = rawEmail.toLowerCase().trim();
+    let user = await User.findOne(buildEmailQuery(rawEmail));
     const googlePhotoUrl = decodedToken.picture;
 
     if (user && user.isBlacklisted) {
@@ -189,6 +210,13 @@ const oauthLogin = async (req, res) => {
     }
 
     if (user) {
+      // If user exists and request is from Register page, block registration and prompt user to login
+      if (mode === 'register') {
+        return res.status(400).json({
+          message: 'An account already exists with this email address. Please log in on the Login page instead.'
+        });
+      }
+
       const providerExists = user.authProviders.some(p => p.provider === provider);
       if (!providerExists) {
         user.authProviders.push({ provider, uid });
@@ -214,6 +242,13 @@ const oauthLogin = async (req, res) => {
       }
       await user.save();
     } else {
+      // Unless request explicitly comes from Register page (mode === 'register'), NEVER create a new account!
+      if (mode !== 'register') {
+        return res.status(404).json({
+          message: 'No account found with this email address. Please create an account on the Register page first.'
+        });
+      }
+
       user = new User({ name: name || 'User', email: normalizedEmail, authProviders: [{ provider, uid }], isEmailVerified: true });
       
       const { generateUniqueReferralCode } = require('../utils/pointsHelper');
