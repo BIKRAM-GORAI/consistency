@@ -649,8 +649,6 @@ function renderLeetCodeUI(user) {
 
     setLcStatus(leetcodeStatus, 'pending', '<i data-lucide="refresh-cw"></i> Verification pending');
     updateHeaderBadge('pending', '<i data-lucide="refresh-cw"></i> Verification pending');
-    if (leetcodeConnectSection) leetcodeConnectSection.style.display = 'block';
-    if (leetcodeHeaderToggleIcon) leetcodeHeaderToggleIcon.textContent = '▲';
 
     if (user.leetcodeVerificationCode) {
       const vCode = document.getElementById('leetcode-verification-code');
@@ -675,8 +673,6 @@ function renderLeetCodeUI(user) {
   } else if (isVerified) {
     setLcStatus(leetcodeStatus, 'verified', '<i data-lucide="check-circle"></i> Verified');
     updateHeaderBadge('verified', '<i data-lucide="check-circle"></i> Connected');
-    if (leetcodeConnectSection) leetcodeConnectSection.style.display = 'block';
-    if (leetcodeHeaderToggleIcon) leetcodeHeaderToggleIcon.textContent = '▲';
 
     hideAllSections();
     const connSec = document.getElementById('leetcode-connected');
@@ -704,9 +700,6 @@ function renderLeetCodeUI(user) {
   } else if (hasPending) {
     const isExpired = user.leetcodeVerificationExpiry &&
                       new Date() > new Date(user.leetcodeVerificationExpiry);
-
-    if (leetcodeConnectSection) leetcodeConnectSection.style.display = 'block';
-    if (leetcodeHeaderToggleIcon) leetcodeHeaderToggleIcon.textContent = '▲';
 
     if (isExpired) {
       setLcStatus(leetcodeStatus, 'error', '<i data-lucide="alert-circle"></i> Code expired');
@@ -746,19 +739,20 @@ function renderLeetCodeUI(user) {
     if (leetcodeUsernameDisplay) leetcodeUsernameDisplay.textContent = 'Not connected';
     setLcStatus(leetcodeStatus, 'error', '<i data-lucide="x-circle"></i> Not connected');
     updateHeaderBadge('error', '<i data-lucide="x-circle"></i> Not connected');
-    
-    if (leetcodeConnectSection && !window.leetcodeCardManuallyExpanded) {
-      leetcodeConnectSection.style.display = 'none';
-    }
-    if (leetcodeHeaderToggleIcon) {
-      leetcodeHeaderToggleIcon.textContent = (leetcodeConnectSection && leetcodeConnectSection.style.display === 'block') ? '▲' : '▼';
-    }
 
     if (leetcodeProfilePic) leetcodeProfilePic.style.display = 'none';
     hideAllSections();
     const ncSec = document.getElementById('leetcode-not-connected');
     if (ncSec) ncSec.style.display = 'block';
     updateLeetCodeButtonsStatus(false);
+  }
+
+  // Collapse section body by default in ALL states unless user manually toggled it open
+  if (leetcodeConnectSection) {
+    leetcodeConnectSection.style.display = window.leetcodeCardManuallyExpanded ? 'block' : 'none';
+  }
+  if (leetcodeHeaderToggleIcon) {
+    leetcodeHeaderToggleIcon.textContent = (leetcodeConnectSection && leetcodeConnectSection.style.display === 'block') ? '▲' : '▼';
   }
 
   if (remainingChanges) {
