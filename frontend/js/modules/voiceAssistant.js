@@ -132,6 +132,11 @@ export function closeVoiceAssistantModal() {
   }
   const modal = document.getElementById('voice-assistant-modal');
   if (modal) modal.style.display = 'none';
+
+  // Automatically refresh active views (Daily Cards & Goals)
+  if (typeof window.loadDays === 'function') window.loadDays(1);
+  if (typeof window.loadGoals === 'function') window.loadGoals();
+  if (typeof window.fetchDashboardData === 'function') window.fetchDashboardData();
 }
 
 /**
@@ -557,9 +562,10 @@ export async function commitVoiceCommand() {
 
     setViewState('success');
 
-    // Trigger dashboard / goals refresh if handlers exist
-    if (typeof window.fetchDashboardData === 'function') window.fetchDashboardData();
+    // Trigger immediate UI refresh for Daily Cards, Goals, and Dashboard
+    if (typeof window.loadDays === 'function') window.loadDays(1);
     if (typeof window.loadGoals === 'function') window.loadGoals();
+    if (typeof window.fetchDashboardData === 'function') window.fetchDashboardData();
 
   } catch (err) {
     console.error('[VoiceAssistant] Commit failed:', err);
