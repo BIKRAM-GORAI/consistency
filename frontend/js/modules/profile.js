@@ -588,6 +588,10 @@ function checkDeleteConfirmation() {
 async function verifyAndDeleteAccount() {
   if (document.getElementById('delete-username-input').value.trim() !== targetDeletionString) return;
   
+  // Read reason before modalBody innerHTML is replaced by spinner
+  const reasonInput = document.getElementById('delete-reason-input');
+  const deletionReason = reasonInput ? reasonInput.value.trim() : '';
+
   const btn = document.getElementById('btn-final-delete');
   btn.disabled = true;
   
@@ -614,7 +618,9 @@ async function verifyAndDeleteAccount() {
 
   try {
     await apiFetch(`${window.API}/api/auth/account`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deletionReason })
     });
     
     // Clear all local data
