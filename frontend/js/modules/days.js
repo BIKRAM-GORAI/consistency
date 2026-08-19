@@ -1881,6 +1881,36 @@ async function submitEditCategory() {
 }
 
 // ── Edit Goal (before deadline only) ──────────────────────
+function getObjectIdTimestamp(idStr) {
+  if (!idStr || typeof idStr !== 'string' || idStr.length !== 24) return 0;
+  const seconds = parseInt(idStr.substring(0, 8), 16);
+  return isNaN(seconds) ? 0 : seconds * 1000;
+}
+window.getObjectIdTimestamp = getObjectIdTimestamp;
+
+function getGoalCreationTimeMs(goal) {
+  if (!goal) return 0;
+  if (goal.createdAt) {
+    const t = new Date(goal.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (goal._id) {
+    const t = getObjectIdTimestamp(goal._id);
+    if (t > 0) return t;
+  }
+  return 0;
+}
+window.getGoalCreationTimeMs = getGoalCreationTimeMs;
+
+function isWithin15MinutesOfGoalCreation(goal) {
+  const createdMs = getGoalCreationTimeMs(goal);
+  if (!createdMs) return false;
+  const nowMs = typeof window.getServerNow === 'function' ? window.getServerNow() : Date.now();
+  const elapsed = nowMs - createdMs;
+  return elapsed >= 0 && elapsed <= 15 * 60 * 1000;
+}
+window.isWithin15MinutesOfGoalCreation = isWithin15MinutesOfGoalCreation;
+
 function openEditGoalModal(goalId) {
   const goal = window.allGoals.find(g => g._id === goalId);
   if (!goal || window.daysLeft(goal.deadline) < 0) {
@@ -1889,26 +1919,111 @@ function openEditGoalModal(goalId) {
   }
 
   window.editingGoalId = goalId;
+
+  if (window.goalEditTimerInterval) {
+    clearInterval(window.goalEditTimerInterval);
+    window.goalEditTimerInterval = null;
+  }
+
   const titleInput = document.getElementById('edit-goal-title');
   titleInput.value = goal.title;
-  titleInput.setAttribute('readonly', 'true');
-  titleInput.style.background = 'var(--bg-readonly)';
-  titleInput.style.cursor = 'not-allowed';
 
-  document.getElementById('edit-goal-deadline-display').innerHTML =
-    `<i data-lucide="calendar"></i> Deadline: ${window.formatDisplayDate(goal.deadline.split('T')[0])}`;
-  if (window.lucide) lucide.createIcons({ root: document.getElementById('edit-goal-deadline-display') });
+  const deadlineInput = document.getElementById('edit-goal-deadline');
+  const deadlineYMD = goal.deadline ? goal.deadline.split('T')[0] : '';
+  if (deadlineInput) {
+    deadlineInput.value = deadlineYMD;
+  }
+
+  function updateModalTimerState() {
+    const isWithin15Min = isWithin15MinutesOfGoalCreation(goal);
+    window.editingGoalIsWithin15Min = isWithin15Min;
+
+    if (isWithin15Min) {
+      if (titleInput.hasAttribute('readonly')) {
+        titleInput.removeAttribute('readonly');
+        titleInput.style.background = '';
+        titleInput.style.cursor = 'text';
+      }
+      if (deadlineInput && deadlineInput.disabled) {
+        deadlineInput.removeAttribute('readonly');
+        deadlineInput.disabled = false;
+        deadlineInput.style.background = '';
+        deadlineInput.style.cursor = 'pointer';
+      }
+    } else {
+      if (!titleInput.hasAttribute('readonly')) {
+        titleInput.setAttribute('readonly', 'true');
+        titleInput.style.background = 'var(--bg-readonly)';
+        titleInput.style.cursor = 'not-allowed';
+      }
+      if (deadlineInput && !deadlineInput.disabled) {
+        deadlineInput.setAttribute('readonly', 'true');
+        deadlineInput.disabled = true;
+        deadlineInput.style.background = 'var(--bg-readonly)';
+        deadlineInput.style.cursor = 'not-allowed';
+      }
+    }
+
+    const noticeEl = document.getElementById('edit-goal-window-notice');
+    if (noticeEl) {
+      if (isWithin15Min) {
+        const createdMs = getGoalCreationTimeMs(goal);
+        const nowMs = typeof window.getServerNow === 'function' ? window.getServerNow() : Date.now();
+        const totalRemMs = Math.max(0, (15 * 60 * 1000) - (nowMs - createdMs));
+        const remMins = Math.floor(totalRemMs / 60000);
+        const remSecs = Math.floor((totalRemMs % 60000) / 1000);
+        const timeStr = `${remMins}m ${remSecs.toString().padStart(2, '0')}s`;
+
+        noticeEl.innerHTML = `
+          <div style="padding:10px 12px; background:rgba(239,68,68,0.08); border-left:4px solid #ef4444; border-radius:6px; font-size:12px; line-height:1.5; color:var(--text);">
+            <div style="font-weight:700; color:#ef4444; margin-bottom:2px; display:flex; align-items:center; gap:4px;">
+              <i data-lucide="alert-triangle" style="width:14px; height:14px;"></i> 15-Minute Creation Edit Window Active (${timeStr} remaining)
+            </div>
+            You can edit the title, change the deadline, rename existing subtasks, or delete subtasks.
+            <div style="margin-top:4px; color:#b91c1c; font-size:11px;">
+              <em>Note: After 15 minutes, previous subtasks and goal details will be locked and cannot be edited or deleted (only new subtasks can be added).</em>
+            </div>
+          </div>`;
+      } else {
+        noticeEl.innerHTML = `
+          <div style="padding:10px 12px; background:var(--bg-muted); border-left:4px solid var(--text-muted); border-radius:6px; font-size:12px; line-height:1.5; color:var(--text-muted);">
+            <div style="font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:4px;">
+              <i data-lucide="lock" style="width:14px; height:14px;"></i> 15-Minute Edit Window Expired
+            </div>
+            Previous subtasks, goal title, and deadline are locked and cannot be edited or deleted. You can only add new subtasks below.
+          </div>`;
+        if (window.goalEditTimerInterval) {
+          clearInterval(window.goalEditTimerInterval);
+          window.goalEditTimerInterval = null;
+        }
+      }
+      if (window.lucide) lucide.createIcons({ root: noticeEl });
+    }
+  }
+
+  updateModalTimerState();
+  if (window.editingGoalIsWithin15Min) {
+    window.goalEditTimerInterval = setInterval(updateModalTimerState, 1000);
+  }
+
+  const deadlineDisplay = document.getElementById('edit-goal-deadline-display');
+  if (deadlineDisplay) {
+    deadlineDisplay.innerHTML = `<i data-lucide="calendar"></i> Current Deadline: ${window.formatDisplayDate(deadlineYMD)}`;
+    if (window.lucide) lucide.createIcons({ root: deadlineDisplay });
+  }
+
+  const isWithin15Min = isWithin15MinutesOfGoalCreation(goal);
 
   const builder = document.getElementById('edit-goal-tasks-builder');
   builder.innerHTML = '';
   for (const task of goal.tasks) {
-    addEditGoalTaskField(task.title, task._id, task.completed);
+    addEditGoalTaskField(task.title, task._id, task.completed, isWithin15Min);
   }
-  if (!goal.tasks.length) addEditGoalTaskField();
+  if (!goal.tasks.length) addEditGoalTaskField('', '', false, isWithin15Min);
   openModal('modal-edit-goal');
 }
 
-function addEditGoalTaskField(title = '', taskId = '', completed = false) {
+function addEditGoalTaskField(title = '', taskId = '', completed = false, forceIsWithin15Min = null) {
   const builder = document.getElementById('edit-goal-tasks-builder');
   const row = document.createElement('div');
   row.className = 'task-input-row';
@@ -1916,8 +2031,11 @@ function addEditGoalTaskField(title = '', taskId = '', completed = false) {
   row.dataset.completed = completed ? 'true' : 'false';
 
   const isExisting = taskId !== '';
-  const inputAttrs = isExisting ? 'readonly style="background:var(--bg-readonly); cursor:not-allowed;"' : '';
-  const removeBtn = isExisting ? '' : `<button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>`;
+  const isWithin15Min = forceIsWithin15Min !== null ? forceIsWithin15Min : (window.editingGoalIsWithin15Min ?? true);
+  const isEditable = !isExisting || isWithin15Min;
+
+  const inputAttrs = isEditable ? '' : 'readonly style="background:var(--bg-readonly); cursor:not-allowed;"';
+  const removeBtn  = isEditable ? `<button class="btn-remove" onclick="this.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>` : '';
 
   row.innerHTML = `
     <input type="text" class="form-control" placeholder="Subtask title..." value="${window.escHtml(title)}" ${inputAttrs} />
@@ -1930,7 +2048,10 @@ function addEditGoalTaskField(title = '', taskId = '', completed = false) {
 async function submitEditGoal() {
   const goalId = window.editingGoalId;
   const title  = document.getElementById('edit-goal-title').value.trim();
+  const deadline = document.getElementById('edit-goal-deadline').value;
+
   if (!title) { window.showToast('Goal title is required.', 'warn'); return; }
+  if (!deadline) { window.showToast('Goal deadline is required.', 'warn'); return; }
 
   const goal = window.allGoals.find(g => g._id === goalId);
   if (!goal) return;
@@ -1945,17 +2066,26 @@ async function submitEditGoal() {
     newTasks.push({ ...(tId ? { _id: tId } : {}), title: t, completed: existing ? existing.completed : false });
   }
 
+  if (newTasks.length === 0) {
+    window.showToast('At least one subtask is required for a goal.', 'warn');
+    return;
+  }
+
   const btn = document.getElementById('submit-edit-goal-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
 
   try {
     const updated = await window.apiFetch(`${window.API}/api/goals/${goalId}`, {
       method: 'PUT',
-      body: JSON.stringify({ title, tasks: newTasks }),
+      body: JSON.stringify({ title, deadline, tasks: newTasks }),
     });
     const idx = window.allGoals.findIndex(g => g._id === goalId);
     if (idx !== -1) window.allGoals[idx] = updated;
     closeModal('modal-edit-goal');
+    if (window.goalEditTimerInterval) {
+      clearInterval(window.goalEditTimerInterval);
+      window.goalEditTimerInterval = null;
+    }
     const oldCard = document.getElementById(`goal-card-${goalId}`);
     if (oldCard) {
       const newCard = buildGoalCard(updated);
@@ -1966,7 +2096,7 @@ async function submitEditGoal() {
     }
     window.showToast('Goal updated!', 'success');
   } catch (err) {
-    window.showToast(err.message, 'error');
+    window.showToast(err.message || 'Failed to update goal', 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Save Changes';
   }

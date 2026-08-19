@@ -171,6 +171,16 @@ async function apiFetch(url, options = {}) {
       err.data = body;
       throw err;
     }
+
+    // Calibrate server time offset to eliminate client/server clock drift
+    if (res.headers && res.headers.has('date')) {
+      const serverDateStr = res.headers.get('date');
+      const serverMs = new Date(serverDateStr).getTime();
+      if (!isNaN(serverMs) && serverMs > 0) {
+        window.serverTimeOffset = Date.now() - serverMs;
+      }
+    }
+
     return res.json().then(data => {
       // Any successful response → we are online. Re-enable buttons if they were disabled offline.
       if (window._wasOffline) {
@@ -195,6 +205,11 @@ async function apiFetch(url, options = {}) {
   }
 }
 window.apiFetch = apiFetch;
+
+function getServerNow() {
+  return Date.now() - (window.serverTimeOffset || 0);
+}
+window.getServerNow = getServerNow;
 
 // ── Offline Sync Queue Manager (syncManager) ────────────────
 const syncManager = {

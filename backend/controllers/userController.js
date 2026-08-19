@@ -103,12 +103,18 @@ async function getPublicProfile(req, res) {
       });
     }
 
+    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
+    const canViewAchievements = isOwner || user.achievementsPublic !== false || (code && showPrivateDetails);
+
     // Map contribution data
     const contributionData = [];
     for (const day of daysRaw) {
       let completedCount = 0;
       if (day.categories) {
         for (const cat of day.categories) {
+          if (cat.name && cat.name.startsWith('🎯 Goal:') && !canViewAchievements) {
+            continue; // Hide goal categories from public/group member views if achievements are private
+          }
           if (cat.tasks) {
             for (const task of cat.tasks) {
               if (task.completed) completedCount++;
@@ -119,9 +125,9 @@ async function getPublicProfile(req, res) {
       contributionData.push({ date: day.date, completedCount });
     }
 
-    // Fetch Achievements if public or private access (limit to 10 for initial view)
+    // Fetch Achievements only if permitted by user's achievementsPublic privacy setting or owner
     let achievements = [];
-    if (user.achievementsPublic !== false || showPrivateDetails) {
+    if (canViewAchievements) {
       achievements = await Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10);
     }
 
@@ -141,6 +147,7 @@ async function getPublicProfile(req, res) {
       days: [], // Now empty, fetched on demand
       contributionData: contributionData, // Full graph
       achievements: achievements,
+      achievementsPublic: user.achievementsPublic !== false,
       totalDays: daysRaw.length,
       claimedBadges: user.claimedBadges || [],
       isPublicProfile: user.isPublicProfile !== false,
@@ -165,12 +172,16 @@ async function getPublicProfileDays(req, res) {
 
     // Privacy Check
     let canView = user.isPublicProfile !== false;
+    let validShare = false;
     if (!canView && code) {
-      const validShare = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
-      if (validShare) canView = true;
+      const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
+      if (shareDoc) { canView = true; validShare = true; }
     }
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
+
+    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
+    const canViewAchievements = isOwner || user.achievementsPublic !== false || validShare;
 
     const page = parseInt(req.query.page) || 1;
     const limit = 7;
@@ -183,10 +194,17 @@ async function getPublicProfileDays(req, res) {
       .lean();
 
     const days = daysRaw.map(day => {
-      const sanitizedCategories = day.categories.map(cat => ({
-        name: cat.name,
-        tasks: cat.tasks.map(t => ({ title: t.title, completed: t.completed }))
-      }));
+      const sanitizedCategories = (day.categories || [])
+        .filter(cat => {
+          if (!canViewAchievements && cat.name && cat.name.startsWith('🎯 Goal:')) {
+            return false; // Filter out goal categories if achievements are private
+          }
+          return true;
+        })
+        .map(cat => ({
+          name: cat.name,
+          tasks: (cat.tasks || []).map(t => ({ title: t.title, completed: t.completed }))
+        }));
       return { _id: day._id, date: day.date, categories: sanitizedCategories };
     });
 
@@ -205,13 +223,18 @@ async function getPublicProfileAchievements(req, res) {
 
     // Privacy Check
     let canView = user.isPublicProfile !== false;
+    let validShare = false;
     if (!canView && code) {
-      const validShare = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
-      if (validShare) canView = true;
+      const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
+      if (shareDoc) { canView = true; validShare = true; }
     }
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
-    if (user.achievementsPublic === false) return res.status(403).json({ message: 'Achievements are private' });
+
+    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
+    if (user.achievementsPublic === false && !isOwner && !validShare) {
+      return res.status(403).json({ message: 'Achievements are private', achievementsPublic: false });
+    }
 
     const page = parseInt(req.query.page) || 1;
     const limit = 10;

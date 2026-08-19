@@ -275,14 +275,19 @@ function buildAchievementPageCard(a) {
   card.style.setProperty('--clay-card-bg', clayColor.bg);
   card.style.setProperty('--clay-card-text', clayColor.text);
 
-  const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
-  const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';
+  const isGoalAch = a.title && a.title.startsWith('Goal Achieved:');
+  const badgeHTML = isGoalAch
+    ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid #10b981; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><i data-lucide="target" style="width:11px; height:11px;"></i> Goal Accomplished</span>`
+    : `<span style="background:rgba(236,72,153,0.15); color:#ec4899; border:1px solid #ec4899; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><i data-lucide="award" style="width:11px; height:11px;"></i> Achievement of the Day</span>`;
 
   card.innerHTML = `
     <div class="ach-page-top">
       <div>
-        <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
-        <h3 class="ach-page-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</h3>
+        <div style="display:flex; align-items:center; gap:4px; margin-bottom:4px; flex-wrap:wrap;">
+          <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
+          ${badgeHTML}
+        </div>
+        <h3 class="ach-page-title"><i data-lucide="${isGoalAch ? 'target' : 'medal'}"></i> ${escHtml(a.title)}</h3>
       </div>
       <div class="ach-page-actions">
         <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3"></i></button>

@@ -236,10 +236,17 @@ function buildGoalCard(goal) {
   }
 
   // Show actions (Edit & Delete) only when not completed and before deadline
+  const isWithin15Min = typeof window.isWithin15MinutesOfGoalCreation === 'function'
+    ? window.isWithin15MinutesOfGoalCreation(goal)
+    : false;
+  const deleteBtnHTML = isWithin15Min
+    ? `<button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')"><i data-lucide="trash-2"></i> Delete</button>`
+    : '';
+
   const actionsHTML = (isComplete || dl < 0) ? '' : `
     <div class="goal-actions">
       <button class="btn-ghost ripple" onclick="openEditGoalModal('${goal._id}')" style="padding:7px 14px;font-size:13px;"><i data-lucide="edit-3"></i> Edit</button>
-      <button class="btn-delete ripple" onclick="deleteGoal('${goal._id}')"><i data-lucide="trash-2"></i> Delete</button>
+      ${deleteBtnHTML}
     </div>`;
 
   card.innerHTML = `
@@ -352,6 +359,9 @@ async function toggleGoalTask(goalId, taskId, checked) {
 
     if (isNowComplete) {
       window.showToast('🎉 Goal completed! Amazing work!', 'success');
+      if (typeof window.loadDays === 'function') {
+        setTimeout(() => { window.loadDays(); }, 400);
+      }
     } else {
       window.showToast('Goal task updated locally!', 'success');
     }
@@ -380,6 +390,18 @@ async function deleteGoal(goalId) {
   if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
     return;
   }
+
+  const goal = window.allGoals.find(g => g._id === goalId);
+  if (goal) {
+    const isWithin15Min = typeof window.isWithin15MinutesOfGoalCreation === 'function'
+      ? window.isWithin15MinutesOfGoalCreation(goal)
+      : false;
+    if (!isWithin15Min) {
+      window.showToast('Goals can only be deleted within 15 minutes of creation.', 'warn');
+      return;
+    }
+  }
+
   if (!confirm('Are you sure you want to delete this goal? This will permanently delete the entire goal card and all of its tasks.')) return;
   try {
     // 1. Update UI and Local DB instantly
@@ -449,6 +471,11 @@ async function submitAddGoal() {
     }
   }
 
+  if (tasks.length === 0) {
+    window.showToast('At least one subtask is mandatory to create a goal.', 'warn');
+    return;
+  }
+
   const btn = document.getElementById('submit-goal-btn');
   btn.disabled = true; btn.textContent = 'Creating...';
 
@@ -465,7 +492,7 @@ async function submitAddGoal() {
     window.showToast('Goal created locally!', 'success');
 
     // 2. Queue for sync
-    window.syncManager.addToQueue('POST', 'goals', null, { title, deadline, tasks }, tempId);
+    window.syncManager.addToQueue('POST', 'goals', null, { title, deadline, tasks, createdAt: localGoal.createdAt }, tempId);
   } catch (err) {
     console.error('Offline write error:', err);
   } finally {

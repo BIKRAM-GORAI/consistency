@@ -2902,11 +2902,15 @@
         <button class="modal-close" onclick="closeModal('modal-edit-goal')"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body">
+        <div id="edit-goal-window-notice" style="margin-bottom: 12px;"></div>
+
         <div class="form-group">
           <label for="edit-goal-title">Goal Title</label>
           <input type="text" id="edit-goal-title" class="form-control" placeholder="e.g. Learn TypeScript, Run a 5K..." />
         </div>
         <div class="form-group">
+          <label for="edit-goal-deadline">Deadline</label>
+          <input type="date" id="edit-goal-deadline" class="form-control" />
           <p id="edit-goal-deadline-display" class="form-hint" style="margin-top:4px;font-weight:500;"></p>
         </div>
         <div class="form-group">
@@ -4151,10 +4155,10 @@
   <script src="libs/model_pca_20_svm.js"></script>
 
   <!-- ES Modules for Refactored Architecture -->
-  <script type="module" src="js/modules/state.js"></script>
-  <script type="module" src="js/modules/robot.js"></script>
   <script type="module" src="js/modules/utils.js"></script>
   <script type="module" src="js/modules/api.js"></script>
+  <script type="module" src="js/modules/state.js"></script>
+  <script type="module" src="js/modules/robot.js"></script>
   <script type="module" src="js/modules/reminders.js"></script>
   <script type="module" src="js/modules/days.js"></script>
   <script type="module" src="js/modules/goals.js"></script>

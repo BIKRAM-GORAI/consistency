@@ -1155,7 +1155,7 @@ async function openQuickView(username) {
           if (days && days.length > 0) {
             days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
           }
-          if (u.achievements && u.achievements.length > 0) {
+          if ((u.achievementsPublic !== false || isMe) && u.achievements && u.achievements.length > 0) {
             u.achievements.forEach(a => combined.push({ type: 'achievement', date: a.date, data: a }));
           }
           
@@ -1176,7 +1176,7 @@ async function openQuickView(username) {
               }
             });
             
-            if (u.achievements.length > 5) {
+            if (u.achievementsPublic !== false && u.achievements && u.achievements.length > 5) {
               const moreBtn = document.createElement('button');
               moreBtn.className = 'btn-ghost ripple';
               moreBtn.style.width = '100%';
@@ -1419,12 +1419,20 @@ function buildReadOnlyAchievementCard(ach) {
   card.style.display = 'block';
   card.style.borderLeftWidth = '6px';
   
+  const isGoalAch = ach.title && ach.title.startsWith('Goal Achieved:');
+  const badgeHTML = isGoalAch
+    ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid #10b981; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="target" style="width:11px; height:11px;"></i> Goal Accomplished</span>`
+    : `<span style="background:rgba(236,72,153,0.15); color:#ec4899; border:1px solid #ec4899; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="award" style="width:11px; height:11px;"></i> Achievement of the Day</span>`;
+
   card.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-      <h4 style="margin:0; font-size:16px;"><i data-lucide="trophy"></i> ${ach.title}</h4>
-      <span style="font-size:12px; color:var(--text-muted);">${new Date(ach.date).toLocaleDateString()}</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+      ${badgeHTML}
+      <span style="font-size:11px; font-weight:700; color:var(--text-muted);">${new Date(ach.date).toLocaleDateString()}</span>
     </div>
-    ${ach.description ? `<p style="margin:0; font-size:14px; color:var(--text-muted);">${ach.description}</p>` : ''}
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0; font-size:15px; font-weight:800;"><i data-lucide="${isGoalAch ? 'target' : 'trophy'}"></i> ${window.escHtml(ach.title)}</h4>
+    </div>
+    ${ach.description ? `<p style="margin:6px 0 0 0; font-size:13px; color:var(--text-muted); line-height:1.4;">${window.escHtml(ach.description)}</p>` : ''}
   `;
   return card;
 }
