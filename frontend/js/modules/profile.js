@@ -158,6 +158,54 @@ async function openProfileModal() {
   // loadSubscriptionStatus(); // Managed in subscription.html
 }
 
+/** Helper to evaluate and display 7-day name change cooldown */
+function checkNameCooldown(lastNameChangeAt) {
+  const nameInput = document.getElementById('profile-name');
+  const editBtn = document.getElementById('profile-name-edit-btn');
+  const lockPill = document.getElementById('profile-name-lock-pill');
+  const lockDaysText = document.getElementById('profile-name-lock-days');
+  const hintEl = document.getElementById('profile-name-hint');
+
+  if (!nameInput) return;
+
+  if (lastNameChangeAt) {
+    const lastChange = new Date(lastNameChangeAt).getTime();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const elapsed = Date.now() - lastChange;
+
+    if (elapsed < SEVEN_DAYS_MS) {
+      const msLeft = SEVEN_DAYS_MS - elapsed;
+      const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+      
+      nameInput.readOnly = true;
+      nameInput.style.background = 'var(--bg-muted)';
+      nameInput.style.cursor = 'not-allowed';
+      nameInput.style.paddingRight = '65px';
+
+      if (editBtn) editBtn.style.display = 'none';
+      if (lockPill) {
+        lockPill.style.display = 'inline-flex';
+        if (lockDaysText) lockDaysText.textContent = `${daysLeft}d`;
+      }
+      if (hintEl) {
+        hintEl.textContent = 'Name can be updated once every 7 days.';
+      }
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+  }
+
+  // Eligible for edit
+  nameInput.readOnly = false;
+  nameInput.style.background = 'var(--bg-card)';
+  nameInput.style.cursor = 'text';
+  nameInput.style.paddingRight = '38px';
+
+  if (editBtn) editBtn.style.display = 'flex';
+  if (lockPill) lockPill.style.display = 'none';
+  if (hintEl) hintEl.textContent = 'Name can be updated once every 7 days.';
+}
+
 /** Helper to populate profile fields from a user object */
 function renderProfileData(user) {
   if (!user) return;
@@ -197,6 +245,12 @@ function renderProfileData(user) {
     avatarImg.style.display = 'none';
     avatarInit.style.display = 'block';
     avatarInit.textContent = (user.name || window.userName || 'U').charAt(0).toUpperCase();
+  }
+
+  const nameInput = document.getElementById('profile-name');
+  if (nameInput) {
+    nameInput.value = user.name || window.userName || '';
+    checkNameCooldown(user.lastNameChangeAt);
   }
 
   const emailInput = document.getElementById('profile-email');
@@ -340,6 +394,8 @@ async function submitProfileSettings() {
   btn.textContent = 'Saving...';
 
   try {
+    const nameInput = document.getElementById('profile-name');
+    const name = nameInput ? nameInput.value.trim() : '';
     const profilePicture = document.getElementById('profile-pic-dataurl').value;
     const themeSelect = document.getElementById('theme-select');
     const selectedTheme = themeSelect ? themeSelect.value : 'light';
@@ -353,6 +409,9 @@ async function submitProfileSettings() {
       leetcodeAutoSync,
       theme: selectedTheme
     };
+    if (nameInput && !nameInput.readOnly && name) {
+      payload.name = name;
+    }
     if (!usernameInput.readOnly && username) {
       payload.username = username;
       localStorage.setItem('userUsername', username);
@@ -435,6 +494,14 @@ async function submitProfileSettings() {
           const cached = await window.localDb.userProfile.get(window.userId) || {};
           await window.localDb.userProfile.put({ ...cached, ...res, userId: window.userId });
         }
+        if (res.name) {
+          window.userName = res.name;
+          localStorage.setItem('userName', res.name);
+          localStorage.setItem('window.userName', res.name);
+        }
+        if (res.lastNameChangeAt) {
+          checkNameCooldown(res.lastNameChangeAt);
+        }
         // Update local storage and UI if pic/username changed (Server confirmation)
         if (res.profilePicture) {
           window.userProfilePicture = res.profilePicture;
@@ -455,6 +522,7 @@ async function submitProfileSettings() {
         }
       }).catch(err => {
         console.warn('Background profile sync failed:', err);
+        if (err && err.message) showToast(err.message, 'warn');
       });
     }
 
@@ -2484,10 +2552,15 @@ async function checkChangelogNotifications(user) {
     const latest = changelogs[0];
     latestChangelogDate = latest.createdAt;
     
-    const lastViewed = user.lastViewedChangelogAt ? new Date(user.lastViewedChangelogAt) : new Date(0);
-    const latestTime = new Date(latest.createdAt);
+    const localViewed = localStorage.getItem('lastViewedChangelogAt');
+    const userViewed = user.lastViewedChangelogAt;
+    const lastViewedTime = Math.max(
+      localViewed ? new Date(localViewed).getTime() : 0,
+      userViewed ? new Date(userViewed).getTime() : 0
+    );
+    const latestTime = new Date(latest.createdAt).getTime();
     
-    if (latestTime > lastViewed) {
+    if (latestTime > lastViewedTime) {
       if (innerDot) innerDot.style.display = 'block';
       
       const dismissed = localStorage.getItem('dismissedOuterChangelogDot');
@@ -2511,9 +2584,9 @@ async function openChangelogModal() {
   if (outerDot) outerDot.style.display = 'none';
   if (innerDot) innerDot.style.display = 'none';
   
-  if (latestChangelogDate) {
-    localStorage.setItem('dismissedOuterChangelogDot', latestChangelogDate);
-  }
+  const currentTimestamp = latestChangelogDate || new Date().toISOString();
+  localStorage.setItem('dismissedOuterChangelogDot', currentTimestamp);
+  localStorage.setItem('lastViewedChangelogAt', currentTimestamp);
   
   openModal('modal-changelog');
   renderChangelogList(allChangelogsList);

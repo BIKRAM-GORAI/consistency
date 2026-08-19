@@ -328,6 +328,7 @@ async function getProfileSettings(req, res) {
 
     res.json({
       name: user.name,
+      lastNameChangeAt: user.lastNameChangeAt || null,
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',
@@ -369,7 +370,24 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, leetcodeAutoSync } = req.body;
+    const { name, emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, leetcodeAutoSync } = req.body;
+
+    if (typeof name === 'string' && name.trim() !== '') {
+      const cleanName = name.trim();
+      if (user.name !== cleanName) {
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        if (user.lastNameChangeAt && (Date.now() - new Date(user.lastNameChangeAt).getTime() < SEVEN_DAYS_MS)) {
+          const msLeft = SEVEN_DAYS_MS - (Date.now() - new Date(user.lastNameChangeAt).getTime());
+          const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+          return res.status(400).json({ 
+            message: `Name can only be changed once every 7 days. Please wait ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`,
+            lastNameChangeAt: user.lastNameChangeAt
+          });
+        }
+        user.name = cleanName;
+        user.lastNameChangeAt = new Date();
+      }
+    }
 
     if (typeof emailNotifications === 'boolean') user.emailNotifications = emailNotifications;
     if (typeof globalStreakReminderEnabled === 'boolean') user.globalStreakReminderEnabled = globalStreakReminderEnabled;

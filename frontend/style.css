@@ -6866,17 +6866,24 @@ body.is-offline [data-requires-network="true"] {
   animation: email-blink 1.2s infinite ease-in-out;
 }
 
+#btn-feature-changelog {
+  position: relative !important;
+  overflow: visible !important;
+}
+
 .changelog-btn-red-dot {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 12px;
-  height: 12px;
-  background-color: var(--red);
-  border: 2px solid var(--bg-card);
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4);
-  z-index: 5;
+  position: absolute !important;
+  top: -5px !important;
+  right: -5px !important;
+  width: 14px !important;
+  height: 14px !important;
+  background-color: #ef4444 !important;
+  border: 2.5px solid #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.9), 0 0 0 2px rgba(0, 0, 0, 0.8) !important;
+  z-index: 999 !important;
+  pointer-events: none !important;
+  animation: email-blink 1.2s infinite ease-in-out !important;
 }
 
 .changelog-item {

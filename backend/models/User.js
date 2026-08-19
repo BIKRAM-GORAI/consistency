@@ -7,6 +7,10 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    lastNameChangeAt: {
+      type: Date,
+      default: null,
+    },
     username: {
       type: String,
       unique: true,
