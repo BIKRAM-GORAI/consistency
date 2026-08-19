@@ -439,7 +439,6 @@
           <div id="profile-red-dot" class="profile-red-dot" style="display: none;"></div>
           <div id="email-verify-warning-dot" class="email-verify-warning-dot" style="display: none;"></div>
         </div>
-        <span class="user-chip-name" id="user-chip-name">User</span>
       </div>
     </div>
   </nav>
@@ -493,9 +492,14 @@
         <h1 class="page-title">Long-Term Goals</h1>
         <p class="page-subtitle">Stay focused on what matters most</p>
       </div>
-      <button class="btn-primary ripple" onclick="openAddGoalModal()" id="add-goal-header-btn">
-        <span><i data-lucide="plus"></i></span> Add Goal
-      </button>
+      <div class="goals-header-actions" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <button class="btn-ghost ripple btn-how-it-works" onclick="openModal('modal-goal-how-it-works')" style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11.5px; padding:6px 14px; height:34px; border:2.5px solid var(--black); background:var(--bg-card); color:var(--text); box-shadow:2.5px 2.5px 0 var(--black); border-radius:8px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+          <span><i data-lucide="help-circle" style="width:14px; height:14px;"></i></span> How it Works
+        </button>
+        <button class="btn-primary ripple btn-add-goal-hero" onclick="openAddGoalModal()" id="add-goal-header-btn" style="font-family:'Space Grotesk',sans-serif; font-weight:900; font-size:17px; padding:12px 30px; height:52px; background:var(--yellow) !important; color:var(--black) !important; border:3.5px solid var(--black) !important; box-shadow:5px 5px 0 var(--black) !important; border-radius:12px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+          <span><i data-lucide="plus" style="width:20px; height:20px; stroke-width:3;"></i></span> Add Goal
+        </button>
+      </div>
     </div>
 
     <!-- Goals sorting selector bar (only enabled in online mode) -->
@@ -2697,6 +2701,81 @@
       <div class="modal-footer" style="justify-content: center; gap: 12px; display: flex;">
         <button id="analysis-cancel-btn" class="btn-ghost ripple" style="margin: 0;" onclick="closeModal('modal-group-analysis')">Cancel</button>
         <button id="analysis-finalize-btn" class="btn-primary ripple" style="margin: 0; display: none;" onclick="finalizeGroupCreation()">Finalize & Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: How Goals Work Guide ===== -->
+  <div class="modal-overlay" id="modal-goal-how-it-works" onclick="closeModalOnOverlay(event, 'modal-goal-how-it-works')">
+    <div class="modal" style="max-width: 580px; border-radius: 16px; border: 3.5px solid var(--black); box-shadow: 8px 8px 0 var(--black); overflow: hidden; padding: 0;">
+      <!-- Header -->
+      <div class="modal-header" style="background: var(--yellow); color: var(--black); padding: 18px 24px; border-bottom: 3.5px solid var(--black); display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 18px; text-transform: uppercase; color: var(--black); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="help-circle" style="width: 22px; height: 22px; color: var(--black) !important;"></i> How Goals Work
+        </h2>
+        <button class="modal-close" onclick="closeModal('modal-goal-how-it-works')" style="background: var(--bg-card); border: 2.5px solid var(--black); border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text);">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body" style="padding: 24px; background: var(--bg-card); color: var(--text); max-height: 75vh; overflow-y: auto;">
+        
+        <!-- Rule 1: 15-Min Edit Window -->
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="clock" style="width: 18px; height: 18px; color: #ef4444;"></i> 15-Minute Edit & Delete Window
+          </h3>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); font-weight: 600;">
+            When you create a goal, you have an active <strong>15-minute window</strong> to edit details, modify existing subtasks, or delete the goal card. After 15 minutes, goal details and existing subtasks are <strong>locked (readonly)</strong> to keep you accountable. You can still add new subtasks anytime!
+          </p>
+        </div>
+
+        <!-- Rule 2: Goal Completion & Daily Cards -->
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="check-circle-2" style="width: 18px; height: 18px; color: #10b981;"></i> Goal Completion & Daily Cards
+          </h3>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); font-weight: 600;">
+            Completing a goal automatically logs an achievement card in your <strong>Wins tab</strong> and appends a <strong>🎯 Goal: &lt;Title&gt;</strong> category to today's <strong>Daily Card</strong>.
+          </p>
+        </div>
+
+        <!-- Rule 3: Removing Goals from Daily Cards -->
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(59, 130, 246, 0.08); border-left: 4px solid #3b82f6; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="trash-2" style="width: 18px; height: 18px; color: #3b82f6;"></i> Removing Goal Summaries from Daily Cards
+          </h3>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); font-weight: 600;">
+            Don't want a goal listed on today's Daily Card? You can delete its category from the Daily Card anytime. Doing so <strong>only removes it from the Daily Card</strong> — your Goal in Goals tab and Achievement in Wins tab will remain completely safe!
+          </p>
+        </div>
+
+        <!-- Rule 4: Privacy Settings -->
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(168, 85, 247, 0.08); border-left: 4px solid #a855f7; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="eye-off" style="width: 18px; height: 18px; color: #a855f7;"></i> Privacy & Achievement Visibility
+          </h3>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); font-weight: 600;">
+            Want to keep your wins private? Toggle off <strong>Achievement Visibility</strong> in the Wins tab anytime to hide your achievements and goal categories from group members and public profile visitors.
+          </p>
+        </div>
+
+        <!-- Rule 5: 5-Day Deadline Grace Period -->
+        <div style="padding: 16px; background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="shield-alert" style="width: 18px; height: 18px; color: #f59e0b;"></i> 5-Day Deadline Grace Period
+          </h3>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); font-weight: 600;">
+            Missed your deadline? Don't worry! Every goal comes with an automatic <strong>5-day Grace Period</strong> after its deadline date. You can still check off tasks and finish your goal during these 5 grace days. If uncompleted after 5 grace days, the goal locks permanently.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer" style="padding: 16px 24px; background: var(--bg-muted); border-top: 2.5px solid var(--black); text-align: right;">
+        <button class="btn-primary ripple" onclick="closeModal('modal-goal-how-it-works')" style="padding: 8px 20px; font-weight: 800; margin: 0;">Got It!</button>
       </div>
     </div>
   </div>

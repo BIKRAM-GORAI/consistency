@@ -275,6 +275,9 @@ function buildAchievementPageCard(a) {
   card.style.setProperty('--clay-card-bg', clayColor.bg);
   card.style.setProperty('--clay-card-text', clayColor.text);
 
+  const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
+  const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';
+
   const isGoalAch = a.title && a.title.startsWith('Goal Achieved:');
   const badgeHTML = isGoalAch
     ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid #10b981; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><i data-lucide="target" style="width:11px; height:11px;"></i> Goal Accomplished</span>`

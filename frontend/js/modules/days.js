@@ -619,6 +619,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
   for (const cat of day.categories) {
     let tasksHTML = '';
     const isLeetCode = cat.name === 'LeetCode';
+    const isGoalCat = cat.name && cat.name.startsWith('🎯 Goal:');
     for (const task of cat.tasks) {
       if (isLeetCode) {
         tasksHTML += `
@@ -626,6 +627,13 @@ function buildDayCard(day, preLoadedAchievements = null) {
             <input type="checkbox" class="task-checkbox" checked disabled style="accent-color: var(--teal);" />
             <span class="task-title" style="font-weight: 600; color: var(--text);">${window.escHtml(task.title)}</span>
             <span class="lc-badge-pill" style="margin-left:auto; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; background:var(--bg-muted); border:1px solid var(--black); text-transform:uppercase;">${window.escHtml(task.metadata?.difficulty || 'Medium')}</span>
+          </div>`;
+      } else if (isGoalCat) {
+        tasksHTML += `
+          <div class="task-item locked-complete" style="opacity: 0.95;">
+            <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled style="accent-color: var(--emerald, #10b981);" />
+            <span class="task-title" style="font-weight: 600; color: var(--text);">${window.escHtml(task.title)}</span>
+            <span class="goal-task-lock-badge" style="margin-left:auto; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; background:rgba(16,185,129,0.12); color:#10b981; border:1px solid #10b981; text-transform:uppercase;">Goal Task</span>
           </div>`;
       } else if (isEditable) {
         if (isFuture) {
@@ -656,7 +664,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
     }
 
     const completedCount = cat.tasks.filter(t => t.completed).length;
-    const editCatBtn = (isEditable && !isLeetCode)
+    const editCatBtn = (isEditable && !isLeetCode && !isGoalCat)
       ? `<button class="btn-edit-cat ripple" onclick="openEditCategoryModal('${day._id}','${cat._id}')" title="Edit category"><i data-lucide="edit-3"></i></button>`
       : '';
     const delCatBtn = (isEditable && !isLeetCode)
@@ -902,6 +910,13 @@ async function toggleTask(dayId, catId, taskId, checked) {
   if (day) {
     cat = day.categories.find(c => c._id === catId);
     if (cat) {
+      if (cat.name && cat.name.startsWith('🎯 Goal:')) {
+        console.warn('Cannot toggle goal tasks on daily cards');
+        const chk = document.getElementById(`chk-${taskId}`);
+        if (chk) chk.checked = !checked;
+        window.showToast('Goal tasks on Daily Cards are locked snapshots.', 'warn');
+        return;
+      }
       task = cat.tasks.find(t => t._id === taskId);
     }
   }
@@ -1137,7 +1152,12 @@ async function deleteCategory(dayId, catId) {
   if (catIndex < 0) return;
 
   const catName = day.categories[catIndex].name;
-  if (!confirm(`Delete the "${catName}" category and all its tasks?`)) return;
+  const isGoalCat = catName && catName.startsWith('🎯 Goal:');
+  const confirmMsg = isGoalCat
+    ? `Remove "${catName}" from today's Daily Card?\n\n(Note: Your Goal in Goals tab and Achievement in Wins tab will remain completely safe.)`
+    : `Delete the "${catName}" category and all its tasks?`;
+
+  if (!confirm(confirmMsg)) return;
 
   // 1. Update UI and Local DB instantly
   day.categories.splice(catIndex, 1);
@@ -1797,6 +1817,10 @@ function openEditCategoryModal(dayId, catId) {
   }
   const cat = day.categories.find(c => c._id === catId);
   if (!cat) return;
+  if (cat.name && cat.name.startsWith('🎯 Goal:')) {
+    window.showToast('Goal categories on Daily Cards are locked snapshots and cannot be edited.', 'warn');
+    return;
+  }
 
   window.editingDayId = dayId;
   window.editingCatId = catId;
