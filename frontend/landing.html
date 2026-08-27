@@ -106,10 +106,10 @@
       outline: none !important;
     }
 
-    /* ── Promo Ticker Bar (Placed Under Top Navigation Bar) ── */
+    /* ── Promo Ticker Bar (Always Visible; docks under top navigation bar on scroll) ── */
     .promo-ticker-bar {
       position: fixed;
-      top: 72px; /* Positioned directly beneath top navigation bar */
+      top: 0; /* Anchored directly to top of viewport with zero gap */
       left: 0;
       right: 0;
       z-index: 999;
@@ -121,10 +121,9 @@
       overflow: hidden;
       border-bottom: 2px solid #3D0C02;
       box-sizing: border-box;
-      transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .landing-nav.scrolled ~ .promo-ticker-bar {
-      top: 64px; /* Move up smoothly when top navbar shrinks on scroll */
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
     }
     .promo-ticker-track {
       display: flex;
@@ -174,85 +173,136 @@
       100% { transform: translateX(-50%); }
     }
 
-    /* ── Top Navbar ── */
+    /* ── Floating Neo-Brutalist Islands Navbar (Desktop) ── */
     .landing-nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 32px;
-      height: 72px; /* Slightly taller for premium feel */
-      background: var(--yellow);
-      border-bottom: 4.5px solid var(--black); /* Thicker bottom border for strong neo-brutalist contrast */
-      box-shadow: none;
-      position: fixed; /* Fixed at top of page */
-      top: 0;
+      padding: 0 36px;
+      position: fixed;
+      top: 48px; /* Floats below the top promo ticker bar */
       left: 0;
       right: 0;
       z-index: 1000;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      pointer-events: none; /* Entire middle is transparent & click-through */
+      transform: translateY(-150%);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
     }
 
     .landing-nav.scrolled {
-      height: 64px;
-      background: rgba(255, 214, 10, 0.95);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 2px 0 var(--black);
+      transform: translateY(0);
+      opacity: 1;
     }
 
+    /* ── Left Side: Glassmorphic Neo-Brutalist Tilted Brand Button ── */
     .landing-nav-brand {
-      display: flex;
+      pointer-events: auto;
+      display: inline-flex;
       align-items: center;
       gap: 10px;
+      background: rgba(255, 214, 10, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: var(--black);
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0px var(--black), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      padding: 10px 20px;
       font-family: 'Space Grotesk', sans-serif;
       font-weight: 900;
-      font-size: 18px;
-      color: var(--black);
+      font-size: 16px;
       text-transform: uppercase;
       letter-spacing: -0.3px;
+      transform: rotate(-2deg);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+      cursor: pointer;
+      user-select: none;
     }
 
+    .landing-nav-brand:hover {
+      transform: rotate(0deg) translate(-2px, -2px) scale(1.03);
+      box-shadow: 6px 6px 0px var(--black), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+      background: rgba(255, 224, 51, 0.92);
+    }
+
+    .landing-nav-brand:active {
+      transform: rotate(-1deg) translate(2px, 2px) scale(0.98);
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    /* ── Right Side: Glassmorphic Neo-Brutalist Tilted Island with Login & Register ── */
     .landing-nav-actions {
-      display: flex;
-      gap: 10px;
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0px var(--black), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+      border-radius: 16px;
+      padding: 6px 8px;
+      transform: rotate(2deg);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+    }
+
+    .landing-nav-actions:hover {
+      transform: rotate(0deg) translate(-2px, -2px) scale(1.02);
+      box-shadow: 6px 6px 0px var(--black), inset 0 1px 3px rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.82);
     }
 
     .btn-nav {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 18px;
-      border-radius: 6px;
-      border: var(--border);
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 2px solid var(--black);
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 900;
       cursor: pointer;
       text-decoration: none;
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s, color 0.15s;
       text-transform: uppercase;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.3px;
     }
 
     .btn-nav-ghost {
-      background: #fff;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       color: var(--black);
-      box-shadow: 3px 3px 0 var(--black);
+      box-shadow: 2px 2px 0 var(--black);
     }
 
     .btn-nav-ghost:hover {
+      background: var(--teal);
+      color: var(--black);
       transform: translate(-1px, -1px);
-      box-shadow: 4px 4px 0 var(--black);
+      box-shadow: 3px 3px 0 var(--black);
     }
 
     .btn-nav-solid {
-      background: var(--black);
-      color: var(--yellow);
-      box-shadow: 3px 3px 0 var(--yellow);
+      background: rgba(255, 214, 10, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--black);
+      box-shadow: 2px 2px 0 var(--black);
     }
 
     .btn-nav-solid:hover {
+      background: var(--pink);
+      color: #ffffff;
       transform: translate(-1px, -1px);
-      box-shadow: 5px 5px 0 var(--yellow);
+      box-shadow: 3px 3px 0 var(--black);
     }
 
     /* ── Main wrap ── */
@@ -263,7 +313,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 120px 24px 40px;
+      padding: 58px 24px 40px;
       text-align: center;
       overflow: hidden;
     }
@@ -994,20 +1044,61 @@
 
     @media (max-width: 768px) {
       .landing-wrap {
-        padding-top: 148px !important; /* Ensures generous space below top nav (72px) + promo banner (32px) = 104px total header */
+        padding: 54px 16px 32px !important;
       }
 
       .landing-nav {
+        top: 0;
+        height: 56px;
+        background: rgba(255, 214, 10, 0.98) !important;
+        backdrop-filter: blur(10px) !important;
+        border-bottom: 3.5px solid var(--black) !important;
+        box-shadow: 0 2px 0 var(--black) !important;
         padding: 0 16px;
+        pointer-events: none;
+      }
+
+      .landing-nav.scrolled {
+        pointer-events: auto;
+      }
+
+      .landing-nav.scrolled ~ .promo-ticker-bar {
+        top: 56px;
       }
 
       .landing-nav-brand {
+        background: none;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        transform: none !important;
         font-size: 15px;
       }
 
+      .landing-nav-brand:hover,
+      .landing-nav-brand:active {
+        transform: none !important;
+        box-shadow: none;
+        background: none;
+      }
+
+      .landing-nav-actions {
+        background: none;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        transform: none !important;
+        gap: 6px;
+      }
+
+      .landing-nav-actions:hover {
+        transform: none !important;
+        box-shadow: none;
+      }
+
       .btn-nav {
-        padding: 7px 14px;
-        font-size: 13px;
+        padding: 6px 12px;
+        font-size: 12px;
       }
 
       .shape-1 {
@@ -2284,7 +2375,7 @@
       height: 96px !important; /* 72px base mobile height + 24px status bar padding */
     }
     body.native-android .landing-wrap {
-      padding-top: 144px !important; /* 120px base padding + 24px status bar offset */
+      padding-top: 56px !important; /* Safe area padding */
     }
 
     /* Gen Z Challenge Banner */
@@ -3529,14 +3620,36 @@
     }
 
     // ── Sticky Navbar Scroll Effect ──
-    window.addEventListener('scroll', () => {
+    // Keep navbar hidden throughout the entire hero page & feature pills section.
+    // Reveal navbar only after user has completely scrolled past the main hero and all feature pills into the next section (Challenge Banner / What's Inside).
+    const handleNavScroll = () => {
       const nav = document.querySelector('.landing-nav');
-      if (window.scrollY > 50) {
+      if (!nav) return;
+
+      const landingWrap = document.querySelector('.landing-wrap');
+      const aboutSection = document.querySelector('.landing-about');
+      
+      let shouldShow = false;
+      if (landingWrap) {
+        const wrapRect = landingWrap.getBoundingClientRect();
+        // The hero and feature pills section has passed once its bottom reaches the top header threshold (<= 80px)
+        shouldShow = wrapRect.bottom <= 80;
+      } else if (aboutSection) {
+        const aboutRect = aboutSection.getBoundingClientRect();
+        shouldShow = aboutRect.top <= 80;
+      } else {
+        shouldShow = window.scrollY > window.innerHeight * 0.9;
+      }
+
+      if (shouldShow) {
         nav.classList.add('scrolled');
       } else {
         nav.classList.remove('scrolled');
       }
-    });
+    };
+    window.addEventListener('scroll', handleNavScroll, { passive: true });
+    window.addEventListener('resize', handleNavScroll, { passive: true });
+    handleNavScroll();
 
     // ── Get App Button → modal on desktop, direct APK download on mobile ──
     const APK_URL = 'https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk';
@@ -3735,48 +3848,54 @@
   <!-- 3D Samurai Interactive Canvas Script -->
   <script>
     (function() {
-      // 1. Device detection (Desktop/Laptop only: screen width >= 1024px and fine pointer mouse/trackpad)
-      const isMobile = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 1024;
-      if (isMobile) {
-        console.log("3D samurai disabled: Mobile device detected.");
+      // 1. Screen size check (Desktop/Laptop: screen width >= 1024px)
+      if (window.innerWidth < 1024) {
+        console.log("3D samurai: Enabled on screens >= 1024px.");
         return;
       }
 
-      // 2. Stable Connection check (Network speed & saving mode check)
-      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      if (conn) {
-        if (conn.saveData || (conn.effectiveType && ['slow-2g', '2g', '3g'].includes(conn.effectiveType)) || (conn.downlink && conn.downlink < 1.5)) {
-          console.log("3D samurai disabled: Low bandwidth, high latency or data saver active.");
+      // 2. Reliable loader for Three.js
+      function startSamurai() {
+        if (typeof THREE !== 'undefined') {
+          try {
+            initializeSamurai();
+          } catch (e) {
+            console.error("Failed to initialize 3D samurai scene:", e);
+          }
           return;
         }
+
+        const THREE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+        const threeScript = document.createElement('script');
+        threeScript.src = THREE_CDN;
+        threeScript.onload = function() {
+          try {
+            initializeSamurai();
+          } catch (e) {
+            console.error("Failed to initialize 3D samurai scene:", e);
+          }
+        };
+        threeScript.onerror = function() {
+          console.warn("Failed to load Three.js from CDN, trying fallback...");
+          const fallbackScript = document.createElement('script');
+          fallbackScript.src = "https://unpkg.com/three@0.128.0/build/three.min.js";
+          fallbackScript.onload = function() {
+            try {
+              initializeSamurai();
+            } catch (e) {
+              console.error("Failed to initialize 3D samurai scene:", e);
+            }
+          };
+          document.head.appendChild(fallbackScript);
+        };
+        document.head.appendChild(threeScript);
       }
 
-      // 3. Dynamic loading of Three.js with load timer timeout
-      const THREE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
-      const scriptTimeout = setTimeout(() => {
-        console.warn("3D samurai disabled: Three.js took too long to load (Connection unstable).");
-        cleanupScript();
-      }, 2500); // 2.5-second timeout
-
-      const threeScript = document.createElement('script');
-      threeScript.src = THREE_CDN;
-      threeScript.defer = true;
-      document.head.appendChild(threeScript);
-
-      function cleanupScript() {
-        if (threeScript.parentNode) {
-          threeScript.parentNode.removeChild(threeScript);
-        }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startSamurai);
+      } else {
+        startSamurai();
       }
-
-      threeScript.onload = function() {
-        clearTimeout(scriptTimeout);
-        try {
-          initializeSamurai();
-        } catch (e) {
-          console.error("Failed to initialize 3D samurai scene:", e);
-        }
-      };
 
       // 4. Initialize Three.js scene and model builder
       function initializeSamurai() {
