@@ -347,19 +347,6 @@ export function openMotivationInfoModal() {
 export async function testMotivationNotification() {
   const quote = getRandomMotivationQuote();
   
-  // Render full unclipped quote in dedicated popup modal
-  const quoteBody = document.getElementById('test-motivation-quote-body');
-  if (quoteBody) {
-    quoteBody.textContent = `“${quote}”`;
-  }
-
-  if (typeof window.openModal === 'function') {
-    window.openModal('test-motivation-modal');
-  } else {
-    const modal = document.getElementById('test-motivation-modal');
-    if (modal) modal.classList.add('open');
-  }
-
   if (isAndroidNative && window.Capacitor && window.Capacitor.Plugins.CustomAlarmPlugin) {
     const now = new Date();
     const testMinutes = now.getMinutes() + 1;
@@ -374,8 +361,14 @@ export async function testMotivationNotification() {
         title: "Daily Dose of Motivation 🔥 (Test)",
         selectedTasks: [quote]
       });
+      if (typeof window.showToast === 'function') {
+        window.showToast(`🔥 Test alert set for ${timeStr}: "${quote}"`, 'info');
+      }
     } catch (e) {
       console.error("Failed to schedule test alarm:", e);
+      if (typeof window.showToast === 'function') {
+        window.showToast(`🔥 Motivation Quote: "${quote}"`, 'info');
+      }
     }
   } else {
     // Web test notification
@@ -384,6 +377,9 @@ export async function testMotivationNotification() {
         body: quote,
         icon: "/checklist.png"
       });
+    }
+    if (typeof window.showToast === 'function') {
+      window.showToast(`🔥 Test Notification Sent: "${quote}"`, 'info');
     }
   }
 }
