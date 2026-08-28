@@ -232,6 +232,8 @@ app.use('/api/subscriptions', authenticateToken, dataModificationLimiter, subscr
 app.use('/api/reports',       authenticateToken, dataModificationLimiter, reportRoutes);
 app.use('/api/canvas-workflows', canvasWorkflowRoutes);
 app.use('/api/friends',       authenticateToken, dataModificationLimiter, friendRoutes);
+const motivationController = require('./controllers/motivationController');
+app.get('/api/motivation/quotes', motivationController.getPublicQuotes);
 app.use('/api/integrations',  integrationRoutes);
 app.use('/api/devhub',        require('./routes/devHubRoutes'));
 

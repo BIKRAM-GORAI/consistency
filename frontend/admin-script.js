@@ -130,6 +130,7 @@ function showSection(section) {
   if (section === 'refunds') loadRefunds();
   if (section === 'reports') loadReports();
   if (section === 'changelogs') loadChangelogs();
+  if (section === 'motivation') loadAdminMotivationQuotes();
   if (section === 'bulk-email') loadUserEmailsOnly('desc');
 }
 
@@ -3027,3 +3028,236 @@ window.setUserEmailMode     = setUserEmailMode;
 window.handleAdminEmailAttachment = handleAdminEmailAttachment;
 window.previewUserEmail     = previewUserEmail;
 window.sendAdminEmailToUser = sendAdminEmailToUser;
+
+// ── Motivation Quote Management ──────────────────────────────
+let allAdminMotivationQuotes = [];
+
+async function loadAdminMotivationQuotes() {
+  const grid = document.getElementById('motivation-quotes-grid');
+  if (grid) grid.innerHTML = '<div style="font-weight:800; padding:20px; color:#666;">Loading motivation quotes...</div>';
+
+  try {
+    const res = await fetch(`${API}/api/admin/motivation-quotes`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      logout();
+      return;
+    }
+
+    const data = await res.json();
+    allAdminMotivationQuotes = data.quotes || [];
+    renderAdminMotivationQuotes(allAdminMotivationQuotes);
+  } catch (err) {
+    console.error('Error loading motivation quotes:', err);
+    if (grid) grid.innerHTML = `<div style="color:red; font-weight:800; padding:20px;">Failed to load quotes: ${err.message}</div>`;
+  }
+}
+
+function renderAdminMotivationQuotes(quotes) {
+  const grid = document.getElementById('motivation-quotes-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const totalBadge = document.getElementById('motivation-total-badge');
+  const activeBadge = document.getElementById('motivation-active-badge');
+  const activeCount = quotes.filter(q => q.isActive).length;
+
+  if (totalBadge) totalBadge.textContent = `Total Quotes: ${quotes.length}`;
+  if (activeBadge) activeBadge.textContent = `Active: ${activeCount}`;
+
+  if (quotes.length === 0) {
+    grid.innerHTML = '<div style="font-weight:800; padding:20px; color:#666; grid-column: 1/-1;">No motivation quotes found. Click "+ Add New Quote" to create one!</div>';
+    return;
+  }
+
+  quotes.forEach((q) => {
+    const card = document.createElement('div');
+    card.className = 'review-card';
+    card.style.position = 'relative';
+    card.style.borderLeft = q.isActive ? '6px solid #22c55e' : '6px solid #94a3b8';
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <span style="font-size:11px; font-weight:900; background: var(--yellow); padding: 2px 8px; border: 1.5px solid #000; border-radius: 4px;">Order: #${q.order || 0}</span>
+        <span style="font-size:11px; font-weight:800; padding: 2px 8px; border-radius: 4px; border: 1.5px solid #000; background: ${q.isActive ? '#dcfce7' : '#f1f5f9'}; color: ${q.isActive ? '#166534' : '#64748b'};">
+          ${q.isActive ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+      <p style="font-size: 14px; font-weight: 800; font-style: italic; color: #000; margin-bottom: 10px; line-height: 1.4;">
+        “${escapeHtml(q.quoteText)}”
+      </p>
+      <div style="font-size: 12px; color: #666; font-weight: 700; margin-bottom: 14px;">
+        Author: <span style="color:#000;">${escapeHtml(q.author || 'Consistency Daily')}</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-control btn-edit" style="flex:1;" onclick="openMotivationQuoteModal('${q._id}')">✏️ Edit</button>
+        <button class="btn-control" style="flex:1; background: ${q.isActive ? '#fef3c7' : '#dcfce7'}; color: #000;" onclick="toggleQuoteActive('${q._id}', ${!q.isActive})">
+          ${q.isActive ? '⏸️ Deactivate' : '▶️ Activate'}
+        </button>
+        <button class="btn-control btn-delete" style="flex:1;" onclick="deleteMotivationQuote('${q._id}')">🗑️ Delete</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function filterAdminQuotes() {
+  const query = (document.getElementById('motivation-search')?.value || '').toLowerCase().trim();
+  if (!query) {
+    renderAdminMotivationQuotes(allAdminMotivationQuotes);
+    return;
+  }
+  const filtered = allAdminMotivationQuotes.filter(q => 
+    (q.quoteText || '').toLowerCase().includes(query) ||
+    (q.author || '').toLowerCase().includes(query)
+  );
+  renderAdminMotivationQuotes(filtered);
+}
+
+function openMotivationQuoteModal(quoteId = null) {
+  const modal = document.getElementById('motivation-quote-modal');
+  const titleEl = document.getElementById('motivation-modal-title');
+  const idEl = document.getElementById('motivation-quote-id');
+  const textEl = document.getElementById('motivation-quote-text');
+  const authorEl = document.getElementById('motivation-quote-author');
+  const orderEl = document.getElementById('motivation-quote-order');
+  const activeEl = document.getElementById('motivation-quote-active');
+
+  if (quoteId) {
+    const q = allAdminMotivationQuotes.find(item => item._id === quoteId);
+    if (!q) return;
+    titleEl.textContent = 'Edit Motivation Quote';
+    idEl.value = q._id;
+    textEl.value = q.quoteText || '';
+    authorEl.value = q.author || 'Consistency Daily';
+    orderEl.value = q.order || 1;
+    activeEl.checked = q.isActive !== false;
+  } else {
+    titleEl.textContent = 'Add Motivation Quote';
+    idEl.value = '';
+    textEl.value = '';
+    authorEl.value = 'Consistency Daily';
+    orderEl.value = (allAdminMotivationQuotes.length + 1);
+    activeEl.checked = true;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeMotivationQuoteModal() {
+  const modal = document.getElementById('motivation-quote-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function saveMotivationQuote(event) {
+  if (event) event.preventDefault();
+  const id = document.getElementById('motivation-quote-id').value;
+  const quoteText = document.getElementById('motivation-quote-text').value.trim();
+  const author = document.getElementById('motivation-quote-author').value.trim();
+  const order = Number(document.getElementById('motivation-quote-order').value) || 1;
+  const isActive = document.getElementById('motivation-quote-active').checked;
+
+  if (!quoteText) {
+    alert('Please enter quote text.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-motivation-quote');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const url = id ? `${API}/api/admin/motivation-quotes/${id}` : `${API}/api/admin/motivation-quotes`;
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ quoteText, author, order, isActive })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert(`Error saving quote: ${data.message || 'Server error'}`);
+      return;
+    }
+
+    closeMotivationQuoteModal();
+    await loadAdminMotivationQuotes();
+  } catch (err) {
+    console.error('Error saving quote:', err);
+    alert('Failed to save quote: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save & Broadcast Update';
+    }
+  }
+}
+
+async function toggleQuoteActive(id, newStatus) {
+  try {
+    const res = await fetch(`${API}/api/admin/motivation-quotes/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ isActive: newStatus })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      await loadAdminMotivationQuotes();
+    } else {
+      alert(`Error toggling quote status: ${data.message || 'Server error'}`);
+    }
+  } catch (err) {
+    console.error('Error toggling quote status:', err);
+  }
+}
+
+async function deleteMotivationQuote(id) {
+  if (!confirm('Are you sure you want to delete this quote?')) return;
+
+  try {
+    const res = await fetch(`${API}/api/admin/motivation-quotes/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      await loadAdminMotivationQuotes();
+    } else {
+      alert(`Error deleting quote: ${data.message || 'Server error'}`);
+    }
+  } catch (err) {
+    console.error('Error deleting quote:', err);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+}
+
+window.showSection = showSection;
+window.loadAdminMotivationQuotes = loadAdminMotivationQuotes;
+window.filterAdminQuotes = filterAdminQuotes;
+window.openMotivationQuoteModal = openMotivationQuoteModal;
+window.closeMotivationQuoteModal = closeMotivationQuoteModal;
+window.saveMotivationQuote = saveMotivationQuote;
+window.toggleQuoteActive = toggleQuoteActive;
+window.deleteMotivationQuote = deleteMotivationQuote;

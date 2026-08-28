@@ -58,6 +58,27 @@ export function getMotivationQuotes() {
 }
 
 /**
+ * Fetch latest dynamic motivation quotes from server and cache locally
+ */
+export async function fetchDynamicMotivationQuotes() {
+  try {
+    const baseUrl = window.API || 'https://consistency-daily.vercel.app';
+    const res = await fetch(`${baseUrl}/api/motivation/quotes?t=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.quotes) && data.quotes.length > 0) {
+        localStorage.setItem('customMotivationQuotes', JSON.stringify(data.quotes));
+        console.log(`[Motivation Engine] Dynamically updated ${data.quotes.length} motivation quotes from server.`);
+        return data.quotes;
+      }
+    }
+  } catch (err) {
+    console.warn("[Motivation Engine] Network unavailable for dynamic quotes fetch, using cached library:", err.message);
+  }
+  return getMotivationQuotes();
+}
+
+/**
  * Get a random quote for previews / interactive shuffle
  */
 export function getRandomMotivationQuote() {
@@ -179,6 +200,9 @@ export async function requestDeviceNotificationPermission() {
  * @param {Object} settings - { motivationRemindersEnabled, motivationIntervalHours, motivationStartTime, motivationEndTime }
  */
 export async function syncMotivationAlarms(settings = {}) {
+  // Always fetch latest dynamic quotes from server if network is available
+  await fetchDynamicMotivationQuotes().catch(() => {});
+
   const enabled = !!settings.motivationRemindersEnabled;
   const intervalHours = parseFloat(settings.motivationIntervalHours) || 3;
   const startTime = settings.motivationStartTime || "09:00";
@@ -333,4 +357,5 @@ export async function testMotivationNotification() {
 window.testMotivationNotification = testMotivationNotification;
 window.getRandomMotivationQuote = getRandomMotivationQuote;
 window.getMotivationQuotes = getMotivationQuotes;
+window.fetchDynamicMotivationQuotes = fetchDynamicMotivationQuotes;
 window.syncMotivationAlarms = syncMotivationAlarms;

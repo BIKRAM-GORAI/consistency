@@ -101,4 +101,11 @@ router.get('/user-emails', authenticateAdmin, adminController.getUserEmailsOnly)
 router.post('/users/:id/send-email', authenticateAdmin, adminController.sendEmailToUser);
 router.post('/bulk-email', authenticateAdmin, adminController.sendBulkEmail);
 
+// Motivation Quote Management
+const motivationController = require('../controllers/motivationController');
+router.get('/motivation-quotes', authenticateAdmin, motivationController.getAdminQuotes);
+router.post('/motivation-quotes', authenticateAdmin, motivationController.createQuote);
+router.put('/motivation-quotes/:id', authenticateAdmin, motivationController.updateQuote);
+router.delete('/motivation-quotes/:id', authenticateAdmin, motivationController.deleteQuote);
+
 module.exports = router;
