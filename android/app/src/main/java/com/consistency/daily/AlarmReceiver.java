@@ -159,11 +159,11 @@ public class AlarmReceiver extends BroadcastReceiver {
             }
         } else {
             // Standard notification with single-play sound
-            showNotification(context, title, tasksJson);
+            showNotification(context, alarmId, title, tasksJson);
         }
     }
 
-    private void showNotification(Context context, String title, String tasksJson) {
+    private void showNotification(Context context, String alarmId, String title, String tasksJson) {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) return;
 
@@ -179,7 +179,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, launchIntent, pendingFlags);
 
         // Check if alert is a Motivation Quote notification
-        boolean isMotivation = alarmId != null && alarmId.startsWith("motivation_");
+        boolean isMotivation = (alarmId != null && alarmId.startsWith("motivation_")) || 
+                               (title != null && title.toLowerCase().contains("motivation"));
         NotificationCompat.Style notifStyle;
         String collapsedSummary;
 
@@ -209,9 +210,10 @@ public class AlarmReceiver extends BroadcastReceiver {
             }
         } catch (Exception e) {
             collapsedSummary = isMotivation ? "Daily Motivation Alert" : "Tasks are pending!";
-            NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-            inboxStyle.addLine(collapsedSummary);
-            notifStyle = inboxStyle;
+            NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
+            bigTextStyle.setBigContentTitle(title);
+            bigTextStyle.bigText(collapsedSummary);
+            notifStyle = bigTextStyle;
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NOTIF_CHANNEL_ID)
@@ -220,7 +222,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 .setStyle(notifStyle)
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setCategory(isMotivation ? NotificationCompat.CATEGORY_MESSAGE : NotificationCompat.CATEGORY_REMINDER)
                 .setAutoCancel(true)
                 .setContentIntent(contentIntent);
 
