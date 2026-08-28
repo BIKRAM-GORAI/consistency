@@ -2969,6 +2969,20 @@ export function toggleMotivationFields(show) {
   if (fields) {
     fields.style.display = show ? 'flex' : 'none';
   }
+  const badge = document.getElementById('motivation-status-badge');
+  if (badge) {
+    if (show) {
+      badge.textContent = 'Active 🟢';
+      badge.style.background = '#dcfce7';
+      badge.style.color = '#166534';
+      badge.style.borderColor = '#22c55e';
+    } else {
+      badge.textContent = 'Inactive 🔴';
+      badge.style.background = '#fee2e2';
+      badge.style.color = '#991b1b';
+      badge.style.borderColor = '#ef4444';
+    }
+  }
 }
 
 export async function handleMotivationToggleChange(enabled) {
