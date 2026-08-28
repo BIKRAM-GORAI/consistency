@@ -1,6 +1,6 @@
 {
   "name": "daily-consistency-tracker",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Daily Consistency Tracker + Long-Term Goal Manager",
   "main": "backend/server.js",
   "scripts": {

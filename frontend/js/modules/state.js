@@ -1,4 +1,4 @@
-console.log("[Module] state.js initializing... (v2.9)");
+console.log("[Module] state.js initializing... (v3.0)");
 
 // Detect if running inside Capacitor Android native wrapper
 const isAndroidNative = navigator.userAgent.includes("CapacitorNative/Android");
@@ -8,7 +8,7 @@ if (isAndroidNative) {
 window.isAndroidNative = isAndroidNative;
 
 // Extract Android version if present: e.g. "CapacitorNative/Android/1.0"
-let runningAppVersion = "2.9";
+let runningAppVersion = "3.0";
 if (isAndroidNative) {
   const parts = navigator.userAgent.split("CapacitorNative/Android/");
   if (parts.length > 1) {
