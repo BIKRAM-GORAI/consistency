@@ -3197,103 +3197,103 @@
           </button>
         </div>
 
-        <!-- 3. DAILY DOSE OF MOTIVATION (Main Standalone Section) -->
-        <div id="motivation-section-card" style="padding: 18px; background: linear-gradient(135deg, rgba(255, 107, 53, 0.12) 0%, rgba(255, 62, 165, 0.08) 100%); border: 2.5px solid var(--coral); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <!-- 3. DAILY DOSE OF MOTIVATION (Main Standalone Collapsible Section) -->
+        <div id="motivation-section-card" style="padding: 16px; background: linear-gradient(135deg, rgba(255, 107, 53, 0.12) 0%, rgba(255, 62, 165, 0.08) 100%); border: 2.5px solid var(--coral); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px;">
+          <!-- Header (Clickable for Collapse) -->
+          <div id="motivation-card-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleMotivationCardCollapse()">
             <h3 style="font-size: 14px; font-weight: 900; margin: 0; text-transform: uppercase; display: flex; align-items: center; gap: 8px; color: var(--text);">
               <i data-lucide="flame" style="color: var(--coral);"></i> Daily Dose of Motivation
             </h3>
-            <span style="font-size: 10px; font-weight: 900; background: var(--coral); color: #fff; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; border: 1.5px solid var(--black);">Brutal Quotes 🔥</span>
-          </div>
-          <p class="form-hint" style="margin: 0 0 14px 0; font-size: 11.5px; line-height: 1.4; color: var(--text-muted);">
-            Sequential brutal motivation notifications to keep you disciplined and eliminate excuses.
-          </p>
-
-          <!-- Notification Permission Bar -->
-          <div id="motivation-perm-container" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border: var(--border-2); border-radius: 8px; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <i data-lucide="bell" id="motivation-perm-icon" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
-              <span id="motivation-perm-text" style="font-size: 12px; font-weight: 700; color: var(--text);">Checking Notification Permission...</span>
+              <button type="button" class="btn-ghost ripple" title="How Notifications Work" onclick="event.stopPropagation(); openMotivationInfoModal()" style="width: 22px; height: 22px; border-radius: 50%; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; background: var(--bg); border: 1.5px solid var(--black); color: var(--text); cursor: pointer;">
+                i
+              </button>
+              <span style="font-size: 10px; font-weight: 900; background: var(--coral); color: #fff; padding: 0 8px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; border: 1.5px solid var(--black); line-height: 1;">Brutal Quotes 🔥</span>
+              <span id="motivation-header-toggle-icon" style="font-size: 12px; font-weight: 900; margin-left: 2px;">▼</span>
             </div>
-            <button type="button" id="btn-request-notif-perm" class="btn-primary ripple" style="display: none; padding: 4px 10px; font-size: 11px; text-transform: uppercase; font-weight: 800; background: var(--yellow); color: var(--black); border: 1.5px solid var(--black); box-shadow: 2px 2px 0 var(--black);" onclick="handleRequestNotificationPermission()">
-              Enable Alerts
-            </button>
           </div>
 
-          <!-- Master Feature Toggle -->
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border: var(--border-2); border-radius: 8px; margin-bottom: 12px;">
-            <div>
-              <label for="motivation-reminder-toggle" style="margin: 0; font-weight: 800; font-size: 13px; color: var(--text); display: block; cursor: pointer;">Enable Motivation Alerts</label>
-              <p class="form-hint" style="margin: 2px 0 0 0; font-size: 11px;">100% offline local notifications directly on your phone.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="motivation-reminder-toggle" onchange="handleMotivationToggleChange(this.checked)" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
-          </div>
-
-          <!-- Configurable Options (Visible when enabled) -->
-          <div id="motivation-config-fields" style="display: none; flex-direction: column; gap: 12px; margin-top: 10px;">
-            <!-- Interval Selector -->
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="motivation-interval-select" style="font-size: 11px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                <i data-lucide="clock" style="width: 13px; height: 13px; color: var(--coral);"></i> Notification Interval
-              </label>
-              <select id="motivation-interval-select" class="form-control" style="height: 38px; font-size: 13px; font-weight: 700; border: var(--border-2); background: var(--bg); color: var(--text);">
-                <option value="1">Every 1 Hour (High Frequency 🔥)</option>
-                <option value="2">Every 2 Hours</option>
-                <option value="3" selected>Every 3 Hours (Recommended ⭐)</option>
-                <option value="4">Every 4 Hours</option>
-                <option value="6">Every 6 Hours</option>
-                <option value="12">Twice a Day (Morning &amp; Evening)</option>
-                <option value="24">Once a Day (Morning Only)</option>
-              </select>
-            </div>
-
-            <!-- Active Hours / Sleep Protection -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="motivation-start-time" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block;">Active From</label>
-                <input type="time" id="motivation-start-time" class="form-control" value="09:00" style="height: 36px; font-size: 13px; font-weight: 700; border: var(--border-2); background: var(--bg);" />
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="motivation-end-time" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block;">Active Until</label>
-                <input type="time" id="motivation-end-time" class="form-control" value="21:00" style="height: 36px; font-size: 13px; font-weight: 700; border: var(--border-2); background: var(--bg);" />
-              </div>
-            </div>
-            <p class="form-hint" style="margin: 0; font-size: 10.5px; color: var(--text-muted);">
-              <i data-lucide="moon" style="width: 11px; height: 11px; vertical-align: middle;"></i> Sleep protection: Alerts will only be scheduled within your active hours.
+          <!-- Collapsible Body Content -->
+          <div id="motivation-card-body" style="display: none; margin-top: 14px;">
+            <p class="form-hint" style="margin: 0 0 14px 0; font-size: 11.5px; line-height: 1.4; color: var(--text-muted);">
+              Sequential brutal motivation notifications to keep you disciplined and eliminate excuses.
             </p>
 
-            <!-- Interactive Live Quote Preview -->
-            <div style="padding: 12px 14px; background: var(--bg); border: var(--border-2); border-radius: 8px; position: relative;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">
-                  <i data-lucide="sparkles" style="width: 12px; height: 12px; color: var(--yellow); vertical-align: middle;"></i> Sample Quote Preview
-                </span>
-                <button type="button" class="btn-ghost ripple" style="padding: 2px 8px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer;" onclick="shuffleMotivationPreview()">
-                  <i data-lucide="refresh-cw" style="width: 11px; height: 11px; margin-right: 2px;"></i> Shuffle
-                </button>
+            <!-- Notification Permission Bar -->
+            <div id="motivation-perm-container" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border: var(--border-2); border-radius: 8px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="bell" id="motivation-perm-icon" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                <span id="motivation-perm-text" style="font-size: 12px; font-weight: 700; color: var(--text);">Checking Notification Permission...</span>
               </div>
-              <p id="motivation-quote-preview" style="font-size: 13px; font-weight: 800; font-style: italic; color: var(--text); margin: 0; line-height: 1.4; font-family: 'Space Grotesk', sans-serif;">
-                “You don’t need more motivation. You need to stop making excuses.”
-              </p>
+              <button type="button" id="btn-request-notif-perm" class="btn-primary ripple" style="display: none; padding: 4px 10px; font-size: 11px; text-transform: uppercase; font-weight: 800; background: var(--yellow); color: var(--black); border: 1.5px solid var(--black); box-shadow: 2px 2px 0 var(--black);" onclick="handleRequestNotificationPermission()">
+                Enable Alerts
+              </button>
             </div>
 
-            <!-- Test Alert Trigger -->
-            <button type="button" class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--pink); border-color: var(--black); box-shadow: 3px 3px 0 var(--black); font-size: 12px; text-transform: uppercase; font-weight: 800; color: #fff; padding: 9px;" onclick="testMotivationNotification()">
-              <i data-lucide="send" class="no-theme" style="color: #fff; width: 13px; height: 13px;"></i> Send Test Notification Now
-            </button>
-
-            <!-- Device Compatibility Info Note -->
-            <div style="padding: 10px 12px; background: rgba(0, 0, 0, 0.04); border: 1.5px dashed var(--border-color); border-radius: 8px; font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-              <div style="font-weight: 800; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                <i data-lucide="info" style="width: 13px; height: 13px; color: var(--coral);"></i> How Notifications Work:
+            <!-- Master Feature Toggle -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border: var(--border-2); border-radius: 8px; margin-bottom: 12px;">
+              <div>
+                <label for="motivation-reminder-toggle" style="margin: 0; font-weight: 800; font-size: 13px; color: var(--text); display: block; cursor: pointer;">Enable Motivation Alerts</label>
+                <p class="form-hint" style="margin: 2px 0 0 0; font-size: 11px;">100% offline local notifications directly on your phone.</p>
               </div>
-              <ul style="margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px;">
-                <li><strong style="color: var(--text);">📱 Android APK:</strong> Works <strong>24/7 offline</strong> even when the app is completely closed or screen is locked (powered by Android hardware AlarmManager).</li>
-                <li><strong style="color: var(--text);">🌐 Web Browser:</strong> Browser security restricts closed-tab alerts. Notifications will fire while the website tab is open.</li>
-              </ul>
+              <label class="toggle-switch">
+                <input type="checkbox" id="motivation-reminder-toggle" onchange="handleMotivationToggleChange(this.checked)" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+
+            <!-- Configurable Options (Visible when enabled) -->
+            <div id="motivation-config-fields" style="display: none; flex-direction: column; gap: 12px; margin-top: 10px;">
+              <!-- Interval Selector -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="motivation-interval-select" style="font-size: 11px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                  <i data-lucide="clock" style="width: 13px; height: 13px; color: var(--coral);"></i> Notification Interval
+                </label>
+                <select id="motivation-interval-select" class="form-control" style="height: 38px; font-size: 13px; font-weight: 700; border: var(--border-2); background: var(--bg); color: var(--text);">
+                  <option value="1">Every 1 Hour (High Frequency 🔥)</option>
+                  <option value="2">Every 2 Hours</option>
+                  <option value="3" selected>Every 3 Hours (Recommended ⭐)</option>
+                  <option value="4">Every 4 Hours</option>
+                  <option value="6">Every 6 Hours</option>
+                  <option value="12">Twice a Day (Morning &amp; Evening)</option>
+                  <option value="24">Once a Day (Morning Only)</option>
+                </select>
+              </div>
+
+              <!-- Active Hours / Sleep Protection -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="motivation-start-time" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block;">Active From</label>
+                  <input type="time" id="motivation-start-time" class="form-control" value="09:00" style="height: 36px; font-size: 13px; font-weight: 700; border: var(--border-2); background: var(--bg);" />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="motivation-end-time" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block;">Active Until</label>
+                  <input type="time" id="motivation-end-time" class="form-control" value="21:00" style="height: 36px; font-size: 13px; font-weight: 700; border: var(--border-2); background: var(--bg);" />
+                </div>
+              </div>
+              <p class="form-hint" style="margin: 0; font-size: 10.5px; color: var(--text-muted);">
+                <i data-lucide="moon" style="width: 11px; height: 11px; vertical-align: middle;"></i> Sleep protection: Alerts will only be scheduled within your active hours.
+              </p>
+
+              <!-- Interactive Live Quote Preview -->
+              <div style="padding: 12px 14px; background: var(--bg); border: var(--border-2); border-radius: 8px; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">
+                    <i data-lucide="sparkles" style="width: 12px; height: 12px; color: var(--yellow); vertical-align: middle;"></i> Sample Quote Preview
+                  </span>
+                  <button type="button" class="btn-ghost ripple" style="padding: 2px 8px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer;" onclick="shuffleMotivationPreview()">
+                    <i data-lucide="refresh-cw" style="width: 11px; height: 11px; margin-right: 2px;"></i> Shuffle
+                  </button>
+                </div>
+                <p id="motivation-quote-preview" style="font-size: 13px; font-weight: 800; font-style: italic; color: var(--text); margin: 0; line-height: 1.4; font-family: 'Space Grotesk', sans-serif;">
+                  “You don’t need more motivation. You need to stop making excuses.”
+                </p>
+              </div>
+
+              <!-- Test Alert Trigger -->
+              <button type="button" class="btn-primary ripple" style="width: 100%; justify-content: center; background: var(--pink); border-color: var(--black); box-shadow: 3px 3px 0 var(--black); font-size: 12px; text-transform: uppercase; font-weight: 800; color: #fff; padding: 9px;" onclick="testMotivationNotification()">
+                <i data-lucide="send" class="no-theme" style="color: #fff; width: 13px; height: 13px;"></i> Send Test Notification Now
+              </button>
             </div>
           </div>
         </div>
@@ -3809,6 +3809,71 @@
   <div class="toast" id="toast">
     <span class="toast-icon" id="toast-icon"><i data-lucide="check-circle"></i></span>
     <span id="toast-msg"></span>
+  </div>
+
+  <!-- ===== MODAL: Motivation Info ===== -->
+  <div id="motivation-info-modal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'motivation-info-modal')">
+    <div class="modal" style="max-width: 440px; border: 3px solid var(--black); box-shadow: 8px 8px 0 var(--black); border-radius: 16px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 2px dashed var(--border-color); padding-bottom: 10px;">
+        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 16px; text-transform: uppercase; color: var(--text); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="info" style="color: var(--coral);"></i> How Notifications Work
+        </h3>
+        <button type="button" class="btn-ghost" style="padding: 4px 8px; font-weight: 900;" onclick="closeModal('motivation-info-modal')">✕</button>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px; font-size: 12px; color: var(--text); line-height: 1.5;">
+        <div style="padding: 12px; background: rgba(34, 197, 94, 0.08); border: 2px solid #22c55e; border-radius: 10px;">
+          <div style="font-weight: 900; color: #166534; font-size: 12.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            📱 Android APK Version
+          </div>
+          Works <strong>24/7 offline</strong> even when the app is completely closed or screen is locked (powered by native Android hardware AlarmManager &amp; custom receivers).
+        </div>
+
+        <div style="padding: 12px; background: rgba(234, 179, 8, 0.08); border: 2px solid #eab308; border-radius: 10px;">
+          <div style="font-weight: 900; color: #854d0e; font-size: 12.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            🌐 Web Browser Version
+          </div>
+          Due to browser security &amp; OS restrictions, website tabs cannot fire background alarms when closed. Notifications will fire while the website tab is open in your browser.
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; text-align: right;">
+        <button type="button" class="btn-primary ripple" style="background: var(--yellow); color: var(--black); border-color: var(--black); box-shadow: 2px 2px 0 var(--black); font-size: 12px; font-weight: 900; text-transform: uppercase; padding: 8px 18px;" onclick="closeModal('motivation-info-modal')">
+          Understood
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Test Motivation Alert Popup ===== -->
+  <div id="test-motivation-modal" class="modal-overlay" onclick="closeModalOnOverlay(event, 'test-motivation-modal')">
+    <div class="modal" style="max-width: 440px; text-align: center; border: 3px solid var(--black); box-shadow: 8px 8px 0 var(--black); border-radius: 16px; padding: 24px;">
+      <div style="font-size: 36px; margin-bottom: 8px;">🔥</div>
+      <span style="font-size: 11px; font-weight: 900; background: var(--coral); color: #fff; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; border: 1.5px solid var(--black); display: inline-block; margin-bottom: 12px;">Daily Dose of Motivation</span>
+      <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 18px; text-transform: uppercase; color: var(--text); margin-bottom: 14px;">Notification Test Preview</h3>
+      
+      <div style="background: var(--bg); border: 2px solid var(--black); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 3px 3px 0 var(--black); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: var(--coral); text-transform: uppercase; margin-bottom: 8px;">
+          <i data-lucide="flame" style="width: 14px; height: 14px;"></i> Alert Preview:
+        </div>
+        <p id="test-motivation-quote-body" style="font-size: 14.5px; font-weight: 800; font-style: italic; color: var(--text); margin: 0; line-height: 1.5; font-family: 'Space Grotesk', sans-serif;">
+          “Stop being impressed by the person you could become. Become them.”
+        </p>
+      </div>
+
+      <p id="test-motivation-subtitle" style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 18px; line-height: 1.4;">
+        Test notification dispatched! Full quote text is formatted above.
+      </p>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-primary ripple" style="flex: 1; background: var(--yellow); color: var(--black); border-color: var(--black); box-shadow: 3px 3px 0 var(--black); font-size: 12px; font-weight: 900; text-transform: uppercase; padding: 10px;" onclick="testMotivationNotification()">
+          <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Shuffle Next
+        </button>
+        <button type="button" class="btn-ghost ripple" style="flex: 1; border: 2px solid var(--black); font-size: 12px; font-weight: 900; text-transform: uppercase; padding: 10px;" onclick="closeModal('test-motivation-modal')">
+          Got It
+        </button>
+      </div>
+    </div>
   </div>
 
 

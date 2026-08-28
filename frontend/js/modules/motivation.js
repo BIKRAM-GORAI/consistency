@@ -310,14 +310,58 @@ function scheduleWebMotivationTimers(enabled, startTime, endTime, intervalHours)
 }
 
 /**
+ * Toggle collapsible state for motivation card
+ */
+export function toggleMotivationCardCollapse() {
+  const body = document.getElementById('motivation-card-body');
+  const icon = document.getElementById('motivation-header-toggle-icon');
+  if (!body) return;
+
+  const isCollapsed = body.style.display === 'none' || getComputedStyle(body).display === 'none';
+  if (isCollapsed) {
+    body.style.display = 'block';
+    if (icon) icon.textContent = '▲';
+    localStorage.setItem('motivationCardExpanded', 'true');
+  } else {
+    body.style.display = 'none';
+    if (icon) icon.textContent = '▼';
+    localStorage.setItem('motivationCardExpanded', 'false');
+  }
+}
+
+/**
+ * Open motivation info (i) modal
+ */
+export function openMotivationInfoModal() {
+  if (typeof window.openModal === 'function') {
+    window.openModal('motivation-info-modal');
+  } else {
+    const modal = document.getElementById('motivation-info-modal');
+    if (modal) modal.classList.add('open');
+  }
+}
+
+/**
  * Send an immediate test motivation notification to preview how it looks
  */
 export async function testMotivationNotification() {
   const quote = getRandomMotivationQuote();
   
+  // Render full unclipped quote in dedicated popup modal
+  const quoteBody = document.getElementById('test-motivation-quote-body');
+  if (quoteBody) {
+    quoteBody.textContent = `“${quote}”`;
+  }
+
+  if (typeof window.openModal === 'function') {
+    window.openModal('test-motivation-modal');
+  } else {
+    const modal = document.getElementById('test-motivation-modal');
+    if (modal) modal.classList.add('open');
+  }
+
   if (isAndroidNative && window.Capacitor && window.Capacitor.Plugins.CustomAlarmPlugin) {
     const now = new Date();
-    // Schedule for 1 minute from now to test native receiver
     const testMinutes = now.getMinutes() + 1;
     const testH = now.getHours() + Math.floor(testMinutes / 60);
     const timeStr = `${String(testH % 24).padStart(2, '0')}:${String(testMinutes % 60).padStart(2, '0')}`;
@@ -330,14 +374,8 @@ export async function testMotivationNotification() {
         title: "Daily Dose of Motivation 🔥 (Test)",
         selectedTasks: [quote]
       });
-      if (typeof window.showToast === 'function') {
-        window.showToast(`Test alert scheduled for ${timeStr}: "${quote.substring(0, 32)}..."`, 'info');
-      }
     } catch (e) {
       console.error("Failed to schedule test alarm:", e);
-      if (typeof window.showToast === 'function') {
-        window.showToast(`Motivation: "${quote}"`, 'info');
-      }
     }
   } else {
     // Web test notification
@@ -346,9 +384,6 @@ export async function testMotivationNotification() {
         body: quote,
         icon: "/checklist.png"
       });
-    }
-    if (typeof window.showToast === 'function') {
-      window.showToast(`🔥 Motivation: "${quote}"`, 'info');
     }
   }
 }
@@ -359,3 +394,5 @@ window.getRandomMotivationQuote = getRandomMotivationQuote;
 window.getMotivationQuotes = getMotivationQuotes;
 window.fetchDynamicMotivationQuotes = fetchDynamicMotivationQuotes;
 window.syncMotivationAlarms = syncMotivationAlarms;
+window.toggleMotivationCardCollapse = toggleMotivationCardCollapse;
+window.openMotivationInfoModal = openMotivationInfoModal;
