@@ -82,10 +82,15 @@ async function loadDays(page = 1) {
 
         if (loadingEl) loadingEl.innerHTML = '';
       } else {
+        // New user or empty local cache: render immediately so empty state and "+ New Day Card" button appear instantly
+        window.allDays = [];
+        renderDays();
         updateTodayStatusCache(window.todayStr(), false, []);
+        if (loadingEl) loadingEl.innerHTML = '';
       }
     } catch (err) {
       console.warn('Dexie read error:', err);
+      if (loadingEl) loadingEl.innerHTML = '';
     }
   }
 

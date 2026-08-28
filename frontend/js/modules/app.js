@@ -550,12 +550,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     showPage(lastPage);
   }
 
-  proactiveSync(); // Syncs profile, goals, achievements, etc.
   loadDays();
   loadTemplates();
   if (typeof window.loadSubscriptionStatus === 'function') {
     window.loadSubscriptionStatus();
   }
+  setTimeout(() => {
+    proactiveSync(); // Syncs profile, goals, achievements in background
+  }, 100);
 
   // Trigger sync of all native reminders on startup
   setTimeout(async () => {

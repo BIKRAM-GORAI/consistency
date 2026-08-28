@@ -177,8 +177,8 @@ function calculateHighestStreak(days, clientDate) {
  * @returns {Promise<number>} The newly-calculated currentStreak
  */
 async function updateUserStreakAndActivity(userId, clientDate) {
-  // Fetch every day for this user (only fields needed for calculation)
-  const days = await Day.find({ userId }).select('date categories graceApplied');
+  // Fetch every day for this user with lean for speed
+  const days = await Day.find({ userId }).select('date categories graceApplied').lean();
 
   const currentStreak = calculateCurrentStreak(days, clientDate);
   const highestStreak = calculateHighestStreak(days, clientDate);
@@ -211,9 +211,7 @@ async function updateUserStreakAndActivity(userId, clientDate) {
 /**
  * GET /api/days?userId=...&page=...&limit=...
  *
- * KEY FIX: Streak is recalculated from ALL days on every page load.
- * This corrects any stale values stored in the DB (e.g. when a user
- * was inactive for days and the stored streak was never reset).
+ * Optimized with .lean() and parallel fast lookups
  */
 const getAllDays = async (req, res) => {
   try {
@@ -226,12 +224,17 @@ const getAllDays = async (req, res) => {
       const limitNum = parseInt(limit);
       const skip     = (pageNum - 1) * limitNum;
 
-      // Fetch ALL days (for streak) and the current page (for display) in parallel
+      // Fetch days with .lean() in parallel (skips heavy Mongoose doc hydration)
       const [allUserDays, paginatedDays, total] = await Promise.all([
-        Day.find({ userId }).select('date categories graceApplied'),
-        Day.find({ userId }).sort({ date: -1 }).skip(skip).limit(limitNum),
+        Day.find({ userId }).select('date categories graceApplied').lean(),
+        Day.find({ userId }).sort({ date: -1 }).skip(skip).limit(limitNum).lean(),
         Day.countDocuments({ userId }),
       ]);
+
+      // Fast exit for new users with 0 cards
+      if (total === 0 || !paginatedDays.length) {
+        return res.json({ days: [], streak: 0, hasMore: false, total: 0 });
+      }
 
       // Recalculate streak fresh — this is the source of truth
       const currentStreak = calculateCurrentStreak(allUserDays, clientDate);
@@ -258,7 +261,7 @@ const getAllDays = async (req, res) => {
 
     } else {
       // Non-paginated fallback
-      const days = await Day.find({ userId }).sort({ date: -1 });
+      const days = await Day.find({ userId }).sort({ date: -1 }).lean();
       const currentStreak = calculateCurrentStreak(days, clientDate);
       return res.json(days);
     }

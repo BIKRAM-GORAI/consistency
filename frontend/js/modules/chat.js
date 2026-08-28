@@ -2967,21 +2967,23 @@ async function proactiveSync(force = false) {
       await window.localDb.leaderboard.put({ sort: 'highest', users: highest.users, timestamp: Date.now() });
     }
 
-    // 3. Sync Days (for Streak calculation)
-    const daysData = await apiFetch(`${window.API}/api/days?page=1&limit=100`);
-    if (daysData && daysData.days) {
-      // Preserve local-only changes (those not yet synced)
-      const localOnly = await window.localDb.syncQueue.where('entity').equals('days').toArray();
-      const localIds = localOnly.map(q => q.targetId);
-      
-      const toUpdate = daysData.days.filter(d => !localIds.includes(d._id));
-      await window.localDb.days.bulkPut(toUpdate);
-      
-      // Update in-memory state if on first page
-      if (window.currentPage === 1) {
-        window.allDays = (await window.localDb.days.toArray()).sort((a,b) => b.date.localeCompare(a.date)).slice(0, window.daysPerPage);
-        renderDays();
-        updateStreak();
+    // 3. Sync Days (Only if forced or not already populated by loadDays)
+    if (force || !window.allDays || window.allDays.length === 0) {
+      const daysData = await apiFetch(`${window.API}/api/days?page=1&limit=${window.daysPerPage || 30}`);
+      if (daysData && daysData.days) {
+        // Preserve local-only changes (those not yet synced)
+        const localOnly = await window.localDb.syncQueue.where('entity').equals('days').toArray();
+        const localIds = localOnly.map(q => q.targetId);
+        
+        const toUpdate = daysData.days.filter(d => !localIds.includes(d._id));
+        await window.localDb.days.bulkPut(toUpdate);
+        
+        // Update in-memory state if on first page
+        if (window.currentPage === 1) {
+          window.allDays = (await window.localDb.days.toArray()).sort((a,b) => b.date.localeCompare(a.date)).slice(0, window.daysPerPage || 30);
+          renderDays();
+          updateStreak();
+        }
       }
     }
 
