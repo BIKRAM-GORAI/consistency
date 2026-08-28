@@ -1891,6 +1891,22 @@ const UserSchema = new mongoose.Schema(
       enum: ["notification", "alarm"],
       default: "notification",
     },
+    motivationRemindersEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    motivationIntervalHours: {
+      type: Number,
+      default: 3,
+    },
+    motivationStartTime: {
+      type: String,
+      default: "09:00",
+    },
+    motivationEndTime: {
+      type: String,
+      default: "21:00",
+    },
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,

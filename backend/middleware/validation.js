@@ -82,6 +82,20 @@ const updateProfileValidation = [
   body('globalStreakReminderType')
     .optional()
     .isIn(['notification', 'alarm']).withMessage('globalStreakReminderType must be notification or alarm'),
+  body('motivationRemindersEnabled')
+    .optional()
+    .isBoolean().withMessage('motivationRemindersEnabled must be a boolean'),
+  body('motivationIntervalHours')
+    .optional()
+    .isNumeric().withMessage('motivationIntervalHours must be a number'),
+  body('motivationStartTime')
+    .optional()
+    .trim()
+    .matches(/^\d{2}:\d{2}$/).withMessage('motivationStartTime must be in HH:MM format'),
+  body('motivationEndTime')
+    .optional()
+    .trim()
+    .matches(/^\d{2}:\d{2}$/).withMessage('motivationEndTime must be in HH:MM format'),
   validate
 ];
 

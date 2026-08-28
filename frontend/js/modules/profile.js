@@ -1,5 +1,6 @@
 // ── Profile Module ───────────────────────────────────────────
 import { syncDeviceReminders } from './reminders.js';
+import { getRandomMotivationQuote, checkDeviceNotificationStatus, requestDeviceNotificationPermission, testMotivationNotification } from './motivation.js';
 console.log("[Module] profile.js initializing...");
 
 // Local toast reference delegation to bypass strict module scope reference errors
@@ -282,6 +283,27 @@ function renderProfileData(user) {
   globalReminderTypeRadios.forEach(rad => {
     rad.checked = (rad.value === (user.globalStreakReminderType || 'notification'));
   });
+
+  // Daily Dose of Motivation Population
+  const motivationToggle = document.getElementById('motivation-reminder-toggle');
+  if (motivationToggle) {
+    motivationToggle.checked = user.motivationRemindersEnabled === true;
+    toggleMotivationFields(user.motivationRemindersEnabled === true);
+  }
+  const motivationInterval = document.getElementById('motivation-interval-select');
+  if (motivationInterval && user.motivationIntervalHours !== undefined) {
+    motivationInterval.value = String(user.motivationIntervalHours);
+  }
+  const motivationStart = document.getElementById('motivation-start-time');
+  if (motivationStart) {
+    motivationStart.value = user.motivationStartTime || "09:00";
+  }
+  const motivationEnd = document.getElementById('motivation-end-time');
+  if (motivationEnd) {
+    motivationEnd.value = user.motivationEndTime || "21:00";
+  }
+  updateMotivationPermissionUI();
+  shuffleMotivationPreview();
   
   const showcaseToggle = document.getElementById('leaderboard-showcase-settings-toggle');
   if (showcaseToggle) {
@@ -371,6 +393,10 @@ async function submitProfileSettings() {
   const globalStreakReminderEnabled = document.getElementById('global-streak-reminder-toggle').checked;
   const globalStreakReminderTime = document.getElementById('global-streak-reminder-time').value || '21:00';
   const globalStreakReminderType = document.querySelector('input[name="global-streak-reminder-type-radio"]:checked')?.value || 'notification';
+  const motivationRemindersEnabled = document.getElementById('motivation-reminder-toggle')?.checked || false;
+  const motivationIntervalHours = parseFloat(document.getElementById('motivation-interval-select')?.value) || 3;
+  const motivationStartTime = document.getElementById('motivation-start-time')?.value || "09:00";
+  const motivationEndTime = document.getElementById('motivation-end-time')?.value || "21:00";
   const leetcodeAutoSync = document.getElementById('leetcode-auto-sync-toggle')?.checked || false;
 
   const currentSavedShowcase = localStorage.getItem('showOnLeaderboard') !== 'false';
@@ -406,6 +432,10 @@ async function submitProfileSettings() {
       globalStreakReminderEnabled,
       globalStreakReminderTime,
       globalStreakReminderType,
+      motivationRemindersEnabled,
+      motivationIntervalHours,
+      motivationStartTime,
+      motivationEndTime,
       leetcodeAutoSync,
       theme: selectedTheme
     };
@@ -436,7 +466,11 @@ async function submitProfileSettings() {
     syncDeviceReminders(window.allDays || [], {
       globalStreakReminderEnabled,
       globalStreakReminderTime,
-      globalStreakReminderType
+      globalStreakReminderType,
+      motivationRemindersEnabled,
+      motivationIntervalHours,
+      motivationStartTime,
+      motivationEndTime
     });
 
     // Commit temporary app limits if they exist
@@ -2928,6 +2962,78 @@ function updateOtpResendTimer() {
     if (countdownText) countdownText.textContent = '';
   }
 }
+
+// ── Motivation UI Helpers ─────────────────────────────────────
+export function toggleMotivationFields(show) {
+  const fields = document.getElementById('motivation-config-fields');
+  if (fields) {
+    fields.style.display = show ? 'flex' : 'none';
+  }
+}
+
+export async function handleMotivationToggleChange(enabled) {
+  toggleMotivationFields(enabled);
+  if (enabled) {
+    const isGranted = await checkDeviceNotificationStatus();
+    if (!isGranted) {
+      await handleRequestNotificationPermission();
+    }
+  }
+}
+
+export async function updateMotivationPermissionUI() {
+  const textEl = document.getElementById('motivation-perm-text');
+  const iconEl = document.getElementById('motivation-perm-icon');
+  const btnEl = document.getElementById('btn-request-notif-perm');
+  if (!textEl) return;
+
+  const isGranted = await checkDeviceNotificationStatus();
+  if (isGranted) {
+    textEl.textContent = 'Device Notifications: Allowed ✅';
+    textEl.style.color = 'var(--green, #10b981)';
+    if (iconEl) {
+      iconEl.style.color = 'var(--green, #10b981)';
+      iconEl.setAttribute('data-lucide', 'bell-ring');
+    }
+    if (btnEl) btnEl.style.display = 'none';
+  } else {
+    textEl.textContent = 'Device Notifications: Permission Required ⚠️';
+    textEl.style.color = 'var(--coral, #ff6b35)';
+    if (iconEl) {
+      iconEl.style.color = 'var(--coral, #ff6b35)';
+      iconEl.setAttribute('data-lucide', 'bell-off');
+    }
+    if (btnEl) btnEl.style.display = 'inline-block';
+  }
+  if (window.lucide) {
+    const container = document.getElementById('motivation-perm-container');
+    if (container) lucide.createIcons({ root: container });
+  }
+}
+
+export async function handleRequestNotificationPermission() {
+  const granted = await requestDeviceNotificationPermission();
+  await updateMotivationPermissionUI();
+  if (granted) {
+    showToast('Notifications enabled successfully!', 'info');
+  } else {
+    showToast('Please enable notifications in device app settings to receive motivation alerts.', 'warn');
+  }
+}
+
+export function shuffleMotivationPreview() {
+  const el = document.getElementById('motivation-quote-preview');
+  if (el) {
+    const quote = getRandomMotivationQuote();
+    el.textContent = `“${quote}”`;
+  }
+}
+
+window.toggleMotivationFields = toggleMotivationFields;
+window.handleMotivationToggleChange = handleMotivationToggleChange;
+window.updateMotivationPermissionUI = updateMotivationPermissionUI;
+window.handleRequestNotificationPermission = handleRequestNotificationPermission;
+window.shuffleMotivationPreview = shuffleMotivationPreview;
 
 window.sendEmailVerificationOtp = sendEmailVerificationOtp;
 window.confirmEmailVerification = confirmEmailVerification;

@@ -178,39 +178,54 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, launchIntent, pendingFlags);
 
-        // Build InboxStyle — each task gets its own row, no truncation
-        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+        // Check if alert is a Motivation Quote notification
+        boolean isMotivation = alarmId != null && alarmId.startsWith("motivation_");
+        NotificationCompat.Style notifStyle;
         String collapsedSummary;
 
         try {
             JSONArray tasks = new JSONArray(tasksJson != null ? tasksJson : "[]");
-            if (tasks.length() > 0) {
+            if (isMotivation) {
+                String quoteText = tasks.length() > 0 ? tasks.getString(0) : "Stay consistent and execute your goals today!";
+                collapsedSummary = quoteText;
+                NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
+                bigTextStyle.setBigContentTitle(title);
+                bigTextStyle.bigText(quoteText);
+                notifStyle = bigTextStyle;
+            } else if (tasks.length() > 0) {
                 collapsedSummary = tasks.length() + " task(s) pending";
+                NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
                 inboxStyle.setBigContentTitle(title);
                 for (int i = 0; i < tasks.length(); i++) {
                     inboxStyle.addLine("• " + tasks.getString(i));
                 }
                 inboxStyle.setSummaryText(tasks.length() + " task(s)");
+                notifStyle = inboxStyle;
             } else {
                 collapsedSummary = "Time to review your tasks for the day!";
+                NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
                 inboxStyle.addLine(collapsedSummary);
+                notifStyle = inboxStyle;
             }
         } catch (Exception e) {
-            collapsedSummary = "Tasks are pending!";
+            collapsedSummary = isMotivation ? "Daily Motivation Alert" : "Tasks are pending!";
+            NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
             inboxStyle.addLine(collapsedSummary);
+            notifStyle = inboxStyle;
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NOTIF_CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(collapsedSummary)
-                .setStyle(inboxStyle)
+                .setStyle(notifStyle)
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setAutoCancel(true)
                 .setContentIntent(contentIntent);
 
-        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+        int notifId = isMotivation ? ("motivation".hashCode()) : (int) System.currentTimeMillis();
+        notificationManager.notify(notifId, builder.build());
     }
 
     private String getCollapsedSummary(String message) {

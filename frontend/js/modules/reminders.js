@@ -85,15 +85,26 @@ export async function updateTodayStatusCache(date, isListMade, pendingTasks = []
   }
 }
 
+import { syncMotivationAlarms } from './motivation.js';
+
+export { syncMotivationAlarms };
+
 /**
  * Synchronize all alarms on device launch or settings update
  * @param {Array} daysList - Array of Day cards
- * @param {Object} globalSettings - User settings containing globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType
+ * @param {Object} globalSettings - User settings containing globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, motivation settings
  */
-export async function syncDeviceReminders(daysList, globalSettings) {
+export async function syncDeviceReminders(daysList, globalSettings = {}) {
   console.log("[Reminder Sync] Starting device reminder synchronization...");
 
-  // 1. Sync global streak saver alarm
+  // 1. Sync motivation alarms
+  try {
+    await syncMotivationAlarms(globalSettings);
+  } catch (err) {
+    console.error("[Reminder Sync] Error syncing motivation alarms:", err);
+  }
+
+  // 2. Sync global streak saver alarm
   if (isAndroidNative && window.Capacitor && window.Capacitor.Plugins.CustomAlarmPlugin) {
     try {
       if (globalSettings.globalStreakReminderEnabled) {
@@ -114,7 +125,7 @@ export async function syncDeviceReminders(daysList, globalSettings) {
     }
   }
 
-  // 2. Sync individual day cards
+  // 3. Sync individual day cards
   const todayStr = new Date().toISOString().split('T')[0];
   for (const day of daysList) {
     const cardDate = (day.date || '').split('T')[0];

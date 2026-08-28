@@ -362,6 +362,10 @@ async function getProfileSettings(req, res) {
       globalStreakReminderEnabled: user.globalStreakReminderEnabled !== false,
       globalStreakReminderTime: user.globalStreakReminderTime || "21:00",
       globalStreakReminderType: user.globalStreakReminderType || "notification",
+      motivationRemindersEnabled: user.motivationRemindersEnabled === true,
+      motivationIntervalHours: user.motivationIntervalHours || 3,
+      motivationStartTime: user.motivationStartTime || "09:00",
+      motivationEndTime: user.motivationEndTime || "21:00",
       leetcodeAutoSync: user.leetcodeAutoSync || false
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
@@ -370,7 +374,7 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { name, emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, leetcodeAutoSync } = req.body;
+    const { name, emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, motivationRemindersEnabled, motivationIntervalHours, motivationStartTime, motivationEndTime, leetcodeAutoSync } = req.body;
 
     if (typeof name === 'string' && name.trim() !== '') {
       const cleanName = name.trim();
@@ -393,6 +397,10 @@ async function setProfileSettings(req, res) {
     if (typeof globalStreakReminderEnabled === 'boolean') user.globalStreakReminderEnabled = globalStreakReminderEnabled;
     if (globalStreakReminderTime !== undefined) user.globalStreakReminderTime = globalStreakReminderTime;
     if (globalStreakReminderType !== undefined) user.globalStreakReminderType = globalStreakReminderType;
+    if (typeof motivationRemindersEnabled === 'boolean') user.motivationRemindersEnabled = motivationRemindersEnabled;
+    if (typeof motivationIntervalHours === 'number') user.motivationIntervalHours = motivationIntervalHours;
+    if (motivationStartTime !== undefined) user.motivationStartTime = motivationStartTime;
+    if (motivationEndTime !== undefined) user.motivationEndTime = motivationEndTime;
     if (typeof isPublicProfile === 'boolean') user.isPublicProfile = isPublicProfile;
     if (typeof showOnLeaderboard === 'boolean') user.showOnLeaderboard = showOnLeaderboard;
     if (theme) {
@@ -476,6 +484,10 @@ async function setProfileSettings(req, res) {
       globalStreakReminderEnabled: user.globalStreakReminderEnabled !== false,
       globalStreakReminderTime: user.globalStreakReminderTime || "21:00",
       globalStreakReminderType: user.globalStreakReminderType || "notification",
+      motivationRemindersEnabled: user.motivationRemindersEnabled === true,
+      motivationIntervalHours: user.motivationIntervalHours || 3,
+      motivationStartTime: user.motivationStartTime || "09:00",
+      motivationEndTime: user.motivationEndTime || "21:00",
       leetcodeAutoSync: user.leetcodeAutoSync || false
     });
   } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
