@@ -1,6 +1,6 @@
 {
-  "latestVersion": "2.9",
+  "latestVersion": "3.0",
   "apkUrl": "https://raw.githubusercontent.com/BIKRAM-GORAI/consistency-daily-apk/main/Consistency.Daily.apk",
-  "forceUpdate": true,
-  "releaseNotes": "✨ What's new in v2.9:\n• 🌐 External Browser Integration: All external links from Stack Overflow, Dev.to, Medium, GitHub repositories, and Bookmarks now open directly in your device's default external browser.\n• 🔑 Seamless GitHub OAuth: Fixed GitHub authorization & OAuth connect flow to launch safely in system browser.\n• ⚡ Performance & Stability: Enhanced native Android WebView handling and custom scheme navigation.\n• 🐛 Bug Fixes & Improvements."
+  "forceUpdate": false,
+  "releaseNotes": "🔥 What's new in v3.0:\n• 🔥 Daily Dose of Motivation: Added 100% offline brutal motivation alerts system with custom interval pickers & sleep protection.\n• 📱 Enhanced Android Notifications: Formatted native notifications with clean BigTextStyle layout without task counts.\n• ⚡ Performance & Streak Optimizations: Instant 0ms startup streak rendering for new users & fast lean database queries.\n• 🐛 Bug Fixes & UI Enhancements."
 }
