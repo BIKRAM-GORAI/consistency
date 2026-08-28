@@ -81,7 +81,7 @@ function showForceUpdateDialog(data) {
         text-decoration: none; box-shadow: 3px 3px 0 #111; cursor: pointer;
         transition: transform 0.15s, box-shadow 0.15s;
       ">
-        ⬇ Download Update
+        Update
       </a>
     </div>
   `;
@@ -171,7 +171,7 @@ function showSoftUpdateDialog(data) {
           text-decoration: none; box-shadow: 2px 2px 0 #111; cursor: pointer;
           text-align: center;
         ">
-          ⬇ Update
+          Update
         </a>
       </div>
     </div>
