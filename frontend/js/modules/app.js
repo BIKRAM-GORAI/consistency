@@ -6,18 +6,18 @@ async function loadTemplates() {
   try {
     // 1. Try local cache first for instant load
     if (window.localDb) {
-      window.allTemplates = await window.localDb.templates.toArray();
-      if (window.allTemplates.length > 0) populateTemplateDropdown();
+      window.allTemplates = (await window.localDb.templates.toArray()) || [];
+      populateTemplateDropdown();
     }
 
     // 2. Fetch fresh from network if online
     if (navigator.onLine) {
       const fresh = await apiFetch(`${window.API}/api/templates`);
-      window.allTemplates = fresh;
+      window.allTemplates = fresh || [];
       populateTemplateDropdown();
       if (window.localDb) {
         await window.localDb.templates.clear();
-        await window.localDb.templates.bulkPut(fresh);
+        await window.localDb.templates.bulkPut(window.allTemplates);
       }
     }
   } catch (err) {
@@ -28,6 +28,10 @@ async function loadTemplates() {
 function populateTemplateDropdown() {
   const select = document.getElementById('import-template-select');
   if (!select) return;
+  if (!window.allTemplates || window.allTemplates.length === 0) {
+    select.innerHTML = '<option value="">-- No templates created yet --</option>';
+    return;
+  }
   select.innerHTML = '<option value="">-- Select a template to import --</option>';
   for (const t of window.allTemplates) {
     const opt = document.createElement('option');
@@ -38,6 +42,10 @@ function populateTemplateDropdown() {
 }
 
 function applyTemplate() {
+  if (!window.allTemplates || window.allTemplates.length === 0) {
+    showToast("You don't have a template. Create one first!", 'warn');
+    return;
+  }
   const select = document.getElementById('import-template-select');
   if (!select || !select.value) {
     showToast('Please select a template first.', 'warn');

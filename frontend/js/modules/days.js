@@ -1481,6 +1481,9 @@ function openAddDayModal() {
   builder.innerHTML = '';
   window.categoryCount = 0;
   addCategoryField();
+  if (typeof window.populateTemplateDropdown === 'function') {
+    window.populateTemplateDropdown();
+  }
   openModal('modal-add-day');
   
   if (builder && !builder.hasAddDayValidationListener) {

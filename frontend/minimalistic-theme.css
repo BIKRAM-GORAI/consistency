@@ -266,6 +266,51 @@
   background: #f1f5f9 !important;
 }
 
+[data-theme="minimalistic"] .btn-danger,
+[data-theme="minimalistic"] button.btn-danger {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: 1px solid #dc2626 !important;
+}
+
+[data-theme="minimalistic"] .btn-danger:hover,
+[data-theme="minimalistic"] button.btn-danger:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .log-out-btn,
+[data-theme="minimalistic"] button.log-out-btn {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  text-decoration: none !important;
+}
+
+[data-theme="minimalistic"] .log-out-btn:hover,
+[data-theme="minimalistic"] button.log-out-btn:hover,
+[data-theme="minimalistic"] .log-out-btn:focus,
+[data-theme="minimalistic"] button.log-out-btn:focus {
+  background: #b91c1c !important;
+  border-color: #991b1b !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-theme="minimalistic"] .log-out-btn:active,
+[data-theme="minimalistic"] button.log-out-btn:active {
+  background: #991b1b !important;
+  transform: translateY(0) !important;
+}
+
+[data-theme="minimalistic"] .log-out-btn span,
+[data-theme="minimalistic"] button.log-out-btn span {
+  color: #ffffff !important;
+}
+
 /* ── 5.1 Special Modal Action Buttons (Pastel & Clean) ── */
 [data-theme="minimalistic"] #scan-list-btn,
 [data-theme="minimalistic"] #scan-camera-btn {
