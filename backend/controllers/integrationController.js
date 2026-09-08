@@ -3,29 +3,48 @@ const axios = require('axios');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-// Symmetric Encryption Helpers for OAuth Tokens
-const ENCRYPTION_KEY = crypto.scryptSync(process.env.JWT_SECRET || 'fallback-secret-key-1234567890', 'salt', 32);
-const IV_LENGTH = 16;
+// Authenticated AES-256-GCM Encryption Helpers for OAuth Tokens
+const GCM_SECRET = process.env.TOKEN_ENCRYPTION_SECRET || process.env.JWT_SECRET || 'consistency-token-encryption-salt-2026';
+const GCM_KEY = crypto.createHash('sha256').update(GCM_SECRET).digest();
 
 function encrypt(text) {
   if (!text) return null;
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
-  let encrypted = cipher.update(text);
+  const iv = crypto.randomBytes(12); // Standard 96-bit IV for AES-GCM
+  const cipher = crypto.createCipheriv('aes-256-gcm', GCM_KEY, iv);
+  let encrypted = cipher.update(text, 'utf8');
   encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString('hex') + ':' + encrypted.toString('hex');
+  const authTag = cipher.getAuthTag();
+  return 'gcm:' + iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted.toString('hex');
 }
 
 function decrypt(text) {
   if (!text) return null;
   try {
-    const textParts = text.split(':');
-    const iv = Buffer.from(textParts.shift(), 'hex');
-    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
+    if (text.startsWith('gcm:')) {
+      const parts = text.split(':');
+      if (parts.length < 4) return null;
+      const iv = Buffer.from(parts[1], 'hex');
+      const authTag = Buffer.from(parts[2], 'hex');
+      const encryptedText = Buffer.from(parts[3], 'hex');
+      const decipher = crypto.createDecipheriv('aes-256-gcm', GCM_KEY, iv);
+      decipher.setAuthTag(authTag);
+      let decrypted = decipher.update(encryptedText);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      return decrypted.toString('utf8');
+    } else {
+      // Backward-compatible fallback for legacy AES-256-CBC database tokens
+      const textParts = text.split(':');
+      if (textParts.length === 2) {
+        const iv = Buffer.from(textParts[0], 'hex');
+        const encryptedText = Buffer.from(textParts[1], 'hex');
+        const legacyKey = crypto.scryptSync(process.env.JWT_SECRET || 'fallback-secret-key-1234567890', 'salt', 32);
+        const decipher = crypto.createDecipheriv('aes-256-cbc', legacyKey, iv);
+        let decrypted = decipher.update(encryptedText);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+        return decrypted.toString('utf8');
+      }
+      return null;
+    }
   } catch (err) {
     console.error('Failed to decrypt token:', err.message);
     return null;

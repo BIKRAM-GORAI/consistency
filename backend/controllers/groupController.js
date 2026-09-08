@@ -817,11 +817,30 @@ const memberDays = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You can only view data of users in your groups.' });
     }
 
-    // Check if they share any PUBLIC group. If they do, the consent rule applies.
-    const sharesPublicGroup = sharedGroups.some(g => g.isPublic === true);
+    // Get streak info and friendship status from target user
+    const targetUser = await User.findById(memberId).select('isPublicProfile currentStreak highestStreak friends');
 
-    // Get streak info from target user
-    const targetUser = await User.findById(memberId).select('isPublicProfile currentStreak highestStreak');
+    // Enforce Profile Privacy: If profile is private, only the user themselves or confirmed mutual friends may view days
+    const isSelf = String(requestingUserId) === String(memberId);
+    const isFriend = targetUser?.friends?.map(String).includes(String(requestingUserId));
+    if (!isSelf && targetUser?.isPublicProfile === false && !isFriend) {
+      return res.json({
+        days: [],
+        isPrivate: true,
+        message: 'This user has set their profile to private.',
+        streak: {
+          current: targetUser?.currentStreak || 0,
+          highest: targetUser?.highestStreak || 0
+        },
+        pagination: {
+          currentPage: page,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: limit,
+          hasMore: false
+        }
+      });
+    }
 
     // Get total count for pagination
     const total = await Day.countDocuments({ userId: memberId });

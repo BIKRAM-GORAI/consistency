@@ -5,11 +5,24 @@ const CronLog = require('../models/CronLog');
 const { getUserAcceptedSubmissions, getProblemDetails } = require('./leetcodeController');
 const { updateUserStreakAndActivity } = require('./dayController');
 
-// Helper to check authorization
+const crypto = require('crypto');
+
+// Helper to check authorization (Fail-closed & timing-safe)
 function checkAuth(req, res) {
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    res.status(401).json({ message: 'Unauthorized' });
+
+  if (!cronSecret || !authHeader) {
+    res.status(401).json({ message: 'Unauthorized: CRON_SECRET is not configured or auth header missing' });
+    return false;
+  }
+
+  const expected = `Bearer ${cronSecret}`;
+  const a = Buffer.from(authHeader, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    res.status(401).json({ message: 'Unauthorized: Invalid cron authorization token' });
     return false;
   }
   return true;

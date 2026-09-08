@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const { adminLimiter } = require('../middleware/rateLimit');
 const jwt = require('jsonwebtoken');
 
 /**
@@ -34,9 +35,9 @@ const authenticateAdmin = (req, res, next) => {
   }
 };
 
-// Public Admin Login Flow
-router.post('/request-otp', adminController.adminRequestOtp);
-router.post('/login', adminController.adminLogin);
+// Public Admin Login Flow (Rate Limited to prevent brute-force attacks)
+router.post('/request-otp', adminLimiter, adminController.adminRequestOtp);
+router.post('/login', adminLimiter, adminController.adminLogin);
 
 // Protected Admin Review Routes
 router.get('/reviews', authenticateAdmin, adminController.getAdminReviews);

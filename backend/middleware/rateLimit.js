@@ -74,9 +74,24 @@ const readOnlyLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Strict rate limiter for administrative authentication and OTP requests
+ * Limits to 5 attempts per 15 minutes per IP
+ */
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // Generous for legitimate admin use while stopping automated flooding
+  message: {
+    message: 'Too many admin authentication attempts. Please try again in 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
+  adminLimiter,
   dataModificationLimiter,
   readOnlyLimiter,
   mediaUploadLimiter

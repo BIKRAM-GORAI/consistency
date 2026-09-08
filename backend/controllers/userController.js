@@ -106,7 +106,7 @@ async function getPublicProfile(req, res) {
     const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
     const canViewAchievements = isOwner || user.achievementsPublic !== false || (code && showPrivateDetails);
 
-    // Map contribution data
+    // Map contribution data (anonymized dates & completion counts for the activity graph)
     const contributionData = [];
     for (const day of daysRaw) {
       let completedCount = 0;

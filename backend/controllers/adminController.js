@@ -18,6 +18,16 @@ const axios = require('axios');
 // In-memory store for admin OTP (expires in 5 minutes)
 let currentAdminOtp = null;
 let adminOtpExpiry = null;
+let adminOtpFailedAttempts = 0;
+let adminLockoutUntil = 0;
+
+function safeStringCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  // Hash to fixed 32-byte SHA-256 buffers to eliminate both character-by-character early exits and length leaks
+  const hashA = crypto.createHash('sha256').update(a, 'utf8').digest();
+  const hashB = crypto.createHash('sha256').update(b, 'utf8').digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
 
 /**
  * Admin Step 1: Request OTP
@@ -33,7 +43,12 @@ async function adminRequestOtp(req, res) {
       return res.status(500).json({ message: 'Admin credentials not configured in server environment.' });
     }
 
-    if (email !== adminEmail || password !== adminPassword) {
+    if (Date.now() < adminLockoutUntil) {
+      const waitMinutes = Math.ceil((adminLockoutUntil - Date.now()) / 60000);
+      return res.status(429).json({ message: `Admin authentication locked due to multiple failed attempts. Try again in ${waitMinutes} minutes.` });
+    }
+
+    if (!safeStringCompare(email, adminEmail) || !safeStringCompare(password, adminPassword)) {
       return res.status(401).json({ message: 'Invalid admin credentials.' });
     }
 
@@ -46,6 +61,7 @@ async function adminRequestOtp(req, res) {
     
     currentAdminOtp = otp;
     adminOtpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+    adminOtpFailedAttempts = 0;
 
     // Send OTP via Email to the recipient specified in .env
     const otpRecipient = process.env.ADMIN_OTP_RECIPIENT_EMAIL || adminEmail;
@@ -90,7 +106,12 @@ async function adminLogin(req, res) {
       return res.status(500).json({ message: 'Admin credentials not configured.' });
     }
 
-    if (email !== adminEmail || password !== adminPassword) {
+    if (Date.now() < adminLockoutUntil) {
+      const waitMinutes = Math.ceil((adminLockoutUntil - Date.now()) / 60000);
+      return res.status(429).json({ message: `Admin account locked. Please wait ${waitMinutes} minutes before trying again.` });
+    }
+
+    if (!safeStringCompare(email, adminEmail) || !safeStringCompare(password, adminPassword)) {
       return res.status(401).json({ message: 'Invalid admin credentials.' });
     }
 
@@ -98,16 +119,27 @@ async function adminLogin(req, res) {
       return res.status(400).json({ message: 'Verification code is required.' });
     }
 
-    const isBackupMatch = backupOtp && otp === backupOtp;
-    const isGeneratedMatch = currentAdminOtp && otp === currentAdminOtp && Date.now() < adminOtpExpiry;
+    const isBackupMatch = backupOtp && safeStringCompare(otp, backupOtp);
+    const isGeneratedMatch = currentAdminOtp && Date.now() < adminOtpExpiry && safeStringCompare(otp, currentAdminOtp);
 
     if (!isBackupMatch && !isGeneratedMatch) {
-      return res.status(401).json({ message: 'Invalid or expired verification code.' });
+      adminOtpFailedAttempts += 1;
+      if (adminOtpFailedAttempts >= 5) {
+        currentAdminOtp = null;
+        adminOtpExpiry = null;
+        adminLockoutUntil = Date.now() + 15 * 60 * 1000; // 15 minute lockout
+        adminOtpFailedAttempts = 0;
+        return res.status(429).json({ message: 'Too many incorrect verification attempts. Admin login locked for 15 minutes.' });
+      }
+      const attemptsRemaining = 5 - adminOtpFailedAttempts;
+      return res.status(401).json({ message: `Invalid or expired verification code. (${attemptsRemaining} attempts remaining)` });
     }
 
-    // Clear OTP after success
+    // Reset OTP and failed attempts after success
     currentAdminOtp = null;
     adminOtpExpiry = null;
+    adminOtpFailedAttempts = 0;
+    adminLockoutUntil = 0;
 
     // Generate Admin Token
     const jwtAdminSecret = process.env.JWT_ADMIN_SECRET;

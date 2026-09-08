@@ -1,5 +1,43 @@
 const User = require('../models/User');
 const axios = require('axios');
+const crypto = require('crypto');
+
+// Authenticated AES-256-GCM Encryption Helpers for Custom API Keys stored at rest
+const KEY_SECRET = process.env.TOKEN_ENCRYPTION_SECRET || process.env.JWT_SECRET || 'devhub-apikey-encryption-secret-2026';
+const KEY_ENCRYPTION_KEY = crypto.createHash('sha256').update(KEY_SECRET).digest();
+
+function encryptApiKey(plaintext) {
+  if (!plaintext) return '';
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', KEY_ENCRYPTION_KEY, iv);
+  let encrypted = cipher.update(plaintext, 'utf8');
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return 'enc:' + iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decryptApiKey(ciphertext) {
+  if (!ciphertext) return '';
+  if (!ciphertext.startsWith('enc:')) {
+    // Unencrypted legacy key fallback
+    return ciphertext;
+  }
+  try {
+    const parts = ciphertext.split(':');
+    if (parts.length < 4) return '';
+    const iv = Buffer.from(parts[1], 'hex');
+    const authTag = Buffer.from(parts[2], 'hex');
+    const encryptedText = Buffer.from(parts[3], 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', KEY_ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch (err) {
+    console.error('Failed to decrypt API key:', err.message);
+    return '';
+  }
+}
 
 // Helper to determine bookmark and AI notes quota based on user status
 const getQuotas = (user) => {
@@ -120,8 +158,12 @@ exports.updateUserKeys = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { customYouTubeApiKey, customGeminiApiKey } = req.body;
-    if (customYouTubeApiKey !== undefined) user.customYouTubeApiKey = customYouTubeApiKey.trim();
-    if (customGeminiApiKey !== undefined) user.customGeminiApiKey = customGeminiApiKey.trim();
+    if (customYouTubeApiKey !== undefined) {
+      user.customYouTubeApiKey = customYouTubeApiKey.trim() ? encryptApiKey(customYouTubeApiKey.trim()) : '';
+    }
+    if (customGeminiApiKey !== undefined) {
+      user.customGeminiApiKey = customGeminiApiKey.trim() ? encryptApiKey(customGeminiApiKey.trim()) : '';
+    }
 
     await user.save();
 
@@ -129,8 +171,8 @@ exports.updateUserKeys = async (req, res) => {
       message: 'API keys updated successfully',
       hasCustomYouTubeKey: !!user.customYouTubeApiKey,
       hasCustomGeminiKey: !!user.customGeminiApiKey,
-      customYouTubeKey: user.customYouTubeApiKey || '',
-      customGeminiKey: user.customGeminiApiKey || ''
+      customYouTubeKey: decryptApiKey(user.customYouTubeApiKey),
+      customGeminiKey: decryptApiKey(user.customGeminiApiKey)
     });
   } catch (err) {
     console.error('Error updating user keys:', err);
@@ -147,8 +189,8 @@ exports.getUserKeys = async (req, res) => {
     res.json({
       hasCustomYouTubeKey: !!user.customYouTubeApiKey,
       hasCustomGeminiKey: !!user.customGeminiApiKey,
-      customYouTubeKey: user.customYouTubeApiKey || '',
-      customGeminiKey: user.customGeminiApiKey || ''
+      customYouTubeKey: decryptApiKey(user.customYouTubeApiKey),
+      customGeminiKey: decryptApiKey(user.customGeminiApiKey)
     });
   } catch (err) {
     console.error('Error fetching user keys:', err);
@@ -176,8 +218,8 @@ exports.deleteUserKey = async (req, res) => {
       message: `${service.toUpperCase()} API key removed successfully`,
       hasCustomYouTubeKey: !!user.customYouTubeApiKey,
       hasCustomGeminiKey: !!user.customGeminiApiKey,
-      customYouTubeKey: user.customYouTubeApiKey || '',
-      customGeminiKey: user.customGeminiApiKey || ''
+      customYouTubeKey: decryptApiKey(user.customYouTubeApiKey),
+      customGeminiKey: decryptApiKey(user.customGeminiApiKey)
     });
   } catch (err) {
     console.error('Error deleting user key:', err);
@@ -195,7 +237,8 @@ exports.searchYouTube = async (req, res) => {
     const { query } = req.body;
     if (!query) return res.status(400).json({ message: 'Search query is required' });
 
-    const apiKey = (user && user.customYouTubeApiKey) ? user.customYouTubeApiKey : process.env.YOUTUBE_API_KEY;
+    const rawKey = user && user.customYouTubeApiKey ? decryptApiKey(user.customYouTubeApiKey) : null;
+    const apiKey = rawKey || process.env.YOUTUBE_API_KEY;
 
     if (!apiKey) {
       return res.status(400).json({
@@ -216,7 +259,7 @@ exports.searchYouTube = async (req, res) => {
       publishedAt: item.snippet.publishedAt
     }));
 
-    res.json({ videos, isCustomKey: !!(user && user.customYouTubeApiKey) });
+    res.json({ videos, isCustomKey: !!rawKey });
   } catch (err) {
     console.error('YouTube API search error:', err.response?.data || err.message);
     const errorMsg = err.response?.data?.error?.message || err.message;
@@ -237,7 +280,8 @@ exports.generateAINotes = async (req, res) => {
     if (!videoTitle) return res.status(400).json({ message: 'Video title is required' });
 
     const { aiNotesQuota, isPremium } = getQuotas(user);
-    const hasCustomKey = !!user.customGeminiApiKey;
+    const customKeyPlain = user.customGeminiApiKey ? decryptApiKey(user.customGeminiApiKey) : '';
+    const hasCustomKey = !!customKeyPlain;
 
     if (!hasCustomKey && (user.aiNotesCount || 0) >= aiNotesQuota) {
       return res.status(403).json({
@@ -249,7 +293,7 @@ exports.generateAINotes = async (req, res) => {
       });
     }
 
-    const geminiKey = hasCustomKey ? user.customGeminiApiKey : process.env.GEMINI_API_KEY;
+    const geminiKey = hasCustomKey ? customKeyPlain : process.env.GEMINI_API_KEY;
     if (!geminiKey) {
       return res.status(400).json({
         error: 'NO_GEMINI_KEY',

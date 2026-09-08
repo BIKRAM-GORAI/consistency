@@ -2,6 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const mongoose = require('mongoose');
@@ -1057,11 +1058,21 @@ async function fetchProblemDifficulty(titleSlug) {
   return data.difficulty || 'Medium';
 }
 
-// ── The cron endpoint ──
+// ── The cron endpoint (Fail-closed & timing-safe) ──
 app.get('/api/cron/sync-leetcode', async (req, res) => {
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ message: 'Unauthorized' });
+
+  if (!cronSecret || !authHeader) {
+    return res.status(401).json({ message: 'Unauthorized: CRON_SECRET is not configured or auth header missing' });
+  }
+
+  const expected = `Bearer ${cronSecret}`;
+  const a = Buffer.from(authHeader, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid cron authorization token' });
   }
 
   // Respond immediately to prevent Vercel/cron timeouts
