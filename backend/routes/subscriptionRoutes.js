@@ -13,6 +13,7 @@ router.post('/razorpay/create-order', authenticateToken, subscriptionController.
 router.post('/razorpay/verify-payment', authenticateToken, subscriptionController.verifyRazorpayPayment);
 router.post('/razorpay/check-pending', authenticateToken, subscriptionController.checkPendingSubscription);
 router.post('/razorpay/request-refund', authenticateToken, subscriptionController.requestRefund);
+router.post('/razorpay/webhook', subscriptionController.handleRazorpayWebhook);
 
 // Referral & Points System Routes
 router.post('/claim-referral', authenticateToken, subscriptionController.claimReferral);

@@ -438,20 +438,26 @@ exports.notifyVideoCallStart = async (req, res) => {
  * POST /api/fcm/notify-dm
  */
 exports.notifyDirectMessage = async (req, res) => {
-  const { recipientId, senderName, text, hasMedia, mediaType } = req.body;
+  const { recipientId, text, hasMedia, mediaType } = req.body;
 
-  if (!recipientId || !senderName) {
-    return res.status(400).json({ message: 'Recipient ID and Sender Name are required' });
+  if (!recipientId) {
+    return res.status(400).json({ message: 'Recipient ID is required' });
   }
 
   try {
     const senderId = req.user.userId;
 
-    // 1. Fetch sender and verify friendship
-    const sender = await User.findById(senderId);
+    // 1. Fetch sender and verify friendship + verified identity
+    const sender = await User.findById(senderId).select('name username friends');
+    if (!sender) {
+      return res.status(404).json({ message: 'Sender not found' });
+    }
     if (!sender.friends.map(String).includes(String(recipientId))) {
       return res.status(403).json({ message: 'Access denied: You must be friends to message this user.' });
     }
+
+    // Always use verified identity from authenticated user session, preventing spoofing / impersonation
+    const verifiedSenderName = sender.name || sender.username || 'Friend';
 
     const recipient = await User.findById(recipientId);
     if (!recipient) {
@@ -500,7 +506,7 @@ exports.notifyDirectMessage = async (req, res) => {
     const sendDmPush = async (body, isSilent) => {
       const payload = {
         notification: {
-          title: senderName,
+          title: verifiedSenderName,
           body: body
         },
         data: {
@@ -541,7 +547,7 @@ exports.notifyDirectMessage = async (req, res) => {
       state.pendingCount = 0;
       state.pendingList = [];
 
-      console.log(`[FCM DM Throttle] Quiet DM. Sending instant noisy push from ${senderName}`);
+      console.log(`[FCM DM Throttle] Quiet DM. Sending instant noisy push from ${verifiedSenderName}`);
       const response = await sendDmPush(bodyText, false);
 
       return res.json({ 
@@ -581,7 +587,7 @@ exports.notifyDirectMessage = async (req, res) => {
             currentState.pendingList = [];
             currentState.timeoutId = null;
 
-            console.log(`[FCM DM Throttle] Delivering stacked DMs from ${senderName} (Silent: ${isSilent})`);
+            console.log(`[FCM DM Throttle] Delivering stacked DMs from ${verifiedSenderName} (Silent: ${isSilent})`);
             await sendDmPush(finalBodyText, isSilent);
           } catch (e) {
             console.error('[FCM DM Throttle] Background delivery timer failed:', e);
@@ -589,7 +595,7 @@ exports.notifyDirectMessage = async (req, res) => {
         }, 10000);
       }
 
-      console.log(`[FCM DM Throttle] Burst DM mode. Queueing message from ${senderName} (Total pending: ${state.pendingCount})`);
+      console.log(`[FCM DM Throttle] Burst DM mode. Queueing message from ${verifiedSenderName} (Total pending: ${state.pendingCount})`);
       return res.json({ 
         success: true, 
         throttled: true, 

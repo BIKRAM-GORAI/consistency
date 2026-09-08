@@ -374,6 +374,7 @@ exports.applyCoupon = async (req, res) => {
  */
 exports.createRazorpayOrder = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { duration } = req.body; // '1_month' or '1_year'
     if (!duration || !['1_month', '1_year'].includes(duration)) {
       return res.status(400).json({ message: 'Valid duration parameter is required.' });
@@ -400,7 +401,11 @@ exports.createRazorpayOrder = async (req, res) => {
       amount: price * 100, // Razorpay expects amount in paise
       currency: 'INR',
       receipt: `receipt_sub_${Date.now()}`,
-      payment_capture: 1
+      payment_capture: 1,
+      notes: {
+        userId: userId ? userId.toString() : '',
+        duration: duration
+      }
     };
 
     console.log(`[Razorpay] Creating order for duration: ${duration}, amount: ${orderPayload.amount} paise`);
@@ -419,7 +424,6 @@ exports.createRazorpayOrder = async (req, res) => {
     );
 
     // Save pending details to the user schema for recovery if user refreshes
-    const userId = req.user.userId;
     await User.findByIdAndUpdate(userId, {
       pendingSubscriptionId: response.data.id,
       pendingSubscriptionDuration: duration
@@ -456,7 +460,7 @@ exports.verifyRazorpayPayment = async (req, res) => {
     const userId = req.user.userId;
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, duration } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !duration) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ message: 'Missing transaction details.' });
     }
 
@@ -465,14 +469,18 @@ exports.verifyRazorpayPayment = async (req, res) => {
       return res.status(500).json({ message: 'Payment gateway configuration error.' });
     }
 
-    // Cryptographic signature check (HMAC SHA-256)
+    // Cryptographic signature check with constant-time comparison (HMAC SHA-256)
     const signPayload = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = crypto
       .createHmac('sha256', keySecret)
       .update(signPayload)
       .digest('hex');
 
-    if (expectedSignature !== razorpay_signature) {
+    const expBuf = Buffer.from(expectedSignature, 'utf8');
+    const recvBuf = Buffer.from(razorpay_signature, 'utf8');
+    const isSignatureValid = expBuf.length === recvBuf.length && crypto.timingSafeEqual(expBuf, recvBuf);
+
+    if (!isSignatureValid) {
       const user = await User.findById(userId);
       console.error(`
 ============================================================
@@ -504,14 +512,54 @@ exports.verifyRazorpayPayment = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
+    // Validate that order ID matches pending order if pending order is recorded
+    if (user.pendingSubscriptionId && user.pendingSubscriptionId !== razorpay_order_id) {
+      return res.status(400).json({ message: 'Order ID does not match pending order.' });
+    }
+
+    // Enforce duration from trusted database record, NOT untrusted request body
+    let trustedDuration = user.pendingSubscriptionDuration;
+    if (!trustedDuration || !['1_month', '1_year'].includes(trustedDuration)) {
+      // Query Razorpay API directly to verify the order amount and determine valid duration
+      try {
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const authHeader = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+        const orderRes = await axios.get(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
+          headers: { Authorization: `Basic ${authHeader}` }
+        });
+        const orderAmount = orderRes.data.amount;
+        let priceMonthly = parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10);
+        let priceAnnual = parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+        if (isNaN(priceMonthly)) priceMonthly = 299;
+        if (isNaN(priceAnnual)) priceAnnual = 1999;
+
+        if (orderAmount === priceMonthly * 100) {
+          trustedDuration = '1_month';
+        } else if (orderAmount === priceAnnual * 100) {
+          trustedDuration = '1_year';
+        } else {
+          return res.status(400).json({ message: 'Order amount does not match any known subscription plan.' });
+        }
+      } catch (orderFetchErr) {
+        console.error('Failed to verify order details with Razorpay:', orderFetchErr.message);
+        return res.status(400).json({ message: 'No valid pending subscription found and unable to verify order with Razorpay.' });
+      }
+    }
+
+    // Disallow duration tampering from client request body
+    if (duration && duration !== trustedDuration) {
+      console.warn(`[Tamper Warning] User ${userId} submitted duration '${duration}' but pending order is '${trustedDuration}'`);
+      return res.status(400).json({ message: 'Submitted duration does not match order record.' });
+    }
+
     const now = new Date();
     let currentExpiry = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > now
       ? new Date(user.subscriptionExpiresAt)
       : now;
 
-    if (duration === '1_month') {
+    if (trustedDuration === '1_month') {
       currentExpiry.setDate(currentExpiry.getDate() + 30);
-    } else if (duration === '1_year') {
+    } else if (trustedDuration === '1_year') {
       currentExpiry.setDate(currentExpiry.getDate() + 365);
     }
 
@@ -523,17 +571,17 @@ exports.verifyRazorpayPayment = async (req, res) => {
     user.premiumActivatedAt = new Date();
     user.refundStatus = 'none';
 
-    // Push the transaction into the user's paymentHistory
-    let price = duration === '1_month'
+    // Push the transaction into the user's paymentHistory using verified duration and pricing
+    let price = trustedDuration === '1_month'
       ? parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10)
       : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
-    if (isNaN(price)) price = duration === '1_month' ? 299 : 1999;
+    if (isNaN(price)) price = trustedDuration === '1_month' ? 299 : 1999;
     
     user.paymentHistory.push({
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       amount: price,
-      duration: duration,
+      duration: trustedDuration,
       purchasedAt: new Date(),
       refundStatus: 'none'
     });
@@ -957,58 +1005,67 @@ exports.redeemPoints = async (req, res) => {
     const basePrice = duration === '1_month' ? priceMonthly : priceAnnual;
     const cpRequired = basePrice * 100;
 
-    if ((user.pointsBalance || 0) < cpRequired) {
+    // Atomic balance check and deduction to prevent concurrency race conditions & double redemption
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, pointsBalance: { $gte: cpRequired } },
+      { $inc: { pointsBalance: -cpRequired } },
+      { new: true }
+    );
+
+    if (!updatedUser) {
       return res.status(400).json({ 
-        message: `Insufficient CP. You need ${cpRequired} CP to redeem this coupon, but you only have ${user.pointsBalance || 0} CP.` 
+        message: `Insufficient CP. You need ${cpRequired} CP to redeem this coupon, but you only have ${user.pointsBalance || 0} CP or a redemption is already in progress.` 
       });
     }
 
-    // Generate a unique coupon code
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let codeUnique = false;
-    let couponCode = '';
-    while (!codeUnique) {
-      couponCode = 'CP-';
-      for (let i = 0; i < 8; i++) {
-        couponCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    try {
+      // Generate a unique coupon code
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let codeUnique = false;
+      let couponCode = '';
+      while (!codeUnique) {
+        couponCode = 'CP-';
+        for (let i = 0; i < 8; i++) {
+          couponCode += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        const existingCoupon = await Coupon.findOne({ code: couponCode });
+        if (!existingCoupon) {
+          codeUnique = true;
+        }
       }
-      const existingCoupon = await Coupon.findOne({ code: couponCode });
-      if (!existingCoupon) {
-        codeUnique = true;
-      }
-    }
 
-    // Create the coupon
-    const newCoupon = new Coupon({
-      code: couponCode,
-      duration: duration,
-      isUsed: false,
-      createdBy: `points_redemption_${user._id}`
-    });
-    await newCoupon.save();
-
-    // Deduct points
-    user.pointsBalance = (user.pointsBalance || 0) - cpRequired;
-    await user.save();
-
-    // Log in Points Ledger
-    const PointsLedger = require('../models/PointsLedger');
-    await PointsLedger.create({
-      userId: user._id,
-      points: -cpRequired,
-      type: 'coupon_redemption',
-      description: `Redeemed ${duration === '1_month' ? '1 Month' : '1 Year'} Premium Pass Coupon`,
-      referenceId: newCoupon._id
-    });
-
-    res.status(200).json({
-      message: `Successfully redeemed ${cpRequired} CP! Your coupon code is: ${couponCode}`,
-      coupon: {
+      // Create the coupon
+      const newCoupon = new Coupon({
         code: couponCode,
-        duration: duration
-      },
-      pointsBalance: user.pointsBalance
-    });
+        duration: duration,
+        isUsed: false,
+        createdBy: `points_redemption_${updatedUser._id}`
+      });
+      await newCoupon.save();
+
+      // Log in Points Ledger
+      const PointsLedger = require('../models/PointsLedger');
+      await PointsLedger.create({
+        userId: updatedUser._id,
+        points: -cpRequired,
+        type: 'coupon_redemption',
+        description: `Redeemed ${duration === '1_month' ? '1 Month' : '1 Year'} Premium Pass Coupon`,
+        referenceId: newCoupon._id
+      });
+
+      return res.status(200).json({
+        message: `Successfully redeemed ${cpRequired} CP! Your coupon code is: ${couponCode}`,
+        coupon: {
+          code: couponCode,
+          duration: duration
+        },
+        pointsBalance: updatedUser.pointsBalance
+      });
+    } catch (couponErr) {
+      // Atomic rollback in case of coupon creation or ledger failure
+      await User.findByIdAndUpdate(userId, { $inc: { pointsBalance: cpRequired } });
+      throw couponErr;
+    }
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -1138,4 +1195,137 @@ exports.claimFreePremium = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error claiming free premium subscription.' });
   }
 };
+
+/**
+ * POST /api/subscriptions/razorpay/webhook
+ * Asynchronous server-to-server webhook handler for Razorpay payment fulfillment.
+ */
+exports.handleRazorpayWebhook = async (req, res) => {
+  try {
+    const webhookSignature = req.headers['x-razorpay-signature'];
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error('[Razorpay Webhook] RAZORPAY_WEBHOOK_SECRET is not configured in .env');
+      return res.status(500).json({ message: 'Webhook secret not configured' });
+    }
+
+    if (!webhookSignature) {
+      return res.status(400).json({ message: 'Missing webhook signature header' });
+    }
+
+    // Use rawBody buffer captured in server.js or fallback to stringified body
+    const payloadBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body), 'utf8');
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(payloadBuffer)
+      .digest('hex');
+
+    const expBuf = Buffer.from(expectedSignature, 'utf8');
+    const recvBuf = Buffer.from(webhookSignature, 'utf8');
+
+    if (expBuf.length !== recvBuf.length || !crypto.timingSafeEqual(expBuf, recvBuf)) {
+      console.warn('[Razorpay Webhook] Invalid signature mismatch rejected.');
+      return res.status(400).json({ message: 'Invalid webhook signature' });
+    }
+
+    const event = req.body;
+    const eventType = event.event;
+    console.log(`[Razorpay Webhook] Authenticated webhook event: ${eventType}`);
+
+    if (eventType === 'order.paid' || eventType === 'payment.captured') {
+      const paymentEntity = event.payload?.payment?.entity || {};
+      const orderEntity = event.payload?.order?.entity || {};
+      const orderId = paymentEntity.order_id || orderEntity.id;
+      const paymentId = paymentEntity.id;
+
+      if (!orderId && !paymentId) {
+        return res.status(200).json({ status: 'ignored_missing_identifiers' });
+      }
+
+      // Replay attack prevention / idempotency check
+      const existingUserWithPayment = await User.findOne({
+        $or: [
+          { razorpayPaymentId: paymentId },
+          { 'paymentHistory.paymentId': paymentId }
+        ]
+      });
+
+      if (existingUserWithPayment) {
+        console.log(`[Razorpay Webhook] Payment ${paymentId} already processed for user ${existingUserWithPayment._id}`);
+        return res.status(200).json({ status: 'already_processed' });
+      }
+
+      // Locate user via order notes or pendingSubscriptionId
+      const userIdFromNotes = paymentEntity.notes?.userId || orderEntity.notes?.userId;
+      let user = null;
+      if (userIdFromNotes) {
+        user = await User.findById(userIdFromNotes);
+      }
+      if (!user && orderId) {
+        user = await User.findOne({ pendingSubscriptionId: orderId });
+      }
+
+      if (!user) {
+        console.warn(`[Razorpay Webhook] User not found for order ${orderId} (notes userId: ${userIdFromNotes})`);
+        return res.status(200).json({ status: 'user_not_found' });
+      }
+
+      // Determine duration
+      let duration = paymentEntity.notes?.duration || orderEntity.notes?.duration || user.pendingSubscriptionDuration;
+      if (!duration || !['1_month', '1_year'].includes(duration)) {
+        const amount = paymentEntity.amount || orderEntity.amount;
+        let priceMonthly = parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10);
+        let priceAnnual = parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+        if (isNaN(priceMonthly)) priceMonthly = 299;
+        if (isNaN(priceAnnual)) priceAnnual = 1999;
+        duration = amount === priceAnnual * 100 ? '1_year' : '1_month';
+      }
+
+      const now = new Date();
+      let currentExpiry = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > now
+        ? new Date(user.subscriptionExpiresAt)
+        : now;
+
+      if (duration === '1_month') {
+        currentExpiry.setDate(currentExpiry.getDate() + 30);
+      } else {
+        currentExpiry.setDate(currentExpiry.getDate() + 365);
+      }
+
+      let price = duration === '1_month'
+        ? parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10)
+        : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
+      if (isNaN(price)) price = duration === '1_month' ? 299 : 1999;
+
+      user.subscriptionTier = 'premium';
+      user.subscriptionExpiresAt = currentExpiry;
+      if (orderId) user.subscriptionId = orderId;
+      if (paymentId) user.razorpayPaymentId = paymentId;
+      user.premiumActivatedAt = new Date();
+      user.refundStatus = 'none';
+
+      user.paymentHistory.push({
+        orderId: orderId || 'webhook_unspecified',
+        paymentId: paymentId || 'webhook_unspecified',
+        amount: price,
+        duration: duration,
+        purchasedAt: new Date(),
+        refundStatus: 'none'
+      });
+
+      user.pendingSubscriptionId = null;
+      user.pendingSubscriptionDuration = null;
+      await user.save();
+
+      console.log(`[Razorpay Webhook] Successfully activated ${duration} Premium for ${user.username} via webhook.`);
+    }
+
+    return res.status(200).json({ status: 'ok' });
+  } catch (err) {
+    console.error('[Razorpay Webhook Error]:', err);
+    return res.status(500).json({ message: 'Webhook processing error' });
+  }
+};
+
 

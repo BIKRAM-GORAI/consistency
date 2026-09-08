@@ -513,8 +513,8 @@ function renderBadges(badges) {
   }
   noMsg.style.display = 'none';
   container.innerHTML = badges.map(b => `
-    <div style="width: 50px; height: 50px; border: 2px solid var(--black); background: #fff; border-radius: 6px; box-shadow: 2px 2px 0 var(--black); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="${escHtml(b.name)} (${b.requiredDays} Days)" onclick="openBadgeLightbox('${b.image}')">
-      <img src="${b.image}" style="width: 100%; height: 100%; object-fit: contain;">
+    <div style="width: 50px; height: 50px; border: 2px solid var(--black); background: #fff; border-radius: 6px; box-shadow: 2px 2px 0 var(--black); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="${escHtml(b.name || '')} (${b.requiredDays || 0} Days)" onclick="openBadgeLightbox('${escHtml(encodeURI(b.image || ''))}')">
+      <img src="${escHtml(b.image || '')}" alt="${escHtml(b.name || '')}" style="width: 100%; height: 100%; object-fit: contain;">
     </div>
   `).join('');
 }
@@ -559,11 +559,11 @@ function renderDays(days, append = false) {
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           ${day.categories.map(cat => `
-            <div style="font-size:13px; font-weight:700; border-bottom:1px solid var(--bg-muted); padding-bottom:4px; margin-top:8px;">${cat.name}</div>
+            <div style="font-size:13px; font-weight:700; border-bottom:1px solid var(--bg-muted); padding-bottom:4px; margin-top:8px;">${escHtml(cat.name || '')}</div>
             ${cat.tasks.map(t => `
               <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted);">
                 <span style="color:${t.completed ? '#22c55e' : '#ccc'}; font-weight:bold;">${t.completed ? '✓' : '○'}</span>
-                <span>${escHtml(t.title)}</span>
+                <span>${escHtml(t.title || '')}</span>
               </div>
             `).join('')}
           `).join('')}
