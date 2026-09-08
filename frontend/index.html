@@ -496,8 +496,8 @@
         <button class="btn-ghost ripple btn-how-it-works" onclick="openModal('modal-goal-how-it-works')" style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11.5px; padding:6px 14px; height:34px; border:2.5px solid var(--black); background:var(--bg-card); color:var(--text); box-shadow:2.5px 2.5px 0 var(--black); border-radius:8px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
           <span><i data-lucide="help-circle" style="width:14px; height:14px;"></i></span> How it Works
         </button>
-        <button class="btn-primary ripple btn-add-goal-hero" onclick="openAddGoalModal()" id="add-goal-header-btn" style="font-family:'Space Grotesk',sans-serif; font-weight:900; font-size:17px; padding:12px 30px; height:52px; background:var(--yellow) !important; color:var(--black) !important; border:3.5px solid var(--black) !important; box-shadow:5px 5px 0 var(--black) !important; border-radius:12px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-          <span><i data-lucide="plus" style="width:20px; height:20px; stroke-width:3;"></i></span> Add Goal
+        <button class="btn-primary ripple btn-add-goal-hero" onclick="openAddGoalModal()" id="add-goal-header-btn" style="font-family:'Space Grotesk',sans-serif; font-weight:900; font-size:13px; padding:7px 18px; height:36px; background:var(--yellow) !important; color:var(--black) !important; border:2.5px solid var(--black) !important; box-shadow:3px 3px 0 var(--black) !important; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+          <span><i data-lucide="plus" style="width:15px; height:15px; stroke-width:3;"></i></span> Add Goal
         </button>
       </div>
     </div>
@@ -1146,7 +1146,6 @@
         background-color: var(--pink) !important;
       }
       .pomo-robot-toggle-wrapper .toggle-switch input:checked + .toggle-track .toggle-thumb {
-        transform: translateX(22px);
         background-color: var(--black);
       }
 
@@ -1250,13 +1249,11 @@
     <div class="pomo-card">
 
       <!-- Toggle for Focus Robot -->
-      <div class="pomo-robot-toggle-wrapper" style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 10px; border-bottom: 2px dashed var(--black); padding-bottom: 16px;">
-        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">🤖 Focus Robot</span>
-        <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
-          <input type="checkbox" id="pomo-robot-toggle" onchange="toggleFocusRobot(this.checked)" style="opacity: 0; width: 0; height: 0;" />
-          <span class="toggle-track" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-muted); border: 2px solid var(--black); border-radius: 22px; transition: .2s; box-shadow: 1px 1px 0 var(--black);">
-            <span class="toggle-thumb" style="position: absolute; content: ''; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: var(--black); border-radius: 50%; transition: .2s;"></span>
-          </span>
+      <div class="pomo-robot-toggle-wrapper" style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 12px; border-bottom: 2px dashed var(--border-color, var(--black)); padding-bottom: 16px;">
+        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; line-height: 1; user-select: none;">🤖 Focus Robot</span>
+        <label class="toggle-switch" style="cursor: pointer; margin: 0; display: inline-flex; align-items: center;">
+          <input type="checkbox" id="pomo-robot-toggle" onchange="toggleFocusRobot(this.checked)" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
       </div>
 
@@ -5177,7 +5174,7 @@
 </div>
 
 <!-- Centralized AI Voice Assistant Floating Glassmorphic Button (Right-aligned, bottom: 84px) -->
-<div id="central-voice-btn-container" style="position: fixed; bottom: 84px; right: 24px; z-index: 1000; display: flex; flex-direction: column; align-items: center;">
+<div id="central-voice-btn-container" style="position: fixed; bottom: 84px; right: 24px; z-index: 990; display: flex; flex-direction: column; align-items: center;">
   <button id="central-voice-btn" onclick="window.openVoiceAssistantModal()" aria-label="Centralized AI Voice Assistant" style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 75, 43, 0.92), rgba(255, 65, 108, 0.92), rgba(245, 120, 20, 0.9)); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); border: 2.5px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px 0 rgba(255, 65, 108, 0.4), 4px 4px 0 var(--black), inset 0 1px 2px 0 rgba(255, 255, 255, 0.85); color: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
     <i data-lucide="mic" style="width: 26px; height: 26px; stroke-width: 2.5;"></i>
   </button>
@@ -5235,10 +5232,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label style="font-size: 11px; font-weight: 800; color: var(--text-muted);">PROMPT TEXT</label>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button id="va-clear-text-btn" onclick="window.clearVoiceAssistantText()" style="display: none; background: transparent; border: none; font-size: 11px; font-weight: 900; color: #ef4444; cursor: pointer; padding: 0; align-items: center; gap: 3px;">
-              <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Clear
+            <button id="va-clear-text-btn" type="button" onclick="window.clearVoiceAssistantText()" style="display: none;">
+              <i data-lucide="x-circle"></i> Clear
             </button>
-            <span id="va-char-counter" style="font-size: 10px; font-weight: 900; font-family: monospace; color: var(--text-muted);">0 / 5000</span>
+            <span id="va-char-counter" style="font-size: 10px; font-weight: 800; font-family: monospace; color: var(--text-muted); line-height: 1; display: inline-flex; align-items: center; height: 22px;">0 / 5000</span>
           </div>
         </div>
         <textarea id="va-text-input" maxlength="5000" placeholder="Type or copy-paste your prompt text here (up to 5000 chars)..." rows="2" style="width: 100%; border: 2.5px solid var(--black); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; font-family: 'Inter', sans-serif; resize: none; max-height: 140px; overflow-y: auto; background: var(--bg-body); color: var(--text); box-shadow: 2px 2px 0 var(--black); box-sizing: border-box; line-height: 1.4;"></textarea>

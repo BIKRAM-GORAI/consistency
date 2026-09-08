@@ -749,7 +749,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
 
     if (isCurrentMonth) {
       graceBadgeHTML = `
-        <button class="btn-primary ripple" data-requires-network="true" onclick="applyGrace('${day._id}')" style="background:#ffb3d9;color:#000;border:2px solid #000;box-shadow:2px 2px 0 #000;padding:4px 10px;font-size:10px;font-weight:900;text-transform:uppercase;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;" title="Protect your streak with a Grace Day"><i data-lucide="shield-alert" style="width:12px;height:12px;"></i> Apply Grace</button>
+        <button class="btn-apply-grace ripple" data-requires-network="true" onclick="applyGrace('${day._id}')" title="Protect your streak with a Grace Day"><i data-lucide="shield-alert" style="width:12px;height:12px;"></i> Apply Grace</button>
         <span class="card-badge badge-past">Past</span>
       `;
     } else {

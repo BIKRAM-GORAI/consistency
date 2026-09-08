@@ -418,7 +418,9 @@ function showPage(page) {
   // Toggle Centralized AI Voice Assistant Mic Button (Visible ONLY on Daily Cards ['home'] & 'goals' pages)
   const voiceBtnContainer = document.getElementById('central-voice-btn-container');
   if (voiceBtnContainer) {
-    if (page === 'home' || page === 'goals') {
+    const profileModal = document.getElementById('modal-profile');
+    const isProfileOpen = profileModal && profileModal.classList.contains('open');
+    if ((page === 'home' || page === 'goals') && !isProfileOpen) {
       voiceBtnContainer.style.display = 'flex';
     } else {
       voiceBtnContainer.style.display = 'none';

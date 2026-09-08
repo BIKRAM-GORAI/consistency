@@ -9,6 +9,8 @@ const showToast = (...args) => window.showToast(...args);
 // ── Profile & Settings ─────────────────────────────────────
 async function openProfileModal() {
   document.getElementById('profile-pic-dataurl').value = '';
+  const voiceBtn = document.getElementById('central-voice-btn-container');
+  if (voiceBtn) voiceBtn.style.display = 'none';
   openModal('modal-profile');
   
   if (latestChangelogDate) {

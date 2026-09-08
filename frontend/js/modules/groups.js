@@ -1548,6 +1548,10 @@ async function openMemberAllAchievements() {
 // ── Modal helpers ──────────────────────────────────────────
 function openModal(id) {
   console.log(`[Modal] openModal called for id: ${id}`);
+  if (id === 'modal-profile') {
+    const voiceBtn = document.getElementById('central-voice-btn-container');
+    if (voiceBtn) voiceBtn.style.display = 'none';
+  }
   const overlay = document.getElementById(id);
   if (!overlay) return;
   if (overlay.classList.contains('open')) {
@@ -1641,6 +1645,13 @@ function closeModal(id) {
         if (id === 'modal-add-leetcode') {
           resetLeetCodeModalState();
         }
+        if (id === 'modal-profile') {
+          const activePage = localStorage.getItem('activePage') || 'home';
+          const voiceBtn = document.getElementById('central-voice-btn-container');
+          if (voiceBtn) {
+            voiceBtn.style.display = (activePage === 'home' || activePage === 'goals') ? 'flex' : 'none';
+          }
+        }
         console.log(`[Modal] closeModal animation complete for id: ${id}`);
       }
     });
@@ -1675,6 +1686,13 @@ function closeModal(id) {
     if (id === 'modal-add-leetcode') {
       resetLeetCodeModalState();
     }
+    if (id === 'modal-profile') {
+      const activePage = localStorage.getItem('activePage') || 'home';
+      const voiceBtn = document.getElementById('central-voice-btn-container');
+      if (voiceBtn) {
+        voiceBtn.style.display = (activePage === 'home' || activePage === 'goals') ? 'flex' : 'none';
+      }
+    }
   }
 }
 
@@ -1707,6 +1725,13 @@ function forceCloseModal(id) {
       // Reset LeetCode modal state if closing LeetCode modal
       if (id === 'modal-add-leetcode') {
         resetLeetCodeModalState();
+      }
+      if (id === 'modal-profile') {
+        const activePage = localStorage.getItem('activePage') || 'home';
+        const voiceBtn = document.getElementById('central-voice-btn-container');
+        if (voiceBtn) {
+          voiceBtn.style.display = (activePage === 'home' || activePage === 'goals') ? 'flex' : 'none';
+        }
       }
     }
   } catch (error) {
