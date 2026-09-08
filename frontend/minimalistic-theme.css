@@ -258,12 +258,237 @@
 }
 
 [data-theme="minimalistic"] .btn-ghost {
-  border: 1px solid transparent !important;
-  background: transparent !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
 }
 
 [data-theme="minimalistic"] .btn-ghost:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+/* ── All Modal Cancel Buttons & Cancel Action Controls ── */
+[data-theme="minimalistic"] .modal-footer .btn-ghost,
+[data-theme="minimalistic"] button[onclick*="closeModal"],
+[data-theme="minimalistic"] #voice-cancel-btn,
+[data-theme="minimalistic"] #scan-cancel-btn,
+[data-theme="minimalistic"] #analysis-cancel-btn,
+[data-theme="minimalistic"] .btn-cancel {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-theme="minimalistic"] .modal-footer .btn-ghost:hover,
+[data-theme="minimalistic"] button[onclick*="closeModal"]:hover,
+[data-theme="minimalistic"] #voice-cancel-btn:hover,
+[data-theme="minimalistic"] #scan-cancel-btn:hover,
+[data-theme="minimalistic"] #analysis-cancel-btn:hover,
+[data-theme="minimalistic"] .btn-cancel:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* ── Profile Page Button Styles (Proper Fixed Borders with Respective Accent Colors) ── */
+
+/* Profile collapse accordion headers (Limits & Templates, Preferences & Security) */
+[data-theme="minimalistic"] #modal-profile .profile-collapse-header {
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-theme="minimalistic"] #modal-profile .profile-collapse-header:hover {
+  border-color: #94a3b8 !important;
   background: #f1f5f9 !important;
+}
+
+/* Manage Daily Templates button */
+[data-theme="minimalistic"] #manage-templates-btn {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme="minimalistic"] #manage-templates-btn:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Change Password button */
+[data-theme="minimalistic"] #toggle-pwd-btn {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme="minimalistic"] #toggle-pwd-btn:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Preview minimal profile ("How others view my profile") */
+[data-theme="minimalistic"] #preview-minimal-btn {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme="minimalistic"] #preview-minimal-btn:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Preview Public Link button */
+[data-theme="minimalistic"] #modal-profile button[onclick="previewFullProfile()"] {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick="previewFullProfile()"]:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Daily Motivation quote shuffle button (respective warm amber/coral border) */
+[data-theme="minimalistic"] #modal-profile button[onclick="shuffleMotivationPreview()"] {
+  border: 1px solid #fdba74 !important;
+  background: #ffffff !important;
+  color: #c2410c !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick="shuffleMotivationPreview()"]:hover {
+  border-color: #fb923c !important;
+  background: #fff7ed !important;
+}
+
+/* Daily Motivation info (i) button */
+[data-theme="minimalistic"] #modal-profile button[onclick="openMotivationInfoModal()"] {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick="openMotivationInfoModal()"]:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* LeetCode Change Username button (respective emerald green border) */
+[data-theme="minimalistic"] #modal-profile button[onclick="changeLeetCodeUsername()"] {
+  border: 1px solid #86efac !important;
+  background: #ffffff !important;
+  color: #15803d !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick="changeLeetCodeUsername()"]:hover {
+  border-color: #22c55e !important;
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+}
+
+/* LeetCode Disconnect Profile button (respective soft red border) */
+[data-theme="minimalistic"] #modal-profile .btn-disconnect {
+  border: 1px solid #fca5a5 !important;
+  background: #ffffff !important;
+  color: #dc2626 !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] #modal-profile .btn-disconnect:hover {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+
+/* LeetCode Copy button */
+[data-theme="minimalistic"] #modal-profile button[onclick*="copyLeetCodeCode"] {
+  border: 1px solid #059669 !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+/* Community Feedback button (respective soft blue border) */
+[data-theme="minimalistic"] #modal-profile button[onclick="openFeedbackModal()"] {
+  border: 1px solid #93c5fd !important;
+  background: #ffffff !important;
+  color: #1d4ed8 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08) !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick="openFeedbackModal()"]:hover {
+  border-color: #3b82f6 !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
+}
+
+/* Report Issue button (respective soft coral/orange border) */
+[data-theme="minimalistic"] #modal-profile button[onclick="openReportIssueModal()"] {
+  border: 1px solid #fdba74 !important;
+  background: #ffffff !important;
+  color: #c2410c !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08) !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick="openReportIssueModal()"]:hover {
+  border-color: #ea580c !important;
+  background: #fff7ed !important;
+  color: #9a3412 !important;
+}
+
+/* Danger Zone delete account accordion trigger (respective soft red border) */
+[data-theme="minimalistic"] #modal-profile button[onclick*="delete-account-section"] {
+  border: 1px solid #fca5a5 !important;
+  background: #ffffff !important;
+  color: #b91c1c !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] #modal-profile button[onclick*="delete-account-section"]:hover {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+}
+
+/* Safety: Ensure inside-input icon buttons maintain clean borderless look */
+[data-theme="minimalistic"] .password-toggle,
+[data-theme="minimalistic"] #modal-profile .password-toggle,
+[data-theme="minimalistic"] #profile-name-edit-btn {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 [data-theme="minimalistic"] .btn-danger,
@@ -441,14 +666,14 @@
 /* ── 5.3 Close Button Reset (Modern Circle Hover Style) ── */
 [data-theme="minimalistic"] .modal-close,
 [data-theme="minimalistic"] .modal-header .modal-close {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
   color: #64748b !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 50% !important;
+  border-radius: 8px !important;
   width: 32px !important;
   height: 32px !important;
   padding: 0 !important;
@@ -457,7 +682,8 @@
 
 [data-theme="minimalistic"] .modal-close:hover,
 [data-theme="minimalistic"] .modal-header .modal-close:hover {
-  background: rgba(15, 23, 42, 0.08) !important;
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
   color: #ef4444 !important;
   transform: none !important;
 }
