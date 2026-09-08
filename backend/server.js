@@ -97,6 +97,17 @@ app.use((req, res, next) => {
   // Send referrer only on same-origin; only origin on cross-origin
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
+  // HSTS (HTTP Strict Transport Security) - enforce HTTPS in production and on secure requests
+  if (process.env.NODE_ENV === 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  // Disable DNS prefetching to protect user privacy
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+
+  // Cross-Origin Opener Policy — isolate browsing context while permitting OAuth popups (Google/GitHub)
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+
   // Disable browser features the app doesn't use, but allow microphone/camera for voice/video
   res.setHeader('Permissions-Policy', 'camera=(self "https://jitsi.belnet.be" "https://meet.jit.si"), microphone=(self "https://jitsi.belnet.be" "https://meet.jit.si"), display-capture=(self "https://jitsi.belnet.be" "https://meet.jit.si"), geolocation=(), payment=(self "https://api.razorpay.com" "https://checkout.razorpay.com")');
 
@@ -326,6 +337,41 @@ app.get('/', (req, res) => {
 // ── SPA fallback: return landing.html for unknown routes ───
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/landing.html'));
+});
+
+// ── Centralized Error Handling Middleware ──────────────────
+// Intercepts all unhandled errors, preventing internal stack traces or paths from leaking to clients
+app.use((err, req, res, next) => {
+  // Gracefully handle CORS rejections
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access forbidden: Request origin is not permitted by CORS policy.'
+    });
+  }
+
+  // Handle JSON parse errors from invalid body payloads
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON payload received.'
+    });
+  }
+
+  const isProd = process.env.NODE_ENV === 'production';
+  const statusCode = err.status || err.statusCode || 500;
+
+  // Always log full error details on the server console for debugging
+  console.error(`[Server Error] ${req.method} ${req.originalUrl || req.url} [Status ${statusCode}]:`, err);
+
+  // Send clean, sanitized JSON response to client (never expose stack traces in production)
+  res.status(statusCode).json({
+    success: false,
+    message: isProd && statusCode === 500
+      ? 'An unexpected internal server error occurred. Please try again later.'
+      : (err.message || 'Server error occurred.'),
+    ...(isProd ? {} : { stack: err.stack })
+  });
 });
 
 // ── Local dev: only listen when run directly (not on Vercel) ──
