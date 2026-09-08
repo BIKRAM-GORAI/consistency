@@ -61,6 +61,19 @@ const createGoal = async (req, res) => {
       return res.status(400).json({ message: 'Invalid goal deadline date format.' });
     }
 
+    const clientDate = req.headers['x-client-date'];
+    let todayStr;
+    if (clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
+      todayStr = clientDate;
+    } else {
+      const now = new Date();
+      todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+    const deadlineDateStr = typeof deadline === 'string' ? deadline.split('T')[0] : parsedDeadline.toISOString().split('T')[0];
+    if (deadlineDateStr < todayStr) {
+      return res.status(400).json({ message: 'Goal deadline cannot be set to a past date. Please select today or a future date.' });
+    }
+
     const validTasks = (tasks || [])
       .filter(t => t && typeof t === 'object' && t.title && String(t.title).trim() !== '')
       .map(t => ({ title: String(t.title).trim(), completed: Boolean(t.completed) }));
@@ -142,6 +155,19 @@ const updateGoal = async (req, res) => {
             return res.status(400).json({ message: 'Existing subtasks cannot be renamed after 15 minutes of creation. You can only add new subtasks.' });
           }
         }
+      }
+    } else if (req.body.deadline) {
+      const clientDate = req.headers['x-client-date'];
+      let todayStr;
+      if (clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
+        todayStr = clientDate;
+      } else {
+        const now = new Date();
+        todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
+      const newDeadlineStr = typeof req.body.deadline === 'string' ? req.body.deadline.split('T')[0] : new Date(req.body.deadline).toISOString().split('T')[0];
+      if (newDeadlineStr < todayStr) {
+        return res.status(400).json({ message: 'Goal deadline cannot be set to a past date. Please select today or a future date.' });
       }
     }
 

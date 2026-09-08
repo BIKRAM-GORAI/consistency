@@ -7,6 +7,7 @@ const Achievement = require('../models/Achievement');
 const Group = require('../models/Group');
 const Badge = require('../models/Badge');
 const Changelog = require('../models/Changelog');
+const DeletedUserLog = require('../models/DeletedUserLog');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
@@ -407,6 +408,28 @@ async function updateAdminUser(req, res) {
 async function deleteUser(req, res) {
   try {
     const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // 1. Create permanent DeletedUserLog archive record before deletion
+    try {
+      await DeletedUserLog.create({
+        userId: user._id.toString(),
+        name: user.name || '',
+        username: user.username || '',
+        email: user.email || '',
+        deletionReason: 'Deleted by Admin via Admin Dashboard',
+        accountCreatedAt: user.createdAt || (user._id ? user._id.getTimestamp() : null),
+        deletedAt: new Date(),
+        currentStreak: user.currentStreak || 0,
+        highestStreak: user.highestStreak || 0,
+        isPremium: user.subscriptionTier === 'premium',
+        ipAddress: String(req.headers['x-forwarded-for'] || req.ip || 'Admin Dashboard'),
+        userAgent: String(req.headers['user-agent'] || 'Admin Dashboard Action')
+      });
+    } catch (logErr) {
+      console.error('Failed to create DeletedUserLog on admin deleteUser:', logErr);
+    }
 
     // Cleanup social data (friendships, requests) and DMs in Firestore before account deletion
     const { cleanupUserSocialData } = require('../utils/firestoreSync');
@@ -418,8 +441,7 @@ async function deleteUser(req, res) {
     await Achievement.deleteMany({ userId });
     await Review.deleteMany({ userId }); // Admin might want to keep or delete reviews
     
-    const user = await User.findByIdAndDelete(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    await User.findByIdAndDelete(userId);
 
     res.json({ message: 'User account and data deleted' });
   } catch (err) {
@@ -1608,6 +1630,77 @@ module.exports = {
       res.json({ message: 'Changelog deleted successfully.' });
     } catch (err) {
       res.status(500).json({ message: 'Server error deleting changelog.', error: err.message });
+    }
+  },
+
+  // Deleted User Logs
+  getDeletedUserLogs: async (req, res) => {
+    try {
+      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 10));
+      const skip = (page - 1) * limit;
+      const { sort = 'desc', search = '' } = req.query;
+      const sortOrder = sort === 'asc' ? 1 : -1;
+
+      const query = {};
+      if (search && typeof search === 'string' && search.trim()) {
+        const cleanSearch = search.trim();
+        const searchRegex = { $regex: cleanSearch, $options: 'i' };
+        query.$or = [
+          { name: searchRegex },
+          { username: searchRegex },
+          { email: searchRegex },
+          { deletionReason: searchRegex },
+          { ipAddress: searchRegex },
+          { userId: searchRegex }
+        ];
+      }
+
+      const [items, totalCount, premiumCount, withReasonCount, maxStreakResult] = await Promise.all([
+        DeletedUserLog.find(query)
+          .sort({ deletedAt: sortOrder })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        DeletedUserLog.countDocuments(query),
+        DeletedUserLog.countDocuments({ ...query, isPremium: true }),
+        DeletedUserLog.countDocuments({ ...query, deletionReason: { $exists: true, $ne: '' } }),
+        DeletedUserLog.find(query).sort({ highestStreak: -1 }).limit(1).select('highestStreak').lean()
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit) || 1;
+      const highestStreakLost = (maxStreakResult && maxStreakResult[0] && maxStreakResult[0].highestStreak) || 0;
+
+      res.json({
+        items,
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        metrics: {
+          total: totalCount,
+          premiumCount,
+          withReasonCount,
+          highestStreakLost
+        }
+      });
+    } catch (err) {
+      console.error('[ADMIN ERROR] getDeletedUserLogs:', err);
+      res.status(500).json({ message: 'Server error while fetching deleted user logs.', error: err.message });
+    }
+  },
+
+  getDeletedUserLogDetails: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const log = await DeletedUserLog.findById(id).lean();
+      if (!log) {
+        return res.status(404).json({ message: 'Deleted user log record not found.' });
+      }
+      res.json(log);
+    } catch (err) {
+      console.error('[ADMIN ERROR] getDeletedUserLogDetails:', err);
+      res.status(500).json({ message: 'Server error while fetching log details.', error: err.message });
     }
   }
 };

@@ -102,6 +102,10 @@ router.get('/user-emails', authenticateAdmin, adminController.getUserEmailsOnly)
 router.post('/users/:id/send-email', authenticateAdmin, adminController.sendEmailToUser);
 router.post('/bulk-email', authenticateAdmin, adminController.sendBulkEmail);
 
+// Deleted Account Logs
+router.get('/deleted-logs', authenticateAdmin, adminController.getDeletedUserLogs);
+router.get('/deleted-logs/:id', authenticateAdmin, adminController.getDeletedUserLogDetails);
+
 // Motivation Quote Management
 const motivationController = require('../controllers/motivationController');
 router.get('/motivation-quotes', authenticateAdmin, motivationController.getAdminQuotes);

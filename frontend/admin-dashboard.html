@@ -43,83 +43,148 @@
     /* ── Navbar ── */
     .admin-nav {
       background: var(--white);
-      border-bottom: var(--border);
-      padding: 12px 20px;
+      border-bottom: 2.5px solid var(--black);
+      padding: 10px 20px;
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      gap: 8px;
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
 
-    .nav-left {
+    .admin-nav-top {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 20px;
-      flex: 1 1 auto;
-      min-width: 0;
+      width: 100%;
     }
 
     .nav-brand {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(16px, 4vw, 24px);
+      font-size: 18px;
       font-weight: 900;
       text-transform: uppercase;
-      white-space: nowrap;
-      flex-shrink: 0;
-      margin-right: 40px; /* Space out from links */
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .nav-brand span {
-      padding: 0;
+      background: var(--black);
+      color: var(--yellow);
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .nav-top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .session-timer-badge {
+      font-weight: 800;
+      font-family: monospace;
+      font-size: 12px;
+      color: #ef4444;
+      border: 1.5px solid #ef4444;
+      padding: 3px 8px;
+      background: #fef2f2;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .nav-links {
       display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 2px;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
     }
 
-    .nav-links::-webkit-scrollbar { display: none; }
-
     .nav-link {
-      background: none;
-      border: 2px solid transparent;
+      background: #f8fafc;
+      border: 1.5px solid var(--black);
+      border-radius: 5px;
       font-family: inherit;
       font-weight: 800;
       text-transform: uppercase;
-      font-size: 13px;
+      font-size: 11px;
+      letter-spacing: 0.2px;
       cursor: pointer;
-      padding: 7px 12px;
+      padding: 4px 8px;
       white-space: nowrap;
-      flex-shrink: 0;
+      transition: all 0.12s ease;
+      color: var(--black);
+      box-shadow: 1px 1px 0 var(--black);
     }
 
-    .nav-link:hover { background: #eee; }
+    .nav-link:hover {
+      background: #eee;
+      transform: translate(-1px, -1px);
+      box-shadow: 2px 2px 0 var(--black);
+    }
 
     .nav-link.active {
       background: var(--yellow);
       border-color: var(--black);
       box-shadow: 2px 2px 0 var(--black);
+      transform: none;
     }
 
     .btn-logout {
-      padding: 8px 16px;
+      padding: 5px 12px;
       background: var(--black);
       color: var(--white);
-      border: none;
+      border: 1.5px solid var(--black);
+      border-radius: 4px;
       font-family: inherit;
       font-weight: 800;
       cursor: pointer;
       text-transform: uppercase;
-      font-size: 13px;
+      font-size: 11px;
+      letter-spacing: 0.5px;
       white-space: nowrap;
-      flex-shrink: 0;
+      transition: all 0.12s ease;
+    }
+    .btn-logout:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+
+    /* ── Metric Mini Box ── */
+    .metric-mini-card {
+      background: var(--white);
+      border: 2px solid var(--black);
+      box-shadow: 2.5px 2.5px 0 var(--black);
+      padding: 8px 14px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 135px;
+      flex: 0 1 auto;
+    }
+    .metric-mini-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--black);
+      line-height: 1.1;
+    }
+    .metric-mini-label {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.4px;
     }
 
     /* ── Container ── */
@@ -759,25 +824,26 @@
 <body>
 
   <nav class="admin-nav">
-    <div class="nav-left">
-      <div class="nav-brand"><span>ADMIN</span></div>
-      <div class="nav-links">
-        <button class="nav-link active" id="nav-reviews" onclick="showSection('reviews')">Reviews</button>
-        <button class="nav-link" id="nav-users" onclick="showSection('users')">Users</button>
-        <button class="nav-link" id="nav-groups" onclick="showSection('groups')">Groups</button>
-        <button class="nav-link" id="nav-badges" onclick="showSection('badges')">Badges</button>
-        <button class="nav-link" id="nav-coupons" onclick="showSection('coupons')">Promo Coupons</button>
-        <button class="nav-link" id="nav-payments" onclick="showSection('payments')">Payments</button>
-        <button class="nav-link" id="nav-refunds" onclick="showSection('refunds')">💸 Refunds</button>
-        <button class="nav-link" id="nav-reports" onclick="showSection('reports')">🐞 Reports</button>
-        <button class="nav-link" id="nav-changelogs" onclick="showSection('changelogs')">🚀 Changelogs</button>
-        <button class="nav-link" id="nav-motivation" onclick="showSection('motivation')">🔥 Motivation Quotes</button>
-        <button class="nav-link" id="nav-bulk-email" onclick="showSection('bulk-email')">📧 Bulk Email</button>
+    <div class="admin-nav-top">
+      <div class="nav-brand"><span>ADMIN</span> CONTROL CENTER</div>
+      <div class="nav-top-right">
+        <span id="session-timer" class="session-timer-badge">⏳ Session: --:--</span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
       </div>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
-      <span id="session-timer" style="font-weight: 800; font-family: monospace; font-size: 14px; color: #ef4444; border: 2px solid #ef4444; padding: 4px 10px; background: #fef2f2; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">⏳ Session: --:--</span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
+    <div class="nav-links">
+      <button class="nav-link active" id="nav-reviews" onclick="showSection('reviews')">Reviews</button>
+      <button class="nav-link" id="nav-users" onclick="showSection('users')">Users</button>
+      <button class="nav-link" id="nav-deleted-logs" onclick="showSection('deleted-logs')">🗑️ Deleted Accounts</button>
+      <button class="nav-link" id="nav-groups" onclick="showSection('groups')">Groups</button>
+      <button class="nav-link" id="nav-badges" onclick="showSection('badges')">Badges</button>
+      <button class="nav-link" id="nav-coupons" onclick="showSection('coupons')">Promo Coupons</button>
+      <button class="nav-link" id="nav-payments" onclick="showSection('payments')">Payments</button>
+      <button class="nav-link" id="nav-refunds" onclick="showSection('refunds')">💸 Refunds</button>
+      <button class="nav-link" id="nav-reports" onclick="showSection('reports')">🐞 Reports</button>
+      <button class="nav-link" id="nav-changelogs" onclick="showSection('changelogs')">🚀 Changelogs</button>
+      <button class="nav-link" id="nav-motivation" onclick="showSection('motivation')">🔥 Motivation</button>
+      <button class="nav-link" id="nav-bulk-email" onclick="showSection('bulk-email')">📧 Bulk Email</button>
     </div>
   </nav>
 
@@ -830,6 +896,65 @@
         </table>
       </div>
       <div id="users-pagination" style="margin-top: 28px; display: flex; justify-content: center; align-items: center; gap: 12px;"></div>
+    </div>
+
+    <!-- Deleted Account Logs Section -->
+    <div id="section-deleted-logs" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>🗑️ Deleted Account Logs</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Forensic archive of permanently deleted accounts, stated reasons, streaks, and security footprint.</p>
+        </div>
+        <div class="header-actions">
+          <input type="text" id="deleted-logs-search" placeholder="Search by name, email, username, reason, IP..." class="btn-control" style="width: 320px; text-transform: none; text-align: left;" onkeyup="debouncedSearchDeletedLogs()">
+          <div class="controls">
+            <button class="btn-control active" id="deleted-logs-sort-desc" onclick="loadDeletedLogs('desc')">Newest</button>
+            <button class="btn-control" id="deleted-logs-sort-asc" onclick="loadDeletedLogs('asc')">Oldest</button>
+            <button class="btn-control" onclick="loadDeletedLogs()" style="background: var(--black); color: var(--white);">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact Metric Boxes -->
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center;">
+        <div class="metric-mini-card" style="border-left: 5px solid #ef4444;">
+          <span class="metric-mini-val" id="deleted-metric-total">0</span>
+          <span class="metric-mini-label">Total Deleted</span>
+        </div>
+        <div class="metric-mini-card" style="border-left: 5px solid var(--purple);">
+          <span class="metric-mini-val" id="deleted-metric-premium">0</span>
+          <span class="metric-mini-label">Premium Lost</span>
+        </div>
+        <div class="metric-mini-card" style="border-left: 5px solid var(--yellow);">
+          <span class="metric-mini-val" id="deleted-metric-reasons">0</span>
+          <span class="metric-mini-label">Feedback Reasons</span>
+        </div>
+        <div class="metric-mini-card" style="border-left: 5px solid var(--blue);">
+          <span class="metric-mini-val" id="deleted-metric-maxstreak">0d</span>
+          <span class="metric-mini-label">Max Streak Lost</span>
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 1000px;">
+          <thead style="background: #f8fafc; border-bottom: 2px solid var(--black);">
+            <tr>
+              <th style="padding: 10px 12px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 45px;">#</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 230px;">User Identity</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 250px;">Deletion Reason</th>
+              <th style="padding: 10px 14px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 170px;">Streak Stats</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 180px;">Security Footprint</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 170px;">Timeline</th>
+              <th style="padding: 10px 12px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 75px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="deleted-logs-table-body">
+            <tr><td colspan="7" style="text-align:center; padding:24px; font-weight:800; color:#666;">Loading deleted account logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="deleted-logs-pagination" style="margin-top: 28px; display: flex; justify-content: center; align-items: center; gap: 12px;"></div>
     </div>
 
     <!-- Groups Section -->
@@ -1365,6 +1490,27 @@
           <button type="button" class="btn-cancel" onclick="closeChangelogModal()">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Deleted User Log Detail Modal -->
+  <div id="deleted-log-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 680px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--black); padding-bottom: 12px; margin-bottom: 18px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>🗑️</span> Deleted Account Forensic Record
+        </h3>
+        <button class="btn-cancel" style="flex:none; padding: 6px 12px;" onclick="closeDeletedLogModal()">✕ Close</button>
+      </div>
+
+      <div id="deleted-log-modal-content">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="modal-footer" style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn-control" id="btn-copy-deleted-json" onclick="copyDeletedLogJson()" style="background: var(--yellow);"><i data-lucide="copy"></i> Copy JSON</button>
+        <button type="button" class="btn-cancel" onclick="closeDeletedLogModal()">Close</button>
+      </div>
     </div>
   </div>
 

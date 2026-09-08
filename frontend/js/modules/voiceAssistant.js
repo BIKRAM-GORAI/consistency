@@ -530,7 +530,7 @@ export function renderDraftConfirmationView() {
         <!-- Editable Deadline Date Picker -->
         <div style="display:flex; align-items:center; gap:8px; background:var(--bg-body); padding:8px 10px; border:1.5px solid var(--black); border-radius:8px;">
           <label style="font-size:11.5px; font-weight:800; color:var(--text); flex-shrink:0;">📅 Target Deadline:</label>
-          <input type="date" value="${dStr}" onchange="window.updateDraftGoalDeadline(${gIdx}, this.value)" style="flex:1; border:1.5px solid var(--black); border-radius:6px; padding:4px 8px; font-size:12px; font-weight:700; background:var(--bg-card); color:var(--text);" />
+          <input type="date" value="${dStr}" min="${typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0]}" onchange="window.updateDraftGoalDeadline(${gIdx}, this.value)" style="flex:1; border:1.5px solid var(--black); border-radius:6px; padding:4px 8px; font-size:12px; font-weight:700; background:var(--bg-card); color:var(--text);" />
         </div>
 
         <!-- Subtasks List -->
@@ -834,6 +834,11 @@ export function removeDraftGoal(gIdx) {
 }
 
 export function updateDraftGoalDeadline(gIdx, newDate) {
+  const today = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+  if (newDate && newDate < today) {
+    if (window.showToast) window.showToast('Goal deadline cannot be in the past. Please select today or a future date.', 'warn');
+    newDate = today;
+  }
   if (draftVoiceData.goals && draftVoiceData.goals[gIdx]) {
     draftVoiceData.goals[gIdx].deadline = newDate;
   }

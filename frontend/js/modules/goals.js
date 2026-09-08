@@ -429,8 +429,24 @@ async function deleteGoal(goalId) {
 
 // ── Add Goal Modal ─────────────────────────────────────────
 function openAddGoalModal() {
-  document.getElementById('goal-title-input').value    = '';
-  document.getElementById('goal-deadline-input').value = '';
+  document.getElementById('goal-title-input').value = '';
+  const deadlineInput = document.getElementById('goal-deadline-input');
+  const today = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+  if (deadlineInput) {
+    deadlineInput.min = today;
+    deadlineInput.value = '';
+    // Ensure past dates cannot be typed or selected
+    if (!deadlineInput._minBound) {
+      deadlineInput._minBound = true;
+      deadlineInput.addEventListener('change', () => {
+        const curToday = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+        if (deadlineInput.value && deadlineInput.value < curToday) {
+          window.showToast('Deadline cannot be in the past. Please select today or a future date.', 'warn');
+          deadlineInput.value = curToday;
+        }
+      });
+    }
+  }
   document.getElementById('goal-tasks-builder').innerHTML = '';
   addGoalTaskField();
   openModal('modal-add-goal');
@@ -456,6 +472,14 @@ async function submitAddGoal() {
   const deadline = document.getElementById('goal-deadline-input').value.trim();
   if (!title)    { window.showToast('Goal title is required.', 'warn'); return; }
   if (!deadline) { window.showToast('Deadline is required.', 'warn'); return; }
+
+  const today = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+  if (deadline < today) {
+    window.showToast('Deadline cannot be in the past. Please select today or a future date.', 'warn');
+    const dlInput = document.getElementById('goal-deadline-input');
+    if (dlInput) dlInput.value = today;
+    return;
+  }
 
   const taskInputs = document.querySelectorAll('#goal-tasks-builder .task-input-row input');
   const tasks = [];
@@ -531,4 +555,20 @@ window.addGoalTaskField = addGoalTaskField;
 window.submitAddGoal = submitAddGoal;
 window.loadMoreGoals = loadMoreGoals;
 window.changeGoalsSort = changeGoalsSort;
+
+// Initialize min deadline attribute on page load / module load
+function initGoalDeadlineConstraints() {
+  const deadlineInput = document.getElementById('goal-deadline-input');
+  if (deadlineInput) {
+    const today = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+    deadlineInput.min = today;
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGoalDeadlineConstraints);
+} else {
+  initGoalDeadlineConstraints();
+}
+
 console.log("[Module] goals.js loaded and Goals functions bound to window");
+

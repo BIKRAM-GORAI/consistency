@@ -1963,7 +1963,19 @@ function openEditGoalModal(goalId) {
   const deadlineInput = document.getElementById('edit-goal-deadline');
   const deadlineYMD = goal.deadline ? goal.deadline.split('T')[0] : '';
   if (deadlineInput) {
+    const today = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+    deadlineInput.min = today;
     deadlineInput.value = deadlineYMD;
+    if (!deadlineInput._minBound) {
+      deadlineInput._minBound = true;
+      deadlineInput.addEventListener('change', () => {
+        const curToday = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+        if (deadlineInput.value && deadlineInput.value < curToday) {
+          window.showToast('Goal deadline cannot be in the past. Please select today or a future date.', 'warn');
+          deadlineInput.value = curToday;
+        }
+      });
+    }
   }
 
   function updateModalTimerState() {
@@ -2084,6 +2096,14 @@ async function submitEditGoal() {
 
   if (!title) { window.showToast('Goal title is required.', 'warn'); return; }
   if (!deadline) { window.showToast('Goal deadline is required.', 'warn'); return; }
+
+  const today = typeof window.todayStr === 'function' ? window.todayStr() : new Date().toISOString().split('T')[0];
+  if (deadline < today) {
+    window.showToast('Goal deadline cannot be in the past. Please select today or a future date.', 'warn');
+    const dlInput = document.getElementById('edit-goal-deadline');
+    if (dlInput) dlInput.value = today;
+    return;
+  }
 
   const goal = window.allGoals.find(g => g._id === goalId);
   if (!goal) return;

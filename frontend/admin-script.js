@@ -5,8 +5,11 @@ let currentPages = {
   reviews: 1,
   users: 1,
   groups: 1,
-  payments: 1
+  payments: 1,
+  deletedLogs: 1
 };
+let allDeletedLogs = [];
+let currentSelectedDeletedLog = null;
 
 function getAdminTokenExpiry(token) {
   if (!token) return null;
@@ -123,6 +126,7 @@ function showSection(section) {
 
   if (section === 'reviews') loadReviews();
   if (section === 'users') loadUsers();
+  if (section === 'deleted-logs') loadDeletedLogs();
   if (section === 'groups') loadGroups();
   if (section === 'badges') loadBadges();
   if (section === 'coupons') loadCoupons();
@@ -3261,3 +3265,297 @@ window.closeMotivationQuoteModal = closeMotivationQuoteModal;
 window.saveMotivationQuote = saveMotivationQuote;
 window.toggleQuoteActive = toggleQuoteActive;
 window.deleteMotivationQuote = deleteMotivationQuote;
+
+// ── Deleted Account Logs ──────────────────────────────────
+let deletedLogsSearchTimeout = null;
+
+function debouncedSearchDeletedLogs() {
+  clearTimeout(deletedLogsSearchTimeout);
+  deletedLogsSearchTimeout = setTimeout(() => {
+    currentPages.deletedLogs = 1;
+    loadDeletedLogs();
+  }, 350);
+}
+
+async function loadDeletedLogs(sort = 'desc') {
+  const searchInput = document.getElementById('deleted-logs-search');
+  const search = searchInput ? searchInput.value.trim() : '';
+
+  const sortBtnDesc = document.getElementById('deleted-logs-sort-desc');
+  const sortBtnAsc = document.getElementById('deleted-logs-sort-asc');
+  if (sortBtnDesc && sortBtnAsc) {
+    sortBtnDesc.classList.toggle('active', sort === 'desc');
+    sortBtnAsc.classList.toggle('active', sort === 'asc');
+  }
+
+  const tbody = document.getElementById('deleted-logs-table-body');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; font-weight:800; color:#666;">Loading deleted account logs...</td></tr>`;
+  }
+
+  try {
+    const page = currentPages.deletedLogs || 1;
+    const res = await fetch(`${API}/api/admin/deleted-logs?sort=${sort}&search=${encodeURIComponent(search)}&page=${page}&limit=10`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      logout();
+      return;
+    }
+
+    if (!res.ok) {
+      const errData = await res.json();
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#ef4444; font-weight:800;">Failed to load logs: ${escapeHtml(errData.message || 'Server error')}</td></tr>`;
+      }
+      return;
+    }
+
+    const data = await res.json();
+    allDeletedLogs = data.items || [];
+
+    // Update metrics
+    if (data.metrics) {
+      const totalEl = document.getElementById('deleted-metric-total');
+      const premiumEl = document.getElementById('deleted-metric-premium');
+      const reasonsEl = document.getElementById('deleted-metric-reasons');
+      const maxStreakEl = document.getElementById('deleted-metric-maxstreak');
+
+      if (totalEl) totalEl.textContent = data.metrics.total || 0;
+      if (premiumEl) premiumEl.textContent = data.metrics.premiumCount || 0;
+      if (reasonsEl) reasonsEl.textContent = data.metrics.withReasonCount || 0;
+      if (maxStreakEl) maxStreakEl.textContent = (data.metrics.highestStreakLost || 0) + 'd';
+    }
+
+    renderDeletedLogs(allDeletedLogs, data.page || page, data.limit || 10);
+    renderPaginationControls(data, 'deleted-logs-pagination', 'deletedLogs', () => loadDeletedLogs(sort));
+  } catch (err) {
+    console.error('Error loading deleted account logs:', err);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#ef4444; font-weight:800;">Network or connection error.</td></tr>`;
+    }
+  }
+}
+
+function renderDeletedLogs(logs, page = 1, limit = 10) {
+  const tbody = document.getElementById('deleted-logs-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!logs || !logs.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; font-weight:800; color:#888; font-size:14px;">No deleted account logs found matching your search.</td></tr>`;
+    return;
+  }
+
+  logs.forEach((log, index) => {
+    const serialNumber = (page - 1) * limit + index + 1;
+    const deletedDate = log.deletedAt ? new Date(log.deletedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+    const createdDate = log.accountCreatedAt ? new Date(log.accountCreatedAt).toLocaleDateString('en-US', { dateStyle: 'medium' }) : 'N/A';
+    
+    // Calculate account age in days if dates exist
+    let accountAgeText = '';
+    if (log.accountCreatedAt && log.deletedAt) {
+      const diffMs = Math.max(0, new Date(log.deletedAt) - new Date(log.accountCreatedAt));
+      const daysActive = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      accountAgeText = `${daysActive} day${daysActive === 1 ? '' : 's'} active`;
+    }
+
+    const row = document.createElement('tr');
+    row.style.borderBottom = '1px solid #e2e8f0';
+
+    // Reason presentation
+    let reasonHtml = '';
+    if (log.deletionReason && log.deletionReason.trim()) {
+      reasonHtml = `
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 6px; padding: 6px 10px; font-size: 11.5px; color: #92400e; font-weight: 700; line-height: 1.4; box-shadow: 1px 1px 0 rgba(0,0,0,0.05); max-width: 250px; word-break: break-word;">
+          💬 "${escapeHtml(log.deletionReason)}"
+        </div>
+      `;
+    } else {
+      reasonHtml = `<span style="font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 3px 8px; border-radius: 4px; display: inline-block; font-style: italic;">No feedback provided</span>`;
+    }
+
+    // Tier badge
+    const tierBadge = log.isPremium
+      ? `<span style="background: #fef08a; border: 1.5px solid #000; color: #000; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 900; display: inline-flex; align-items: center; gap: 3px;">⭐ Premium</span>`
+      : `<span style="background: #f3f4f6; border: 1px solid #d1d5db; color: #4b5563; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">Free Tier</span>`;
+
+    // Device / Browser short label
+    let shortDevice = '🌐 Web App';
+    if (log.userAgent) {
+      const ua = log.userAgent;
+      if (ua.includes('iPhone') || ua.includes('iPad')) shortDevice = '📱 iOS Device';
+      else if (ua.includes('Android')) shortDevice = '🤖 Android Device';
+      else if (ua.includes('Windows')) shortDevice = '💻 Windows PC';
+      else if (ua.includes('Macintosh') || ua.includes('Mac OS')) shortDevice = '🍎 macOS Mac';
+      else if (ua.includes('Linux')) shortDevice = '🐧 Linux System';
+    }
+
+    const cleanIp = (log.ipAddress || '').includes('127.0.0.1') ? '127.0.0.1 (Localhost)' : (log.ipAddress || 'Unknown IP');
+
+    row.innerHTML = `
+      <td data-label="#" style="padding: 12px 10px; font-weight: 900; font-size: 13px; color: #64748b; text-align: center; vertical-align: middle;">${serialNumber}</td>
+      <td data-label="User Identity" style="padding: 12px 14px; vertical-align: middle;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          ${getAvatarHtml(null, log.name || log.username || 'U', 34, '6px')}
+          <div style="min-width: 0;">
+            <div style="font-weight: 900; font-family: 'Space Grotesk'; font-size: 13px; color: var(--black); line-height: 1.2;">${escapeHtml(log.name || 'Unnamed')}</div>
+            <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-top: 1px;">@${escapeHtml(log.username || 'unknown')}</div>
+            <div style="font-size: 11px; color: var(--blue); word-break: break-all; margin-top: 1px;">${escapeHtml(log.email || 'N/A')}</div>
+          </div>
+        </div>
+        <div style="font-size: 9.5px; font-family: monospace; color: #94a3b8; margin-top: 4px; padding-left: 44px;">ID: ${escapeHtml(log.userId || 'N/A')}</div>
+      </td>
+      <td data-label="Deletion Reason" style="padding: 12px 14px; vertical-align: middle;">
+        ${reasonHtml}
+      </td>
+      <td data-label="Streak Stats" style="padding: 12px 14px; text-align: center; vertical-align: middle;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          ${tierBadge}
+          <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; font-size: 10px; font-weight: 800;">
+            <span style="background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; padding: 2px 6px; border-radius: 4px;">Streak: ${log.currentStreak || 0}d</span>
+            <span style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac; padding: 2px 6px; border-radius: 4px;">Best: ${log.highestStreak || 0}d</span>
+          </div>
+        </div>
+      </td>
+      <td data-label="Security Footprint" style="padding: 12px 14px; vertical-align: middle;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 10.5px; font-family: monospace; font-weight: 800; color: #1e293b; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; width: fit-content;">
+            🌐 ${escapeHtml(cleanIp)}
+          </span>
+          <span style="font-size: 11px; color: #64748b; font-weight: 700; padding-left: 2px;">
+            ${shortDevice}
+          </span>
+        </div>
+      </td>
+      <td data-label="Timeline" style="padding: 12px 14px; font-size: 11.5px; vertical-align: middle;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 4px;">
+            <span style="color: #ef4444; font-size: 11px;">🗑️</span> ${deletedDate}
+          </div>
+          <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">Joined: ${createdDate}</div>
+          ${accountAgeText ? `<div style="font-size: 10px; color: #94a3b8; font-weight: 700;">(${accountAgeText})</div>` : ''}
+        </div>
+      </td>
+      <td data-label="Action" style="padding: 12px 10px; text-align: center; vertical-align: middle;">
+        <button class="btn-control" onclick="openDeletedLogModal('${log._id}')" style="padding: 5px 10px; font-size: 11px; background: var(--white); box-shadow: 2px 2px 0 var(--black);">
+          <i data-lucide="eye" style="width:12px; height:12px;"></i> View
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(row);
+  });
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+function openDeletedLogModal(logId) {
+  const log = allDeletedLogs.find(l => String(l._id) === String(logId));
+  if (!log) {
+    alert('Log details not found in cache.');
+    return;
+  }
+
+  currentSelectedDeletedLog = log;
+  const container = document.getElementById('deleted-log-modal-content');
+  const modal = document.getElementById('deleted-log-modal');
+  if (!container || !modal) return;
+
+  const deletedDate = log.deletedAt ? new Date(log.deletedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'medium' }) : 'N/A';
+  const createdDate = log.accountCreatedAt ? new Date(log.accountCreatedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'medium' }) : 'N/A';
+
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- User profile header card -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; background: #f8fafc; border: 2px solid var(--black); padding: 16px; border-radius: 8px; box-shadow: 2px 2px 0 var(--black);">
+        <div>
+          <h4 style="margin: 0 0 4px; font-size: 18px; font-family: 'Space Grotesk'; font-weight: 900;">${escapeHtml(log.name || 'Unnamed User')}</h4>
+          <div style="font-size: 13px; font-weight: 800; color: #475569;">@${escapeHtml(log.username || 'unknown')}</div>
+          <div style="font-size: 12px; color: var(--blue); margin-top: 2px;">${escapeHtml(log.email || 'N/A')}</div>
+          <div style="font-size: 11px; font-family: monospace; color: #64748b; margin-top: 4px;">User ID: <strong>${escapeHtml(log.userId || 'N/A')}</strong></div>
+        </div>
+        <div style="text-align: right;">
+          ${log.isPremium ? '<span style="background: #fef08a; border: 2px solid var(--black); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; display: inline-block;">⭐ PREMIUM USER</span>' : '<span style="background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; color: #475569;">FREE TIER</span>'}
+          <div style="font-size: 12px; font-weight: 900; margin-top: 8px;">
+            Highest Streak: <span style="color: #10b981;">${log.highestStreak || 0} days</span>
+          </div>
+          <div style="font-size: 11px; font-weight: 800; color: #64748b;">
+            Current Streak at Exit: ${log.currentStreak || 0} days
+          </div>
+        </div>
+      </div>
+
+      <!-- Deletion Reason -->
+      <div style="border: 2px solid var(--black); border-radius: 8px; padding: 16px; background: #fffbeb; box-shadow: 2px 2px 0 var(--black);">
+        <div style="font-weight: 900; text-transform: uppercase; font-size: 11px; color: #b45309; letter-spacing: 0.5px; margin-bottom: 6px;">
+          💬 Stated Deletion Feedback
+        </div>
+        <div style="font-size: 14px; font-weight: 700; color: #1c1917; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(log.deletionReason || 'No feedback or explanation was provided by the user.')}</div>
+      </div>
+
+      <!-- Technical Footprint Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #ffffff;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Account Created</div>
+          <div style="font-size: 12.5px; font-weight: 800; color: var(--text);">${createdDate}</div>
+        </div>
+        <div style="border: 1.5px solid #ef4444; border-radius: 8px; padding: 12px; background: #fef2f2;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #b91c1c; margin-bottom: 4px;">Account Deleted</div>
+          <div style="font-size: 12.5px; font-weight: 800; color: #991b1b;">${deletedDate}</div>
+        </div>
+      </div>
+
+      <!-- IP & User Agent -->
+      <div style="border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 14px; background: #f8fafc;">
+        <div style="margin-bottom: 8px;">
+          <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #475569;">IP Address Footprint:</span>
+          <code style="font-size: 12px; font-weight: 900; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">${escapeHtml(log.ipAddress || 'Not recorded')}</code>
+        </div>
+        <div>
+          <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #475569; display: block; margin-bottom: 4px;">Client User-Agent:</span>
+          <div style="font-size: 11px; font-family: monospace; color: #334155; word-break: break-all; background: #ffffff; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px; max-height: 80px; overflow-y: auto;">
+            ${escapeHtml(log.userAgent || 'None')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.classList.add('open');
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+function closeDeletedLogModal() {
+  const modal = document.getElementById('deleted-log-modal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+  currentSelectedDeletedLog = null;
+}
+
+function copyDeletedLogJson() {
+  if (!currentSelectedDeletedLog) return;
+  const jsonStr = JSON.stringify(currentSelectedDeletedLog, null, 2);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      alert('Deleted account log JSON copied to clipboard!');
+    }).catch(() => {
+      prompt('Copy JSON manually:', jsonStr);
+    });
+  } else {
+    prompt('Copy JSON manually:', jsonStr);
+  }
+}
+
+window.debouncedSearchDeletedLogs = debouncedSearchDeletedLogs;
+window.loadDeletedLogs = loadDeletedLogs;
+window.openDeletedLogModal = openDeletedLogModal;
+window.closeDeletedLogModal = closeDeletedLogModal;
+window.copyDeletedLogJson = copyDeletedLogJson;
+

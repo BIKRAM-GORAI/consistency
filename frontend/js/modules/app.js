@@ -2403,10 +2403,26 @@ document.addEventListener('DOMContentLoaded', checkOnboardingReferral);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const input = e.target;
-    if (input && input.tagName === 'INPUT' && input.placeholder === 'Task title...') {
+    if (!input || input.tagName !== 'INPUT') return;
+
+    // If pressing Enter in Goal Title input, advance focus to first subtask
+    if (input.id === 'goal-title-input') {
+      e.preventDefault();
+      const firstSubtask = document.querySelector('#goal-tasks-builder .task-input-row input');
+      if (firstSubtask) {
+        firstSubtask.focus();
+      } else if (typeof window.addGoalTaskField === 'function') {
+        window.addGoalTaskField();
+        const nextSubtask = document.querySelector('#goal-tasks-builder .task-input-row input');
+        if (nextSubtask) nextSubtask.focus();
+      }
+      return;
+    }
+
+    if (input.placeholder === 'Task title...' || input.placeholder === 'Subtask title...') {
       e.preventDefault();
       
-      const builder = input.closest('#categories-builder, #new-cat-tasks-builder, #edit-cat-tasks-builder, #edit-template-categories-builder');
+      const builder = input.closest('#categories-builder, #new-cat-tasks-builder, #edit-cat-tasks-builder, #edit-template-categories-builder, #goal-tasks-builder, #edit-goal-tasks-builder');
       if (!builder) return;
       
       if (builder.id === 'categories-builder') {
@@ -2457,6 +2473,24 @@ document.addEventListener('keydown', (e) => {
                 if (newInput) newInput.focus();
               }
             }
+          }
+        }
+      } else if (builder.id === 'goal-tasks-builder') {
+        if (typeof window.addGoalTaskField === 'function') {
+          window.addGoalTaskField();
+          const rows = builder.querySelectorAll('.task-input-row');
+          if (rows.length > 0) {
+            const newInput = rows[rows.length - 1].querySelector('input');
+            if (newInput) newInput.focus();
+          }
+        }
+      } else if (builder.id === 'edit-goal-tasks-builder') {
+        if (typeof window.addEditGoalTaskField === 'function') {
+          window.addEditGoalTaskField();
+          const rows = builder.querySelectorAll('.task-input-row');
+          if (rows.length > 0) {
+            const newInput = rows[rows.length - 1].querySelector('input');
+            if (newInput) newInput.focus();
           }
         }
       }

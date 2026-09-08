@@ -209,7 +209,22 @@ const createGoalValidation = [
     .escape(),
   body('deadline')
     .notEmpty().withMessage('Deadline is required')
-    .isISO8601().withMessage('Deadline must be a valid date'),
+    .isISO8601().withMessage('Deadline must be a valid date')
+    .custom((value, { req }) => {
+      const clientDateStr = req.headers['x-client-date'];
+      let todayStr;
+      if (clientDateStr && /^\d{4}-\d{2}-\d{2}$/.test(clientDateStr)) {
+        todayStr = clientDateStr;
+      } else {
+        const now = new Date();
+        todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
+      const deadlineStr = String(value).split('T')[0];
+      if (deadlineStr < todayStr) {
+        throw new Error('Deadline cannot be in the past. Please select today or a future date.');
+      }
+      return true;
+    }),
   body('tasks')
     .optional()
     .isArray().withMessage('Tasks must be an array'),
@@ -230,7 +245,23 @@ const updateGoalValidation = [
     .escape(),
   body('deadline')
     .optional()
-    .isISO8601().withMessage('Deadline must be a valid date'),
+    .isISO8601().withMessage('Deadline must be a valid date')
+    .custom((value, { req }) => {
+      if (!value) return true;
+      const clientDateStr = req.headers['x-client-date'];
+      let todayStr;
+      if (clientDateStr && /^\d{4}-\d{2}-\d{2}$/.test(clientDateStr)) {
+        todayStr = clientDateStr;
+      } else {
+        const now = new Date();
+        todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
+      const deadlineStr = String(value).split('T')[0];
+      if (deadlineStr < todayStr) {
+        throw new Error('Deadline cannot be in the past. Please select today or a future date.');
+      }
+      return true;
+    }),
   body('tasks')
     .optional()
     .isArray().withMessage('Tasks must be an array'),
