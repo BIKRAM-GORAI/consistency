@@ -19,8 +19,8 @@ const UserSchema = new mongoose.Schema(
       minlength: 4,
       maxlength: 20,
       match: [
-        /^[!-~]+$/,
-        "Username can only contain alphanumeric and special characters (no spaces)",
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores",
       ],
     },
 

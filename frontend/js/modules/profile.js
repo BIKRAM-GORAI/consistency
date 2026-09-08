@@ -408,9 +408,9 @@ async function submitProfileSettings() {
   }
 
   if (username && !usernameInput.readOnly) {
-    const usernameRegex = /^[!-~]{4,20}$/;
+    const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
     if (!usernameRegex.test(username)) {
-      showToast('Username must be 4-20 chars, alphanumeric/special, no spaces.', 'warn');
+      showToast('Username must be 4–20 characters using only letters, numbers, and underscores (_).', 'warn');
       return;
     }
   }

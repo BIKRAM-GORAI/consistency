@@ -57,23 +57,26 @@ const sendStreakReminders = async (req, res) => {
       lastActiveAt: { $gt: tenDaysAgo }
     });
 
+    if (!activeUsers || activeUsers.length === 0) {
+      return res.json({ message: 'No streak reminders to send today.' });
+    }
+
+    const activeUserIds = activeUsers.map(u => u._id);
+
+    // Batch query to find active users who have already completed at least one task today
+    const completedUserIds = await Day.distinct('userId', {
+      userId: { $in: activeUserIds },
+      date: todayStr,
+      'categories.tasks.completed': true
+    });
+
+    const completedUserIdSet = new Set(completedUserIds.map(String));
+    const usersToRemind = activeUsers.filter(u => !completedUserIdSet.has(String(u._id)));
+
     const emailsToSend = [];
 
-    for (const user of activeUsers) {
-      const todayDay = await Day.findOne({ userId: user._id, date: todayStr });
-      
-      let isTodayCompleted = false;
-      if (todayDay) {
-        for (const cat of todayDay.categories) {
-          if (cat.tasks.some(t => t.completed)) {
-            isTodayCompleted = true;
-            break;
-          }
-        }
-      }
-
-      if (!isTodayCompleted) {
-        const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    for (const user of usersToRemind) {
+      const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         emailsToSend.push({
           mailOptions: {
             to: user.email,
@@ -109,7 +112,6 @@ const sendStreakReminders = async (req, res) => {
           },
           meta: { email: user.email, streak: user.currentStreak }
         });
-      }
     }
 
     if (emailsToSend.length === 0) {

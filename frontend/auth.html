@@ -355,17 +355,17 @@
 
     .auth-submit-btn {
       width: 100%;
-      padding: 14px;
+      padding: 11px 16px;
       background: var(--black);
       border: var(--border);
       border-radius: 6px;
       color: var(--yellow);
       font-family: 'Inter', sans-serif;
-      font-size: 16px;
-      font-weight: 900;
+      font-size: 14px;
+      font-weight: 800;
       cursor: pointer;
       transition: 0.15s;
-      box-shadow: 4px 4px 0 var(--yellow);
+      box-shadow: 3px 3px 0 var(--yellow);
       margin-top: 4px;
       letter-spacing: 0.3px;
       text-transform: uppercase;
@@ -373,11 +373,14 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+      box-sizing: border-box;
+      max-width: 100%;
+      min-height: 44px;
     }
 
     .auth-submit-btn:hover:not(:disabled) {
       transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0 var(--yellow);
+      box-shadow: 5px 5px 0 var(--yellow);
     }
 
     .auth-submit-btn:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--yellow); }
@@ -386,6 +389,62 @@
       opacity: 0.5;
       cursor: not-allowed;
       transform: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .auth-btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2.5px solid rgba(255, 214, 10, 0.3);
+      border-top-color: var(--yellow);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .auth-btn-text {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 85%;
+    }
+
+    @keyframes pulseSuccess {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.02); }
+      80% { transform: scale(0.99); }
+      100% { transform: scale(1); }
+    }
+
+    .btn-success-animated {
+      background: var(--green) !important;
+      color: #000 !important;
+      border-color: var(--black) !important;
+      box-shadow: 3px 3px 0 var(--black) !important;
+      animation: pulseSuccess 0.4s ease-in-out;
+      opacity: 1 !important;
+    }
+
+    @media (max-width: 480px) {
+      .auth-submit-btn {
+        padding: 10px 12px;
+        font-size: 13px;
+        box-shadow: 2px 2px 0 var(--yellow);
+      }
+      .auth-btn-text {
+        font-size: 12px;
+      }
+      .username-rules-card {
+        padding: 6px 8px !important;
+        font-size: 10.5px !important;
+      }
     }
 
     /* ── Card footer ── */
@@ -920,7 +979,7 @@
 
           <div class="auth-success" id="register-success">
             <span><i data-lucide="check-circle"></i></span>
-            <span>Account created! Redirecting...</span>
+            <span id="register-success-msg">Account created! Redirecting...</span>
           </div>
 
           <div class="auth-field" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
@@ -942,8 +1001,29 @@
 
           <div class="auth-field">
             <label class="auth-label" for="register-username">Username <span style="color:var(--red)">*</span></label>
-            <input class="auth-input" type="text" id="register-username" placeholder="Choose a unique username" oninput="validateRegisterForm()" />
-            <p class="auth-hint">Must be 4-20 characters long. Alphanumeric and special characters only (no spaces).</p>
+            <input class="auth-input" type="text" id="register-username" placeholder="Choose a unique username (e.g. alex_pro)" autocomplete="username" oninput="validateRegisterForm()" />
+            
+            <div class="auth-error" id="username-format-error" style="margin-top: 8px;">
+              <span><i data-lucide="alert-triangle"></i></span>
+              <span id="username-format-error-msg"></span>
+            </div>
+
+            <div class="username-rules-card" style="margin-top: 8px; padding: 8px 12px; background: #FFF9F2; border: 2px solid #FF8C42; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
+              <ul style="list-style: none; padding: 0; margin: 0; font-size: 11.5px; color: #222; line-height: 1.5; font-weight: 600;">
+                <li style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
+                  <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
+                  <span><strong style="color: #D95D00;">Allowed:</strong> <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>_</code></span>
+                </li>
+                <li style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
+                  <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
+                  <span><strong style="color: #D95D00;">Not Allowed:</strong> Spaces, symbols (no <code>@</code>, <code>#</code>, <code>-</code>, <code>.</code>, etc.)</span>
+                </li>
+                <li style="display: flex; align-items: baseline; gap: 6px;">
+                  <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
+                  <span><strong style="color: #D95D00;">Length:</strong> 4 to 20 characters</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div class="auth-field">
@@ -1141,7 +1221,9 @@
 
       const btn = document.getElementById('login-btn');
       btn.disabled = true;
-      btn.textContent = 'Logging in...';
+      btn.innerHTML = `<span class="auth-btn-spinner"></span> <span class="auth-btn-text">Signing in...</span>`;
+
+      let isLoginSuccess = false;
 
       try {
         const res = await fetch(API + '/api/auth/login', {
@@ -1155,6 +1237,10 @@
           showError('login', data.message || 'Login failed.');
           return;
         }
+
+        isLoginSuccess = true;
+        btn.classList.add('btn-success-animated');
+        btn.innerHTML = `<span class="auth-btn-text">🎉 Welcome back! Redirecting...</span>`;
 
         // Save user info and token to localStorage
         localStorage.removeItem('adminToken'); // Security: Clear admin session
@@ -1171,12 +1257,16 @@
         localStorage.setItem('referralCode', data.referralCode || '');
         localStorage.setItem('showReferralPrompt', data.showReferralPrompt ? 'true' : 'false');
 
-        window.location.replace('index.html');
+        setTimeout(() => window.location.replace('index.html'), 800);
       } catch (err) {
         showError('login', 'Network error. Please try again.');
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Login →';
+        if (!isLoginSuccess) {
+          btn.disabled = false;
+          btn.classList.remove('btn-success-animated');
+          btn.innerHTML = `<span>Login</span> <i data-lucide="arrow-right"></i>`;
+          if (window.lucide) lucide.createIcons();
+        }
       }
     }
 
@@ -1185,13 +1275,56 @@
 
     function validateRegisterForm() {
       const name     = document.getElementById('register-name').value.trim();
-      const username = document.getElementById('register-username').value.trim();
+      const usernameInput = document.getElementById('register-username');
+      const rawUsername = usernameInput ? usernameInput.value : '';
       const email    = document.getElementById('register-email').value.trim();
       const password = document.getElementById('register-password').value;
       const confirmPassword = document.getElementById('register-confirm-password').value;
       const pic      = document.getElementById('register-profile-pic-dataurl').value;
       const btn      = document.getElementById('register-btn');
       const matchHint = document.getElementById('password-match-hint');
+
+      // ── Instant Username Real-Time Validation ─────────────────────
+      const usernameErrorEl = document.getElementById('username-format-error');
+      const usernameErrorMsg = document.getElementById('username-format-error-msg');
+      let uError = '';
+
+      if (rawUsername.length > 0) {
+        const disallowedMatches = rawUsername.match(/[^a-zA-Z0-9_]/g);
+        if (disallowedMatches) {
+          const uniqueDisallowed = Array.from(new Set(disallowedMatches))
+            .map(ch => ch === ' ' ? 'space (␣)' : `"${ch}"`)
+            .join(', ');
+          uError = `Character ${uniqueDisallowed} is not allowed! Use only letters, numbers, and underscores (_).`;
+        } else if (rawUsername.length < 4) {
+          uError = `Username is too short! Need at least 4 characters (${rawUsername.length}/4).`;
+        } else if (rawUsername.length > 20) {
+          uError = `Username is too long! Maximum 20 characters (${rawUsername.length}/20).`;
+        }
+      }
+
+      if (usernameErrorEl && usernameErrorMsg && usernameInput) {
+        if (uError) {
+          usernameErrorMsg.textContent = uError;
+          usernameErrorEl.classList.add('visible');
+          usernameInput.style.borderColor = 'var(--red)';
+          usernameInput.style.boxShadow = '3px 3px 0 var(--red)';
+          usernameInput.style.color = 'var(--red)';
+        } else {
+          usernameErrorEl.classList.remove('visible');
+          if (rawUsername.length >= 4 && rawUsername.length <= 20) {
+            usernameInput.style.borderColor = 'var(--green)';
+            usernameInput.style.boxShadow = '3px 3px 0 var(--green)';
+            usernameInput.style.color = 'var(--black)';
+          } else {
+            usernameInput.style.borderColor = '';
+            usernameInput.style.boxShadow = '';
+            usernameInput.style.color = '';
+          }
+        }
+      }
+
+      const isUsernameValid = rawUsername.length >= 4 && rawUsername.length <= 20 && !uError;
 
       const passwordsMatch = password === confirmPassword;
       if (confirmPassword && !passwordsMatch) {
@@ -1220,7 +1353,7 @@
       const isPasswordFormatValid = password.length > 0 && !pwdError;
 
       const tncChecked = document.getElementById('register-tnc') && document.getElementById('register-tnc').checked;
-      const isFormValid = name && username && email && password && confirmPassword && passwordsMatch && isPasswordFormatValid && pic && !isCompressing && tncChecked;
+      const isFormValid = name && isUsernameValid && email && password && confirmPassword && passwordsMatch && isPasswordFormatValid && pic && !isCompressing && tncChecked;
       btn.disabled = !isFormValid;
     }
 
@@ -1309,9 +1442,9 @@
         return;
       }
 
-      const usernameRegex = /^[!-~]{4,20}$/;
+      const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
       if (!usernameRegex.test(username)) {
-        showError('register', 'Username must be 4-20 characters long with no spaces.');
+        showError('register', 'Username must be 4-20 characters long and contain only letters, numbers, and underscores.');
         return;
       }
 
@@ -1338,7 +1471,35 @@
 
       const btn = document.getElementById('register-btn');
       btn.disabled = true;
-      btn.textContent = 'Creating account...';
+
+      // Staged progress indicators with animated spinner and user-friendly themes
+      btn.innerHTML = `<span class="auth-btn-spinner"></span> <span class="auth-btn-text">Creating your profile...</span>`;
+
+      const t1 = setTimeout(() => {
+        if (btn.disabled && !isSuccess) {
+          btn.innerHTML = `<span class="auth-btn-spinner"></span> <span class="auth-btn-text">Setting up your account...</span>`;
+        }
+      }, 1600);
+
+      const t2 = setTimeout(() => {
+        if (btn.disabled && !isSuccess) {
+          btn.innerHTML = `<span class="auth-btn-spinner"></span> <span class="auth-btn-text">Preparing your dashboard...</span>`;
+        }
+      }, 3200);
+
+      const t3 = setTimeout(() => {
+        if (btn.disabled && !isSuccess) {
+          btn.innerHTML = `<span class="auth-btn-spinner"></span> <span class="auth-btn-text">Almost ready...</span>`;
+        }
+      }, 4800);
+
+      function clearTimers() {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      }
+
+      let isSuccess = false;
 
       try {
         const res = await fetch(API + '/api/auth/register', {
@@ -1349,8 +1510,7 @@
         const data = await res.json();
 
         if (!res.ok) {
-          btn.disabled = false;
-          btn.textContent = 'Create Account';
+          clearTimers();
           let errMsg = data.message || 'Registration failed.';
           if (Array.isArray(data.errors) && data.errors.length > 0) {
             errMsg = data.errors.map(e => e.message || e.msg).join(' ');
@@ -1359,8 +1519,19 @@
           return;
         }
 
-        // Show success, save and redirect
+        // Show success animation, save and redirect
+        isSuccess = true;
+        clearTimers();
+
+        btn.classList.add('btn-success-animated');
+        btn.innerHTML = `<span class="auth-btn-text">🎉 Welcome aboard! Redirecting...</span>`;
+
+        const successMsgEl = document.getElementById('register-success-msg');
+        if (successMsgEl) {
+          successMsgEl.textContent = `Welcome, ${data.name || 'friend'}! Redirecting to your dashboard...`;
+        }
         document.getElementById('register-success').classList.add('visible');
+
         localStorage.setItem('userId', data._id);
         localStorage.setItem('userName', data.name);
         localStorage.setItem('userEmail', data.email);
@@ -1372,13 +1543,19 @@
         localStorage.setItem('referralCode', data.referralCode || '');
         localStorage.setItem('showReferralPrompt', data.showReferralPrompt ? 'true' : 'false');
 
-        setTimeout(() => window.location.replace('index.html'), 800);
+        setTimeout(() => window.location.replace('index.html'), 1200);
 
       } catch (err) {
+        clearTimers();
         showError('register', 'Network error. Please try again.');
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Create Account →';
+        if (!isSuccess) {
+          clearTimers();
+          btn.disabled = false;
+          btn.classList.remove('btn-success-animated');
+          btn.innerHTML = `<span>Create Account</span> <i data-lucide="arrow-right"></i>`;
+          if (window.lucide) lucide.createIcons();
+        }
       }
     }
 

@@ -88,11 +88,26 @@ const adminLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Strict rate limiter for public review submission to prevent spam/mail flooding
+ * Limits to 5 submissions per hour per IP
+ */
+const reviewLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: {
+    message: 'Too many review submissions from this IP, please try again in an hour.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
   adminLimiter,
   dataModificationLimiter,
   readOnlyLimiter,
-  mediaUploadLimiter
+  mediaUploadLimiter,
+  reviewLimiter
 };

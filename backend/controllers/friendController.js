@@ -31,14 +31,27 @@ exports.sendFriendRequest = async (req, res) => {
     }
 
     // Check if there is an incoming request from the target user (auto-accept to form friendship)
-    if (senderUser.friendRequests.includes(targetUserId)) {
-      senderUser.friends.push(targetUserId);
-      senderUser.friendRequests = senderUser.friendRequests.filter(id => String(id) !== String(targetUserId));
-      await senderUser.save();
-
-      targetUser.friends.push(senderId);
-      targetUser.sentRequests = targetUser.sentRequests.filter(id => String(id) !== String(senderId));
-      await targetUser.save();
+    if (senderUser.friendRequests.some(id => String(id) === String(targetUserId))) {
+      await User.bulkWrite([
+        {
+          updateOne: {
+            filter: { _id: senderId },
+            update: {
+              $addToSet: { friends: targetUserId },
+              $pull: { friendRequests: targetUserId }
+            }
+          }
+        },
+        {
+          updateOne: {
+            filter: { _id: targetUserId },
+            update: {
+              $addToSet: { friends: senderId },
+              $pull: { sentRequests: senderId }
+            }
+          }
+        }
+      ]);
 
       setFriendshipCache(senderId, targetUserId, true);
       await syncFriendsToFirestore(senderId);
@@ -51,12 +64,21 @@ exports.sendFriendRequest = async (req, res) => {
       });
     }
 
-    // Send the request
-    senderUser.sentRequests.push(targetUserId);
-    await senderUser.save();
-
-    targetUser.friendRequests.push(senderId);
-    await targetUser.save();
+    // Send the request atomically
+    await User.bulkWrite([
+      {
+        updateOne: {
+          filter: { _id: senderId },
+          update: { $addToSet: { sentRequests: targetUserId } }
+        }
+      },
+      {
+        updateOne: {
+          filter: { _id: targetUserId },
+          update: { $addToSet: { friendRequests: senderId } }
+        }
+      }
+    ]);
 
     // Trigger FCM Push Notification for Friend Request
     const tokens = targetUser.fcmTokens || [];
@@ -125,16 +147,26 @@ exports.acceptFriendRequest = async (req, res) => {
       return res.status(400).json({ message: 'No pending friend request from this user.' });
     }
 
-    // Add to friends
-    if (!me.friends.map(String).includes(String(targetUserId))) me.friends.push(targetUserId);
-    if (!target.friends.map(String).includes(String(myId))) target.friends.push(myId);
-
-    // Clean requests arrays
-    me.friendRequests = me.friendRequests.filter(id => String(id) !== String(targetUserId));
-    target.sentRequests = target.sentRequests.filter(id => String(id) !== String(myId));
-
-    await me.save();
-    await target.save();
+    await User.bulkWrite([
+      {
+        updateOne: {
+          filter: { _id: myId },
+          update: {
+            $addToSet: { friends: targetUserId },
+            $pull: { friendRequests: targetUserId }
+          }
+        }
+      },
+      {
+        updateOne: {
+          filter: { _id: targetUserId },
+          update: {
+            $addToSet: { friends: myId },
+            $pull: { sentRequests: myId }
+          }
+        }
+      }
+    ]);
 
     setFriendshipCache(myId, targetUserId, true);
     await syncFriendsToFirestore(myId);
@@ -153,17 +185,20 @@ exports.declineFriendRequest = async (req, res) => {
     const myId = req.user.userId;
     const { targetUserId } = req.params;
 
-    const me = await User.findById(myId);
-    const target = await User.findById(targetUserId);
-
-    if (me) {
-      me.friendRequests = me.friendRequests.filter(id => String(id) !== String(targetUserId));
-      await me.save();
-    }
-    if (target) {
-      target.sentRequests = target.sentRequests.filter(id => String(id) !== String(myId));
-      await target.save();
-    }
+    await User.bulkWrite([
+      {
+        updateOne: {
+          filter: { _id: myId },
+          update: { $pull: { friendRequests: targetUserId } }
+        }
+      },
+      {
+        updateOne: {
+          filter: { _id: targetUserId },
+          update: { $pull: { sentRequests: myId } }
+        }
+      }
+    ]);
 
     res.json({ success: true, status: 'none', message: 'Friend request declined.' });
   } catch (err) {
@@ -178,17 +213,20 @@ exports.cancelFriendRequest = async (req, res) => {
     const myId = req.user.userId;
     const { targetUserId } = req.params;
 
-    const me = await User.findById(myId);
-    const target = await User.findById(targetUserId);
-
-    if (me) {
-      me.sentRequests = me.sentRequests.filter(id => String(id) !== String(targetUserId));
-      await me.save();
-    }
-    if (target) {
-      target.friendRequests = target.friendRequests.filter(id => String(id) !== String(myId));
-      await target.save();
-    }
+    await User.bulkWrite([
+      {
+        updateOne: {
+          filter: { _id: myId },
+          update: { $pull: { sentRequests: targetUserId } }
+        }
+      },
+      {
+        updateOne: {
+          filter: { _id: targetUserId },
+          update: { $pull: { friendRequests: myId } }
+        }
+      }
+    ]);
 
     res.json({ success: true, status: 'none', message: 'Friend request cancelled.' });
   } catch (err) {
@@ -235,20 +273,23 @@ exports.removeFriend = async (req, res) => {
     const myId = req.user.userId;
     const { targetUserId } = req.params;
 
-    const me = await User.findById(myId);
-    const target = await User.findById(targetUserId);
+    await User.bulkWrite([
+      {
+        updateOne: {
+          filter: { _id: myId },
+          update: { $pull: { friends: targetUserId } }
+        }
+      },
+      {
+        updateOne: {
+          filter: { _id: targetUserId },
+          update: { $pull: { friends: myId } }
+        }
+      }
+    ]);
 
-    if (me) {
-      me.friends = me.friends.filter(id => String(id) !== String(targetUserId));
-      await me.save();
-      await syncFriendsToFirestore(myId);
-    }
-    if (target) {
-      target.friends = target.friends.filter(id => String(id) !== String(myId));
-      await target.save();
-      await syncFriendsToFirestore(targetUserId);
-    }
-
+    await syncFriendsToFirestore(myId);
+    await syncFriendsToFirestore(targetUserId);
     invalidateFriendshipCache(myId, targetUserId);
 
     res.json({ success: true, status: 'none', message: 'Friend removed successfully.' });

@@ -1,5 +1,13 @@
 const Review = require('../models/Review');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+function safeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const hashA = crypto.createHash('sha256').update(a, 'utf8').digest();
+  const hashB = crypto.createHash('sha256').update(b, 'utf8').digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -72,7 +80,7 @@ async function getReviews(req, res) {
         return res.status(500).json({ message: 'Server configuration error.' });
       }
 
-      if (password !== adminPassword) {
+      if (!safeCompare(password, adminPassword)) {
         return res.status(401).json({ message: 'Incorrect password.' });
       }
     }

@@ -24,6 +24,14 @@ const PORT = process.env.PORT || 5002;
 app.use(cors());
 app.use(express.json());
 
+// Timing-safe constant-time secret comparison
+function safeCompareSecrets(a, b) {
+  if (!a || !b || typeof a !== 'string' || typeof b !== 'string') return false;
+  const hashA = crypto.createHash('sha256').update(a, 'utf8').digest();
+  const hashB = crypto.createHash('sha256').update(b, 'utf8').digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
 // ── Lazy MongoDB connection (only for cron routes that need DB) ──
 let mongoConnected = false;
 async function getMongoose() {
@@ -270,8 +278,8 @@ app.post('/api/ai/generate', async (req, res) => {
     const incomingSecret = req.headers['x-ai-service-secret'];
     const expectedSecret = process.env.AI_SERVICE_SECRET;
 
-    // Validate shared HMAC/Secret header
-    if (!expectedSecret || incomingSecret !== expectedSecret) {
+    // Validate shared HMAC/Secret header using constant-time comparison
+    if (!expectedSecret || !safeCompareSecrets(incomingSecret, expectedSecret)) {
       console.warn(`[AI-Service] Unauthorized access attempt blocked. IP: ${req.ip}`);
       return res.status(401).json({ error: 'Unauthorized: Invalid or missing API secret' });
     }
@@ -753,7 +761,8 @@ app.post('/api/ai/moderate-group', async (req, res) => {
     const incomingSecret = req.headers['x-ai-service-secret'];
     const expectedSecret = process.env.AI_SERVICE_SECRET;
 
-    if (!expectedSecret || incomingSecret !== expectedSecret) {
+    // Validate shared HMAC/Secret header using constant-time comparison
+    if (!expectedSecret || !safeCompareSecrets(incomingSecret, expectedSecret)) {
       console.warn(`[AI-Service] Unauthorized moderation attempt blocked. IP: ${req.ip}`);
       return res.status(401).json({ error: 'Unauthorized: Invalid or missing API secret' });
     }

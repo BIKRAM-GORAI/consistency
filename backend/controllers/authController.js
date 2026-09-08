@@ -423,9 +423,9 @@ async function setProfileSettings(req, res) {
       }
       if (!user.username) {
         // Validate format
-        const usernameRegex = /^[!-~]{4,20}$/;
+        const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
         if (!usernameRegex.test(cleanUsername)) {
-          return res.status(400).json({ message: 'Username must be 4-20 characters long and contain no spaces' });
+          return res.status(400).json({ message: 'Username must be 4-20 characters long and contain only letters, numbers, and underscores' });
         }
         const existingUser = await User.findOne({ username: cleanUsername });
         if (existingUser && existingUser._id.toString() !== user._id.toString()) {
