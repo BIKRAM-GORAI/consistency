@@ -8238,4 +8238,20 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   stroke: currentColor !important;
 }
 
+/* ── Confirm Grace Modal Button (Darker Green) ── */
+#confirm-grace-submit-btn {
+  background: #15803d !important;
+  color: #ffffff !important;
+  border: 2px solid var(--black) !important;
+  box-shadow: 2px 2px 0 var(--black) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+}
+
+#confirm-grace-submit-btn:hover {
+  background: #166534 !important;
+  color: #ffffff !important;
+  box-shadow: 3px 3px 0 var(--black) !important;
+  transform: translate(-1px, -1px) !important;
+}
+
 

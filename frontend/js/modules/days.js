@@ -3450,7 +3450,7 @@ async function confirmApplyGrace(dayId) {
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = `
     <span style="display:flex;align-items:center;gap:6px;">
-      <span class="spinner-ring" style="width:12px;height:12px;border-width:2px;border-color:#1a0008 transparent transparent transparent;flex-shrink:0;"></span>
+      <span class="spinner-ring" style="width:12px;height:12px;border-width:2px;border-color:#ffffff transparent transparent transparent;flex-shrink:0;"></span>
       <span>Applying...</span>
     </span>
   `;
