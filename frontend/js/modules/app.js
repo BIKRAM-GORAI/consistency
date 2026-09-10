@@ -967,6 +967,20 @@ if (searchInput) {
     searchTimeout = setTimeout(() => performSearch(query), 350);
   });
 
+  searchInput.addEventListener('focus', () => {
+    document.body.classList.add('search-active');
+    if (window.expandSearchInput) window.expandSearchInput();
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      if (searchDropdown) searchDropdown.style.display = 'none';
+      if (window.collapseSearchInput) window.collapseSearchInput();
+      document.body.classList.remove('search-active');
+    }
+  });
+
   // Hide dropdown and blur/collapse search when clicking outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.nav-search-container')) {
@@ -975,6 +989,7 @@ if (searchInput) {
         searchInput.value = '';
         if (window.collapseSearchInput) window.collapseSearchInput();
       }
+      document.body.classList.remove('search-active');
     }
   });
 
@@ -986,9 +1001,51 @@ if (searchInput) {
         if (window.collapseSearchInput) window.collapseSearchInput();
       }
       if (searchDropdown) searchDropdown.style.display = 'none';
+      document.body.classList.remove('search-active');
     }
   }, { passive: true });
 }
+
+// Global mobile keyboard & viewport listener to prevent bottom nav from riding up on virtual keyboards
+if (window.visualViewport) {
+  const updateMobileKeyboardState = () => {
+    const isKeyboard = window.visualViewport.height < (window.innerHeight - 100);
+    if (isKeyboard) {
+      document.body.classList.add('keyboard-visible');
+    } else {
+      document.body.classList.remove('keyboard-visible');
+      if (document.activeElement !== searchInput) {
+        document.body.classList.remove('search-active');
+      }
+    }
+  };
+  window.visualViewport.addEventListener('resize', updateMobileKeyboardState);
+  window.visualViewport.addEventListener('scroll', updateMobileKeyboardState);
+}
+
+window.addEventListener('focusin', (e) => {
+  if (window.innerWidth <= 768 && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+    document.body.classList.add('keyboard-visible');
+    if (e.target.id === 'nav-search-input') {
+      document.body.classList.add('search-active');
+    }
+  }
+});
+
+window.addEventListener('focusout', (e) => {
+  if (window.innerWidth <= 768 && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+    setTimeout(() => {
+      const active = document.activeElement;
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+      if (!isInput) {
+        document.body.classList.remove('keyboard-visible');
+        if (active?.id !== 'nav-search-input') {
+          document.body.classList.remove('search-active');
+        }
+      }
+    }, 150);
+  }
+});
 
 window.expandSearchInput = function() {
   const inp = document.getElementById('nav-search-input');
@@ -996,6 +1053,8 @@ window.expandSearchInput = function() {
   const navActions = document.querySelector('.nav-actions');
   const navUserArea = document.querySelector('.nav-user-area');
   const brandGroup = document.querySelector('.nav-brand-group') || document.querySelector('.nav-streak') || document.querySelector('.nav-brand');
+
+  document.body.classList.add('search-active');
 
   if (navbar) navbar.classList.add('search-focused');
   if (inp) {
@@ -1051,6 +1110,8 @@ window.collapseSearchInput = function() {
   const inp = document.getElementById('nav-search-input');
   const navbar = document.getElementById('navbar');
   const navActions = document.querySelector('.nav-actions');
+
+  document.body.classList.remove('search-active');
 
   if (navbar) navbar.classList.remove('search-focused');
   if (navActions) {
@@ -1110,6 +1171,8 @@ async function performSearch(query) {
             searchInput.value = '';
             searchInput.blur();
           }
+          document.body.classList.remove('search-active');
+          document.body.classList.remove('keyboard-visible');
           if (window.collapseSearchInput) window.collapseSearchInput();
           openQuickView(u.username);
         };
