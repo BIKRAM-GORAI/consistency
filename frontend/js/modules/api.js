@@ -335,6 +335,7 @@ const syncManager = {
             // Sync streak from server response if available
             if (typeof response.streak !== 'undefined') {
               window.backendStreak = response.streak;
+              window.serverStreakLoaded = true;
               if (typeof window.updateStreak === 'function') {
                 window.updateStreak();
               }

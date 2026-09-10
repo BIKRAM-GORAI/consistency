@@ -7741,69 +7741,166 @@ body.is-offline [data-requires-network="true"] {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: clamp(4px, 0.5vw, 8px) !important;
-  padding: 0 clamp(6px, 1vw, 16px) !important;
-  min-height: clamp(46px, 4vw, 58px) !important;
+  gap: clamp(8px, 1vw, 16px) !important;
+  padding: 0 clamp(10px, 1.4vw, 22px) !important;
+  min-height: clamp(48px, 4vw, 58px) !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
   overflow: visible !important;
+  transition: gap 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.nav-brand-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(6px, 0.8vw, 12px) !important;
+  flex-shrink: 0 !important;
+  margin-right: clamp(12px, 1.5vw, 24px) !important;
+  position: relative !important;
+  z-index: 5 !important;
 }
 
 .nav-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(6px, 0.6vw, 10px) !important;
   flex-shrink: 0 !important;
-  font-size: clamp(12px, 0.9vw + 4px, 16px) !important;
+  font-size: clamp(13px, 0.9vw + 4px, 16px) !important;
 }
 
 .nav-brand .brand-name {
-  font-size: clamp(13px, 0.9vw + 3px, 17px) !important;
+  font-size: clamp(14px, 0.9vw + 3px, 17px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.2px !important;
 }
 
 .nav-streak {
+  display: inline-flex !important;
+  align-items: center !important;
   flex-shrink: 0 !important;
-  padding: clamp(2px, 0.3vw, 5px) clamp(4px, 0.5vw, 9px) !important;
-  font-size: clamp(9.5px, 0.6vw + 3px, 11.5px) !important;
-  gap: clamp(2px, 0.3vw, 5px) !important;
+  padding: clamp(3px, 0.35vw, 6px) clamp(6px, 0.6vw, 11px) !important;
+  font-size: clamp(10px, 0.6vw + 3px, 12px) !important;
+  gap: clamp(4px, 0.4vw, 7px) !important;
 }
 
 .streak-count {
-  font-size: clamp(13px, 0.9vw + 4px, 18px) !important;
+  font-size: clamp(14px, 0.9vw + 4px, 18px) !important;
 }
 
 .nav-actions {
   display: flex !important;
   align-items: center !important;
-  gap: clamp(2px, 0.3vw, 5px) !important;
-  flex: 1 1 0% !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
   min-width: 0 !important;
   max-width: 100% !important;
+  margin: 0 auto !important;
+  gap: clamp(3px, 0.4vw, 7px) !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   white-space: nowrap !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              gap 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .nav-actions::-webkit-scrollbar {
   display: none !important;
 }
 
+.nav-actions.needs-shift {
+  transform: translateX(var(--search-shift, 0px)) !important;
+}
+
 .nav-btn {
   flex-shrink: 0 !important;
-  padding: clamp(3px, 0.35vw + 1px, 6px) clamp(4px, 0.45vw + 2px, 9px) !important;
-  font-size: clamp(9px, 0.55vw + 3.5px, 11.5px) !important;
-  gap: clamp(2px, 0.3vw, 4px) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: clamp(4px, 0.35vw + 1.5px, 6.5px) clamp(6px, 0.45vw + 2px, 10.5px) !important;
+  font-size: clamp(9.5px, 0.52vw + 3.8px, 11.8px) !important;
+  gap: clamp(3px, 0.3vw, 5px) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, padding 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .nav-btn i, .nav-btn svg {
-  width: clamp(11px, 0.75vw + 3px, 14px) !important;
-  height: clamp(11px, 0.75vw + 3px, 14px) !important;
+  width: clamp(12px, 0.75vw + 3px, 15px) !important;
+  height: clamp(12px, 0.75vw + 3px, 15px) !important;
 }
 
 .nav-user-area {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
   flex-shrink: 0 !important;
-  margin-left: auto !important;
-  gap: clamp(4px, 0.6vw, 10px) !important;
+  gap: clamp(8px, 0.8vw, 14px) !important;
+  margin-left: clamp(8px, 1vw, 16px) !important;
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+.nav-search-container {
+  position: relative !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.nav-search-input {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  text-align: center !important;
+  border-radius: 18px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  border: 1.5px solid transparent !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: var(--text) !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.2s ease,
+              border-color 0.2s ease,
+              box-shadow 0.2s ease !important;
+}
+
+.nav-search-input:hover {
+  background: rgba(0, 0, 0, 0.12) !important;
+}
+
+.nav-search-input:focus,
+.nav-search-input.expanded {
+  width: clamp(150px, 13vw, 185px) !important;
+  padding: 0 12px !important;
+  text-align: left !important;
+  cursor: text !important;
+  background: var(--bg-card, #ffffff) !important;
+  border-color: var(--black, #111) !important;
+  box-shadow: 2px 2px 0 var(--black, #111) !important;
+}
+
+/* When search bar expands, seamlessly compact buttons slightly so they fit without needing to crowd left */
+.navbar.search-focused .nav-actions {
+  gap: clamp(2px, 0.25vw, 4px) !important;
+}
+
+.navbar.search-focused .nav-btn {
+  padding: clamp(3px, 0.28vw + 1px, 5px) clamp(4.5px, 0.36vw + 1px, 7.5px) !important;
+  font-size: clamp(9px, 0.48vw + 3px, 11px) !important;
+  box-shadow: 2px 2px 0 var(--black, #111) !important;
+}
+
+@media (max-width: 480px) {
+  .nav-search-input:focus,
+  .nav-search-input.expanded {
+    width: clamp(120px, 35vw, 150px) !important;
+  }
 }
 
 .user-chip-name, #user-chip-name {

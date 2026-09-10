@@ -990,14 +990,76 @@ if (searchInput) {
   }, { passive: true });
 }
 
+window.expandSearchInput = function() {
+  const inp = document.getElementById('nav-search-input');
+  const navbar = document.getElementById('navbar');
+  const navActions = document.querySelector('.nav-actions');
+  const navUserArea = document.querySelector('.nav-user-area');
+  const brandGroup = document.querySelector('.nav-brand-group') || document.querySelector('.nav-streak') || document.querySelector('.nav-brand');
+
+  if (navbar) navbar.classList.add('search-focused');
+  if (inp) {
+    inp.classList.add('expanded');
+    inp.placeholder = '🔍 Search...';
+  }
+
+  // Only shift buttons to the left if the expanded search encroaches into their space,
+  // AND NEVER shift past the streak badge / brand on the left.
+  if (navActions && navUserArea) {
+    const actionsRect = navActions.getBoundingClientRect();
+    const userRect = navUserArea.getBoundingClientRect();
+    const brandRect = brandGroup ? brandGroup.getBoundingClientRect() : null;
+
+    if (actionsRect.width > 0) {
+      const expandedSearchWidth = window.innerWidth <= 480 ? 130 : (window.innerWidth <= 1200 ? 160 : 185);
+      const currentSearchWidth = inp ? inp.offsetWidth : 36;
+      const searchGrowth = expandedSearchWidth - currentSearchWidth;
+      const currentRightGap = userRect.left - actionsRect.right;
+      const minSafeGap = 16;
+
+      if (currentRightGap - searchGrowth < minSafeGap) {
+        const desiredShift = Math.round(minSafeGap - (currentRightGap - searchGrowth));
+        // Hard safety barrier: left edge of buttons MUST stay at least 16px away from the streak badge!
+        let maxAllowedShift = 50;
+        if (brandRect) {
+          const currentLeftClearance = actionsRect.left - brandRect.right;
+          maxAllowedShift = Math.max(0, Math.floor(currentLeftClearance - 16));
+        }
+        const safeShift = Math.min(desiredShift, maxAllowedShift);
+
+        if (safeShift > 0) {
+          navActions.style.setProperty('--search-shift', `-${safeShift}px`);
+          navActions.classList.add('needs-shift');
+        } else {
+          navActions.style.removeProperty('--search-shift');
+          navActions.classList.remove('needs-shift');
+        }
+      } else {
+        navActions.style.removeProperty('--search-shift');
+        navActions.classList.remove('needs-shift');
+      }
+    }
+  }
+};
+
 window.collapseSearchInput = function() {
   const inp = document.getElementById('nav-search-input');
+  const navbar = document.getElementById('navbar');
+  const navActions = document.querySelector('.nav-actions');
+
+  if (navbar) navbar.classList.remove('search-focused');
+  if (navActions) {
+    navActions.classList.remove('needs-shift');
+    navActions.style.removeProperty('--search-shift');
+  }
   if (inp) {
-    inp.style.width = '36px';
-    inp.style.padding = '0';
-    inp.style.textAlign = 'center';
-    inp.style.cursor = 'pointer';
+    inp.classList.remove('expanded');
     inp.placeholder = '🔍';
+    inp.style.width = '';
+    inp.style.padding = '';
+    inp.style.textAlign = '';
+    inp.style.cursor = '';
+    inp.style.background = '';
     inp.blur();
   }
 };

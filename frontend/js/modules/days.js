@@ -189,7 +189,8 @@ async function loadDays(page = 1) {
         await localDb.days.bulkPut(validDays);
       }
       
-      window.backendStreak = data.streak || 0;
+      window.backendStreak = data.streak !== undefined ? data.streak : (parseInt(localStorage.getItem('userCurrentStreak'), 10) || 0);
+      window.serverStreakLoaded = true;
       window.hasMoreDays = data.hasMore || false;
       window.totalDaysCountInDb = data.total || window.allDays.length;
     } else {
@@ -321,12 +322,20 @@ function updateStreak() {
     const fullLocalDays = await window.localDb.days.toArray();
     const { count, todayDone } = window.calculateStreak(fullLocalDays);
     
-    // Use local count if offline or if local count is higher (unsynced wins)
-    const streak = (!navigator.onLine || count > window.backendStreak) ? count : window.backendStreak;
+    const cachedStreak = parseInt(localStorage.getItem('userCurrentStreak'), 10) || 0;
+
+    // When server response has arrived, server streak is authoritative (unless local count is higher due to offline completions).
+    // Before server response arrives (initial load), prevent premature drop to partial local cache count.
+    let streak;
+    if (window.serverStreakLoaded) {
+      streak = count > window.backendStreak ? count : window.backendStreak;
+    } else {
+      streak = Math.max(count, window.backendStreak, cachedStreak);
+    }
     
     // Persist to localStorage for consistency across the app (e.g., Leaderboard spotlight)
     localStorage.setItem('userCurrentStreak', streak);
-    const storedHighest = parseInt(localStorage.getItem('userHighestStreak')) || 0;
+    const storedHighest = parseInt(localStorage.getItem('userHighestStreak'), 10) || 0;
     if (streak > storedHighest) {
       localStorage.setItem('userHighestStreak', streak);
     }

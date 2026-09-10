@@ -59,10 +59,10 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=27" />
-  <link rel="stylesheet" href="aurora-theme.css?v=2" />
+  <link rel="stylesheet" href="style.css?v=30" />
+  <link rel="stylesheet" href="aurora-theme.css?v=3" />
   <link rel="stylesheet" href="minimalistic-theme.css?v=2" />
-  <link rel="stylesheet" href="claymorphism-theme.css?v=2" />
+  <link rel="stylesheet" href="claymorphism-theme.css?v=3" />
   <style>
     /* ── Offline mode: disable all network-dependent buttons instantly via body class ── */
     body.is-offline [data-requires-network="true"] {
@@ -374,16 +374,26 @@
   </div>
 
   <nav class="navbar" id="navbar">
-    <div class="nav-brand">
-      <span class="brand-icon" style="font-size: 26px; color: var(--black); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);"><i data-lucide="zap" class="no-theme"></i></span>
-      <span class="brand-name">Consistency</span>
-    </div>
+    <div class="nav-brand-group">
+      <div class="nav-brand">
+        <span class="brand-icon" style="font-size: 26px; color: var(--black); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);"><i data-lucide="zap" class="no-theme"></i></span>
+        <span class="brand-name">Consistency</span>
+      </div>
 
-    <div class="nav-streak" id="nav-streak">
-      <span class="streak-fire">🔥</span>
-      <span class="streak-count" id="streak-display">0</span>
-      <span class="streak-label">day streak</span>
+      <div class="nav-streak" id="nav-streak">
+        <span class="streak-fire">🔥</span>
+        <span class="streak-count" id="streak-display">0</span>
+        <span class="streak-label">day streak</span>
+      </div>
     </div>
+    <script>
+      try {
+        const _s = localStorage.getItem('userCurrentStreak');
+        if (_s && document.getElementById('streak-display')) {
+          document.getElementById('streak-display').textContent = _s;
+        }
+      } catch (e) {}
+    </script>
 
     <div class="nav-actions">
       <button class="nav-btn active" id="btn-home" onclick="showPage('home')">
@@ -423,10 +433,10 @@
       </button>
     </div>
 
-    <div class="nav-user-area" style="display:flex; align-items:center; gap: 16px;">
+    <div class="nav-user-area">
       <!-- Search Bar -->
-      <div class="nav-search-container" style="position: relative; z-index: 99999;">
-        <input type="text" id="nav-search-input" placeholder="🔍" style="padding: 0; text-align: center; border: none; border-radius: 18px; font-family: 'Inter', sans-serif; font-size: 16px; outline: none; width: 36px; height: 36px; transition: all 0.3s ease; background: rgba(0,0,0,0.08); color: var(--text); cursor: pointer;" onfocus="this.style.width=window.innerWidth <= 480 ? '130px' : '160px'; this.style.padding='8px 12px'; this.style.textAlign='left'; this.style.cursor='text'; this.style.background='rgba(0,0,0,0.12)'; this.placeholder='🔍 Search...';" onblur="if(!this.value.trim()) { this.style.background='rgba(0,0,0,0.08)'; window.collapseSearchInput(); }" autocomplete="off" />
+      <div class="nav-search-container">
+        <input type="text" id="nav-search-input" class="nav-search-input" placeholder="🔍" onfocus="window.expandSearchInput()" onblur="if(!this.value.trim()) { window.collapseSearchInput(); }" autocomplete="off" />
         <div id="nav-search-dropdown" style="display: none; position: absolute; top: 110%; right: 0; background: var(--bg-card); border: 2.5px solid var(--black); border-radius: 12px; box-shadow: 4px 4px 0 var(--black); width: 260px; max-height: 320px; overflow-y: auto; z-index: 99999; flex-direction: column;">
           <!-- Suggestions injected here -->
         </div>
@@ -4416,7 +4426,7 @@
   <script type="module" src="js/modules/profile.js"></script>
   <script type="module" src="js/modules/pomodoro.js"></script>
   <script type="module" src="js/modules/dm.js"></script>
-  <script type="module" src="js/modules/app.js"></script>
+  <script type="module" src="js/modules/app.js?v=4"></script>
 
   <script src="script.js?v=59"></script>
   <script>
