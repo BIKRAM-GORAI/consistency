@@ -1003,6 +1003,11 @@ window.expandSearchInput = function() {
     inp.placeholder = '🔍 Search...';
   }
 
+  // On mobile screens (<= 768px), top nav action buttons are hidden (bottom nav is used)
+  if (window.innerWidth <= 768) {
+    return;
+  }
+
   // Only shift buttons to the left if the expanded search encroaches into their space,
   // AND NEVER shift past the streak badge / brand on the left.
   if (navActions && navUserArea) {
