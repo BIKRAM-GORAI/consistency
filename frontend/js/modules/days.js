@@ -741,7 +741,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
   // Grace streak-protection control display
   let graceBadgeHTML = '';
   if (day.graceApplied) {
-    graceBadgeHTML = `<span class="card-badge" style="background:#c3ffb3;color:#000;border:2px solid #000;box-shadow:1.5px 1.5px 0 #000;padding:2px 8px;font-size:10px;font-weight:900;text-transform:uppercase;border-radius:4px;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;"><i data-lucide="shield-check" style="width:12px;height:12px;"></i> GRACED</span>`;
+    graceBadgeHTML = `<span class="card-badge badge-graced" title="Streak protected by Grace Day"><i data-lucide="shield-check"></i> GRACED</span>`;
   } else if (!isToday && !isFuture) {
     const currentMonthPrefix = today.substring(0, 7);
     const cardMonthPrefix = cardDateNormalized.substring(0, 7);
@@ -749,7 +749,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
 
     if (isCurrentMonth) {
       graceBadgeHTML = `
-        <button class="btn-apply-grace ripple" data-requires-network="true" onclick="applyGrace('${day._id}')" title="Protect your streak with a Grace Day"><i data-lucide="shield-alert" style="width:12px;height:12px;"></i> Apply Grace</button>
+        <button class="btn-apply-grace ripple" data-requires-network="true" onclick="applyGrace('${day._id}')" title="Protect your streak with a Grace Day"><i data-lucide="shield-alert"></i> Apply Grace</button>
         <span class="card-badge badge-past">Past</span>
       `;
     } else {

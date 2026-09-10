@@ -7585,6 +7585,8 @@ body.is-offline [data-requires-network="true"] {
   color: #0a0a0a !important;
   border-right: 3.5px solid #000000 !important;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25) !important;
+}
+
 /* YouTube Mobile Interactivity & Overlay Fixes */
 #cv-youtube,
 #cv-youtube iframe,
@@ -8163,34 +8165,41 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   }
 }
 
-/* ── Apply Grace Day Button (Past Cards) ── */
+/* ── Apply Grace Day Button & Graced Badge (Past Cards) ── */
 .btn-apply-grace {
-  background: #ffb3d9 !important;
-  color: #1a0008 !important;
-  border: 2px solid var(--black) !important;
-  box-shadow: 2px 2px 0 var(--black) !important;
-  padding: 0 10px !important;
+  background: #fde047 !important;
+  color: #713f12 !important;
+  border: 2px solid var(--black, #000) !important;
+  box-shadow: 2px 2px 0 var(--black, #000) !important;
+  padding: 0 9px !important;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-size: 10px !important;
-  font-weight: 900 !important;
+  font-weight: 800 !important;
   text-transform: uppercase !important;
-  border-radius: var(--r-sm, 4px) !important;
+  border-radius: var(--r-sm, 6px) !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
+  gap: 5px !important;
   height: 24px !important;
   box-sizing: border-box !important;
   line-height: 1 !important;
   letter-spacing: 0.5px !important;
+  white-space: nowrap !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
 }
 
 .btn-apply-grace:hover {
-  background: #ff80bf !important;
+  background: #fef08a !important;
   color: #000000 !important;
-  box-shadow: 3px 3px 0 var(--black) !important;
+  box-shadow: 3px 3px 0 var(--black, #000) !important;
   transform: translate(-1px, -1px) !important;
+}
+
+.btn-apply-grace:active {
+  box-shadow: 1px 1px 0 var(--black, #000) !important;
+  transform: translate(1px, 1px) !important;
 }
 
 .btn-apply-grace i,
@@ -8200,6 +8209,24 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   color: inherit !important;
   stroke: currentColor !important;
   stroke-width: 2.5px !important;
+  flex-shrink: 0 !important;
+}
+
+.badge-graced {
+  background: #c3ffb3 !important;
+  color: #0d3815 !important;
+  border: 2px solid var(--black, #000) !important;
+  box-shadow: 2px 2px 0 var(--black, #000) !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  border-radius: var(--r-sm, 6px) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 24px !important;
+  box-sizing: border-box !important;
 }
 
 /* ── Universal Voice Assistant Clear Prompt Button ── */

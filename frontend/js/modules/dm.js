@@ -750,16 +750,19 @@ function renderDMMessage(msg, container, animate = false, isPending = false) {
   }
 
   // Reactions HTML
-  const reactionsHtml = renderDMReactionsHTML(msg.reactions, docId);
+  const safeDocId = window.escJs(docId);
+  const safeMediaUrl = (msg.mediaUrl && /^(https?:\/\/|data:image\/)/i.test(msg.mediaUrl)) ? window.escJs(msg.mediaUrl) : '';
+  const safeMediaType = window.escJs(msg.mediaType || '');
+  const reactionsHtml = renderDMReactionsHTML(msg.reactions, safeDocId);
 
   // Message Actions Row
   const buttonsHtml = `
     <div class="chat-message-actions-outside" style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-self: center; margin: 0 12px; transition: opacity 0.2s;">
-      <button class="chat-edit-btn" onclick="window.DM.toggleDMReactionPicker(event, '${docId}')" title="React"><i data-lucide="smile" style="width:16px;height:16px;"></i></button>
-      <button class="chat-edit-btn" onclick="window.DM.setDMReplyTo('${docId}', '${window.escJs(msg.text)}', '${window.escJs(msg.senderName)}', '${msg.mediaUrl || ''}', '${msg.mediaType || ''}', ${msg.audioDuration || 0})" title="Reply"><i data-lucide="reply" style="width:16px;height:16px;"></i></button>
+      <button class="chat-edit-btn" onclick="window.DM.toggleDMReactionPicker(event, '${safeDocId}')" title="React"><i data-lucide="smile" style="width:16px;height:16px;"></i></button>
+      <button class="chat-edit-btn" onclick="window.DM.setDMReplyTo('${safeDocId}', '${window.escJs(msg.text)}', '${window.escJs(msg.senderName)}', '${safeMediaUrl}', '${safeMediaType}', ${Number(msg.audioDuration) || 0})" title="Reply"><i data-lucide="reply" style="width:16px;height:16px;"></i></button>
       ${editBtn ? `
-        <button class="chat-edit-btn" onclick="window.DM.startEditDMMessage('${docId}', '${window.escJs(msg.text)}')" title="Edit"><i data-lucide="pencil" style="width:16px;height:16px;"></i></button>
-        <button class="chat-edit-btn" onclick="window.DM.deleteDMMessage('${docId}')" title="Delete" style="color:var(--red);"><i data-lucide="trash-2" style="width:16px;height:16px;"></i></button>
+        <button class="chat-edit-btn" onclick="window.DM.startEditDMMessage('${safeDocId}', '${window.escJs(msg.text)}')" title="Edit"><i data-lucide="pencil" style="width:16px;height:16px;"></i></button>
+        <button class="chat-edit-btn" onclick="window.DM.deleteDMMessage('${safeDocId}')" title="Delete" style="color:var(--red);"><i data-lucide="trash-2" style="width:16px;height:16px;"></i></button>
       ` : ''}
     </div>
   `;
@@ -772,28 +775,28 @@ function renderDMMessage(msg, container, animate = false, isPending = false) {
       </div>
     </div>
     ${replySnippetHtml}
-    ${msg.mediaUrl ? `
+    ${safeMediaUrl ? `
       ${msg.mediaType === 'audio' ? `
-        <div class="chat-audio-player" id="dm-audio-player-${docId}">
-          <button class="btn-audio-download ripple" id="dm-audio-btn-${docId}" onclick="window.DM.downloadDMAudio('${docId}', '${msg.mediaUrl}')">
+        <div class="chat-audio-player" id="dm-audio-player-${safeDocId}">
+          <button class="btn-audio-download ripple" id="dm-audio-btn-${safeDocId}" onclick="window.DM.downloadDMAudio('${safeDocId}', '${safeMediaUrl}')">
             <i data-lucide="download" style="width: 20px; height: 20px;"></i>
           </button>
           <div class="audio-info">
-            <div class="audio-duration" id="dm-audio-duration-${docId}">${msg.audioDuration ? window.formatDuration(msg.audioDuration) : 'Voice Message'}</div>
+            <div class="audio-duration" id="dm-audio-duration-${safeDocId}">${msg.audioDuration ? window.formatDuration(msg.audioDuration) : 'Voice Message'}</div>
             <div class="audio-progress-container">
-              <div class="audio-progress-bar" id="dm-audio-progress-${docId}"></div>
+              <div class="audio-progress-bar" id="dm-audio-progress-${safeDocId}"></div>
             </div>
           </div>
         </div>
       ` : `
-        <div class="chat-media-content" onclick="window.openLightbox('${msg.mediaUrl}')">
+        <div class="chat-media-content" onclick="window.openLightbox('${safeMediaUrl}')">
           ${msg.mediaType === 'video' 
-            ? `<video data-src="${msg.mediaUrl}" autoplay muted loop playsinline class="lazy-media"></video>` 
-            : `<img data-src="${msg.mediaUrl}" class="lazy-media" />`}
+            ? `<video data-src="${safeMediaUrl}" autoplay muted loop playsinline class="lazy-media"></video>` 
+            : `<img data-src="${safeMediaUrl}" class="lazy-media" />`}
         </div>
       `}
     ` : ''}
-    <div class="chat-text" id="dm-chat-text-${docId}" style="margin-top: 4px;">${window.linkify(window.escHtml(msg.text))}</div>
+    <div class="chat-text" id="dm-chat-text-${safeDocId}" style="margin-top: 4px;">${window.linkify(window.escHtml(msg.text))}</div>
     ${reactionsHtml}
     <div class="chat-message-footer">
       ${msg.edited ? '<span class="chat-edited-tag">Edited</span>' : ''}

@@ -30,6 +30,11 @@ function safeStringCompare(a, b) {
   return crypto.timingSafeEqual(hashA, hashB);
 }
 
+function escapeRegex(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Admin Step 1: Request OTP
  * Verifies credentials and sends OTP to ADMIN_EMAIL
@@ -274,12 +279,13 @@ async function getAdminUsers(req, res) {
     const sortOrder = sort === 'asc' ? 1 : -1;
     
     let filter = {};
-    if (query) {
+    if (query && typeof query === 'string' && query.trim()) {
+      const sanitized = escapeRegex(query.trim());
       filter = {
         $or: [
-          { name: { $regex: query, $options: 'i' } },
-          { email: { $regex: query, $options: 'i' } },
-          { username: { $regex: query, $options: 'i' } }
+          { name: { $regex: sanitized, $options: 'i' } },
+          { email: { $regex: sanitized, $options: 'i' } },
+          { username: { $regex: sanitized, $options: 'i' } }
         ]
       };
     }
@@ -376,9 +382,10 @@ async function updateAdminUser(req, res) {
     const userId = req.params.id;
 
     // Validation
-    if (username) {
+    if (username && typeof username === 'string') {
+      const sanitizedUsername = escapeRegex(username.trim());
       const existingUser = await User.findOne({ 
-        username: { $regex: new RegExp(`^${username}$`, 'i') },
+        username: { $regex: new RegExp(`^${sanitizedUsername}$`, 'i') },
         _id: { $ne: userId }
       });
       if (existingUser) {
@@ -1461,11 +1468,12 @@ module.exports = {
       if (category) {
         query.category = category;
       }
-      if (search) {
+      if (search && typeof search === 'string' && search.trim()) {
+        const sanitized = escapeRegex(search.trim());
         query.$or = [
-          { username: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
+          { username: { $regex: sanitized, $options: 'i' } },
+          { email: { $regex: sanitized, $options: 'i' } },
+          { description: { $regex: sanitized, $options: 'i' } }
         ];
       }
 
@@ -1644,7 +1652,7 @@ module.exports = {
 
       const query = {};
       if (search && typeof search === 'string' && search.trim()) {
-        const cleanSearch = search.trim();
+        const cleanSearch = escapeRegex(search.trim());
         const searchRegex = { $regex: cleanSearch, $options: 'i' };
         query.$or = [
           { name: searchRegex },

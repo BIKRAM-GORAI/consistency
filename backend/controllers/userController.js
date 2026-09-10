@@ -298,12 +298,13 @@ async function getLeaderboard(req, res) {
     const clientDate = req.headers['x-client-date'];
 
     // 1. Decay stale streaks of inactive users atomically in MongoDB
+    // CRITICAL: We strictly use authoritative server date, NEVER client-supplied headers,
+    // to prevent malicious or malformed client dates from wiping database-wide streaks.
     const d = new Date();
     const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const today = clientDate || serverToday;
 
-    // Calculate "yesterday" YYYY-MM-DD
-    const [y, m, dayNum] = today.split('-').map(Number);
+    // Calculate "yesterday" YYYY-MM-DD based solely on authoritative server time
+    const [y, m, dayNum] = serverToday.split('-').map(Number);
     const prev = new Date(y, m - 1, dayNum - 1);
     const yesterday = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
 

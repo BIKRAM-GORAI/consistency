@@ -1971,6 +1971,10 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now
     },
+    pendingGroupCreationTokenId: {
+      type: String,
+      default: null
+    },
   },
   { timestamps: true },
 );
@@ -1978,6 +1982,8 @@ const UserSchema = new mongoose.Schema(
 // Optimize leaderboard queries with compound indexes
 UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, currentStreak: -1 });
 UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, highestStreak: -1 });
+// Enforce global uniqueness on payment IDs to prevent double processing & race conditions
+UserSchema.index({ 'paymentHistory.paymentId': 1 }, { unique: true, sparse: true });
 module.exports = mongoose.model("User", UserSchema);
 
 //! TOPIC: Compound Indexes (Leaderboard Optimization)

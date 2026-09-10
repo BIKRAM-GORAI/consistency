@@ -3,6 +3,16 @@ const Coupon = require('../models/Coupon');
 const axios = require('axios');
 const crypto = require('crypto');
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 /**
  * GET /api/subscriptions/status
  * Retrieves the current user's subscription details and absolute limits.
@@ -576,27 +586,50 @@ exports.verifyRazorpayPayment = async (req, res) => {
       ? parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10)
       : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
     if (isNaN(price)) price = trustedDuration === '1_month' ? 299 : 1999;
-    
-    user.paymentHistory.push({
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id,
-      amount: price,
-      duration: trustedDuration,
-      purchasedAt: new Date(),
-      refundStatus: 'none'
-    });
 
-    user.pendingSubscriptionId = null;
-    user.pendingSubscriptionDuration = null;
-    await user.save();
+    // Atomically activate premium and record transaction, guaranteeing idempotency against concurrent race conditions
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        _id: userId,
+        'paymentHistory.paymentId': { $ne: razorpay_payment_id },
+        razorpayPaymentId: { $ne: razorpay_payment_id }
+      },
+      {
+        $set: {
+          subscriptionTier: 'premium',
+          subscriptionExpiresAt: currentExpiry,
+          subscriptionId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          premiumActivatedAt: new Date(),
+          refundStatus: 'none',
+          pendingSubscriptionId: null,
+          pendingSubscriptionDuration: null
+        },
+        $push: {
+          paymentHistory: {
+            orderId: razorpay_order_id,
+            paymentId: razorpay_payment_id,
+            amount: price,
+            duration: trustedDuration,
+            purchasedAt: new Date(),
+            refundStatus: 'none'
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(400).json({ message: 'Payment verification failed: This transaction has already been processed.' });
+    }
 
     console.log(`
 ============================================================
 🚀 [Razorpay Success] PREMIUM SUBSCRIPTION ACTIVATED / EXTENDED!
 ============================================================
 👤 User ID:       ${userId}
-👤 Username:      ${user.username}
-👤 Email:         ${user.email}
+👤 Username:      ${updatedUser.username}
+👤 Email:         ${updatedUser.email}
 📦 Order ID:      ${razorpay_order_id}
 💳 Payment ID:    ${razorpay_payment_id}
 📅 Plan Duration: ${duration === '1_month' ? '30 Days (Monthly Pass)' : '365 Days (Annual Pass)'}
@@ -672,31 +705,50 @@ exports.checkPendingSubscription = async (req, res) => {
       const extendedDays = duration === '1_month' ? 30 : 365;
       currentExpiry.setDate(currentExpiry.getDate() + extendedDays);
 
-      user.subscriptionTier = 'premium';
-      user.subscriptionExpiresAt = currentExpiry;
-      user.subscriptionId = orderId;
-      user.razorpayPaymentId = successfulPayment.id;
-      user.premiumActivatedAt = new Date();
-      user.refundStatus = 'none';
-
       let price = duration === '1_month'
         ? parseInt(process.env.RAZORPAY_PRICE_1_MONTH, 10)
         : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
       if (isNaN(price)) price = duration === '1_month' ? 299 : 1999;
       
-      user.paymentHistory.push({
-        orderId: orderId,
-        paymentId: successfulPayment.id,
-        amount: price,
-        duration: duration,
-        purchasedAt: new Date(),
-        refundStatus: 'none'
-      });
-      
-      // Clear pending fields once reconciled
-      user.pendingSubscriptionId = null;
-      user.pendingSubscriptionDuration = null;
-      await user.save();
+      // Clear pending fields and atomically reconcile transaction
+      const reconciledUser = await User.findOneAndUpdate(
+        {
+          _id: userId,
+          'paymentHistory.paymentId': { $ne: successfulPayment.id },
+          razorpayPaymentId: { $ne: successfulPayment.id }
+        },
+        {
+          $set: {
+            subscriptionTier: 'premium',
+            subscriptionExpiresAt: currentExpiry,
+            subscriptionId: orderId,
+            razorpayPaymentId: successfulPayment.id,
+            premiumActivatedAt: new Date(),
+            refundStatus: 'none',
+            pendingSubscriptionId: null,
+            pendingSubscriptionDuration: null
+          },
+          $push: {
+            paymentHistory: {
+              orderId: orderId,
+              paymentId: successfulPayment.id,
+              amount: price,
+              duration: duration,
+              purchasedAt: new Date(),
+              refundStatus: 'none'
+            }
+          }
+        },
+        { new: true }
+      );
+
+      if (!reconciledUser) {
+        return res.status(200).json({
+          hasPending: false,
+          status: 'already_reconciled',
+          message: 'Transaction already recorded.'
+        });
+      }
 
       console.log(`
 ================================================================================
@@ -882,26 +934,29 @@ exports.requestRefund = async (req, res) => {
     const ownerEmail = process.env.OWNER_EMAIL || process.env.GMAIL_EMAIL;
     if (ownerEmail) {
       const { sendEmail } = require('../utils/email');
+      const safeUserName = escapeHtml(user.name);
+      const safeUsername = escapeHtml(user.username);
+      const safeReason = escapeHtml(reason.trim());
       try {
         await sendEmail({
           to: ownerEmail,
-          subject: `🚨 New Refund Request from @${user.username}`,
+          subject: `🚨 New Refund Request from @${safeUsername}`,
           html: `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; border: 3px solid #111; padding: 20px; border-radius: 8px;">
               <h2 style="text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 10px; color: #d97706;">Refund Request Alert</h2>
               <p>A new subscription refund request has been initiated by a customer.</p>
               <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <tr><td style="padding: 6px 0; font-weight: bold;">User:</td><td>${user.name} (@${user.username})</td></tr>
-                <tr><td style="padding: 6px 0; font-weight: bold;">Email:</td><td>${user.email}</td></tr>
-                <tr><td style="padding: 6px 0; font-weight: bold;">Order ID:</td><td>${payment.orderId}</td></tr>
-                <tr><td style="padding: 6px 0; font-weight: bold;">Payment ID:</td><td>${paymentId}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">User:</td><td>${safeUserName} (@${safeUsername})</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Email:</td><td>${escapeHtml(user.email)}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Order ID:</td><td>${escapeHtml(payment.orderId)}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: bold;">Payment ID:</td><td>${escapeHtml(paymentId)}</td></tr>
                 <tr><td style="padding: 6px 0; font-weight: bold;">Plan:</td><td>${payment.duration === '1_month' ? 'Monthly Pass' : 'Annual Pass'} (₹${payment.amount})</td></tr>
                 <tr><td style="padding: 6px 0; font-weight: bold;">Purchased At:</td><td>${new Date(payment.purchasedAt).toLocaleString()}</td></tr>
                 <tr><td style="padding: 6px 0; font-weight: bold;">Requested At:</td><td>${new Date().toLocaleString()}</td></tr>
               </table>
               <div style="margin-top: 20px; padding: 15px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px;">
                 <p style="margin: 0 0 8px 0; font-weight: bold; color: #b45309; text-transform: uppercase; font-size: 12px;">Reason Provided by User:</p>
-                <p style="margin: 0; font-style: italic; color: #1f2937;">"${reason.trim()}"</p>
+                <p style="margin: 0; font-style: italic; color: #1f2937;">"${safeReason}"</p>
               </div>
               <div style="margin-top: 20px; padding: 12px; background: #f3f4f6; border-radius: 6px; border: 2px dashed #9ca3af;">
                 ${usageHTML}
@@ -1173,7 +1228,7 @@ exports.claimFreePremium = async (req, res) => {
     // 4. Record free challenge pass inside paymentHistory to maintain ledger records (with zero price, non-refundable)
     user.paymentHistory.push({
       orderId: 'FREE_100_DAYS_CHALLENGE',
-      paymentId: `FREE_CHALLENGE_${Date.now()}`,
+      paymentId: `FREE_CHALLENGE_${userId}_${Date.now()}`,
       amount: 0,
       duration: '1_year',
       purchasedAt: new Date(),
@@ -1198,46 +1253,39 @@ exports.claimFreePremium = async (req, res) => {
 
 /**
  * POST /api/subscriptions/razorpay/webhook
- * Asynchronous server-to-server webhook handler for Razorpay payment fulfillment.
+ * Handles async payment notifications directly from Razorpay.
  */
 exports.handleRazorpayWebhook = async (req, res) => {
   try {
-    const webhookSignature = req.headers['x-razorpay-signature'];
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const signature = req.headers['x-razorpay-signature'];
 
-    if (!webhookSecret) {
-      console.error('[Razorpay Webhook] RAZORPAY_WEBHOOK_SECRET is not configured in .env');
-      return res.status(500).json({ message: 'Webhook secret not configured' });
+    if (!webhookSecret || !signature) {
+      return res.status(400).json({ message: 'Missing webhook secret or signature.' });
     }
 
-    if (!webhookSignature) {
-      return res.status(400).json({ message: 'Missing webhook signature header' });
-    }
-
-    // Use rawBody buffer captured in server.js or fallback to stringified body
-    const payloadBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body), 'utf8');
-    const expectedSignature = crypto
+    const payload = JSON.stringify(req.body);
+    const expectedSig = crypto
       .createHmac('sha256', webhookSecret)
-      .update(payloadBuffer)
+      .update(payload)
       .digest('hex');
 
-    const expBuf = Buffer.from(expectedSignature, 'utf8');
-    const recvBuf = Buffer.from(webhookSignature, 'utf8');
+    const expectedBuf = Buffer.from(expectedSig, 'utf8');
+    const recvBuf = Buffer.from(signature, 'utf8');
 
-    if (expBuf.length !== recvBuf.length || !crypto.timingSafeEqual(expBuf, recvBuf)) {
-      console.warn('[Razorpay Webhook] Invalid signature mismatch rejected.');
-      return res.status(400).json({ message: 'Invalid webhook signature' });
+    if (expectedBuf.length !== recvBuf.length || !crypto.timingSafeEqual(expectedBuf, recvBuf)) {
+      console.warn('[Razorpay Webhook] Signature verification failed.');
+      return res.status(400).json({ message: 'Invalid webhook signature.' });
     }
 
-    const event = req.body;
-    const eventType = event.event;
-    console.log(`[Razorpay Webhook] Authenticated webhook event: ${eventType}`);
+    const event = req.body.event;
+    console.log(`[Razorpay Webhook] Received event: ${event}`);
 
-    if (eventType === 'order.paid' || eventType === 'payment.captured') {
-      const paymentEntity = event.payload?.payment?.entity || {};
-      const orderEntity = event.payload?.order?.entity || {};
-      const orderId = paymentEntity.order_id || orderEntity.id;
-      const paymentId = paymentEntity.id;
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = req.body.payload?.payment?.entity;
+      const orderEntity = req.body.payload?.order?.entity;
+      const paymentId = paymentEntity?.id;
+      const orderId = paymentEntity?.order_id || orderEntity?.id;
 
       if (!orderId && !paymentId) {
         return res.status(200).json({ status: 'ignored_missing_identifiers' });
@@ -1298,27 +1346,45 @@ exports.handleRazorpayWebhook = async (req, res) => {
         : parseInt(process.env.RAZORPAY_PRICE_1_YEAR, 10);
       if (isNaN(price)) price = duration === '1_month' ? 299 : 1999;
 
-      user.subscriptionTier = 'premium';
-      user.subscriptionExpiresAt = currentExpiry;
-      if (orderId) user.subscriptionId = orderId;
-      if (paymentId) user.razorpayPaymentId = paymentId;
-      user.premiumActivatedAt = new Date();
-      user.refundStatus = 'none';
 
-      user.paymentHistory.push({
-        orderId: orderId || 'webhook_unspecified',
-        paymentId: paymentId || 'webhook_unspecified',
-        amount: price,
-        duration: duration,
-        purchasedAt: new Date(),
-        refundStatus: 'none'
-      });
+      // Atomically update user and insert transaction record, asserting paymentId hasn't been processed
+      const webhookUser = await User.findOneAndUpdate(
+        {
+          _id: user._id,
+          'paymentHistory.paymentId': { $ne: paymentId },
+          razorpayPaymentId: { $ne: paymentId }
+        },
+        {
+          $set: {
+            subscriptionTier: 'premium',
+            subscriptionExpiresAt: currentExpiry,
+            ...(orderId ? { subscriptionId: orderId } : {}),
+            ...(paymentId ? { razorpayPaymentId: paymentId } : {}),
+            premiumActivatedAt: new Date(),
+            refundStatus: 'none',
+            pendingSubscriptionId: null,
+            pendingSubscriptionDuration: null
+          },
+          $push: {
+            paymentHistory: {
+              orderId: orderId || 'webhook_unspecified',
+              paymentId: paymentId || 'webhook_unspecified',
+              amount: price,
+              duration: duration,
+              purchasedAt: new Date(),
+              refundStatus: 'none'
+            }
+          }
+        },
+        { new: true }
+      );
 
-      user.pendingSubscriptionId = null;
-      user.pendingSubscriptionDuration = null;
-      await user.save();
+      if (!webhookUser) {
+        console.log(`[Razorpay Webhook] Payment ${paymentId} already processed concurrently.`);
+        return res.status(200).json({ status: 'already_processed' });
+      }
 
-      console.log(`[Razorpay Webhook] Successfully activated ${duration} Premium for ${user.username} via webhook.`);
+      console.log(`[Razorpay Webhook] Successfully activated ${duration} Premium for ${webhookUser.username} via webhook.`);
     }
 
     return res.status(200).json({ status: 'ok' });

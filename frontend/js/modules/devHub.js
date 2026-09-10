@@ -2420,7 +2420,7 @@ window.executeUniversalSearch = async function() {
 
   container.innerHTML = '';
   if (results.length === 0) {
-    container.innerHTML = `<p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">No results found across developer sources for "${query}". Try another term!</p>`;
+    container.innerHTML = `<p style="text-align:center; font-size:15px; font-weight:800; color:var(--text-muted); padding:50px 0; grid-column:1/-1;">No results found across developer sources for "${window.escHtml(query)}". Try another term!</p>`;
     return;
   }
 
@@ -2824,7 +2824,7 @@ window.executeGitHubGlobalSearch = async function() {
     const repos = data.items || [];
 
     if (repos.length === 0) {
-      container.innerHTML = `<p style="text-align:center; font-size:14px; font-weight:800; color:var(--text-muted); padding:40px 0; grid-column:1/-1;">No GitHub repositories found for "${query}".</p>`;
+      container.innerHTML = `<p style="text-align:center; font-size:14px; font-weight:800; color:var(--text-muted); padding:40px 0; grid-column:1/-1;">No GitHub repositories found for "${window.escHtml(query)}".</p>`;
       return;
     }
 
@@ -3462,9 +3462,17 @@ window.bookmarkUniversalResult = function(idx) {
 };
 function _mdToHtml(md) {
   if (!md) return '';
-  return md
+  // First escape raw HTML tags in source markdown
+  let safe = String(md)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  return safe
     .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
-      '<pre style="background:var(--bg-card);border:2px solid var(--black);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-family:monospace;font-size:12px;line-height:1.6;max-width:100%;"><code>' + code.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>')
+      '<pre style="background:var(--bg-card);border:2px solid var(--black);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-family:monospace;font-size:12px;line-height:1.6;max-width:100%;"><code>' + code + '</code></pre>')
     .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.07);padding:2px 5px;border-radius:3px;font-family:monospace;font-size:12px;word-break:break-all;">$1</code>')
     .replace(/^#{4}\s(.+)$/gm, '<h4 style="font-size:15px;font-weight:900;margin:20px 0 6px;font-family:Space Grotesk,sans-serif;word-break:break-word;">$1</h4>')
     .replace(/^#{3}\s(.+)$/gm, '<h3 style="font-size:18px;font-weight:900;margin:24px 0 8px;font-family:Space Grotesk,sans-serif;word-break:break-word;">$1</h3>')
@@ -3472,8 +3480,16 @@ function _mdToHtml(md) {
     .replace(/^#{1}\s(.+)$/gm, '<h1 style="font-size:25px;font-weight:900;margin:30px 0 12px;font-family:Space Grotesk,sans-serif;word-break:break-word;">$1</h1>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;display:block;" />')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--purple);text-decoration:underline;word-break:break-all;overflow-wrap:anywhere;">$1</a>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+      const sUrl = /^https?:\/\//i.test(url.trim()) ? url.trim() : '';
+      return sUrl ? `<img src="${sUrl}" alt="${alt}" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;display:block;" />` : '';
+    })
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+      const trimmed = url.trim();
+      const isSafe = /^https?:\/\//i.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('#');
+      const href = isSafe ? trimmed : '#';
+      return `<a href="${href}" target="_blank" rel="noopener" style="color:var(--purple);text-decoration:underline;word-break:break-all;overflow-wrap:anywhere;">${label}</a>`;
+    })
     .replace(/^[-*]\s(.+)$/gm, '<li style="margin:4px 0;word-break:break-word;">$1</li>')
     .replace(/^>\s(.+)$/gm, '<blockquote style="border-left:4px solid var(--yellow);padding:8px 14px;margin:12px 0;background:rgba(0,0,0,0.04);border-radius:0 6px 6px 0;word-break:break-word;"><em>$1</em></blockquote>')
     .replace(/\n\n/g, '</p><p style="margin:10px 0;line-height:1.75;word-break:break-word;">')
@@ -3862,9 +3878,9 @@ async function _renderArticleViewer(item) {
   content.innerHTML =
     '<div style="background:var(--bg-card);border:2.5px solid var(--black);border-radius:14px;padding:32px;box-shadow:4px 4px 0 var(--black);overflow:hidden;word-break:break-word;overflow-wrap:anywhere;">' +
       (coverUrl ? '<img src="' + coverUrl + '" alt="" style="width:100%;max-height:360px;object-fit:cover;border-radius:10px;border:2px solid var(--black);margin-bottom:24px;" />' : '') +
-      '<h1 style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:900;margin:0 0 16px 0;line-height:1.35;color:var(--text);text-align:center;word-break:break-word;overflow-wrap:anywhere;">' + item.title + '</h1>' +
+      '<h1 style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:900;margin:0 0 16px 0;line-height:1.35;color:var(--text);text-align:center;word-break:break-word;overflow-wrap:anywhere;">' + window.escHtml(item.title) + '</h1>' +
       '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:2.5px dashed rgba(0,0,0,0.12);flex-wrap:wrap;">' +
-        '<span style="font-size:13px;font-weight:800;color:var(--text-muted);">&#128100; ' + authorName + '</span>' +
+        '<span style="font-size:13px;font-weight:800;color:var(--text-muted);">&#128100; ' + window.escHtml(authorName) + '</span>' +
         (dateStr ? '<span style="font-size:13px;font-weight:800;color:var(--text-muted);">&#128197; ' + dateStr + '</span>' : '') +
         '<span style="font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px;background:var(--yellow);color:var(--black);">' + (item.sourceLabel || (item.source ? item.source.toUpperCase() : 'ARTICLE')) + '</span>' +
       '</div>' +

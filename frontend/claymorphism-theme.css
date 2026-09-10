@@ -1224,3 +1224,77 @@
   box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
               inset -2px -2px 5px rgba(0,0,0,0.12) !important;
 }
+
+/* ── Apply Grace Day Button & Graced Badge (Claymorphism Theme) ── */
+[data-theme="claymorphism"] .btn-apply-grace,
+[data-theme="claymorphism"] button.btn-apply-grace {
+  background: #fef08a !important; /* Soft warm golden amber pill */
+  color: #713f12 !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 0 11px !important;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.4px !important;
+  text-transform: uppercase !important;
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.75),
+              inset -2px -2px 4px rgba(113, 63, 18, 0.18),
+              0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  height: 24px !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .btn-apply-grace:hover,
+[data-theme="claymorphism"] button.btn-apply-grace:hover {
+  background: #fef9c3 !important;
+  color: #59310e !important;
+  transform: translateY(-1.5px) scale(1.02) !important;
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.85),
+              inset -2px -2px 4px rgba(113, 63, 18, 0.22),
+              0 5px 12px rgba(0, 0, 0, 0.16) !important;
+}
+
+[data-theme="claymorphism"] .btn-apply-grace:active,
+[data-theme="claymorphism"] button.btn-apply-grace:active {
+  transform: translateY(1px) scale(0.98) !important;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.22) !important;
+}
+
+[data-theme="claymorphism"] .btn-apply-grace i,
+[data-theme="claymorphism"] .btn-apply-grace svg {
+  width: 12px !important;
+  height: 12px !important;
+  color: #854d0e !important;
+  stroke: #854d0e !important;
+  stroke-width: 2.5px !important;
+  flex-shrink: 0 !important;
+}
+
+[data-theme="claymorphism"] .badge-graced {
+  background: #dcfce7 !important;
+  color: #14532d !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+              inset -2px -2px 4px rgba(20, 83, 45, 0.15) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 24px !important;
+  box-sizing: border-box !important;
+}
+

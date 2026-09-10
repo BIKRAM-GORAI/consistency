@@ -394,10 +394,16 @@ const updateDay = async (req, res) => {
       return res.json({ ...updated.toObject(), streak: newStreak });
     }
 
-    // Standard update with categories
+    // Standard update with safe whitelisted fields (prevents mass-assignment of graceApplied, userId, etc.)
+    const allowedUpdates = {};
+    if (updateData.categories !== undefined) allowedUpdates.categories = updateData.categories;
+    if (updateData.summary !== undefined) allowedUpdates.summary = updateData.summary;
+    if (updateData.aiSummary !== undefined) allowedUpdates.aiSummary = updateData.aiSummary;
+    if (updateData.reminder !== undefined) allowedUpdates.reminder = updateData.reminder;
+
     const updated = await Day.findOneAndUpdate(
       { _id: req.params.id, userId },
-      { $set: updateData },
+      { $set: allowedUpdates },
       { new: true, runValidators: true }
     );
     if (!updated) return res.status(404).json({ message: 'Day not found or unauthorized' });

@@ -253,10 +253,38 @@ app.get('/api/motivation/quotes', motivationController.getPublicQuotes);
 app.use('/api/integrations',  integrationRoutes);
 app.use('/api/devhub',        require('./routes/devHubRoutes'));
 
-// ── Generic server-side HTTP proxy helper ─────────────────────────────────
-function serverProxy(targetUrl, res, extraHeaders = {}) {
-  const parsedUrl = new URL(targetUrl);
-  const lib = parsedUrl.protocol === 'https:' ? https : http;
+// ── Generic server-side HTTP proxy helper with SSRF Protection ─────────────
+const ALLOWED_PROXY_DOMAINS = ['dev.to', 'medium.com'];
+
+function isSafeProxyHost(hostname) {
+  if (!hostname) return false;
+  const h = hostname.toLowerCase();
+  // Block loopback, metadata services, and internal RFC-1918 addresses
+  if (['localhost', '127.0.0.1', '169.254.169.254', '0.0.0.0', '[::1]'].includes(h)) return false;
+  if (/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(h)) return false;
+  return ALLOWED_PROXY_DOMAINS.some(domain => h === domain || h.endsWith('.' + domain));
+}
+
+function serverProxy(targetUrl, res, extraHeaders = {}, redirectCount = 0) {
+  if (redirectCount > 3) {
+    return res.status(502).json({ error: 'Too many redirects' });
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(targetUrl);
+  } catch (err) {
+    return res.status(400).json({ error: 'Invalid proxy target URL' });
+  }
+
+  if (parsedUrl.protocol !== 'https:') {
+    return res.status(400).json({ error: 'Only HTTPS proxy targets are permitted' });
+  }
+
+  if (!isSafeProxyHost(parsedUrl.hostname)) {
+    return res.status(403).json({ error: 'Proxy destination host is not permitted' });
+  }
+
   const options = {
     hostname: parsedUrl.hostname,
     path: parsedUrl.pathname + parsedUrl.search,
@@ -266,9 +294,14 @@ function serverProxy(targetUrl, res, extraHeaders = {}) {
       ...extraHeaders
     }
   };
-  const req = lib.get(options, (proxyRes) => {
+  const req = https.get(options, (proxyRes) => {
     if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
-      return serverProxy(proxyRes.headers.location, res, extraHeaders);
+      try {
+        const resolvedRedirect = new URL(proxyRes.headers.location, targetUrl).toString();
+        return serverProxy(resolvedRedirect, res, extraHeaders, redirectCount + 1);
+      } catch (e) {
+        return res.status(502).json({ error: 'Invalid redirect location' });
+      }
     }
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-store');
@@ -287,10 +320,17 @@ function serverProxy(targetUrl, res, extraHeaders = {}) {
 app.get('/api/proxy/medium-rss', (req, res) => {
   let targetUrl;
   if (req.query.username) {
-    const clean = req.query.username.replace(/^@/, '');
+    const clean = String(req.query.username).replace(/^@/, '').trim();
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(clean)) {
+      return res.status(400).json({ error: 'Invalid Medium username format' });
+    }
     targetUrl = `https://medium.com/feed/@${clean}`;
   } else if (req.query.tag) {
-    targetUrl = `https://medium.com/feed/tag/${encodeURIComponent(req.query.tag)}`;
+    const cleanTag = String(req.query.tag).trim();
+    if (!/^[a-zA-Z0-9_\-\. ]+$/.test(cleanTag)) {
+      return res.status(400).json({ error: 'Invalid Medium tag format' });
+    }
+    targetUrl = `https://medium.com/feed/tag/${encodeURIComponent(cleanTag)}`;
   } else {
     return res.status(400).json({ error: 'Provide username or tag query param' });
   }
@@ -300,7 +340,12 @@ app.get('/api/proxy/medium-rss', (req, res) => {
 // Dev.to API Proxy — avoids browser CSP/cache issues
 // ?endpoint=/api/articles&username=bikram_gorai&per_page=12
 app.get('/api/proxy/devto', (req, res) => {
-  const endpoint = req.query.endpoint || '/api/articles';
+  const endpoint = String(req.query.endpoint || '/api/articles').trim();
+  const endpointPattern = /^\/api\/[a-zA-Z0-9_\-]+(\/[a-zA-Z0-9_\-]+)*$/;
+  if (!endpointPattern.test(endpoint) || endpoint.includes('@') || endpoint.includes(':')) {
+    return res.status(400).json({ error: 'Invalid Dev.to API endpoint path' });
+  }
+
   const qs = Object.entries(req.query)
     .filter(([k]) => k !== 'endpoint')
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)

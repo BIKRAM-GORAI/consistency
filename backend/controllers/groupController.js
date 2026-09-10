@@ -4,6 +4,7 @@ const Day   = require('../models/Day');
 const { cloudinary } = require('../config/cloudinary');
 const { sendEmail } = require('../utils/email');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const axios = require('axios');
 const admin = require('../config/firebase');
 
@@ -147,9 +148,13 @@ const moderateGroup = async (req, res) => {
       });
     }
 
-    // If safe, warning or unknown, generate creationToken
+    // If safe, warning or unknown, generate single-use creationToken with jti
+    const tokenId = crypto.randomBytes(16).toString('hex');
+    user.pendingGroupCreationTokenId = tokenId;
+    await user.save();
+
     const creationToken = jwt.sign(
-      { userId, name, isPublic: !!isPublic, description: description || '', icon, safetyStatus },
+      { userId, name, isPublic: !!isPublic, description: description || '', icon, safetyStatus, jti: tokenId },
       jwtSecret,
       { expiresIn: '15m' }
     );
@@ -328,6 +333,10 @@ const createGroup = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized session ownership.' });
     }
 
+    if (!decoded.jti) {
+      return res.status(400).json({ message: 'Invalid or outdated group creation session. Please analyze again.' });
+    }
+
     const { name, isPublic, description, icon, safetyStatus } = decoded;
 
     // Check ownership limits
@@ -344,6 +353,15 @@ const createGroup = async (req, res) => {
       if (privateCount >= privateLimit) {
         return res.status(403).json({ message: `You have reached the limit of ${privateLimit} private teams.` });
       }
+    }
+
+    // Atomically consume the creation token to prevent replay attacks
+    const userDoc = await User.findOneAndUpdate(
+      { _id: userId, pendingGroupCreationTokenId: decoded.jti },
+      { $unset: { pendingGroupCreationTokenId: 1 } }
+    );
+    if (!userDoc) {
+      return res.status(400).json({ message: 'This creation session has already been used or expired. Please analyze again.' });
     }
 
     let iconUrl = '';
