@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy - Consistency Tracker</title>
+  <title>Privacy Policy - Consistency Daily</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
@@ -16,6 +16,7 @@
       --text-muted: #9ca3af;
       --yellow: #FFD60A;
       --purple: #a855f7;
+      --green: #22c55e;
       --border: 3px solid #111;
     }
 
@@ -29,19 +30,19 @@
       font-family: 'Space Grotesk', sans-serif;
       background-color: var(--bg);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.65;
       padding: 40px 20px;
       display: flex;
       justify-content: center;
     }
 
     .container {
-      max-width: 720px;
+      max-width: 760px;
       width: 100%;
       background: var(--bg-card);
       border: var(--border);
       border-radius: 20px;
-      padding: 40px;
+      padding: 44px;
       box-shadow: 8px 8px 0 var(--black);
     }
 
@@ -102,18 +103,19 @@
     h2 {
       font-family: 'Space Grotesk', sans-serif;
       font-weight: 900;
-      font-size: 20px;
+      font-size: 19px;
       text-transform: uppercase;
       color: var(--purple);
-      margin: 35px 0 15px;
+      margin: 35px 0 14px;
       border-left: 5px solid var(--yellow);
       padding-left: 12px;
+      letter-spacing: 0.02em;
     }
 
     p, li {
       font-size: 15px;
       color: var(--text);
-      margin-bottom: 15px;
+      margin-bottom: 14px;
     }
 
     ul {
@@ -128,18 +130,25 @@
     }
 
     li::before {
-      content: "🛡️";
+      content: "✦";
       position: absolute;
       left: 0;
-      top: 1px;
+      top: 0px;
+      color: var(--yellow);
+      font-size: 13px;
     }
 
     .alert {
       background: rgba(168, 85, 247, 0.08);
       border: 2px solid var(--purple);
-      border-radius: 12px;
-      padding: 18px;
+      border-radius: 14px;
+      padding: 20px;
       margin: 25px 0;
+    }
+
+    .alert-green {
+      background: rgba(34, 197, 94, 0.08);
+      border: 2px solid var(--green);
     }
 
     .alert-title {
@@ -148,12 +157,29 @@
       color: var(--purple);
       font-size: 14px;
       margin-bottom: 8px;
+      letter-spacing: 0.03em;
+    }
+
+    .alert-green .alert-title {
+      color: var(--green);
     }
 
     .alert p {
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .alert ul {
       margin-bottom: 0;
-      font-size: 13.5px;
-      line-height: 1.5;
+    }
+
+    .alert li::before {
+      color: var(--purple);
+    }
+
+    .alert-green li::before {
+      color: var(--green);
     }
 
     .footer {
@@ -176,52 +202,94 @@
       h1 {
         font-size: 24px;
       }
+      h2 {
+        font-size: 17px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <a class="back-btn" onclick="window.history.back() || window.close()">⬅ Back</a>
+    <a class="back-btn" onclick="window.history.back() || window.close()">&larr; Back</a>
     
     <div class="header">
       <h1>Privacy Policy</h1>
-      <div class="meta">Last Updated: May 31, 2026</div>
+      <div class="meta">Last Updated: September 13, 2026</div>
     </div>
 
     <h2>1. Introduction</h2>
-    <p>Consistency Daily respects your privacy and is fully committed to protecting the personal data you share with us. This Privacy Policy details precisely how we collect, process, secure, and share your data when you interact with our productivity and habit dashboard.</p>
+    <p>Consistency Daily ("we", "our", or "the Platform") respects your privacy and is fully committed to safeguarding your personal data. This Privacy Policy details the types of information we collect, the specific operational and security purposes for which it is used, how we protect it, and your complete rights over your information.</p>
 
     <h2>2. Data We Collect</h2>
+    <p>To provide an offline-first, synchronized productivity dashboard and to safeguard platform integrity, we collect the following categories of information:</p>
+
     <ul>
-      <li><strong>Profile Information:</strong> Name, username, email address, and profile pictures supplied during sign-up or retrieved via Google OAuth login.</li>
-      <li><strong>Activity Data:</strong> Habit lists, streaks, task summaries, milestones, and achievements recorded on your timeline.</li>
-      <li><strong>Microphone Permission:</strong> Used exclusively to record and capture voice prompts for our **Voice-to-Task** AI converter. We never record in the background or use audio for other purposes.</li>
-      <li><strong>Camera/Photo Permissions:</strong> Used only when you capture or upload photos for profile customization, group icons, or **Photo AI** integrations.</li>
+      <li><strong>Account &amp; Profile Information:</strong> Full name, username, email address, password hash (encrypted with salted bcrypt), and profile avatar provided during account registration or retrieved via Google OAuth login.</li>
+      <li><strong>Productivity &amp; Progress Data:</strong> Habits, checklists, daily tasks, streaks, milestones, LeetCode synchronization statistics, scratchpad notes, points, and achievement badges recorded in your account.</li>
+      <li><strong>Device, IP Address &amp; Network Diagnostics:</strong>
+        <br>When accessing Consistency Daily, our systems log network information including your <strong>IP address</strong>, device type and model, operating system version, browser user-agent, access timestamps, and session identifiers.
+      </li>
+      <li><strong>Microphone Permission (Optional):</strong> Used solely on your active command to transcribe voice prompts into tasks via our Voice-to-Task AI feature. Audio streams are processed ephemerally; we never listen, eavesdrop, or record in the background.</li>
+      <li><strong>Camera/Photo Permission (Optional):</strong> Used strictly when you capture or upload photos for avatar customization, group banners, or image analysis features.</li>
     </ul>
 
-    <div class="alert">
-      <div class="alert-title">🔒 Group Chat & Messaging Privacy Rules</div>
-      <p>Consistency Daily strictly isolates and secures your messaging privacy:</p>
+    <div class="alert alert-green">
+      <div class="alert-title">&#10004; Strict Zero-Marketing &amp; No Data Sale Guarantee</div>
+      <p><strong>We never sell, rent, license, or monetize your personal data or activity.</strong></p>
       <ul>
-        <li><strong>Public Group Restriction:</strong> All chat logs, images, and audio messages sent inside a public group are visible <strong>only to the joined members of that specific public group chat</strong>.</li>
-        <li><strong>Absolute Isolation:</strong> No other person, external viewer, third party, or unjoined user can access, view, or search these messages under any circumstances.</li>
-        <li><strong>Zero Data Mining:</strong> We do not scan, index, analyze, or sell your messaging data. It is kept strictly safe and restricted to your chat window.</li>
+        <li><strong>No Third-Party Advertising:</strong> We do not serve targeted advertisements, behavioral tracking pixels, or third-party marketing SDKs.</li>
+        <li><strong>No Commercial Profiling:</strong> Your IP address, device information, habits, and tasks are NEVER used to build advertising profiles or sold to data brokers.</li>
+        <li><strong>Purely Operational &amp; Security-Driven:</strong> All telemetry and network information is strictly confined to app functionality, technical diagnostics, and security monitoring.</li>
       </ul>
     </div>
 
-    <h2>3. Payment Security & Processing</h2>
-    <p>All subscription billing is handled directly and securely through our payment provider partner, <strong>Razorpay</strong>. Consistency Daily never accesses, sees, or stores your credit cards, banking credentials, or UPI credentials. Razorpay processes payments in 100% compliance with strict PCI-DSS standards.</p>
+    <h2>3. How We Use Your Data &amp; Purpose of Collection</h2>
+    <p>We process collected data exclusively for legitimate operational, security, and service delivery purposes:</p>
 
-    <h2>4. How We Use & Share Information</h2>
-    <p>We never sell your data. We only share information with reliable infrastructure partners required to make the app work:</p>
     <ul>
-      <li><strong>Cloud Providers:</strong> Secure database sync and hosting (Vercel & cloud database clusters).</li>
-      <li><strong>Cloudinary:</strong> Safe storage of profile pictures and uploaded group media.</li>
-      <li><strong>Firebase Services:</strong> Triggering real-time notifications for chat alerts and habit reminders.</li>
+      <li><strong>Core App Functionality:</strong> Syncing your habits, routines, streaks, and squad data across all your connected devices in real time.</li>
+      <li><strong>Account Security, Device Tracking &amp; Abuse Prevention:</strong> We specifically monitor IP addresses and device information to:
+        <ul>
+          <li><strong>Prevent Membership Abuse:</strong> Detect and stop unauthorized multi-accounting, duplicate trial exploitation, coupon fraud, referral abuse, and membership tampering.</li>
+          <li><strong>Device Verification:</strong> Track active devices associated with an account to prevent credential sharing, account hijacking, and unauthorized simultaneous logins.</li>
+          <li><strong>Security &amp; DDoS Shielding:</strong> Enforce rate-limiting, detect brute-force login attempts, block malicious bot traffic, and prevent API credential stuffing.</li>
+        </ul>
+      </li>
+      <li><strong>Service Reliability &amp; Diagnostics:</strong> Diagnosing server bottlenecks, resolving application crashes, and maintaining optimal database performance.</li>
+      <li><strong>Transactional Communications:</strong> Delivering essential notifications such as password reset tokens, security alerts, and optional daily habit reminders configured by you.</li>
     </ul>
 
-    <h2>5. Absolute Deletion Right</h2>
-    <p>We respect your right to be forgotten. Clicking <strong>Delete Account</strong> in your settings will trigger a complete cascade deletion: our database will instantly and permanently wipe your email, username, habit logs, voice logs, and all historical records from our servers with zero delay.</p>
+    <div class="alert">
+      <div class="alert-title">&#128274; Squad &amp; Messaging Privacy Rules</div>
+      <p>Consistency Daily enforces strict boundary isolation for group accountability and messaging:</p>
+      <ul>
+        <li><strong>Isolated Group Boundaries:</strong> Messages, files, and images sent within a squad or group chat are strictly accessible <strong>only to joined members of that specific group</strong>.</li>
+        <li><strong>No External Indexing:</strong> No third party, non-member, or automated scraper can access, search, or view your group messages.</li>
+        <li><strong>Zero Message Mining:</strong> We do not analyze, scan, or train external AI models on your private conversations.</li>
+      </ul>
+    </div>
+
+    <h2>4. Payment Security &amp; Processing</h2>
+    <p>All subscription transactions and billing operations are processed through our payment gateway partner, <strong>Razorpay</strong>. Consistency Daily never accesses, stores, or captures your credit card numbers, CVVs, bank account credentials, or UPI PINs. All payment transactions comply strictly with PCI-DSS Level 1 security standards.</p>
+
+    <h2>5. Infrastructure &amp; Trusted Sub-Processors</h2>
+    <p>We only transmit data to reliable, audited infrastructure sub-processors essential to operating our cloud service:</p>
+    <ul>
+      <li><strong>Vercel &amp; Cloud Database Infrastructure:</strong> Secure API hosting, serverless functions, and encrypted MongoDB Atlas database clusters.</li>
+      <li><strong>Cloudinary:</strong> Encrypted cloud storage for user-uploaded profile pictures and group media.</li>
+      <li><strong>Firebase Services:</strong> Real-time delivery of push notifications, habit reminders, and chat message sync.</li>
+      <li><strong>Groq AI:</strong> Ephemeral inference processing for AI habit coaching queries (user prompts are not retained or used for foundation model training).</li>
+    </ul>
+
+    <h2>6. Data Retention &amp; Absolute Deletion Right (Right to be Forgotten)</h2>
+    <p>You retain full ownership of your data at all times. Clicking <strong>Delete Account</strong> in your application Settings triggers an immediate cascade purge: our database permanently wipes your profile, email, authentication tokens, habits, streaks, notes, and chat logs from our active servers with zero retention delay.</p>
+
+    <h2>7. Contact Us</h2>
+    <p>If you have any questions, concerns, or privacy inquiries regarding this Privacy Policy or how your data is handled, please contact our team directly at:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:bikram77620@gmail.com" style="color: var(--yellow); text-decoration: none; font-weight: 700;">bikram77620@gmail.com</a></li>
+      <li><strong>Developer:</strong> Bikram Gorai (Lead Developer, Consistency Daily)</li>
+    </ul>
 
     <div class="footer">
       &copy; 2026 Consistency Daily. All rights reserved.
