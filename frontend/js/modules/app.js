@@ -1196,7 +1196,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=59');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=60');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover
