@@ -774,6 +774,20 @@
 /* ── Add Category / Add Achievement Buttons (Teal Glass) ── */
 [data-theme="premium-aurora"] .btn-add-cat,
 [data-theme="premium-aurora"] .btn-add-ach,
+[data-theme="premium-aurora"] .btn-how-it-works {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.08) !important;
+  color: var(--text) !important;
+  border-radius: 10px !important;
+}
+
+[data-theme="premium-aurora"] .btn-how-it-works:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.16) !important;
+  transform: translateY(-1.5px) !important;
+}
+
 [data-theme="premium-aurora"] #add-goal-header-btn,
 [data-theme="premium-aurora"] #add-category-btn,
 [data-theme="premium-aurora"] #add-goal-task-btn,

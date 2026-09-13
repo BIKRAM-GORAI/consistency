@@ -502,12 +502,13 @@
         <h1 class="page-title">Long-Term Goals</h1>
         <p class="page-subtitle">Stay focused on what matters most</p>
       </div>
-      <div class="goals-header-actions" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-        <button class="btn-ghost ripple btn-how-it-works" onclick="openModal('modal-goal-how-it-works')" style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11.5px; padding:6px 14px; height:34px; border:2.5px solid var(--black); background:var(--bg-card); color:var(--text); box-shadow:2.5px 2.5px 0 var(--black); border-radius:8px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
-          <span><i data-lucide="help-circle" style="width:14px; height:14px;"></i></span> How it Works
-        </button>
+      <div class="goals-header-actions">
         <button class="btn-primary ripple btn-add-goal-hero" onclick="openAddGoalModal()" id="add-goal-header-btn" style="font-family:'Space Grotesk',sans-serif; font-weight:900; font-size:13px; padding:7px 18px; height:36px; background:var(--yellow) !important; color:var(--black) !important; border:2.5px solid var(--black) !important; box-shadow:3px 3px 0 var(--black) !important; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
           <span><i data-lucide="plus" style="width:15px; height:15px; stroke-width:3;"></i></span> Add Goal
+        </button>
+        <button class="btn-ghost ripple btn-how-it-works" onclick="openModal('modal-goal-how-it-works')" id="btn-goal-how-it-works" style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11.5px; padding:6px 14px; height:36px; border:2.5px solid var(--black); background:var(--bg-card); color:var(--text); box-shadow:2.5px 2.5px 0 var(--black); border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;" title="How Goals Work" aria-label="How Goals Work">
+          <span class="btn-how-text"><i data-lucide="help-circle" style="width:14px; height:14px;"></i> How it Works</span>
+          <span class="btn-how-icon">?</span>
         </button>
       </div>
     </div>
