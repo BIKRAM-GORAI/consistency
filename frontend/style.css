@@ -7832,8 +7832,8 @@ body.is-offline [data-requires-network="true"] {
   align-items: center !important;
   justify-content: space-between !important;
   gap: clamp(8px, 1vw, 16px) !important;
-  padding: 0 clamp(10px, 1.4vw, 22px) !important;
-  min-height: clamp(48px, 4vw, 58px) !important;
+  padding: clamp(4px, 0.4vw, 6px) clamp(10px, 1.4vw, 22px) !important;
+  min-height: clamp(54px, 4.2vw, 62px) !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
@@ -7892,8 +7892,9 @@ body.is-offline [data-requires-network="true"] {
     max-width: 100% !important;
     margin: 0 auto !important;
     gap: clamp(3px, 0.4vw, 7px) !important;
+    padding: 6px 4px !important;
     overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-y: visible !important;
     white-space: nowrap !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
