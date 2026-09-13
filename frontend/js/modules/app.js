@@ -131,21 +131,42 @@ async function submitSaveTemplate() {
   }
 }
 
+function openTemplateHowItWorks() {
+  openModal('modal-template-how-it-works');
+  if (window.lucide) {
+    const m = document.getElementById('modal-template-how-it-works');
+    if (m) lucide.createIcons({ root: m });
+  }
+}
+window.openTemplateHowItWorks = openTemplateHowItWorks;
+
 function openManageTemplatesModal() {
-  closeModal('modal-profile');
+  // Keep modal-profile open in the background so closing templates returns seamlessly to the profile page
   if (typeof window.applyDynamicUiLimits === 'function') {
     window.applyDynamicUiLimits();
   }
   openModal('modal-manage-templates');
   renderTemplatesList();
+  if (window.lucide) {
+    const manageModal = document.getElementById('modal-manage-templates');
+    if (manageModal) lucide.createIcons({ root: manageModal });
+  }
 }
 
 function renderTemplatesList() {
   const container = document.getElementById('templates-list-container');
   container.innerHTML = '';
   
-  if (!window.allTemplates.length) {
-    container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No templates saved yet.</p>';
+  if (!window.allTemplates || !window.allTemplates.length) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:24px 16px; background:var(--bg-muted); border:var(--border-2); border-radius:var(--r-sm); box-shadow:var(--shadow-sm);">
+        <div style="font-size:28px; margin-bottom:8px;">📋</div>
+        <div style="font-weight:800; font-size:14px; color:var(--text); margin-bottom:4px;">No Templates Saved Yet</div>
+        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.5;">
+          Create a daily card, click <strong>Save Template</strong> at the bottom of the card, and name it. You can then import it anytime when adding a new day.
+        </p>
+      </div>
+    `;
     return;
   }
   
@@ -1196,7 +1217,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=60');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=61');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover

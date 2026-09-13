@@ -190,12 +190,30 @@
   font-weight: 900 !important;
 }
 
-[data-theme="premium-aurora"] .nav-streak,
+[data-theme="premium-aurora"] .nav-brand-group {
+  gap: clamp(18px, 1.8vw, 28px) !important;
+}
+
 [data-theme="premium-aurora"] .nav-user-chip {
   background: rgba(255, 255, 255, 0.75) !important;
   border: 1px solid rgba(139, 92, 246, 0.2) !important;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   border-radius: 12px !important;
+}
+
+[data-theme="premium-aurora"] .nav-streak {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 241, 226, 0.95) 48%, rgba(254, 226, 199, 0.9) 100%) !important;
+  border: 1.5px solid rgba(249, 115, 22, 0.35) !important;
+  box-shadow: 0 3px 12px rgba(249, 115, 22, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  border-radius: 12px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+[data-theme="premium-aurora"] .nav-streak:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 237, 216, 0.98) 45%, rgba(254, 219, 185, 0.95) 100%) !important;
+  border-color: rgba(249, 115, 22, 0.5) !important;
+  box-shadow: 0 5px 16px rgba(249, 115, 22, 0.18), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  transform: translateY(-1.5px) !important;
 }
 
 [data-theme="premium-aurora"] .nav-btn {
@@ -754,6 +772,19 @@
 [data-theme="premium-aurora"] #add-goal-task-btn,
 [data-theme="premium-aurora"] #add-new-cat-task-btn,
 [data-theme="premium-aurora"] #add-edit-cat-task-btn,
+[data-theme="premium-aurora"] #btn-template-info {
+  border: 1.5px solid rgba(139, 92, 246, 0.28) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.08) !important;
+  color: var(--text) !important;
+}
+
+[data-theme="premium-aurora"] #btn-template-info:hover {
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.16) !important;
+  transform: translateY(-1.5px) !important;
+}
+
 [data-theme="premium-aurora"] #apply-template-btn {
   background: rgba(13, 148, 136, 0.14) !important;
   border: 1.5px solid rgba(13, 148, 136, 0.38) !important;

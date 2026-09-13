@@ -2436,11 +2436,12 @@
       <div class="modal-body">
         <div class="form-group" style="margin-bottom: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 12px;">
           <label for="import-template-select">Import Template &amp; Options</label>
-          <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
             <select id="import-template-select" class="form-control" style="flex:1;">
               <option value="">-- Select a template to import --</option>
             </select>
             <button class="btn-primary ripple" onclick="applyTemplate()" id="apply-template-btn" style="padding: 10px 16px; white-space: nowrap;">Import</button>
+            <button type="button" class="btn-ghost ripple" onclick="openTemplateHowItWorks()" id="btn-template-info" title="How templates work" aria-label="How templates work">?</button>
           </div>
           <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box;" id="scan-list-btn-container">
             <button class="btn-primary ripple" onclick="triggerTaskImageScan(false)" id="scan-list-btn" style="flex: 9; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 14px; background: var(--pink); border: 2px solid #6b0031; box-shadow: 3px 3px 0 #6b0031; display: flex; box-sizing: border-box; color: #1a0008; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 800;" title="Scan handwritten list from image">
@@ -3778,6 +3779,17 @@
           <span id="template-warning-text">When your premium subscription expires, your oldest 10 templates will be automatically removed (only the latest 5 templates are retained on the free tier).</span>
         </div>
 
+        <!-- How to use templates guide -->
+        <div class="template-instructions-card" style="background: rgba(234, 88, 12, 0.08); border: 1.5px dashed #ea580c; border-radius: var(--r-sm, 8px); padding: 12px 14px; margin-bottom: 14px; box-shadow: 2px 2px 0 var(--black, #000);">
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.5px; color: #c2410c; margin-bottom: 6px;">
+            <i data-lucide="help-circle" style="width: 14px; height: 14px; stroke-width: 2.5; color: #c2410c;"></i>
+            How to use templates
+          </div>
+          <p style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-muted, #a1a1aa);">
+            Create your daily cards on the home page. At the bottom of each card, click <strong>"Save Template"</strong> and name it. You can use it afterwards anytime&mdash;just select it from <strong>"Import Template"</strong> when adding a new day to load your tasks instantly!
+          </p>
+        </div>
+
         <div id="templates-list-container">
           <div class="loading-spinner" id="loading-templates">
             <div class="spinner-ring"></div>
@@ -3791,12 +3803,60 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: How Templates Work ===== -->
+  <div class="modal-overlay" id="modal-template-how-it-works" onclick="closeModalOnOverlay(event, 'modal-template-how-it-works')">
+    <div class="modal" style="max-width: 520px; border-radius: 16px; border: 3px solid var(--black); box-shadow: 6px 6px 0 var(--black); overflow: hidden; padding: 0;">
+      <div class="modal-header" style="background: var(--bg-card); color: var(--text); padding: 16px 20px; border-bottom: 2px solid var(--border-color, rgba(0,0,0,0.12)); display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 17px; text-transform: uppercase; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="help-circle" style="width: 20px; height: 20px; color: #ea580c;"></i> How Templates Work
+        </h2>
+        <button class="modal-close" onclick="closeModal('modal-template-how-it-works')" style="background: var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text); font-weight: 900;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px 22px; background: var(--bg-card); color: var(--text); max-height: 75vh; overflow-y: auto;">
+        
+        <!-- Step 1 -->
+        <div style="margin-bottom: 14px; padding: 14px; background: rgba(234, 88, 12, 0.08); border-left: 4px solid #ea580c; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <span>1️⃣</span> Create &amp; Save Daily Cards
+          </h3>
+          <p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-muted);">
+            Create your daily cards on the home page. At the bottom of each card, click <strong>"Save Template"</strong> and give it a name (e.g. <em>Workout Routine</em>, <em>Study Plan</em>).
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div style="margin-bottom: 14px; padding: 14px; background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <span>2️⃣</span> Import Instantly Anytime
+          </h3>
+          <p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-muted);">
+            When creating a new day, select your saved template from the <strong>"-- Select a template to import --"</strong> dropdown and click <strong>"Import"</strong>. All your categories and tasks load instantly!
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div style="margin-bottom: 4px; padding: 14px; background: rgba(59, 130, 246, 0.08); border-left: 4px solid #3b82f6; border-radius: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+            <span>3️⃣</span> Manage &amp; Edit from Profile
+          </h3>
+          <p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-muted);">
+            Go to your <strong>Profile &rarr; Manage Daily Templates</strong> to view, edit, or delete any of your saved templates whenever you want.
+          </p>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1.5px solid var(--border-color, rgba(0,0,0,0.1)); background: var(--bg-card); display: flex; justify-content: flex-end;">
+        <button class="btn-primary ripple" onclick="closeModal('modal-template-how-it-works')" style="padding: 8px 22px; font-weight: 800; margin: 0;">Got It!</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: Edit Template ===== -->
   <div class="modal-overlay" id="modal-edit-template" onclick="closeModalOnOverlay(event, 'modal-edit-template')">
     <div class="modal">
       <div class="modal-header">
         <h2><i data-lucide="edit-3"></i> Edit Template</h2>
-        <button class="modal-close" onclick="closeModal('modal-edit-template')">✕</button>
+        <button class="modal-close" onclick="closeModal('modal-edit-template'); openManageTemplatesModal();">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -3812,7 +3872,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-template')">Cancel</button>
+        <button class="btn-ghost ripple" onclick="closeModal('modal-edit-template'); openManageTemplatesModal();">Cancel</button>
         <button class="btn-primary ripple" onclick="submitEditTemplate()" id="submit-edit-template-btn">Save Changes</button>
       </div>
     </div>
