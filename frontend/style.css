@@ -8843,7 +8843,7 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
-  padding: 8px 12px !important;
+  padding: 10px 24px !important;
   border-radius: 9px !important;
   background: #ffffff !important;
   border: 1.5px solid var(--black) !important;
@@ -8988,7 +8988,7 @@ body:has(#modal-profile.open) #central-voice-btn-container,
     height: 60px;
   }
   .achievement-item {
-    padding: 8px 10px !important;
+    padding: 9px 16px !important;
     gap: 8px !important;
   }
   .achievement-item-title {
