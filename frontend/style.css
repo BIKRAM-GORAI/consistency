@@ -8742,8 +8742,8 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   border: 2px solid var(--black);
   border-radius: 14px;
   box-shadow: 2px 2px 0 var(--black);
-  padding: 12px 14px 14px 14px;
-  margin: 12px 0 10px 0;
+  padding: 12px 14px 18px 14px;
+  margin: 12px 0 12px 0;
   box-sizing: border-box;
 }
 
