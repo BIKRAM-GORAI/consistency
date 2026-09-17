@@ -91,6 +91,31 @@
       box-shadow: 4px 4px 0 var(--yellow);
     }
 
+    #togglePassword,
+    #toggleOtp {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      width: 24px;
+      height: 24px;
+      z-index: 2;
+    }
+
+    #togglePassword svg,
+    #toggleOtp svg {
+      width: 20px;
+      height: 20px;
+    }
+
     .btn-login {
       width: 100%;
       padding: 16px;
@@ -104,6 +129,18 @@
       cursor: pointer;
       transition: all 0.1s;
       margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-login svg,
+    .btn-login i {
+      display: inline-flex;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
     }
 
     .btn-login:hover {
@@ -114,7 +151,10 @@
     }
 
     .back-home {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       text-align: center;
       font-weight: 800;
       text-decoration: none;
@@ -124,6 +164,14 @@
       border-bottom: 2px solid var(--black);
       width: fit-content;
       margin: 0 auto;
+    }
+
+    .back-home svg,
+    .back-home i {
+      display: inline-flex;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
     }
 
     .back-home:hover {
@@ -162,7 +210,7 @@
           <label for="password">Password</label>
           <div style="position: relative;">
             <input type="password" id="password" required placeholder="••••••••" style="padding-right: 45px;">
-            <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 20px; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <button type="button" id="togglePassword" title="Toggle Password visibility" aria-label="Toggle Password visibility">
               <i data-lucide="eye"></i>
             </button>
           </div>
@@ -173,10 +221,15 @@
       <div id="otp-step" style="display: none;">
         <div class="form-group">
           <label for="otp">Verification Code</label>
-          <input type="text" id="otp" placeholder="6-Character Code" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 900;">
+          <div style="position: relative;">
+            <input type="password" id="otp" placeholder="••••••" maxlength="6" autocomplete="one-time-code" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 900; padding-right: 45px; padding-left: 45px;">
+            <button type="button" id="toggleOtp" title="Toggle OTP visibility" aria-label="Toggle OTP visibility">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
           <p style="font-size: 11px; margin-top: 8px; font-weight: 700; color: #666; text-transform: uppercase;">Check your registered email</p>
         </div>
-        <button type="submit" class="btn-login">Verify &amp; Login <i data-lucide="shield-check"></i></button>
+        <button type="submit" id="btn-verify-otp" class="btn-login">Verify &amp; Login <i data-lucide="shield-check"></i></button>
         <button type="button" onclick="resetLogin()" style="background: none; border: none; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 12px; width: 100%; margin-bottom: 20px;">← Back to Credentials</button>
       </div>
 
@@ -188,13 +241,15 @@
   <script>
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
-    const emailInput = document.getElementById('email');
+    const toggleOtp = document.getElementById('toggleOtp');
     const otpInput = document.getElementById('otp');
+    const emailInput = document.getElementById('email');
     const errorEl = document.getElementById('error-msg');
     
     const credentialsStep = document.getElementById('credentials-step');
     const otpStep = document.getElementById('otp-step');
     const btnRequestOtp = document.getElementById('btn-request-otp');
+    const btnVerifyOtp = document.getElementById('btn-verify-otp');
 
     togglePassword.addEventListener('click', function () {
       const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -202,6 +257,15 @@
       this.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
       lucide.createIcons({ root: this });
     });
+
+    if (toggleOtp) {
+      toggleOtp.addEventListener('click', function () {
+        const type = otpInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        otpInput.setAttribute('type', type);
+        this.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
+        lucide.createIcons({ root: this });
+      });
+    }
 
     // Initial icons
     lucide.createIcons();
@@ -215,10 +279,17 @@
       credentialsStep.style.display = 'block';
       otpStep.style.display = 'none';
       errorEl.style.display = 'none';
+      otpInput.value = '';
+      otpInput.setAttribute('type', 'password');
+      if (toggleOtp) {
+        toggleOtp.innerHTML = '<i data-lucide="eye"></i>';
+        lucide.createIcons({ root: toggleOtp });
+      }
+      passwordInput.focus();
     }
 
-    btnRequestOtp.addEventListener('click', async () => {
-      const email = emailInput.value;
+    async function handleRequestOtp() {
+      const email = emailInput.value.trim();
       const password = passwordInput.value;
       
       if (!email || !password) {
@@ -226,7 +297,8 @@
       }
 
       btnRequestOtp.disabled = true;
-      btnRequestOtp.textContent = 'Sending...';
+      btnRequestOtp.innerHTML = 'Sending... <i data-lucide="mail"></i>';
+      lucide.createIcons({ root: btnRequestOtp });
       errorEl.style.display = 'none';
 
       try {
@@ -240,6 +312,13 @@
         if (res.ok) {
           credentialsStep.style.display = 'none';
           otpStep.style.display = 'block';
+          otpInput.value = '';
+          otpInput.setAttribute('type', 'password');
+          if (toggleOtp) {
+            toggleOtp.innerHTML = '<i data-lucide="eye"></i>';
+            lucide.createIcons({ root: toggleOtp });
+          }
+          setTimeout(() => otpInput.focus(), 100);
         } else {
           showError(data.message || 'Verification failed');
         }
@@ -247,18 +326,23 @@
         showError('Network error. Please try again.');
       } finally {
         btnRequestOtp.disabled = false;
-        btnRequestOtp.textContent = 'Send OTP';
+        btnRequestOtp.innerHTML = 'Send OTP <i data-lucide="mail"></i>';
         lucide.createIcons({ root: btnRequestOtp });
       }
-    });
+    }
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = emailInput.value;
+    async function handleVerifyOtp() {
+      const email = emailInput.value.trim();
       const password = passwordInput.value;
-      const otp = otpInput.value;
+      const otp = otpInput.value.trim();
 
       if (!otp) return showError('Please enter the verification code.');
+
+      if (btnVerifyOtp) {
+        btnVerifyOtp.disabled = true;
+        btnVerifyOtp.innerHTML = 'Verifying... <i data-lucide="shield-check"></i>';
+        lucide.createIcons({ root: btnVerifyOtp });
+      }
 
       try {
         const res = await fetch('/api/admin/login', {
@@ -275,9 +359,34 @@
           window.location.replace('admin-dashboard.html');
         } else {
           showError(data.message || 'Login failed');
+          if (btnVerifyOtp) {
+            btnVerifyOtp.disabled = false;
+            btnVerifyOtp.innerHTML = 'Verify &amp; Login <i data-lucide="shield-check"></i>';
+            lucide.createIcons({ root: btnVerifyOtp });
+          }
         }
       } catch (err) {
         showError('Network error. Please try again.');
+        if (btnVerifyOtp) {
+          btnVerifyOtp.disabled = false;
+          btnVerifyOtp.innerHTML = 'Verify &amp; Login <i data-lucide="shield-check"></i>';
+          lucide.createIcons({ root: btnVerifyOtp });
+        }
+      }
+    }
+
+    btnRequestOtp.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleRequestOtp();
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // If credentials step is currently active, Enter should trigger OTP request
+      if (otpStep.style.display === 'none') {
+        await handleRequestOtp();
+      } else {
+        await handleVerifyOtp();
       }
     });
 
