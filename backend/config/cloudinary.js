@@ -97,26 +97,15 @@ function getAchievementCredentials() {
   };
 }
 
-const achievementStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    const creds = getAchievementCredentials();
-    return {
-      folder: process.env.ACHIEVEMENT_CLOUDINARY_FOLDER || 'consistency_app_achievements',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-      cloud_name: creds.cloud_name,
-      api_key: creds.api_key,
-      api_secret: creds.api_secret,
-      transformation: [
-        { quality: 'auto', fetch_format: 'auto' }
-      ]
-    };
-  }
-});
+// Achievement photos: use memoryStorage so we can call cloudinary.uploader.upload_stream
+// with explicit achievement credentials in the controller.
+// Cloudinary v1 is a module-level singleton — calling .config() again would overwrite
+// the main instance used by profile/group/chat uploads, so we avoid that entirely.
+const achievementMemStorage = multer.memoryStorage();
 
 // Strictly enforce 1.5MB file size limit on the server for achievement photos
-const uploadAchievementPhoto = multer({ 
-  storage: achievementStorage, 
+const uploadAchievementPhoto = multer({
+  storage: achievementMemStorage,
   limits: { fileSize: Math.floor(1.5 * 1024 * 1024) }, // 1.5MB max per image
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
@@ -161,6 +150,34 @@ const deleteFromAchievementCloudinary = async (publicIdOrUrl) => {
   }
 };
 
+/**
+ * Upload a Buffer to Cloudinary using the achievement credentials.
+ * Returns the Cloudinary upload result (includes .secure_url and .public_id).
+ */
+const uploadToAchievementCloudinary = (buffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const creds = getAchievementCredentials();
+    const folder = process.env.ACHIEVEMENT_CLOUDINARY_FOLDER || 'consistency_app_achievements';
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'image',
+        quality: 'auto',
+        fetch_format: 'auto',
+        cloud_name: creds.cloud_name,
+        api_key: creds.api_key,
+        api_secret: creds.api_secret,
+        ...options
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
+
 module.exports = { 
   cloudinary, 
   uploadProfile, 
@@ -168,6 +185,7 @@ module.exports = {
   uploadBadge, 
   uploadChat, 
   uploadAchievementPhoto, 
+  uploadToAchievementCloudinary,
   deleteFromCloudinary,
   deleteFromAchievementCloudinary,
   getAchievementCredentials

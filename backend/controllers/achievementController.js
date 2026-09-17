@@ -284,24 +284,19 @@ const getPhotoQuota = async (req, res) => {
  * Upload up to 3 compressed photos for today's card
  */
 const createPhotoAchievement = async (req, res) => {
-  const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+  const { deleteFromAchievementCloudinary, uploadToAchievementCloudinary } = require('../config/cloudinary');
+  const uploadedPublicIds = []; // track for cleanup on error
   try {
     const userId = req.user.userId;
     const { dayId, date, title, description } = req.body;
     const todayStr = getEffectiveToday(req);
 
     if (!dayId || !date) {
-      if (req.files && req.files.length) {
-        for (const f of req.files) await deleteFromAchievementCloudinary(f.filename || f.path);
-      }
       return res.status(400).json({ message: 'dayId and date are required' });
     }
 
     // Strictly enforce present day only
     if (date !== todayStr) {
-      if (req.files && req.files.length) {
-        for (const f of req.files) await deleteFromAchievementCloudinary(f.filename || f.path);
-      }
       return res.status(400).json({ message: 'Photo achievements can only be logged for today\'s card.' });
     }
 
@@ -321,26 +316,31 @@ const createPhotoAchievement = async (req, res) => {
     const currentUsed = todayAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
 
     if (currentUsed + files.length > limit) {
-      for (const f of files) await deleteFromAchievementCloudinary(f.filename || f.path);
       return res.status(400).json({
         message: `Daily limit reached. You can only upload ${Math.max(0, limit - currentUsed)} more photo(s) today.`,
         remaining: Math.max(0, limit - currentUsed)
       });
     }
 
-    // Map photo details with high-efficiency thumbnail URLs
-    const photos = files.map(f => {
-      const rawUrl = f.path;
+    // Upload each buffer to Cloudinary with achievement credentials
+    const photos = [];
+    for (const f of files) {
+      const result = await uploadToAchievementCloudinary(f.buffer, {
+        resource_type: 'image',
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+      });
+      uploadedPublicIds.push(result.public_id);
+      const rawUrl = result.secure_url;
       const thumbUrl = rawUrl.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
       const fullUrl = rawUrl.replace('/upload/', '/upload/c_limit,w_1600,q_auto,f_auto/');
-      return {
+      photos.push({
         url: fullUrl,
         thumbnailUrl: thumbUrl,
-        publicId: f.filename,
+        publicId: result.public_id,
         caption: (description && description.trim()) || '',
         uploadedAt: new Date()
-      };
-    });
+      });
+    }
 
     // If a photo achievement already exists for this day, append photos to it
     let existingAch = await Achievement.findOne({ userId, dayId, date: todayStr, type: 'photo' });
@@ -368,10 +368,13 @@ const createPhotoAchievement = async (req, res) => {
     const saved = await achievement.save();
     res.status(201).json(sanitizeAchievement(saved));
   } catch (err) {
-    if (req.files && req.files.length) {
-      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
-      for (const f of req.files) await deleteFromAchievementCloudinary(f.filename || f.path);
+    // Clean up any Cloudinary photos that were already uploaded before the error
+    if (uploadedPublicIds.length) {
+      for (const pid of uploadedPublicIds) {
+        await deleteFromAchievementCloudinary(pid).catch(() => {});
+      }
     }
+    console.error('[createPhotoAchievement] Error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
