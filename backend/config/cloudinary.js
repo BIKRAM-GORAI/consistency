@@ -83,4 +83,79 @@ const deleteFromCloudinary = async (url) => {
   }
 };
 
-module.exports = { cloudinary, uploadProfile, uploadGroup, uploadBadge, uploadChat, deleteFromCloudinary };
+function getAchievementCredentials() {
+  const achName = process.env.ACHIEVEMENT_CLOUDINARY_CLOUD_NAME;
+  const achKey = process.env.ACHIEVEMENT_CLOUDINARY_API_KEY;
+  const achSecret = process.env.ACHIEVEMENT_CLOUDINARY_API_SECRET;
+  if (achName && achKey && achSecret) {
+    return { cloud_name: achName.trim(), api_key: achKey.trim(), api_secret: achSecret.trim() };
+  }
+  return {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  };
+}
+
+const achievementStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const creds = getAchievementCredentials();
+    return {
+      folder: process.env.ACHIEVEMENT_CLOUDINARY_FOLDER || 'consistency_app_achievements',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+      cloud_name: creds.cloud_name,
+      api_key: creds.api_key,
+      api_secret: creds.api_secret,
+      transformation: [
+        { quality: 'auto', fetch_format: 'auto' }
+      ]
+    };
+  }
+});
+
+// Strictly enforce 1.5MB file size limit on the server for achievement photos
+const uploadAchievementPhoto = multer({ 
+  storage: achievementStorage, 
+  limits: { fileSize: Math.floor(1.5 * 1024 * 1024) }, // 1.5MB max per image
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files (JPG, PNG, WebP) are allowed.'), false);
+    }
+    cb(null, true);
+  }
+});
+
+const deleteFromAchievementCloudinary = async (publicIdOrUrl) => {
+  if (!publicIdOrUrl) return;
+  try {
+    const creds = getAchievementCredentials();
+    let publicId = publicIdOrUrl;
+    if (publicIdOrUrl.includes('cloudinary.com')) {
+      const parts = publicIdOrUrl.split('/');
+      const folderPart = parts[parts.length - 2];
+      const fileName = parts[parts.length - 1].split('.')[0];
+      publicId = `${folderPart}/${fileName}`;
+    }
+    await cloudinary.uploader.destroy(publicId, {
+      cloud_name: creds.cloud_name,
+      api_key: creds.api_key,
+      api_secret: creds.api_secret,
+      resource_type: 'image'
+    });
+  } catch (err) {
+    console.error('Achievement Cloudinary delete error:', err);
+  }
+};
+
+module.exports = { 
+  cloudinary, 
+  uploadProfile, 
+  uploadGroup, 
+  uploadBadge, 
+  uploadChat, 
+  uploadAchievementPhoto, 
+  deleteFromCloudinary,
+  deleteFromAchievementCloudinary,
+  getAchievementCredentials
+};

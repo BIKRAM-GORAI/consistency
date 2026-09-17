@@ -106,7 +106,7 @@ const getAchievementsByDay = async (req, res) => {
     }
 
     if (!canView) {
-      return res.status(403).json({ message: 'Access denied.' });
+      return res.json([]);
     }
 
     const results = docs.map(d => sanitizeAchievement(d));
@@ -197,7 +197,7 @@ const updateAchievement = async (req, res) => {
   try {
     // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
-    const { title, description, links } = req.body;
+    const { title, description, links, caption, photoId } = req.body;
 
     const achievement = await Achievement.findById(req.params.id);
     if (!achievement) return res.status(404).json({ message: 'Achievement not found' });
@@ -207,10 +207,30 @@ const updateAchievement = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You can only update your own achievements.' });
     }
 
-    const normLinks = normalizeLinks(links);
+    const normLinks = links !== undefined ? normalizeLinks(links) : achievement.links;
+    const finalTitle = (title !== undefined && title.trim()) ? title.trim().slice(0, 30) : achievement.title;
+    const finalDesc = description !== undefined ? description : (caption !== undefined ? caption : achievement.description);
+
+    let updatedPhotos = achievement.photos || [];
+    if (caption !== undefined) {
+      if (photoId) {
+        updatedPhotos = updatedPhotos.map(p => {
+          const obj = p.toObject ? p.toObject() : { ...p };
+          if (String(obj._id) === String(photoId)) {
+            obj.caption = caption;
+          }
+          return obj;
+        });
+      } else if (updatedPhotos.length > 0) {
+        const first = updatedPhotos[0].toObject ? updatedPhotos[0].toObject() : { ...updatedPhotos[0] };
+        first.caption = caption;
+        updatedPhotos[0] = first;
+      }
+    }
+
     const updated = await Achievement.findByIdAndUpdate(
       req.params.id,
-      { $set: { title, description: description || '', links: normLinks } },
+      { $set: { title: finalTitle, description: finalDesc, links: normLinks, photos: updatedPhotos } },
       { new: true, runValidators: true }
     );
     res.json(sanitizeAchievement(updated));
@@ -219,26 +239,214 @@ const updateAchievement = async (req, res) => {
   }
 };
 
+function getEffectiveToday(req) {
+  const clientDate = req.headers['x-client-date'];
+  if (clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
+    return clientDate;
+  }
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * GET /api/achievements/photo-quota
+ * Returns remaining daily photo upload quota for today
+ */
+const getPhotoQuota = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const todayStr = getEffectiveToday(req);
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('subscriptionTier subscriptionExpiresAt');
+    const isPremium = user?.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+
+    const limit = isPremium
+      ? (parseInt(process.env.PREMIUM_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3)
+      : (parseInt(process.env.FREE_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3);
+
+    const todayAchievements = await Achievement.find({ userId, date: todayStr, type: 'photo' });
+    const used = todayAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
+    const remaining = Math.max(0, limit - used);
+
+    res.json({
+      used,
+      limit,
+      remaining,
+      todayDate: todayStr
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * POST /api/achievements/photo
+ * Upload up to 3 compressed photos for today's card
+ */
+const createPhotoAchievement = async (req, res) => {
+  const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+  try {
+    const userId = req.user.userId;
+    const { dayId, date, title, description } = req.body;
+    const todayStr = getEffectiveToday(req);
+
+    if (!dayId || !date) {
+      if (req.files && req.files.length) {
+        for (const f of req.files) await deleteFromAchievementCloudinary(f.filename || f.path);
+      }
+      return res.status(400).json({ message: 'dayId and date are required' });
+    }
+
+    // Strictly enforce present day only
+    if (date !== todayStr) {
+      if (req.files && req.files.length) {
+        for (const f of req.files) await deleteFromAchievementCloudinary(f.filename || f.path);
+      }
+      return res.status(400).json({ message: 'Photo achievements can only be logged for today\'s card.' });
+    }
+
+    const files = req.files || [];
+    if (!files.length) {
+      return res.status(400).json({ message: 'At least one photo is required.' });
+    }
+
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('subscriptionTier subscriptionExpiresAt');
+    const isPremium = user?.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+    const limit = isPremium
+      ? (parseInt(process.env.PREMIUM_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3)
+      : (parseInt(process.env.FREE_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3);
+
+    const todayAchievements = await Achievement.find({ userId, date: todayStr, type: 'photo' });
+    const currentUsed = todayAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
+
+    if (currentUsed + files.length > limit) {
+      for (const f of files) await deleteFromAchievementCloudinary(f.filename || f.path);
+      return res.status(400).json({
+        message: `Daily limit reached. You can only upload ${Math.max(0, limit - currentUsed)} more photo(s) today.`,
+        remaining: Math.max(0, limit - currentUsed)
+      });
+    }
+
+    // Map photo details with high-efficiency thumbnail URLs
+    const photos = files.map(f => {
+      const rawUrl = f.path;
+      const thumbUrl = rawUrl.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
+      const fullUrl = rawUrl.replace('/upload/', '/upload/c_limit,w_1600,q_auto,f_auto/');
+      return {
+        url: fullUrl,
+        thumbnailUrl: thumbUrl,
+        publicId: f.filename,
+        caption: (description && description.trim()) || '',
+        uploadedAt: new Date()
+      };
+    });
+
+    // If a photo achievement already exists for this day, append photos to it
+    let existingAch = await Achievement.findOne({ userId, dayId, date: todayStr, type: 'photo' });
+    if (existingAch) {
+      existingAch.photos.push(...photos);
+      if (description && description.trim()) {
+        existingAch.description = existingAch.description
+          ? `${existingAch.description}\n${description.trim()}`
+          : description.trim();
+      }
+      const saved = await existingAch.save();
+      return res.status(200).json(sanitizeAchievement(saved));
+    }
+
+    const achievement = new Achievement({
+      userId,
+      dayId,
+      date,
+      title: (title && title.trim()) ? title.trim() : '',
+      description: (description && description.trim()) || '',
+      type: 'photo',
+      photos
+    });
+
+    const saved = await achievement.save();
+    res.status(201).json(sanitizeAchievement(saved));
+  } catch (err) {
+    if (req.files && req.files.length) {
+      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+      for (const f of req.files) await deleteFromAchievementCloudinary(f.filename || f.path);
+    }
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 /**
  * DELETE /api/achievements/:id
- * Delete an achievement
- * Only the owner of the achievement can delete it
+ * Delete an achievement and clean up Cloudinary photos
  */
 const deleteAchievement = async (req, res) => {
   try {
-    // Get userId from authenticated user (from JWT token)
     const userId = req.user.userId;
+    const mongoose = require('mongoose');
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(200).json({ message: 'Achievement deleted', deletedPhotosCount: 0 });
+    }
 
     const achievement = await Achievement.findById(req.params.id);
     if (!achievement) return res.status(404).json({ message: 'Achievement not found' });
 
-    // Verify ownership - only the owner can delete their own achievements
     if (achievement.userId.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'Access denied. You can only delete your own achievements.' });
     }
 
+    const deletedPhotosCount = achievement.photos ? achievement.photos.length : 0;
+    if (achievement.photos && achievement.photos.length > 0) {
+      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+      for (const p of achievement.photos) {
+        if (p.publicId) {
+          await deleteFromAchievementCloudinary(p.publicId);
+        }
+      }
+    }
+
     await Achievement.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Achievement deleted' });
+    res.json({ message: 'Achievement deleted', deletedPhotosCount });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/**
+ * DELETE /api/achievements/:id/photos/:photoId
+ * Delete a single photo from an achievement, freeing quota
+ */
+const deletePhotoFromAchievement = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { id, photoId } = req.params;
+
+    const achievement = await Achievement.findById(id);
+    if (!achievement) return res.status(404).json({ message: 'Achievement not found' });
+
+    if (achievement.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+
+    const photoIndex = (achievement.photos || []).findIndex(p => p._id.toString() === photoId);
+    if (photoIndex === -1) return res.status(404).json({ message: 'Photo not found in achievement' });
+
+    const photoToDelete = achievement.photos[photoIndex];
+    if (photoToDelete.publicId) {
+      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+      await deleteFromAchievementCloudinary(photoToDelete.publicId);
+    }
+
+    achievement.photos.splice(photoIndex, 1);
+
+    if (achievement.photos.length === 0 && achievement.type === 'photo') {
+      await Achievement.findByIdAndDelete(id);
+      return res.json({ message: 'Photo deleted and empty achievement removed', deletedAchievementId: id });
+    }
+
+    await achievement.save();
+    res.json(sanitizeAchievement(achievement));
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -257,7 +465,6 @@ const getAchievementsByDaysBatch = async (req, res) => {
 
     const requesterId = req.user.userId;
 
-    // Get achievements for these days belonging to the requester
     const docs = await Achievement.find({ dayId: { $in: dayIds }, userId: requesterId }).sort({ createdAt: 1 });
     if (!docs.length) return res.json([]);
 
@@ -273,7 +480,10 @@ module.exports = {
   getAchievementsByDay,
   getAchievementsByDaysBatch,
   getAchievementsByUser,
+  getPhotoQuota,
   createAchievement,
+  createPhotoAchievement,
   updateAchievement,
   deleteAchievement,
+  deletePhotoFromAchievement,
 };

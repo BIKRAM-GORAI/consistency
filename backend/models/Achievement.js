@@ -22,8 +22,11 @@ const AchievementSchema = new mongoose.Schema(
     },
     title: {
       type: String,
-      required: true,
       trim: true,
+      default: '',
+      required: function() {
+        return this.type !== 'photo';
+      },
     },
     description: {
       type: String,
@@ -41,6 +44,34 @@ const AchievementSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    type: {
+      type: String,
+      enum: ['text', 'photo'],
+      default: 'text',
+    },
+    photos: [{
+      url: {
+        type: String,
+        required: true,
+      },
+      thumbnailUrl: {
+        type: String,
+        default: '',
+      },
+      publicId: {
+        type: String,
+        required: true,
+      },
+      caption: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      uploadedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
   },
   { timestamps: true }
 );

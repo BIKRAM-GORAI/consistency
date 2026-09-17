@@ -1460,17 +1460,21 @@ async function loadMemberDays() {
       (async () => {
         try {
           const achs = await apiFetch(`${window.API}/api/achievements/day/${day._id}`);
-          if (!achs.length) return;
+          if (!achs || !achs.length) return;
           const dayCard = bodyEl.querySelector(`[data-day-id="${day._id}"]`);
           if (!dayCard) return;
-          let achHtml = `<div class="achievements-section" style="margin-top:10px;"><div class="achievements-section-header"><span class="achievements-section-label"><i data-lucide="trophy"></i> Wins</span></div>`;
-          for (const a of achs) {
-            const linksHTML = buildLinksHTML(a.links || []);
-            const descHTML  = a.description ? `<p class="ach-desc">${escHtml(a.description)}</p>` : '';
-            achHtml += `<div class="achievement-item"><span class="achievement-item-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</span>${descHTML}<div class="ach-links-row">${linksHTML}</div></div>`;
+          if (typeof window.renderDayAchievements === 'function') {
+            window.renderDayAchievements(day._id, achs, dayCard, false);
+          } else {
+            let achHtml = `<div class="achievements-section" style="margin-top:10px;"><div class="achievements-section-header"><span class="achievements-section-label"><i data-lucide="trophy"></i> Wins</span></div>`;
+            for (const a of achs) {
+              const linksHTML = buildLinksHTML(a.links || []);
+              const descHTML  = a.description ? `<p class="ach-desc">${escHtml(a.description)}</p>` : '';
+              achHtml += `<div class="achievement-item"><span class="achievement-item-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</span>${descHTML}<div class="ach-links-row">${linksHTML}</div></div>`;
+            }
+            achHtml += '</div>';
+            dayCard.insertAdjacentHTML('beforeend', achHtml);
           }
-          achHtml += '</div>';
-          dayCard.insertAdjacentHTML('beforeend', achHtml);
         } catch (_) {}
       })();
     }
@@ -1510,23 +1514,47 @@ async function openMemberAllAchievements() {
       }
       achs = await resp.json();
     } catch (_) {}
-    if (!achs.length) {
+    if (!achs || !achs.length) {
       bodyEl.innerHTML = `<div class="empty-state" style="padding:40px 0"><span class="empty-icon"><i data-lucide="trophy"></i></span><h3>No achievements yet</h3><p>${escHtml(window._currentMemberName)} hasn't logged any wins yet.</p></div>`;
       return;
     }
     let html = '<div class="member-days-list">';
     for (const a of achs) {
       const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
-      const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';
+      const cleanDesc = (a.description && !/photo(\s*proof)?/i.test(a.description.trim())) ? a.description : '';
+      const descHTML  = cleanDesc ? `<p class="ach-page-desc">${escHtml(cleanDesc)}</p>` : '';
+      const hasPhotos = a.photos && a.photos.length > 0;
+      const isGenericPhotoTitle = !a.title || /photo(\s*proof)?/i.test(a.title.trim());
+      const showTitle = !hasPhotos || !isGenericPhotoTitle;
+
+      let photosHTML = '';
+      if (hasPhotos) {
+        photosHTML = `
+          <div class="ach-page-photos-strip" style="display: flex; gap: 10px; margin: 8px 0 4px 0; flex-wrap: wrap;">
+            ${a.photos.map(p => {
+              const safeThumb = (typeof window.getSafeThumbUrl === 'function')
+                ? window.getSafeThumbUrl(p.thumbnailUrl, p.url)
+                : (p.thumbnailUrl || p.url || '').replace(/\/upload\/c_fill,w_\d+,h_\d+[^/]*\//, '/upload/c_limit,w_800,q_auto,f_auto/');
+              const cleanCaption = (p.caption && !/photo(\s*proof)?/i.test(p.caption.trim())) ? p.caption : '';
+              return `
+              <div class="ach-card-photo-thumb" onclick="window.openPhotoLightbox('${escHtml(p.url)}', '${escHtml(safeThumb)}', '${escHtml(cleanCaption)}', '${escHtml(a.date)}', '${a._id}', '${p._id}', false)" title="Click to view full photo" style="position: relative; width: 116px; height: 72px; border-radius: 8px; border: 1.5px solid var(--black); overflow: hidden; cursor: pointer; background: #ffffff; box-shadow: 2px 2px 0 var(--black); flex-shrink: 0; transition: transform 0.15s ease;">
+                <img src="${escHtml(safeThumb)}" alt="Photo" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: cover; background: #ffffff; display: block;" />
+                <span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.65); color: #fff; font-size: 8px; font-weight: 900; padding: 1px 3px; border-radius: 3px; line-height: 1;">🔍</span>
+              </div>
+            `;}).join('')}
+          </div>
+        `;
+      }
       html += `
         <div class="achievement-page-card">
           <div class="ach-page-top">
             <div>
               <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
-              <h3 class="ach-page-title">🎖️ ${escHtml(a.title)}</h3>
+              ${showTitle ? `<h3 class="ach-page-title"><i data-lucide="${a.type === 'photo' ? 'camera' : 'medal'}"></i> ${escHtml(a.title)}</h3>` : ''}
             </div>
           </div>
           ${descHTML}
+          ${photosHTML}
           <div class="ach-links-row">${linksHTML}</div>
         </div>`;
     }

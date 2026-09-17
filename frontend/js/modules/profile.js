@@ -1265,7 +1265,7 @@ async function openQuickView(username) {
           if (days && days.length > 0) {
             days.forEach(d => combined.push({ type: 'day', date: d.date, data: d }));
           }
-          if ((u.achievementsPublic !== false || isMe) && u.achievements && u.achievements.length > 0) {
+          if (u.achievementsPublic !== false && u.achievements && u.achievements.length > 0) {
             u.achievements.forEach(a => combined.push({ type: 'achievement', date: a.date, data: a }));
           }
           
@@ -1531,19 +1531,52 @@ function buildReadOnlyAchievementCard(ach) {
   
   const isGoalAch = ach.title && ach.title.startsWith('Goal Achieved:');
   const badgeHTML = isGoalAch
-    ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid #10b981; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="target" style="width:11px; height:11px;"></i> Goal Accomplished</span>`
-    : `<span style="background:rgba(236,72,153,0.15); color:#ec4899; border:1px solid #ec4899; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="award" style="width:11px; height:11px;"></i> Achievement of the Day</span>`;
+    ? `<span class="ach-badge ach-badge-goal"><i data-lucide="target" style="width:12px; height:12px;"></i> Goal Accomplished</span>`
+    : `<span class="ach-badge ach-badge-daily"><i data-lucide="award" style="width:12px; height:12px;"></i> Achievement of the Day</span>`;
+
+  const hasPhotos = ach.photos && ach.photos.length > 0;
+  const isGenericPhotoTitle = !ach.title || /photo(\s*proof)?/i.test(ach.title.trim());
+  const showTitle = !hasPhotos || !isGenericPhotoTitle;
+
+  const titleHTML = showTitle ? `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 4px; margin-bottom: 2px;">
+      <h4 style="margin:0; font-size:14.5px; font-weight:800; display:flex; align-items:center; gap:6px; line-height:1.3;"><i data-lucide="${isGoalAch ? 'target' : (ach.type === 'photo' ? 'camera' : 'trophy')}" style="width:15px; height:15px;"></i> ${window.escHtml(ach.title)}</h4>
+    </div>
+  ` : '';
+
+  let photosHTML = '';
+  if (hasPhotos) {
+    photosHTML = `
+      <div class="ach-page-photos-strip" style="display: flex; gap: 10px; margin: 8px 0 4px 0; flex-wrap: wrap;">
+        ${ach.photos.map(p => {
+          const safeThumb = (typeof window.getSafeThumbUrl === 'function')
+            ? window.getSafeThumbUrl(p.thumbnailUrl, p.url)
+            : (p.thumbnailUrl || p.url || '').replace(/\/upload\/c_fill,w_\d+,h_\d+[^/]*\//, '/upload/c_limit,w_800,q_auto,f_auto/');
+          const cleanCaption = (p.caption && !/photo(\s*proof)?/i.test(p.caption.trim())) ? p.caption : '';
+          return `
+          <div class="ach-card-photo-thumb" onclick="window.openPhotoLightbox('${window.escHtml(p.url)}', '${window.escHtml(safeThumb)}', '${window.escHtml(cleanCaption)}', '${window.escHtml(ach.date)}', '${ach._id}', '${p._id}', false)" title="Click to view full photo" style="position: relative; width: 116px; height: 72px; border-radius: 8px; border: 1.5px solid var(--black); overflow: hidden; cursor: pointer; background: #ffffff; box-shadow: 2px 2px 0 var(--black); flex-shrink: 0; transition: transform 0.15s ease;">
+            <img src="${window.escHtml(safeThumb)}" alt="Photo" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: cover; background: #ffffff; display: block;" />
+            <span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.65); color: #fff; font-size: 8px; font-weight: 900; padding: 1px 3px; border-radius: 3px; line-height: 1;">🔍</span>
+          </div>
+        `;}).join('')}
+      </div>
+    `;
+  }
+  const cleanDesc = (ach.description && !/photo(\s*proof)?/i.test(ach.description.trim())) ? ach.description : '';
+  const descHTML = cleanDesc ? `<p style="margin:4px 0 0 0; font-size:12.5px; color:var(--text-muted); line-height:1.4;">${window.escHtml(cleanDesc)}</p>` : '';
+  const linksHTML = (typeof window.buildLinksHTML === 'function') ? window.buildLinksHTML(ach.links || [], 'ach-page-link') : '';
 
   card.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
       ${badgeHTML}
       <span style="font-size:11px; font-weight:700; color:var(--text-muted);">${new Date(ach.date).toLocaleDateString()}</span>
     </div>
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h4 style="margin:0; font-size:15px; font-weight:800;"><i data-lucide="${isGoalAch ? 'target' : 'trophy'}"></i> ${window.escHtml(ach.title)}</h4>
-    </div>
-    ${ach.description ? `<p style="margin:6px 0 0 0; font-size:13px; color:var(--text-muted); line-height:1.4;">${window.escHtml(ach.description)}</p>` : ''}
+    ${titleHTML}
+    ${descHTML}
+    ${photosHTML}
+    ${linksHTML ? `<div class="ach-links-row" style="margin-top:8px;">${linksHTML}</div>` : ''}
   `;
+  if (window.lucide) lucide.createIcons({ root: card });
   return card;
 }
 

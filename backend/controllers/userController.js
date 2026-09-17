@@ -104,7 +104,7 @@ async function getPublicProfile(req, res) {
     }
 
     const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    const canViewAchievements = isOwner || user.achievementsPublic !== false || (code && showPrivateDetails);
+    const canViewAchievements = user.achievementsPublic !== false || (code && showPrivateDetails);
 
     // Map contribution data (anonymized dates & completion counts for the activity graph)
     const contributionData = [];
@@ -128,7 +128,17 @@ async function getPublicProfile(req, res) {
     // Fetch Achievements only if permitted by user's achievementsPublic privacy setting or owner
     let achievements = [];
     if (canViewAchievements) {
-      achievements = await Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10);
+      const rawAchs = await Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10);
+      achievements = rawAchs.map(a => {
+        const obj = a.toObject ? a.toObject() : { ...a };
+        if (obj.photos && obj.photos.length > 0) {
+          obj.photos = obj.photos.map(p => ({
+            ...p,
+            thumbnailUrl: (p.thumbnailUrl || p.url || '').replace(/\/upload\/c_fill,w_\d+,h_\d+[^/]*\//, '/upload/c_limit,w_800,q_auto,f_auto/')
+          }));
+        }
+        return obj;
+      });
     }
 
     const groupCount = await Group.countDocuments({ members: user._id });
@@ -181,7 +191,7 @@ async function getPublicProfileDays(req, res) {
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
 
     const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    const canViewAchievements = isOwner || user.achievementsPublic !== false || validShare;
+    const canViewAchievements = user.achievementsPublic !== false || validShare;
 
     const page = parseInt(req.query.page) || 1;
     const limit = 7;
@@ -231,8 +241,7 @@ async function getPublicProfileAchievements(req, res) {
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
 
-    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    if (user.achievementsPublic === false && !isOwner && !validShare) {
+    if (user.achievementsPublic === false && !validShare) {
       return res.status(403).json({ message: 'Achievements are private', achievementsPublic: false });
     }
 

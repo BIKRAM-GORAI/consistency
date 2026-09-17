@@ -1167,13 +1167,20 @@ window.collapseSearchInput = function() {
 };
 
 async function performSearch(query) {
+  if (!query || query.trim().length < 2) {
+    if (searchDropdown) {
+      searchDropdown.innerHTML = '';
+      searchDropdown.style.display = 'none';
+    }
+    return;
+  }
   try {
-    const res = await fetch(`${window.API}/api/users/search?q=${encodeURIComponent(query)}`);
-    const users = await res.json();
+    const res = await fetch(`${window.API}/api/users/search?q=${encodeURIComponent(query.trim())}`);
+    const users = await res.json().catch(() => []);
     
     searchDropdown.innerHTML = '';
     
-    if (!users || users.length === 0) {
+    if (!res.ok || !Array.isArray(users) || users.length === 0) {
       searchDropdown.innerHTML = '<div style="padding:12px; color:var(--text-muted); font-size:14px; text-align:center;">No users found</div>';
     } else {
       users.forEach(u => {
@@ -1232,7 +1239,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       // 1. Register the fresh worker with a version query to force-bypass cache
-      const reg = await navigator.serviceWorker.register('/sw.js?v=64');
+      const reg = await navigator.serviceWorker.register('/sw.js?v=67');
       // console.log('Fresh SW registered (v13):', reg);
       
       // Force immediate takeover

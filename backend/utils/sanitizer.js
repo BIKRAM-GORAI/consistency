@@ -84,19 +84,22 @@ const sanitizeGoal = (goal) => {
 const sanitizeAchievement = (achievement) => {
   if (!achievement) return null;
 
+  const doc = achievement.toObject ? achievement.toObject() : achievement;
+
   const sanitized = {
-    _id: achievement._id,
-    date: achievement.date,
-    title: achievement.title,
-    description: achievement.description,
-    links: achievement.links || [],
-    createdAt: achievement.createdAt,
-    updatedAt: achievement.updatedAt
+    _id: doc._id,
+    dayId: doc.dayId,
+    date: doc.date,
+    title: doc.title,
+    description: doc.description,
+    links: doc.links || [],
+    type: doc.type || 'text',
+    photos: doc.photos || [],
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt
   };
 
-  // Remove internal references
   delete sanitized.userId;
-  delete sanitized.dayId;
   delete sanitized.link; // Legacy field
 
   return sanitized;

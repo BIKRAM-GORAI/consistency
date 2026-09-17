@@ -430,25 +430,38 @@ async function renderDays(appendOnly = false) {
     if (window.localDb) {
       try {
         batchAchievements = await window.localDb.achievements.where('dayId').anyOf(dayIds).toArray();
-      } catch (err) {
-        console.warn('Batch achievements load from local cache failed. Falling back to server.');
-        if (navigator.onLine) {
-          try {
-            batchAchievements = await window.apiFetch(`${window.API}/api/achievements/days-batch`, {
-              method: 'POST',
-              body: JSON.stringify({ dayIds })
-            });
-          } catch (apiErr) {
-            console.warn('Fallback server achievements fetch failed:', apiErr);
-          }
+        if (batchAchievements && batchAchievements.length > 0) {
+          const existingIds = new Set((window.allAchievements || []).map(a => String(a._id)));
+          batchAchievements.forEach(ba => {
+            if (!existingIds.has(String(ba._id))) {
+              window.allAchievements.push(ba);
+            }
+          });
         }
+      } catch (err) {
+        console.warn('Batch achievements load from local cache failed:', err);
       }
-    } else if (navigator.onLine) {
+    }
+
+    // If local cache was empty (e.g. fresh login) or missed cards, fetch immediately from server
+    if ((!batchAchievements || batchAchievements.length === 0) && navigator.onLine) {
       try {
-        batchAchievements = await window.apiFetch(`${window.API}/api/achievements/days-batch`, {
+        const freshAchs = await window.apiFetch(`${window.API}/api/achievements/days-batch`, {
           method: 'POST',
           body: JSON.stringify({ dayIds })
         });
+        if (freshAchs && freshAchs.length > 0) {
+          batchAchievements = freshAchs;
+          const existingIds = new Set((window.allAchievements || []).map(a => String(a._id)));
+          freshAchs.forEach(ba => {
+            if (!existingIds.has(String(ba._id))) {
+              window.allAchievements.push(ba);
+            }
+          });
+          if (window.localDb) {
+            for (const a of freshAchs) await window.localDb.achievements.put(a);
+          }
+        }
       } catch (err) {
         console.warn('Batch achievements load from server failed:', err);
       }
@@ -528,7 +541,7 @@ async function renderDays(appendOnly = false) {
       }
     }
 
-    const dayAchs = (batchAchievements || []).filter(a => a.dayId === day._id);
+    const dayAchs = (batchAchievements || []).filter(a => String(a.dayId) === String(day._id));
     const card = buildDayCard(day, dayAchs);
     // Mark as new for animation if we are appending
     if (appendOnly) {
@@ -873,13 +886,12 @@ function buildDayCard(day, preLoadedAchievements = null) {
     });
   });
 
-  // Load achievements for this card (batch first)
-  if (!String(day._id).startsWith('temp_')) {
-    if (preLoadedAchievements && preLoadedAchievements.length > 0) {
-      renderDayAchievements(day._id, preLoadedAchievements, card);
-    }
-  } else {
-    renderDayAchievements(day._id, window.allAchievements.filter(a => a.dayId === day._id), card);
+  // Load achievements for this card (batch first, fallback to window.allAchievements)
+  const achsForCard = (preLoadedAchievements && preLoadedAchievements.length > 0)
+    ? preLoadedAchievements
+    : (window.allAchievements || []).filter(a => String(a.dayId) === String(day._id));
+  if (achsForCard.length > 0) {
+    renderDayAchievements(day._id, achsForCard, card);
   }
 
   // Initialize Lucide icons after building the card content

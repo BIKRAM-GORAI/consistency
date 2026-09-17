@@ -3168,7 +3168,8 @@ body.keyboard-visible #central-voice-btn-container {
 }
 
 .ach-date-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -3178,28 +3179,92 @@ body.keyboard-visible #central-voice-btn-container {
   border: var(--border-2);
   border-radius: 4px;
   padding: 2px 8px;
-  margin-bottom: 6px;
-  box-shadow: 2px 2px 0 var(--black);
+  margin-bottom: 4px;
+  box-shadow: 1.5px 1.5px 0 var(--black);
+  line-height: 1.2;
+}
+
+.ach-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 4px;
+  border: 1.5px solid var(--black);
+  box-shadow: 1.5px 1.5px 0 var(--black);
+  white-space: nowrap;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.ach-badge-daily {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: var(--black) !important;
+}
+
+.ach-badge-daily i {
+  color: #d97706 !important; /* Golden Trophy/Award icon */
+  width: 12px !important;
+  height: 12px !important;
+}
+
+[data-theme="dark"] .ach-badge-daily,
+.theme-dark .ach-badge-daily {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #ffffff !important;
+  box-shadow: 1.5px 1.5px 0 #ffffff !important;
+}
+
+.ach-badge-goal {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: var(--black) !important;
+}
+
+.ach-badge-goal i {
+  width: 12px !important;
+  height: 12px !important;
 }
 
 .ach-page-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(15px, 3.5vw, 18px);
+  font-size: clamp(15px, 3.5vw, 17.5px);
   font-weight: 800;
   color: var(--text);
+  margin: 4px 0 0 0 !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.3;
+}
+
+.ach-page-title i {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
 }
 
 .ach-page-actions {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .ach-page-desc {
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-muted);
-  line-height: 1.6;
-  margin-bottom: 10px;
+  line-height: 1.45;
+  margin: 6px 0 0 0 !important;
+  padding: 0 !important;
 }
 
 .ach-page-link {
@@ -8548,4 +8613,436 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   transform: translate(-1px, -1px) !important;
 }
 
+/* ── Daily Achievement Photos & Proof Lightbox ── */
+.ach-modal-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: none;
+  padding: 0;
+  margin: 16px 20px 14px 20px;
+}
 
+.ach-tab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  border: 2px solid var(--black) !important;
+  box-shadow: 2px 2px 0 var(--black) !important;
+  background: #ffffff;
+  color: var(--black);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.ach-tab-btn.active {
+  background: var(--yellow) !important;
+  font-weight: 900 !important;
+}
+
+.ach-tab-btn:hover:not(.active) {
+  background: #f8fafc !important;
+  transform: translateY(-1.5px);
+  box-shadow: 3px 3px 0 var(--black) !important;
+}
+
+.ach-tab-btn.active:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 3px 3px 0 var(--black) !important;
+}
+
+.ach-tab-btn:active {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 var(--black) !important;
+}
+
+.ach-card-photos-strip,
+.ach-page-photos-strip {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 4px 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ach-card-photo-thumb {
+  position: relative;
+  width: 116px;
+  height: 72px;
+  border-radius: 8px;
+  border: 1.5px solid var(--black);
+  overflow: hidden;
+  cursor: pointer;
+  background: #ffffff;
+  box-shadow: 2px 2px 0 var(--black);
+  flex-shrink: 0;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+}
+
+[data-theme="dark"] .ach-card-photo-thumb,
+.theme-dark .ach-card-photo-thumb {
+  background: #1e293b;
+}
+
+.ach-page-photos-strip .ach-card-photo-thumb {
+  width: 116px;
+  height: 72px;
+}
+
+.ach-card-photo-thumb:hover {
+  transform: scale(1.05) translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0 var(--black);
+}
+
+.ach-card-photo-thumb:active {
+  transform: scale(0.97) translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--black);
+}
+
+.ach-card-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #ffffff;
+  display: block;
+}
+
+[data-theme="dark"] .ach-card-photo-thumb img,
+.theme-dark .ach-card-photo-thumb img {
+  background: #1e293b;
+}
+
+#modal-photo-lightbox {
+  z-index: 99999 !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(8, 10, 18, 0.78) !important;
+}
+
+#modal-photo-lightbox .modal {
+  animation: achModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes achModalPop {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Day Card Sub-Transparent Achievements Container & Landscape Photos ── */
+.day-achievements-container {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid var(--black);
+  border-radius: 14px;
+  box-shadow: 2px 2px 0 var(--black);
+  padding: 12px 14px 14px 14px;
+  margin: 12px 0 10px 0;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .day-achievements-container,
+.theme-dark .day-achievements-container {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.day-photos-strip {
+  display: grid !important;
+  grid-template-columns: repeat(var(--photo-cols, 6), minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.day-photo-chip {
+  position: relative !important;
+  width: 100% !important;
+  aspect-ratio: 16 / 10 !important;
+  height: auto !important;
+  border-radius: 10px !important;
+  border: 1.5px solid var(--black) !important;
+  overflow: hidden !important;
+  cursor: pointer !important;
+  background: #ffffff !important;
+  box-shadow: 2px 2px 0 var(--black) !important;
+  box-sizing: border-box !important;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease !important;
+}
+
+[data-theme="dark"] .day-photo-chip,
+.theme-dark .day-photo-chip {
+  background: #1e293b !important;
+}
+
+.day-photo-chip:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 3px 3px 0 var(--black) !important;
+}
+
+.day-photo-chip:active {
+  transform: translateY(0) !important;
+  box-shadow: 1px 1px 0 var(--black) !important;
+}
+
+.day-photo-chip img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  background: #ffffff !important;
+  display: block !important;
+}
+
+[data-theme="dark"] .day-photo-chip img,
+.theme-dark .day-photo-chip img {
+  background: #1e293b !important;
+}
+
+/* Glassmorphic blurry bottom title banner for day card photo chip */
+.day-photo-chip-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3px 6px;
+  background: rgba(11, 15, 25, 0.76);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1.5px solid var(--black);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+  letter-spacing: 0.2px;
+}
+
+/* Day achievements list column */
+.day-achievements-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Day card text achievement item styling with clean, symmetrical alignment */
+.achievement-item {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  padding: 8px 12px !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  border: 1.5px solid var(--black) !important;
+  box-shadow: 1.5px 1.5px 0 var(--black) !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 0 !important;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+[data-theme="dark"] .achievement-item,
+.theme-dark .achievement-item {
+  background: #1e293b !important;
+}
+
+.achievement-item-main {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 9px !important;
+}
+
+.ach-icon-badge {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px !important;
+  background: var(--yellow) !important;
+  border: 1.5px solid var(--black) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  box-shadow: 1px 1px 0 var(--black) !important;
+  margin: 0 !important;
+  color: var(--black) !important;
+}
+
+.achievement-item-title {
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: var(--text) !important;
+  line-height: 1.3 !important;
+  word-break: break-word !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.achievement-item-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}
+
+.achievement-item .btn-edit-ach,
+.achievement-item .btn-del-ach {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 5px !important;
+  border: 1.5px solid var(--black) !important;
+  background: #ffffff !important;
+  box-shadow: 1px 1px 0 var(--black) !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  color: var(--text) !important;
+  transition: transform 0.12s ease, background 0.12s ease !important;
+}
+
+[data-theme="dark"] .achievement-item .btn-edit-ach,
+[data-theme="dark"] .achievement-item .btn-del-ach,
+.theme-dark .achievement-item .btn-edit-ach,
+.theme-dark .achievement-item .btn-del-ach {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.achievement-item .btn-del-ach {
+  color: #ef4444 !important;
+}
+
+.achievement-item .btn-edit-ach:hover {
+  transform: translateY(-1px) scale(1.05) !important;
+  background: #f1f5f9 !important;
+}
+
+.achievement-item .btn-del-ach:hover {
+  transform: translateY(-1px) scale(1.05) !important;
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+.ach-desc-wrap {
+  margin-left: 33px !important;
+  margin-top: 3px !important;
+}
+
+.achievement-item .ach-desc {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--text-muted) !important;
+  line-height: 1.35 !important;
+  word-break: break-word !important;
+}
+
+.ach-links-wrap {
+  margin-left: 33px !important;
+  margin-top: 4px !important;
+}
+
+/* Responsive queries: mobile display adjustments */
+@media (max-width: 600px) {
+  /* On mobile, title must NOT be visible on daily card photo chips */
+  .day-photo-chip-title {
+    display: none !important;
+  }
+  /* Exactly 3 photos max per row on mobile, shifting to next row if more */
+  .day-photos-strip {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  .day-photo-chip {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    aspect-ratio: 16 / 10 !important;
+    height: auto !important;
+  }
+  .ach-card-photo-thumb {
+    width: calc((100% - 12px) / 3);
+    max-width: 110px;
+    height: 60px;
+  }
+  .achievement-item {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  .achievement-item-title {
+    font-size: 12.5px !important;
+  }
+}
+
+/* ── 3-Slot Photo Picker in Modal ── */
+.ach-photo-slot {
+  aspect-ratio: 1/1;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 2.5px dashed var(--black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--black);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.ach-photo-slot.empty:hover {
+  background: var(--bg-body);
+  transform: translateY(-2px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+.ach-photo-slot.empty:active {
+  transform: translateY(0);
+  box-shadow: 1px 1px 0 var(--black);
+}
+
+.ach-photo-slot.filled {
+  border-style: solid;
+  cursor: default;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.ach-photo-slot.locked {
+  border-style: solid;
+  background: var(--bg-card);
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.ach-photo-slot.locked:hover {
+  transform: translateY(-2px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+.ach-photo-slot.locked:active {
+  transform: translateY(0);
+  box-shadow: 1px 1px 0 var(--black);
+}

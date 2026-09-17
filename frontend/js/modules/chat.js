@@ -1953,7 +1953,7 @@ async function initPushNotifications(forcePrompt = false) {
         }
 
         // Use the unified service worker to prevent registration conflicts and retain PWA status
-        await navigator.serviceWorker.register('/sw.js?v=64');
+        await navigator.serviceWorker.register('/sw.js?v=67');
         
         // Wait until the service worker is fully active and ready to handle pushes
         const reg = await navigator.serviceWorker.ready;
@@ -3056,6 +3056,17 @@ async function proactiveSync(force = false) {
         if (!window.allAchievements.find(a => a._id === id)) {
           window.allAchievements.push(ach);
         }
+      }
+
+      // Live update day cards in DOM so achievements appear immediately on login
+      if (serverAchs && serverAchs.length > 0 && typeof window.renderDayAchievements === 'function') {
+        (window.allDays || []).forEach(day => {
+          const cardEl = document.getElementById(`day-card-${day._id}`);
+          if (cardEl) {
+            const dayAchs = (window.allAchievements || []).filter(a => String(a.dayId) === String(day._id));
+            window.renderDayAchievements(day._id, dayAchs, cardEl);
+          }
+        });
       }
     }
 

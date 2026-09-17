@@ -3019,33 +3019,126 @@
 
   <!-- ===== MODAL: Add Achievement ===== -->
   <div class="modal-overlay" id="modal-add-achievement" onclick="closeModalOnOverlay(event, 'modal-add-achievement')">
-    <div class="modal">
-      <div class="modal-header">
-        <h2><i data-lucide="trophy"></i> Log Achievement</h2>
-        <button class="modal-close" onclick="closeModal('modal-add-achievement')"><i data-lucide="x"></i></button>
+    <div class="modal" style="max-width: 480px; border-radius: 20px; overflow: hidden; border: 2.5px solid var(--black); box-shadow: 0 12px 36px rgba(0,0,0,0.22);">
+      <div class="modal-header" style="background: var(--yellow); padding: 16px 20px; border-bottom: 2.5px solid var(--black);">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px; color: var(--black); text-transform: uppercase; letter-spacing: 0.3px;">
+          <i data-lucide="trophy"></i> Log Achievement
+        </h2>
+        <button type="button" onclick="closeModal('modal-add-achievement')" style="width: 32px; height: 32px; border-radius: 50%; background: #ffffff; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 0;">
+          <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+        </button>
       </div>
-      <div class="modal-body">
-        <div class="ach-no-progress-label">
+
+      <!-- Segmented Tab Buttons (Both styled as real buttons) -->
+      <div class="ach-modal-tabs" style="display: flex; gap: 10px; margin: 16px 20px 14px 20px;">
+        <button id="ach-tab-btn-text" type="button" class="ach-tab-btn active" onclick="window.switchAchTab('text')" style="flex: 1; padding: 9px 14px; border: 2px solid var(--black); border-radius: 12px; font-weight: 900; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--yellow); color: var(--black); box-shadow: 2px 2px 0 var(--black); transition: all 0.15s ease;">
+          <i data-lucide="link" style="width: 14px; height: 14px;"></i> Links & Text
+        </button>
+        <button id="ach-tab-btn-photo" type="button" class="ach-tab-btn" onclick="window.switchAchTab('photo')" style="flex: 1; padding: 9px 14px; border: 2px solid var(--black); border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ffffff; color: var(--black); box-shadow: 2px 2px 0 var(--black); transition: all 0.15s ease;">
+          <i data-lucide="camera" style="width: 14px; height: 14px;"></i> Photos <span id="ach-tab-quota-pill" class="badge" style="font-size: 10.5px; font-weight: 900; padding: 2px 7px; border-radius: 6px; background: #16a34a; color: #fff;">3 left</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: Link & Text Form -->
+      <div id="ach-pane-text" class="modal-body" style="padding: 0 20px 18px 20px;">
+        <div class="ach-no-progress-label" style="margin-bottom: 14px;">
           <span>ℹ️</span> Achievements do not affect the daily progress bar
         </div>
-        <div class="form-group">
-          <label for="ach-title-input">Achievement Title <span style="color:var(--red)">*</span></label>
-          <input type="text" id="ach-title-input" class="form-control" placeholder="e.g. Finished a course, PR at the gym..." />
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="ach-title-input" style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block;">Achievement Title <span style="color:var(--red)">*</span></label>
+          <input type="text" id="ach-title-input" class="form-control" placeholder="e.g. Finished a course, PR at the gym..." style="font-size: 13.5px; padding: 10px 14px; border-radius: 12px;" />
         </div>
-        <div class="form-group">
-          <label for="ach-desc-input">Description (optional)</label>
-          <textarea id="ach-desc-input" class="form-control" rows="3" placeholder="Add more context about this win..."></textarea>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="ach-desc-input" style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block;">Description (optional)</label>
+          <textarea id="ach-desc-input" class="form-control" rows="3" placeholder="Add more context about this win..." style="font-size: 13.5px; padding: 10px 14px; border-radius: 12px;"></textarea>
         </div>
-        <div class="form-group">
-          <label>Proof / Reference Links (optional)</label>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block;">Proof / Reference Links (optional)</label>
           <div id="ach-links-builder"></div>
-          <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;margin-top:6px;" onclick="addAchLinkField('ach-links-builder')" id="add-ach-link-btn"><i data-lucide="plus" style="width: 12px; height: 12px;"></i> Add Link</button>
-          <p class="form-hint" id="ach-link-warning" style="display:none;color:var(--coral);"><i data-lucide="alert-triangle"></i> One or more links don't look valid — they will still be saved if you confirm.</p>
+          <button class="btn-ghost ripple" style="font-size: 12px; font-weight: 800; padding: 7px 14px; margin-top: 8px; border-radius: 20px; border: 2px solid var(--black); background: var(--bg-card); box-shadow: 1.5px 1.5px 0 var(--black);" onclick="addAchLinkField('ach-links-builder')" id="add-ach-link-btn"><i data-lucide="plus" style="width: 13px; height: 13px;"></i> Add Link</button>
+          <p class="form-hint" id="ach-link-warning" style="display:none;color:var(--coral);margin-top:6px;"><i data-lucide="alert-triangle"></i> One or more links don't look valid — they will still be saved if you confirm.</p>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-ghost ripple" onclick="closeModal('modal-add-achievement')">Cancel</button>
-        <button class="btn-primary ripple" onclick="submitAddAchievement()" id="submit-ach-btn">Save Achievement</button>
+
+      <!-- TAB 2: Photo Proof Form -->
+      <div id="ach-pane-photo" class="modal-body" style="display: none; padding: 0 20px 18px 20px;">
+        <!-- Locked / Past Day Notice -->
+        <div id="ach-photo-past-notice" style="display: none; background: rgba(239, 68, 68, 0.1); border: 2px dashed #ef4444; border-radius: 12px; padding: 14px; text-align: center; margin-bottom: 14px;">
+          <p style="margin: 0; font-size: 13px; font-weight: 800; color: #dc2626;">🔒 Photo proof is locked for past cards</p>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--text-muted);">Photos can only be logged for today's card. You can still log text and link proof in the "Links & Text" tab.</p>
+        </div>
+
+        <!-- Offline Notice -->
+        <div id="ach-photo-offline-notice" style="display: none; background: rgba(245, 158, 11, 0.1); border: 2px dashed #f59e0b; border-radius: 12px; padding: 14px; text-align: center; margin-bottom: 14px;">
+          <p style="margin: 0; font-size: 13px; font-weight: 800; color: #d97706;">⚠️ Internet connection required</p>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--text-muted);">Photo uploads require an active internet connection. You can still save text and links offline.</p>
+        </div>
+
+        <!-- Active Photo Upload UI -->
+        <div id="ach-photo-active-ui" style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label id="ach-select-photos-label" style="font-size: 12px; font-weight: 800; display: block; margin-bottom: 8px; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;">Select Photos:</label>
+            <input type="file" id="ach-photo-file-input" accept="image/jpeg,image/png,image/webp" multiple style="display: none;" onchange="window.handleAchPhotoSelection(event)" />
+            
+            <!-- Dynamic Photo Slots Grid -->
+            <div id="ach-photo-slots-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;"></div>
+            <p id="ach-photo-compression-status" style="display: none; font-size: 11.5px; font-weight: 700; color: #16a34a; margin: 8px 0 0;"></p>
+          </div>
+
+          <input type="hidden" id="ach-photo-desc-input" value="" />
+          <input type="hidden" id="ach-photo-title-input" value="" />
+
+          <!-- Real-Time Upload Progress Banner -->
+          <div id="ach-upload-progress-banner" style="display: none; background: #fef3c7; border: 2px solid var(--black); border-radius: 12px; padding: 10px 14px; box-shadow: 2px 2px 0 var(--black); margin-top: 4px; align-items: center; gap: 10px;">
+            <span class="spinner" style="width: 18px; height: 18px; border: 2.5px solid var(--black); border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; flex-shrink: 0;"></span>
+            <div style="flex: 1; min-width: 0;">
+              <div id="ach-upload-status-text" style="font-size: 12.5px; font-weight: 900; color: var(--black);">Processing photos...</div>
+              <div id="ach-upload-sub-text" style="font-size: 11px; font-weight: 600; color: #78350f; margin-top: 2px;">Optimizing image quality for instant loading</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 14px 20px; border-top: 2.5px solid var(--black); background: var(--bg-body);">
+        <button type="button" class="btn-ghost ripple" onclick="closeModal('modal-add-achievement')" style="padding: 9px 20px; font-weight: 800; font-size: 13px; border-radius: 20px; border: 2px solid var(--black); background: #ffffff; box-shadow: 2px 2px 0 var(--black); cursor: pointer;">Cancel</button>
+        <button type="button" class="btn-primary ripple" onclick="window.submitActiveAchievement()" id="submit-ach-btn" style="padding: 9px 24px; font-weight: 900; font-size: 13px; border-radius: 20px; background: #16a34a; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); color: #ffffff; cursor: pointer;">Save Achievement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Photo Lightbox ===== -->
+  <div class="modal-overlay" id="modal-photo-lightbox" onclick="closeModalOnOverlay(event, 'modal-photo-lightbox')">
+    <div class="modal" style="max-width: 640px; padding: 0; overflow: hidden; background: var(--bg-card); border: 2.5px solid var(--black); border-radius: 20px; box-shadow: 0 12px 36px rgba(0,0,0,0.28);">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 2.5px solid var(--black); background: var(--yellow);">
+        <h3 id="lightbox-title" style="margin: 0; font-size: 15px; font-weight: 900; display: flex; align-items: center; gap: 8px; color: var(--black); text-transform: uppercase; letter-spacing: 0.3px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <i data-lucide="image" style="width: 18px; height: 18px; flex-shrink: 0;"></i> <span id="lightbox-title-text">Photo</span>
+        </h3>
+        <button type="button" onclick="closeModal('modal-photo-lightbox')" style="width: 32px; height: 32px; border-radius: 50%; background: #ffffff; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--black); box-shadow: 2px 2px 0 var(--black); padding: 0; transition: transform 0.15s ease;">
+          <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+        </button>
+      </div>
+
+      <!-- Offline cached warning banner -->
+      <div id="lightbox-offline-banner" style="display: none; background: #fef3c7; border-bottom: 2px solid #f59e0b; padding: 8px 16px; font-size: 12px; font-weight: 800; color: #b45309; display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="info" style="width: 14px; height: 14px;"></i> Original quality image requires an internet connection. Showing cached preview.
+      </div>
+
+      <!-- Clean Black Background Frame -->
+      <div style="position: relative; background: #0b0f19; min-height: 280px; max-height: 65vh; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 12px;">
+        <img id="lightbox-img" src="" alt="Photo" style="max-width: 100%; max-height: 60vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; display: block;" />
+      </div>
+
+      <div style="padding: 16px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--bg-card); border-top: 2.5px solid var(--black);">
+        <div style="flex: 1; min-width: 0;">
+          <div id="lightbox-caption" style="font-size: 14.5px; font-weight: 800; color: var(--text); line-height: 1.35; word-break: break-word; display: none;"></div>
+          <div id="lightbox-date" style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
+          <button id="lightbox-delete-btn" type="button" class="btn-ghost ripple" style="color: #ef4444; border: 2px solid #ef4444; border-radius: 20px; padding: 8px 16px; font-size: 12.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; box-shadow: 2px 2px 0 #ef4444; cursor: pointer; background: #ffffff; transition: all 0.15s ease;" onclick="window.deleteActiveLightboxPhoto()">
+            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete Photo
+          </button>
+          <button type="button" class="btn-primary ripple" style="padding: 8px 24px; font-size: 13px; font-weight: 900; border-radius: 20px; background: #16a34a; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); color: #ffffff; cursor: pointer; letter-spacing: 0.5px;" onclick="closeModal('modal-photo-lightbox')">DONE</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3096,8 +3189,11 @@
           <span>ℹ️</span> Achievements do not affect the daily progress bar
         </div>
         <div class="form-group">
-          <label for="edit-ach-title">Achievement Title <span style="color:var(--red)">*</span></label>
-          <input type="text" id="edit-ach-title" class="form-control" placeholder="e.g. Finished a course, PR at the gym..." />
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="edit-ach-title" style="margin:0;">Achievement Title <span style="color:var(--red)">*</span></label>
+            <span id="edit-ach-title-counter" style="font-size: 11.5px; font-weight: 800; color: var(--text-muted);">0/30</span>
+          </div>
+          <input type="text" id="edit-ach-title" maxlength="30" class="form-control" placeholder="e.g. Finished a course, PR at the gym..." oninput="document.getElementById('edit-ach-title-counter').textContent = `${this.value.length}/30`" />
         </div>
         <div class="form-group">
           <label for="edit-ach-desc">Description (optional)</label>

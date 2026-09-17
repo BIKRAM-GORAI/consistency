@@ -19,6 +19,14 @@ async function loadDayAchievements(dayId, cardEl) {
   }
 }
 
+/** Ensure thumbnail URL preserves the full aspect ratio without cropping sides */
+function getSafeThumbUrl(thumbUrl, fullUrl) {
+  const url = thumbUrl || fullUrl;
+  if (!url) return '';
+  // If Cloudinary URL has c_fill,w_400,h_400 (which crops into square), replace with uncropped c_limit,w_800
+  return url.replace(/\/upload\/c_fill,w_\d+,h_\d+[^/]*\//, '/upload/c_limit,w_800,q_auto,f_auto/');
+}
+
 /** Build HTML for a list of links (used in both inline and page cards) */
 function buildLinksHTML(links, cls = 'ach-link') {
   if (!links || !links.length) return '';
@@ -27,12 +35,20 @@ function buildLinksHTML(links, cls = 'ach-link') {
   ).join('');
 }
 
-function renderDayAchievements(dayId, achievements, cardEl) {
-  // Remove any existing section first
-  const existing = cardEl.querySelector('.achievements-section');
-  if (existing) existing.remove();
+function renderDayAchievements(dayId, achievements, cardEl, isOwner = null) {
+  // Remove any existing sections first
+  const existingSec = cardEl.querySelector('.achievements-section');
+  if (existingSec) existingSec.remove();
+  const existingPhotos = cardEl.querySelector('.day-photos-strip');
+  if (existingPhotos) existingPhotos.remove();
+  const existingBox = cardEl.querySelector('.day-achievements-container');
+  if (existingBox) existingBox.remove();
 
-  if (achievements.length === 0) return;
+  if (!achievements || achievements.length === 0) return;
+
+  const currentUserId = window.userId || localStorage.getItem('userId');
+  const achOwnerId = achievements[0]?.userId;
+  const userIsOwner = isOwner !== null ? isOwner : (!achOwnerId || String(achOwnerId) === String(currentUserId));
 
   // Milestone Day UI transformation if card has 0 tasks
   const dayObj = (window.allDays || []).find(d => String(d._id) === String(dayId));
@@ -57,33 +73,98 @@ function renderDayAchievements(dayId, achievements, cardEl) {
     }
   }
 
-  const section = document.createElement('div');
-  section.className = 'achievements-section';
+  const addRow = cardEl.querySelector('.ach-add-row');
 
-  let html = `<div class="achievements-section-header"><span class="achievements-section-label"><i data-lucide="trophy"></i> Wins Logged</span></div>`;
+  // 1. Separate Photo Proof from Text Achievements
+  const photoAchs = achievements.filter(a => a.type === 'photo' || (a.photos && a.photos.length > 0));
+  const textAchs = achievements.filter(a => a.type !== 'photo' && (!a.photos || a.photos.length === 0));
 
-  for (const a of achievements) {
-    const linksHTML = buildLinksHTML(a.links || []);
-    const descHTML  = a.description ? `<p class="ach-desc">${escHtml(a.description)}</p>` : '';
-    html += `
-      <div class="achievement-item" id="ach-item-${a._id}">
-        <div class="achievement-item-top">
-          <span class="achievement-item-title"><i data-lucide="medal"></i> ${escHtml(a.title)}</span>
-          <div class="achievement-item-actions">
-            <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3"></i></button>
-            <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', '${dayId}')" title="Delete"><i data-lucide="trash-2"></i></button>
-          </div>
+  if (photoAchs.length === 0 && textAchs.length === 0) return;
+
+  // 2. Build Unified Sub-Transparent Container with "Achievements" Heading
+  const container = document.createElement('div');
+  container.className = 'day-achievements-container';
+
+  let html = `
+    <div class="day-achievements-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+      <span style="font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; color: var(--text);">
+        <i data-lucide="trophy" style="width: 13px; height: 13px; color: var(--yellow);"></i> Achievements
+      </span>
+    </div>
+  `;
+
+  // Render Landscape Photos without cropping sides
+  if (photoAchs.length > 0) {
+    const allPhotos = [];
+    photoAchs.forEach(a => {
+      (a.photos || []).forEach(p => {
+        const cleanCaption = (p.caption && !/photo(\s*proof)?/i.test(p.caption.trim())) ? p.caption.trim() : '';
+        const rawTitle = (a.title && a.title !== 'Photos' && !/photo(\s*proof)?/i.test(a.title.trim())) ? a.title.trim() : '';
+        const displayTitle = (rawTitle || cleanCaption || 'Photo').slice(0, 30);
+        allPhotos.push({
+          ...p,
+          achId: a._id,
+          date: a.date,
+          achTitle: a.title,
+          caption: cleanCaption,
+          displayTitle: displayTitle
+        });
+      });
+    });
+    // Sort chronologically so Photo 1 is first, Photo 2 is second
+    allPhotos.sort((a, b) => new Date(a.uploadedAt || 0) - new Date(b.uploadedAt || 0));
+
+    // Calculate columns for laptop screen: up to 8 max per row.
+    // If >= 4 photos (e.g. 6 in current test), divide the card width equally into pCount parts so it fills 100% width evenly.
+    // If > 8 photos, wrap to next row with 8 columns per row.
+    // If < 4 photos, use 6 columns so 1-3 photos have balanced, proportional widths instead of being gigantic.
+    const pCount = allPhotos.length;
+    const desktopCols = pCount > 8 ? 8 : (pCount >= 4 ? pCount : 6);
+
+    html += `<div class="day-photos-strip" style="--photo-cols: ${desktopCols}; margin-bottom: ${textAchs.length > 0 ? '8px' : '0'};">`;
+    allPhotos.forEach(p => {
+      const safeThumb = getSafeThumbUrl(p.thumbnailUrl, p.url);
+      html += `
+        <div class="day-photo-chip" onclick="window.openPhotoLightbox('${escHtml(p.url)}', '${escHtml(safeThumb)}', '', '${escHtml(p.date)}', '${p.achId}', '${p._id}', ${userIsOwner ? 'true' : 'false'})" title="Click to view full photo">
+          <img src="${escHtml(safeThumb)}" alt="Photo" loading="lazy" decoding="async" />
         </div>
-        ${descHTML}
-        <div class="ach-links-row">${linksHTML}</div>
-      </div>`;
+      `;
+    });
+    html += `</div>`;
   }
 
-  section.innerHTML = html;
-  const addRow = cardEl.querySelector('.ach-add-row');
-  if (addRow) cardEl.insertBefore(section, addRow);
-  else cardEl.appendChild(section);
-  if (window.lucide) lucide.createIcons({ root: section });
+  // Render Text Achievements inside the container with clean, symmetrical alignment
+  if (textAchs.length > 0) {
+    html += `<div class="day-achievements-list" style="margin-top: ${photoAchs.length > 0 ? '10px' : '0'};">`;
+    for (const a of textAchs) {
+      const linksHTML = buildLinksHTML(a.links || []);
+      const descHTML  = a.description ? `<div class="ach-desc-wrap"><p class="ach-desc">${escHtml(a.description)}</p></div>` : '';
+      const linksWrap = linksHTML ? `<div class="ach-links-wrap">${linksHTML}</div>` : '';
+      html += `
+        <div class="achievement-item" id="ach-item-${a._id}">
+          <div class="achievement-item-main">
+            <div class="ach-icon-badge">
+              <i data-lucide="medal" style="width: 14px; height: 14px;"></i>
+            </div>
+            <span class="achievement-item-title">${escHtml(a.title)}</span>
+            ${userIsOwner ? `
+              <div class="achievement-item-actions">
+                <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3" style="width: 12px; height: 12px;"></i></button>
+                <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', '${dayId}')" title="Delete"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i></button>
+              </div>
+            ` : ''}
+          </div>
+          ${descHTML}
+          ${linksWrap}
+        </div>`;
+    }
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+  if (addRow) cardEl.insertBefore(container, addRow);
+  else cardEl.appendChild(container);
+  if (window.lucide) lucide.createIcons({ root: container });
 }
 
 // ── Achievements Page ──────────────────────────────────────
@@ -276,28 +357,53 @@ function buildAchievementPageCard(a) {
   card.style.setProperty('--clay-card-text', clayColor.text);
 
   const linksHTML = buildLinksHTML(a.links || [], 'ach-page-link');
-  const descHTML  = a.description ? `<p class="ach-page-desc">${escHtml(a.description)}</p>` : '';
 
   const isGoalAch = a.title && a.title.startsWith('Goal Achieved:');
   const badgeHTML = isGoalAch
-    ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid #10b981; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><i data-lucide="target" style="width:11px; height:11px;"></i> Goal Accomplished</span>`
-    : `<span style="background:rgba(236,72,153,0.15); color:#ec4899; border:1px solid #ec4899; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><i data-lucide="award" style="width:11px; height:11px;"></i> Achievement of the Day</span>`;
+    ? `<span class="ach-badge ach-badge-goal"><i data-lucide="target" style="width:12px; height:12px;"></i> Goal Accomplished</span>`
+    : `<span class="ach-badge ach-badge-daily"><i data-lucide="award" style="width:12px; height:12px;"></i> Achievement of the Day</span>`;
+
+  let photosHTML = '';
+  const hasPhotos = a.photos && a.photos.length > 0;
+  const isGenericPhotoTitle = !a.title || /photo(\s*proof)?/i.test(a.title.trim());
+  const showTitle = !hasPhotos || !isGenericPhotoTitle;
+
+  if (hasPhotos) {
+    photosHTML = `
+      <div class="ach-page-photos-strip" style="display: flex; gap: 10px; margin: 8px 0 4px 0; flex-wrap: wrap;">
+        ${a.photos.map(p => {
+          const safeThumb = getSafeThumbUrl(p.thumbnailUrl, p.url);
+          const cleanCaption = (p.caption && !/photo(\s*proof)?/i.test(p.caption.trim())) ? p.caption : '';
+          const pTitle = (a.title && a.title !== 'Photos' && !/photo(\s*proof)?/i.test(a.title)) ? a.title : (cleanCaption || 'Photo');
+          return `
+          <div class="ach-card-photo-thumb" onclick="window.openPhotoLightbox('${escHtml(p.url)}', '${escHtml(safeThumb)}', '${escHtml(cleanCaption)}', '${escHtml(a.date)}', '${a._id}', '${p._id}', true, '${escHtml(pTitle)}')" title="Click to view full photo" style="position: relative; width: 116px; height: 72px; border-radius: 8px; border: 1.5px solid var(--black); overflow: hidden; cursor: pointer; background: #ffffff; box-shadow: 2px 2px 0 var(--black); flex-shrink: 0; transition: transform 0.15s ease;">
+            <img src="${escHtml(safeThumb)}" alt="Photo" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: cover; background: #ffffff; display: block;" />
+            <span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.65); color: #fff; font-size: 8px; font-weight: 900; padding: 1px 3px; border-radius: 3px; line-height: 1;">🔍</span>
+          </div>
+        `;}).join('')}
+      </div>
+    `;
+  }
+
+  const cleanDesc = (a.description && !/photo(\s*proof)?/i.test(a.description.trim())) ? a.description : '';
+  const descHTML  = cleanDesc ? `<p class="ach-page-desc">${escHtml(cleanDesc)}</p>` : '';
 
   card.innerHTML = `
     <div class="ach-page-top">
-      <div>
-        <div style="display:flex; align-items:center; gap:4px; margin-bottom:4px; flex-wrap:wrap;">
+      <div style="flex: 1; min-width: 0;">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
           <span class="ach-date-badge">${formatDisplayDate(a.date)}</span>
           ${badgeHTML}
         </div>
-        <h3 class="ach-page-title"><i data-lucide="${isGoalAch ? 'target' : 'medal'}"></i> ${escHtml(a.title)}</h3>
+        ${showTitle ? `<h3 class="ach-page-title"><i data-lucide="${isGoalAch ? 'target' : (a.type === 'photo' ? 'camera' : 'medal')}"></i> ${escHtml(a.title)}</h3>` : ''}
       </div>
       <div class="ach-page-actions">
-        <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3"></i></button>
+        ${!hasPhotos ? `<button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3"></i></button>` : ''}
         <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', null)" title="Delete"><i data-lucide="trash-2"></i></button>
       </div>
     </div>
     ${descHTML}
+    ${photosHTML}
     <div class="ach-links-row">${linksHTML}</div>
   `;
   if (window.lucide) lucide.createIcons({ root: card });
@@ -332,20 +438,491 @@ function hasInvalidLinks(builderId) {
   });
 }
 
+// ── Photo Proof & Tab State ────────────────────────────────
+let currentAchModalTab = 'text';
+let selectedAchPhotoFiles = []; // Array of { file: File, previewUrl: string, origSize: number, compSize: number }
+let achPhotoQuota = { used: 0, limit: 3, remaining: 3 };
+let activeLightboxData = null;
+
+/**
+ * Compresses an image file in-browser to guaranteed under 1MB using HTML5 Canvas.
+ * Supports input files up to 10MB while maintaining crisp high resolution.
+ */
+async function compressImageFile(file, maxBytes = 1000000) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      return reject(new Error('Invalid image file'));
+    }
+    // If already under 700KB and JPEG/WebP, preserve as-is
+    if (file.size <= 700000 && (file.type === 'image/jpeg' || file.type === 'image/webp')) {
+      return resolve(file);
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Failed to load image for compression'));
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 1920; // Crisp full-HD boundary
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const tryQuality = (q) => {
+          return new Promise((resBlob) => {
+            canvas.toBlob((blob) => resBlob(blob), 'image/jpeg', q);
+          });
+        };
+
+        (async () => {
+          let quality = 0.84;
+          let blob = await tryQuality(quality);
+
+          if (blob && blob.size > maxBytes) {
+            quality = 0.72;
+            blob = await tryQuality(quality);
+          }
+          if (blob && blob.size > maxBytes) {
+            // Downscale dimensions slightly to safely meet 1MB cap
+            canvas.width = Math.round(width * 0.8);
+            canvas.height = Math.round(height * 0.8);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            quality = 0.68;
+            blob = await tryQuality(quality);
+          }
+
+          if (!blob) return reject(new Error('Image compression failed'));
+          const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(compressedFile);
+        })().catch(reject);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+let _lastQuotaFetchTime = 0;
+const QUOTA_CACHE_TTL_MS = 60000; // 60s cache TTL to prevent redundant network requests on tab switch
+
+async function fetchAchievementPhotoQuota(force = false) {
+  if (!navigator.onLine) return;
+  // If we have cached quota and it was fetched within TTL and force is not true, reuse cache
+  if (!force && achPhotoQuota && (Date.now() - _lastQuotaFetchTime < QUOTA_CACHE_TTL_MS)) {
+    updatePhotoQuotaUI();
+    return;
+  }
+
+  try {
+    const today = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+    const res = await apiFetch(`${window.API}/api/achievements/photo-quota`, {
+      headers: { 'x-client-date': today }
+    });
+    if (res && typeof res.remaining === 'number') {
+      achPhotoQuota = res;
+      _lastQuotaFetchTime = Date.now();
+      updatePhotoQuotaUI();
+    }
+  } catch (err) {
+    console.warn('Failed to fetch achievement photo quota:', err);
+  }
+}
+
+function updatePhotoQuotaUI() {
+  const pillEl = document.getElementById('ach-tab-quota-pill');
+  const textEl = document.getElementById('ach-photo-quota-text');
+  const submitBtn = document.getElementById('submit-ach-btn');
+
+  if (pillEl) {
+    pillEl.textContent = `${achPhotoQuota.remaining} left`;
+    pillEl.style.background = achPhotoQuota.remaining > 0 ? '#16a34a' : '#ef4444';
+  }
+  if (textEl) {
+    textEl.textContent = `${achPhotoQuota.used}/${achPhotoQuota.limit} used (${achPhotoQuota.remaining} remaining today)`;
+    textEl.style.background = achPhotoQuota.remaining > 0 ? '#16a34a' : '#dc2626';
+  }
+  if (submitBtn && currentAchModalTab === 'photo') {
+    submitBtn.disabled = achPhotoQuota.remaining <= 0;
+  }
+  renderAchSelectedPhotosPreview();
+}
+
+function getTodayUploadedPhotosForActiveCard() {
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  const dayId = window.activeDayIdForAchievement;
+  const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
+  const cardDate = day ? (day.date ? day.date.split('T')[0] : currentToday) : currentToday;
+
+  const photoAchs = (window.allAchievements || []).filter(a => {
+    const aDateStr = (a.date || '').split('T')[0];
+    const matchDay = dayId && String(a.dayId) === String(dayId);
+    const matchDate = aDateStr && (aDateStr === cardDate || aDateStr === currentToday);
+    return (matchDay || matchDate) && (a.type === 'photo' || (a.photos && a.photos.length > 0));
+  });
+
+  const photos = [];
+  photoAchs.forEach(a => {
+    (a.photos || []).forEach(p => photos.push({ ...p, achId: a._id, dayId: a.dayId, date: a.date }));
+  });
+  // Sort chronologically so slot 0 is Photo 1, slot 1 is Photo 2!
+  photos.sort((a, b) => new Date(a.uploadedAt || 0) - new Date(b.uploadedAt || 0));
+  return photos;
+}
+
+function switchAchTab(tab) {
+  currentAchModalTab = tab;
+  const btnText = document.getElementById('ach-tab-btn-text');
+  const btnPhoto = document.getElementById('ach-tab-btn-photo');
+  const paneText = document.getElementById('ach-pane-text');
+  const panePhoto = document.getElementById('ach-pane-photo');
+  const submitBtn = document.getElementById('submit-ach-btn');
+
+  if (tab === 'text') {
+    if (btnText) {
+      btnText.style.background = 'var(--yellow)';
+      btnText.style.color = 'var(--black)';
+      btnText.style.border = '2px solid var(--black)';
+      btnText.style.boxShadow = '2px 2px 0 var(--black)';
+      btnText.style.fontWeight = '900';
+      btnText.classList.add('active');
+    }
+    if (btnPhoto) {
+      btnPhoto.style.background = '#ffffff';
+      btnPhoto.style.color = 'var(--black)';
+      btnPhoto.style.border = '2px solid var(--black)';
+      btnPhoto.style.boxShadow = '2px 2px 0 var(--black)';
+      btnPhoto.style.fontWeight = '800';
+      btnPhoto.classList.remove('active');
+    }
+    if (paneText) paneText.style.display = 'block';
+    if (panePhoto) panePhoto.style.display = 'none';
+    if (submitBtn) {
+      submitBtn.textContent = 'Save Achievement';
+      submitBtn.disabled = false;
+    }
+  } else {
+    if (btnText) {
+      btnText.style.background = '#ffffff';
+      btnText.style.color = 'var(--black)';
+      btnText.style.border = '2px solid var(--black)';
+      btnText.style.boxShadow = '2px 2px 0 var(--black)';
+      btnText.style.fontWeight = '800';
+      btnText.classList.remove('active');
+    }
+    if (btnPhoto) {
+      btnPhoto.style.background = 'var(--yellow)';
+      btnPhoto.style.color = 'var(--black)';
+      btnPhoto.style.border = '2px solid var(--black)';
+      btnPhoto.style.boxShadow = '2px 2px 0 var(--black)';
+      btnPhoto.style.fontWeight = '900';
+      btnPhoto.classList.add('active');
+    }
+    if (paneText) paneText.style.display = 'none';
+    if (panePhoto) panePhoto.style.display = 'block';
+    if (submitBtn) {
+      submitBtn.textContent = 'Upload Photos';
+      submitBtn.disabled = achPhotoQuota.remaining <= 0;
+    }
+    fetchAchievementPhotoQuota(false);
+    renderAchSelectedPhotosPreview();
+  }
+  if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-add-achievement') });
+}
+
+async function handleAchPhotoSelection(event) {
+  const input = event.target;
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+
+  const currentLimit = achPhotoQuota.limit || 3;
+  const todayUploaded = getTodayUploadedPhotosForActiveCard();
+  const usedCount = todayUploaded.length;
+  const remainingQuota = Math.max(0, currentLimit - usedCount);
+  const maxAllowed = Math.max(0, remainingQuota - selectedAchPhotoFiles.length);
+
+  if (maxAllowed <= 0) {
+    showToast(`You have reached today's photo limit (${currentLimit} photos).`, 'warn');
+    input.value = '';
+    return;
+  }
+
+  if (files.length > maxAllowed) {
+    showToast(`Only ${maxAllowed} more photo(s) can be added within today's quota.`, 'info');
+  }
+
+  const toProcess = files.slice(0, maxAllowed);
+  const statusEl = document.getElementById('ach-photo-compression-status');
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = '⚡ Compressing photo(s)...';
+  }
+
+  for (const f of toProcess) {
+    if (f.size > 10 * 1024 * 1024) {
+      showToast(`"${f.name}" exceeds 10MB limit. Skipping.`, 'error');
+      continue;
+    }
+    try {
+      const compressed = await compressImageFile(f, 1000000);
+      const previewUrl = URL.createObjectURL(compressed);
+      selectedAchPhotoFiles.push({
+        file: compressed,
+        previewUrl,
+        origSize: f.size,
+        compSize: compressed.size
+      });
+    } catch (err) {
+      console.error('Compression error:', err);
+      showToast(`Failed to compress ${f.name}.`, 'error');
+    }
+  }
+
+  input.value = '';
+  if (statusEl) statusEl.style.display = 'none';
+  renderAchSelectedPhotosPreview();
+}
+
+function triggerPhotoSlotClick(slotIdx) {
+  const currentLimit = achPhotoQuota.limit || 3;
+  const todayUploaded = getTodayUploadedPhotosForActiveCard();
+  const usedCount = todayUploaded.length;
+
+  if (slotIdx < usedCount) {
+    const up = todayUploaded[slotIdx];
+    if (up && (up.thumbnailUrl || up.url)) {
+      window.openPhotoLightbox(up.url, up.thumbnailUrl || up.url, up.caption || '', up.date, up.achId, up._id);
+    } else {
+      showToast(`Photo ${slotIdx + 1} was already uploaded for today.`, 'info');
+    }
+    return;
+  }
+
+  const pendingIndex = slotIdx - usedCount;
+  if (selectedAchPhotoFiles[pendingIndex]) {
+    const p = selectedAchPhotoFiles[pendingIndex];
+    window.openPhotoLightbox(p.previewUrl, p.previewUrl, `Photo ${slotIdx + 1} Preview (${Math.round(p.compSize / 1024)}KB compressed)`, window.todayStr ? window.todayStr() : 'Today');
+    return;
+  }
+
+  const remainingQuota = Math.max(0, currentLimit - usedCount);
+  const maxAllowed = Math.max(0, remainingQuota - selectedAchPhotoFiles.length);
+  if (maxAllowed <= 0) {
+    showToast(`You have reached today's photo limit (${currentLimit} photos).`, 'warn');
+    return;
+  }
+
+  const fileInput = document.getElementById('ach-photo-file-input');
+  if (fileInput) fileInput.click();
+}
+
+function renderAchSelectedPhotosPreview() {
+  const currentLimit = achPhotoQuota.limit || 3;
+  const todayUploaded = getTodayUploadedPhotosForActiveCard();
+  const usedCount = todayUploaded.length;
+
+  // The number of boxes displayed is equivalent to the env limit,
+  // but if the user has uploaded more than the limit (e.g. limit was 6 and now reduced to 3),
+  // it shows all uploaded photos, coming down as photos are deleted until reaching the limit.
+  const totalBoxes = Math.max(currentLimit, usedCount + selectedAchPhotoFiles.length);
+
+  const gridEl = document.getElementById('ach-photo-slots-grid');
+  if (!gridEl) return;
+
+  const labelEl = document.getElementById('ach-select-photos-label');
+  if (labelEl) {
+    labelEl.textContent = `Select Photos (Up to ${currentLimit}):`;
+  }
+
+  // Use 3 columns for balanced rows on both desktop and mobile
+  gridEl.style.display = 'grid';
+  gridEl.style.gridTemplateColumns = totalBoxes <= 2 ? `repeat(${totalBoxes}, 1fr)` : 'repeat(3, 1fr)';
+  gridEl.style.gap = '12px';
+  gridEl.style.marginBottom = '16px';
+
+  let html = '';
+
+  for (let i = 0; i < totalBoxes; i++) {
+    if (i < usedCount) {
+      // 🔒 Slot is LOCKED because it was already uploaded earlier today!
+      const up = todayUploaded[i];
+      const safeThumb = (up && (up.thumbnailUrl || up.url)) ? getSafeThumbUrl(up.thumbnailUrl, up.url) : null;
+      if (safeThumb) {
+        html += `
+          <div id="ach-photo-slot-${i}" class="ach-photo-slot locked" onclick="window.triggerPhotoSlotClick(${i})" title="Photo already uploaded for today (click to review or delete)" style="border: 2.5px solid var(--black); box-shadow: 2px 2px 0 var(--black); cursor: pointer;">
+            <img src="${escHtml(safeThumb)}" alt="Uploaded Photo" style="width: 100%; height: 100%; object-fit: cover; background: #ffffff; opacity: 0.65; display: block;" />
+            <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.38); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #fef3c7; border: 1.5px solid var(--black); display: flex; align-items: center; justify-content: center; box-shadow: 1px 1px 0 var(--black);">
+                <i data-lucide="lock" style="width: 14px; height: 14px; color: #b45309;"></i>
+              </div>
+              <span style="font-size: 9.5px; font-weight: 900; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); text-transform: uppercase; letter-spacing: 0.3px;">Photo ${i + 1} · Locked</span>
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div id="ach-photo-slot-${i}" class="ach-photo-slot locked" onclick="window.triggerPhotoSlotClick(${i})" title="Photo already uploaded for today" style="border: 2.5px solid var(--black); box-shadow: 2px 2px 0 var(--black); cursor: pointer;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; text-align: center; width: 100%; height: 100%; background: var(--bg-body);">
+              <div style="width: 30px; height: 30px; border-radius: 50%; background: #fef3c7; border: 1.5px solid var(--black); display: flex; align-items: center; justify-content: center; box-shadow: 1.5px 1.5px 0 var(--black);">
+                <i data-lucide="lock" style="width: 15px; height: 15px; color: #b45309;"></i>
+              </div>
+              <span style="font-size: 10.5px; font-weight: 900; color: var(--text);">Photo ${i + 1} · Locked</span>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Slot is beyond uploaded photos: could be pending file or empty slot
+      const pendingIndex = i - usedCount;
+      const pendingItem = selectedAchPhotoFiles[pendingIndex];
+
+      if (pendingItem) {
+        const compKB = Math.round(pendingItem.compSize / 1024);
+        html += `
+          <div id="ach-photo-slot-${i}" class="ach-photo-slot filled" onclick="window.triggerPhotoSlotClick(${i})" title="Click to review compressed photo preview" style="border: 2.5px solid var(--black); box-shadow: 2px 2px 0 var(--black); cursor: pointer;">
+            <img src="${pendingItem.previewUrl}" alt="Compressed Preview" style="width: 100%; height: 100%; object-fit: cover; background: #ffffff; display: block;" />
+            <span style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.85); color: #4ade80; font-size: 9.5px; font-weight: 900; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">${compKB}KB</span>
+            <button type="button" onclick="event.stopPropagation(); window.removeSelectedAchPhoto(${pendingIndex})" title="Remove photo" style="position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: #ef4444; color: #fff; border: 1.5px solid var(--black); font-size: 13px; font-weight: 900; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 1px 1px 0 var(--black); z-index: 2;">&times;</button>
+          </div>
+        `;
+      } else {
+        // Empty available slot
+        html += `
+          <div id="ach-photo-slot-${i}" class="ach-photo-slot empty" onclick="window.triggerPhotoSlotClick(${i})" title="Click to choose Photo ${i + 1}" style="border: 2.5px dashed var(--black); box-shadow: 2px 2px 0 var(--black); cursor: pointer;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-body); border: 1.5px dashed var(--black); display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+              <i data-lucide="${pendingIndex === 0 ? 'camera' : 'plus'}" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </div>
+            <span style="font-size: 11px; font-weight: 800; color: var(--text-muted);">+ Photo ${i + 1}</span>
+          </div>
+        `;
+      }
+    }
+  }
+
+  gridEl.innerHTML = html;
+
+  const statusEl = document.getElementById('ach-photo-compression-status');
+  if (statusEl) {
+    if (selectedAchPhotoFiles.length > 0) {
+      statusEl.style.display = 'block';
+      const count = selectedAchPhotoFiles.length;
+      statusEl.textContent = `✓ ${count} photo${count > 1 ? 's' : ''} selected`;
+    } else {
+      statusEl.style.display = 'none';
+    }
+  }
+
+  const modalEl = document.getElementById('modal-add-achievement');
+  if (modalEl && window.lucide) lucide.createIcons({ root: modalEl });
+}
+
+function removeSelectedAchPhoto(index) {
+  if (selectedAchPhotoFiles[index]) {
+    URL.revokeObjectURL(selectedAchPhotoFiles[index].previewUrl);
+    selectedAchPhotoFiles.splice(index, 1);
+  }
+  renderAchSelectedPhotosPreview();
+}
+
+function submitActiveAchievement() {
+  if (currentAchModalTab === 'photo') {
+    submitPhotoAchievement();
+  } else {
+    submitAddAchievement();
+  }
+}
+
 // ── Add Achievement ────────────────────────────────────────
 let _achAddLinkPending = false;
 
 function openAddAchievementModal(dayId) {
   window.activeDayIdForAchievement = dayId;
   _achAddLinkPending = false;
-  document.getElementById('ach-title-input').value = '';
-  document.getElementById('ach-desc-input').value  = '';
-  document.getElementById('ach-links-builder').innerHTML = '';
-  addAchLinkField('ach-links-builder'); // start with one empty row
-  document.getElementById('ach-link-warning').style.display = 'none';
+  selectedAchPhotoFiles = [];
+  renderAchSelectedPhotosPreview();
+
+  // Sync day achievements into memory so photo slots have exact uploaded photos
+  if (dayId && navigator.onLine) {
+    apiFetch(`${window.API}/api/achievements/day/${dayId}?own=1`).then(dayAchs => {
+      if (Array.isArray(dayAchs)) {
+        window.allAchievements = (window.allAchievements || []).filter(a => String(a.dayId) !== String(dayId));
+        window.allAchievements.unshift(...dayAchs);
+        if (window.localDb) {
+          for (const a of dayAchs) window.localDb.achievements.put(a);
+        }
+        renderAchSelectedPhotosPreview();
+      }
+    }).catch(() => {});
+  }
+
+  const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  const isToday = day ? (day.date ? day.date.split('T')[0] : currentToday) === currentToday : true;
+
+  // Clear text inputs
+  const titleInput = document.getElementById('ach-title-input');
+  const descInput = document.getElementById('ach-desc-input');
+  const photoTitleInput = document.getElementById('ach-photo-title-input');
+  const photoDescInput = document.getElementById('ach-photo-desc-input');
+  if (titleInput) titleInput.value = '';
+  if (descInput) descInput.value = '';
+  if (photoTitleInput) photoTitleInput.value = '';
+  if (photoDescInput) photoDescInput.value = '';
+
+  const linksBuilder = document.getElementById('ach-links-builder');
+  if (linksBuilder) {
+    linksBuilder.innerHTML = '';
+    addAchLinkField('ach-links-builder');
+  }
+  const warnEl = document.getElementById('ach-link-warning');
+  if (warnEl) warnEl.style.display = 'none';
+
+  const pastNotice = document.getElementById('ach-photo-past-notice');
+  const offlineNotice = document.getElementById('ach-photo-offline-notice');
+  const activeUI = document.getElementById('ach-photo-active-ui');
+  const photoTabBtn = document.getElementById('ach-tab-btn-photo');
+
+  if (!isToday) {
+    if (pastNotice) pastNotice.style.display = 'block';
+    if (offlineNotice) offlineNotice.style.display = 'none';
+    if (activeUI) activeUI.style.display = 'none';
+    if (photoTabBtn) photoTabBtn.title = 'Photo proof is locked for past cards';
+    switchAchTab('text');
+  } else if (!navigator.onLine) {
+    if (pastNotice) pastNotice.style.display = 'none';
+    if (offlineNotice) offlineNotice.style.display = 'block';
+    if (activeUI) activeUI.style.display = 'none';
+    switchAchTab('text');
+  } else {
+    if (pastNotice) pastNotice.style.display = 'none';
+    if (offlineNotice) offlineNotice.style.display = 'none';
+    if (activeUI) activeUI.style.display = 'block';
+    fetchAchievementPhotoQuota(true);
+    switchAchTab('text');
+  }
+
   const btn = document.getElementById('submit-ach-btn');
-  btn.textContent = 'Save Achievement';
+  if (btn) btn.textContent = currentAchModalTab === 'photo' ? 'Upload Photos' : 'Save Achievement';
   openModal('modal-add-achievement');
+  if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-add-achievement') });
 }
 
 async function submitAddAchievement() {
@@ -372,28 +949,25 @@ async function submitAddAchievement() {
   _achAddLinkPending = false;
 
   const dayId = window.activeDayIdForAchievement;
-  const day   = window.allDays.find(d => d._id === dayId);
+  const day   = (window.allDays || []).find(d => d._id === dayId);
   const date  = day ? day.date : todayStr();
 
   const tempId = `temp_${Date.now()}`;
-  const localAch = { _id: tempId, userId: window.userId, dayId, date, title, description: desc, links };
+  const localAch = { _id: tempId, userId: window.userId, dayId, date, title, description: desc, links, type: 'text', photos: [] };
 
   try {
-    // 1. Update UI and Local DB instantly
     window.allAchievements.unshift(localAch);
-    await window.localDb.achievements.add(localAch);
+    if (window.localDb) await window.localDb.achievements.add(localAch);
     closeModal('modal-add-achievement');
 
     const cardEl = document.getElementById(`day-card-${dayId}`);
     if (cardEl) {
-      // Filter locally instead of fetching
       const dayAchs = window.allAchievements.filter(a => a.dayId === dayId);
       renderDayAchievements(dayId, dayAchs, cardEl);
     }
     showToast(`Achievement logged locally! <i data-lucide="party-popper"></i>`, 'success');
 
-    // 2. Queue for sync
-    window.syncManager.addToQueue('POST', 'achievements', null, { userId: window.userId, dayId, date, title, description: desc, links }, tempId);
+    window.syncManager.addToQueue('POST', 'achievements', null, { userId: window.userId, dayId, date, title, description: desc, links, type: 'text' }, tempId);
   } catch (err) {
     console.error('Offline achievement write error:', err);
   } finally {
@@ -401,35 +975,447 @@ async function submitAddAchievement() {
   }
 }
 
+async function submitPhotoAchievement() {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) return;
+
+  if (!navigator.onLine) {
+    showToast('Photo proof uploads require an active internet connection.', 'warn');
+    return;
+  }
+
+  const dayId = window.activeDayIdForAchievement;
+  const day = (window.allDays || []).find(d => d._id === dayId);
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  const date = day ? day.date : currentToday;
+
+  if (date !== currentToday) {
+    showToast('Photo achievements can only be logged for today\'s card.', 'error');
+    return;
+  }
+
+  if (selectedAchPhotoFiles.length === 0) {
+    showToast('Please select at least 1 photo to upload.', 'warn');
+    return;
+  }
+
+  const titleInput = document.getElementById('ach-photo-title-input');
+  const descInput = document.getElementById('ach-photo-desc-input');
+  const title = (titleInput?.value || '').trim() || 'Photos';
+  const desc = (descInput?.value || '').trim();
+
+  const submitBtn = document.getElementById('submit-ach-btn');
+  const banner = document.getElementById('ach-upload-progress-banner');
+  const statusText = document.getElementById('ach-upload-status-text');
+  const subText = document.getElementById('ach-upload-sub-text');
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> Uploading...';
+
+  if (banner) banner.style.display = 'flex';
+  if (statusText) statusText.textContent = 'Processing photos...';
+  if (subText) subText.textContent = 'Optimizing and preparing image files';
+
+  // Informative phased progress updates so user isn't left hanging during upload
+  const uploadStages = [
+    { delay: 1100, status: 'Uploading... just a sec', sub: 'Securely transferring photo proof to cloud' },
+    { delay: 2600, status: 'Optimizing cloud delivery...', sub: 'Generating fast thumbnails & responsive sizes' },
+    { delay: 4200, status: 'Almost done...', sub: 'Saving achievement and finalizing your streak' }
+  ];
+
+  const timerIds = [];
+  uploadStages.forEach(s => {
+    const t = setTimeout(() => {
+      if (statusText) statusText.textContent = s.status;
+      if (subText) subText.textContent = s.sub;
+      if (submitBtn && submitBtn.disabled) {
+        submitBtn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> ${s.status.split('...')[0]}...`;
+      }
+    }, s.delay);
+    timerIds.push(t);
+  });
+
+  try {
+    const formData = new FormData();
+    formData.append('dayId', dayId);
+    formData.append('date', date);
+    formData.append('title', '');
+    formData.append('description', '');
+
+    selectedAchPhotoFiles.forEach(item => {
+      formData.append('photos', item.file);
+    });
+
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${window.API}/api/achievements/photo`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'x-client-date': currentToday
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to upload photo achievement');
+    }
+
+    // Success! Update local state
+    const existingIdx = (window.allAchievements || []).findIndex(a => String(a._id) === String(data._id));
+    if (existingIdx >= 0) {
+      window.allAchievements[existingIdx] = data;
+    } else {
+      window.allAchievements.unshift(data);
+    }
+    if (window.localDb) {
+      await window.localDb.achievements.put(data);
+    }
+
+    selectedAchPhotoFiles.forEach(i => URL.revokeObjectURL(i.previewUrl));
+    selectedAchPhotoFiles = [];
+    if (titleInput) titleInput.value = '';
+    if (descInput) descInput.value = '';
+
+    closeModal('modal-add-achievement');
+
+    // Fetch the fresh achievements for this day to guarantee card and state are 100% complete
+    let dayAchs = [];
+    try {
+      dayAchs = await apiFetch(`${window.API}/api/achievements/day/${dayId}?own=1`);
+      if (Array.isArray(dayAchs)) {
+        window.allAchievements = (window.allAchievements || []).filter(a => String(a.dayId) !== String(dayId));
+        window.allAchievements.unshift(...dayAchs);
+        if (window.localDb) {
+          for (const a of dayAchs) await window.localDb.achievements.put(a);
+        }
+      }
+    } catch (_) {
+      dayAchs = (window.allAchievements || []).filter(a => String(a.dayId) === String(dayId));
+    }
+
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      renderDayAchievements(dayId, dayAchs, cardEl);
+    }
+
+    if (document.getElementById('page-achievements')?.classList.contains('active')) {
+      renderAchievements();
+    }
+
+    showToast('Photo achievement uploaded successfully! 📸', 'success');
+    await fetchAchievementPhotoQuota(true);
+  } catch (err) {
+    console.error('Photo achievement upload error:', err);
+    showToast(err.message || 'Failed to upload photo achievement.', 'error');
+  } finally {
+    timerIds.forEach(t => clearTimeout(t));
+    if (banner) banner.style.display = 'none';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Upload Photos';
+  }
+}
+
+// ── Photo Lightbox Modal Handler ───────────────────────────
+function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId, isOwner = true) {
+  activeLightboxData = { photoUrl, thumbUrl, dateStr, achId, photoId, isOwner };
+
+  const imgEl = document.getElementById('lightbox-img');
+  const titleTextEl = document.getElementById('lightbox-title-text');
+  const captionEl = document.getElementById('lightbox-caption');
+  const dateEl = document.getElementById('lightbox-date');
+  const offlineBanner = document.getElementById('lightbox-offline-banner');
+  const delBtn = document.getElementById('lightbox-delete-btn');
+  const editBtn = document.getElementById('lightbox-edit-btn');
+  const editPanel = document.getElementById('lightbox-edit-panel');
+
+  if (editPanel) editPanel.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'none';
+
+  if (titleTextEl) {
+    titleTextEl.textContent = 'Photo';
+  }
+  if (captionEl) {
+    captionEl.style.display = 'none';
+  }
+  if (dateEl) {
+    const formatted = dateStr ? (window.formatDisplayDate ? window.formatDisplayDate(dateStr) : (typeof formatDisplayDate === 'function' ? formatDisplayDate(dateStr) : dateStr)) : '';
+    dateEl.innerHTML = formatted ? `<i data-lucide="calendar" style="width: 13px; height: 13px; display: inline-block; vertical-align: -1px; margin-right: 4px;"></i> Logged on ${escHtml(formatted)}` : '';
+  }
+
+  if (delBtn) {
+    delBtn.style.display = (achId && photoId && isOwner !== false) ? 'inline-flex' : 'none';
+  }
+
+  // Check online state: if offline, use the cached thumbnail and display disclaimer
+  const safeThumb = getSafeThumbUrl(thumbUrl, photoUrl);
+  if (!navigator.onLine) {
+    if (offlineBanner) offlineBanner.style.display = 'flex';
+    if (imgEl) imgEl.src = safeThumb || photoUrl;
+  } else {
+    if (offlineBanner) offlineBanner.style.display = 'none';
+    if (imgEl) {
+      imgEl.src = safeThumb || photoUrl; // Instant preview
+      const fullImg = new Image();
+      fullImg.src = photoUrl;
+      fullImg.onload = () => {
+        if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+          imgEl.src = photoUrl;
+        }
+      };
+    }
+  }
+
+  openModal('modal-photo-lightbox');
+  if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-photo-lightbox') });
+}
+
+function toggleLightboxEdit(show) {
+  const panel = document.getElementById('lightbox-edit-panel');
+  const titleInput = document.getElementById('lightbox-edit-title-input');
+  const titleCounter = document.getElementById('lightbox-title-counter');
+  const captionInput = document.getElementById('lightbox-edit-caption-input');
+  if (!panel) return;
+  const isOpening = show !== undefined ? show : panel.style.display === 'none';
+  panel.style.display = isOpening ? 'block' : 'none';
+  if (isOpening && activeLightboxData) {
+    const curTitle = (activeLightboxData.title && activeLightboxData.title !== 'Photo') ? activeLightboxData.title : '';
+    if (titleInput) {
+      titleInput.value = curTitle;
+      if (titleCounter) titleCounter.textContent = `${curTitle.length}/30`;
+      titleInput.focus();
+    }
+    if (captionInput) {
+      captionInput.value = activeLightboxData.caption || '';
+    }
+  }
+}
+
+async function saveLightboxDetails() {
+  if (!activeLightboxData || !activeLightboxData.achId) return;
+  const titleInput = document.getElementById('lightbox-edit-title-input');
+  const captionInput = document.getElementById('lightbox-edit-caption-input');
+  const saveBtn = document.getElementById('lightbox-save-caption-btn');
+  const title = (titleInput?.value || '').trim().slice(0, 30);
+  const caption = (captionInput?.value || '').trim();
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+  try {
+    const updated = await apiFetch(`${window.API}/api/achievements/${activeLightboxData.achId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: title || undefined,
+        caption,
+        description: caption,
+        photoId: activeLightboxData.photoId
+      })
+    });
+
+    activeLightboxData.title = updated.title || title || 'Photo';
+    activeLightboxData.caption = caption;
+
+    const titleTextEl = document.getElementById('lightbox-title-text');
+    if (titleTextEl) {
+      titleTextEl.textContent = activeLightboxData.title;
+    }
+    const captionEl = document.getElementById('lightbox-caption');
+    if (captionEl) {
+      captionEl.textContent = caption;
+      captionEl.style.display = caption ? 'block' : 'none';
+    }
+
+    const idx = (window.allAchievements || []).findIndex(x => String(x._id) === String(activeLightboxData.achId));
+    if (idx !== -1) {
+      window.allAchievements[idx] = updated;
+    }
+    if (window.localDb) {
+      await window.localDb.achievements.put(updated);
+    }
+
+    if (updated.dayId) {
+      const cardEl = document.getElementById(`day-card-${updated.dayId}`);
+      if (cardEl) {
+        const dayAchs = (window.allAchievements || []).filter(a => String(a.dayId) === String(updated.dayId));
+        renderDayAchievements(updated.dayId, dayAchs, cardEl);
+      }
+    }
+
+    if (document.getElementById('page-achievements')?.classList.contains('active')) {
+      renderAchievements();
+    }
+
+    toggleLightboxEdit(false);
+    showToast('Details updated! ✍️', 'success');
+  } catch (err) {
+    showToast(err.message || 'Failed to update details', 'error');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
+  }
+}
+
+async function deleteActiveLightboxPhoto() {
+  if (!activeLightboxData || !activeLightboxData.achId || !activeLightboxData.photoId) return;
+  if (!confirm('Delete this photo? This cannot be undone.')) return;
+
+  const { achId, photoId } = activeLightboxData;
+  const delBtn = document.getElementById('lightbox-delete-btn');
+  if (delBtn) { delBtn.disabled = true; delBtn.textContent = 'Deleting...'; }
+
+  // Optimistically restore quota in UI immediately based on env limit
+  const curLimit = achPhotoQuota.limit || 3;
+  achPhotoQuota.used = Math.max(0, (achPhotoQuota.used || 0) - 1);
+  achPhotoQuota.remaining = Math.max(0, curLimit - achPhotoQuota.used);
+  updatePhotoQuotaUI();
+
+  try {
+    const res = await apiFetch(`${window.API}/api/achievements/${achId}/photos/${photoId}`, {
+      method: 'DELETE'
+    });
+
+    closeModal('modal-photo-lightbox');
+
+    if (res.deletedAchievementId) {
+      window.allAchievements = window.allAchievements.filter(a => String(a._id) !== String(achId));
+      if (window.localDb) await window.localDb.achievements.delete(achId);
+    } else {
+      const idx = window.allAchievements.findIndex(a => String(a._id) === String(achId));
+      if (idx >= 0) {
+        window.allAchievements[idx] = res;
+        if (window.localDb) await window.localDb.achievements.put(res);
+      }
+    }
+
+    // Refresh UI for all day cards
+    (window.allDays || []).forEach(day => {
+      const cardEl = document.getElementById(`day-card-${day._id}`);
+      if (cardEl) {
+        const achs = window.allAchievements.filter(a => String(a.dayId) === String(day._id));
+        renderDayAchievements(day._id, achs, cardEl);
+      }
+    });
+
+    if (document.getElementById('page-achievements')?.classList.contains('active')) {
+      renderAchievements();
+    }
+
+    // Re-render photo slots preview so deleted box drops count until limit
+    renderAchSelectedPhotosPreview();
+
+    showToast(achPhotoQuota.remaining > 0 ? 'Photo deleted! Daily quota freed up. ♻️' : 'Photo deleted.', 'success');
+    await fetchAchievementPhotoQuota(true);
+  } catch (err) {
+    showToast(err.message || 'Failed to delete photo.', 'error');
+    fetchAchievementPhotoQuota(true);
+  } finally {
+    if (delBtn) { delBtn.disabled = false; delBtn.innerHTML = '<i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete Photo'; }
+  }
+}
+
+async function deletePhotoFromCard(achId, photoId, dayId) {
+  if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) return;
+  if (!confirm('Delete this photo? This cannot be undone.')) return;
+
+  const targetAch = window.allAchievements.find(a => String(a._id) === String(achId));
+  const remainingPhotos = (targetAch?.photos || []).filter(p => String(p._id) !== String(photoId));
+
+  // Instantly restore quota count in UI based on env limit
+  const curLimit = achPhotoQuota.limit || 3;
+  achPhotoQuota.used = Math.max(0, (achPhotoQuota.used || 0) - 1);
+  achPhotoQuota.remaining = Math.max(0, curLimit - achPhotoQuota.used);
+  updatePhotoQuotaUI();
+
+  if (remainingPhotos.length === 0) {
+    window.allAchievements = window.allAchievements.filter(a => String(a._id) !== String(achId));
+    if (window.localDb) await window.localDb.achievements.delete(achId);
+  } else if (targetAch) {
+    targetAch.photos = remainingPhotos;
+    if (window.localDb) await window.localDb.achievements.put(targetAch);
+  }
+
+  const cardEl = document.getElementById(`day-card-${dayId}`);
+  if (cardEl) {
+    const dayAchs = window.allAchievements.filter(a => String(a.dayId) === String(dayId));
+    renderDayAchievements(dayId, dayAchs, cardEl);
+  }
+
+  if (document.getElementById('page-achievements')?.classList.contains('active')) {
+    renderAchievements();
+  }
+
+  // Re-render photo slots preview if modal is active
+  renderAchSelectedPhotosPreview();
+
+  showToast(achPhotoQuota.remaining > 0 ? 'Photo deleted! Daily quota freed up. ♻️' : 'Photo deleted.', 'success');
+
+  try {
+    if (navigator.onLine) {
+      if (remainingPhotos.length === 0) {
+        await apiFetch(`${window.API}/api/achievements/${achId}`, { method: 'DELETE' });
+      } else {
+        await apiFetch(`${window.API}/api/achievements/${achId}/photos/${photoId}`, { method: 'DELETE' });
+      }
+      await fetchAchievementPhotoQuota(true);
+    }
+  } catch (err) {
+    console.warn('Delete photo server sync error:', err);
+    fetchAchievementPhotoQuota(true);
+  }
+}
+
 // ── Edit Achievement ───────────────────────────────────────
 let _achEditLinkPending = false;
 
-function openEditAchievementModal(achId) {
-  const a = window.allAchievements.find(x => x._id === achId);
+async function openEditAchievementModal(achId) {
+  let a = (window.allAchievements || []).find(x => String(x._id) === String(achId));
+  if (!a && window.localDb) {
+    try { a = await window.localDb.achievements.get(achId); } catch (e) {}
+  }
+  if (!a) {
+    try { a = await apiFetch(`${window.API}/api/achievements/${achId}`); } catch (e) {}
+  }
   window.editingAchievementId = achId;
   _achEditLinkPending = false;
 
-  document.getElementById('edit-ach-title').value = a ? a.title       : '';
-  document.getElementById('edit-ach-desc').value  = a ? a.description : '';
+  const currentTitle = (a?.title || '').slice(0, 30);
+  const currentDesc = a ? (a.description || a.photos?.[0]?.caption || '') : '';
+  const titleInput = document.getElementById('edit-ach-title');
+  const descInput = document.getElementById('edit-ach-desc');
+  const counter = document.getElementById('edit-ach-title-counter');
+
+  if (titleInput) {
+    titleInput.value = currentTitle;
+  }
+  if (counter) {
+    counter.textContent = `${currentTitle.length}/30`;
+  }
+  if (descInput) {
+    descInput.value = currentDesc;
+  }
 
   // Populate multi-link builder with existing links
   const builder = document.getElementById('edit-ach-links-builder');
-  builder.innerHTML = '';
-  const existingLinks = a ? (a.links || []) : [];
-  if (existingLinks.length > 0) {
-    existingLinks.forEach(l => addAchLinkField('edit-ach-links-builder', l));
-  } else {
-    addAchLinkField('edit-ach-links-builder'); // one empty row
+  if (builder) {
+    builder.innerHTML = '';
+    const existingLinks = a ? (a.links || []) : [];
+    if (existingLinks.length > 0) {
+      existingLinks.forEach(l => addAchLinkField('edit-ach-links-builder', l));
+    } else {
+      addAchLinkField('edit-ach-links-builder'); // one empty row
+    }
   }
 
-  document.getElementById('edit-ach-link-warning').style.display = 'none';
+  const warnEl = document.getElementById('edit-ach-link-warning');
+  if (warnEl) warnEl.style.display = 'none';
   const btn = document.getElementById('submit-edit-ach-btn');
-  btn.textContent = 'Save Changes';
+  if (btn) btn.textContent = 'Save Changes';
   openModal('modal-edit-achievement');
 }
 
 async function submitEditAchievement() {
-  const title = document.getElementById('edit-ach-title').value.trim();
+  const titleInput = document.getElementById('edit-ach-title').value.trim();
+  const a = window.allAchievements.find(x => String(x._id) === String(window.editingAchievementId));
+  const isPhotoAch = a && (a.type === 'photo' || (a.photos && a.photos.length > 0));
+  const title = (titleInput || (isPhotoAch ? (a.title || 'Photos') : '')).slice(0, 30);
   const desc  = document.getElementById('edit-ach-desc').value.trim();
   const links = getLinksFromBuilder('edit-ach-links-builder');
 
@@ -452,10 +1438,11 @@ async function submitEditAchievement() {
   try {
     const updated = await apiFetch(`${window.API}/api/achievements/${window.editingAchievementId}`, {
       method: 'PUT',
-      body: JSON.stringify({ title, description: desc, links }),
+      body: JSON.stringify({ title, description: desc, caption: desc, links }),
     });
-    const idx = window.allAchievements.findIndex(x => x._id === window.editingAchievementId);
+    const idx = window.allAchievements.findIndex(x => String(x._id) === String(window.editingAchievementId));
     if (idx !== -1) window.allAchievements[idx] = updated;
+    if (window.localDb) await window.localDb.achievements.put(updated);
     closeModal('modal-edit-achievement');
     const cardEl = document.getElementById(`day-card-${updated.dayId}`);
     if (cardEl) {
@@ -465,7 +1452,7 @@ async function submitEditAchievement() {
     if (document.getElementById('page-achievements').classList.contains('active')) {
       renderAchievements();
     }
-    showToast('Achievement updated!', 'success');
+    showToast('Achievement updated! ✍️', 'success');
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -480,28 +1467,45 @@ async function deleteAchievement(achId, dayId) {
   }
   if (!confirm('Delete this achievement? This cannot be undone.')) return;
   try {
-    const knownDayId = dayId || window.allAchievements.find(x => x._id === achId)?.dayId;
+    const targetAch = window.allAchievements.find(x => String(x._id) === String(achId));
+    const knownDayId = dayId || targetAch?.dayId;
+    const numPhotos = (targetAch?.photos || []).length;
 
-    // 1. Update UI and Local DB instantly
-    window.allAchievements = window.allAchievements.filter(x => x._id !== achId);
-    await window.localDb.achievements.delete(achId);
+    // 1. Immediately restore local quota in UI so the user sees it freed instantly!
+    if (numPhotos > 0) {
+      const curLimit = achPhotoQuota.limit || 3;
+      achPhotoQuota.used = Math.max(0, (achPhotoQuota.used || 0) - numPhotos);
+      achPhotoQuota.remaining = Math.max(0, curLimit - achPhotoQuota.used);
+      updatePhotoQuotaUI();
+      renderAchSelectedPhotosPreview();
+    }
+
+    // 2. Update UI and Local DB instantly
+    window.allAchievements = window.allAchievements.filter(x => String(x._id) !== String(achId));
+    if (window.localDb) await window.localDb.achievements.delete(achId);
 
     if (knownDayId) {
       const cardEl = document.getElementById(`day-card-${knownDayId}`);
       if (cardEl) {
-        const dayAchs = window.allAchievements.filter(a => a.dayId === knownDayId);
+        const dayAchs = window.allAchievements.filter(a => String(a.dayId) === String(knownDayId));
         renderDayAchievements(knownDayId, dayAchs, cardEl);
       }
     }
     if (document.getElementById('page-achievements')?.classList.contains('active')) {
       renderAchievements();
     }
-    showToast('Achievement deleted locally.', 'success');
+    showToast('Achievement deleted! ♻️', 'success');
 
-    // 2. Queue for sync
-    window.syncManager.addToQueue('DELETE', 'achievements', achId);
+    // 3. If online, immediately call server so Cloudinary assets are cleaned and quota is restored
+    if (navigator.onLine) {
+      await apiFetch(`${window.API}/api/achievements/${achId}`, { method: 'DELETE' });
+      await fetchAchievementPhotoQuota(true);
+    } else {
+      window.syncManager.addToQueue('DELETE', 'achievements', achId);
+    }
   } catch (err) {
     console.error('Offline delete error:', err);
+    fetchAchievementPhotoQuota(true);
   }
 }
 
@@ -518,6 +1522,20 @@ window.getLinksFromBuilder = getLinksFromBuilder;
 window.hasInvalidLinks = hasInvalidLinks;
 window.openAddAchievementModal = openAddAchievementModal;
 window.submitAddAchievement = submitAddAchievement;
+window.submitActiveAchievement = submitActiveAchievement;
+window.submitPhotoAchievement = submitPhotoAchievement;
+window.switchAchTab = switchAchTab;
+window.handleAchPhotoSelection = handleAchPhotoSelection;
+window.removeSelectedAchPhoto = removeSelectedAchPhoto;
+window.triggerPhotoSlotClick = triggerPhotoSlotClick;
+window.openPhotoLightbox = openPhotoLightbox;
+window.toggleLightboxEdit = toggleLightboxEdit;
+window.saveLightboxDetails = saveLightboxDetails;
+window.deleteActiveLightboxPhoto = deleteActiveLightboxPhoto;
+window.deletePhotoFromCard = deletePhotoFromCard;
+window.getSafeThumbUrl = getSafeThumbUrl;
+window.fetchAchievementPhotoQuota = fetchAchievementPhotoQuota;
+window.compressImageFile = compressImageFile;
 window.openEditAchievementModal = openEditAchievementModal;
 window.submitEditAchievement = submitEditAchievement;
 window.deleteAchievement = deleteAchievement;
