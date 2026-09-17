@@ -2746,3 +2746,55 @@
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.3) !important;
 }
 
+/* ── Aurora Day Achievements Container & Item Polish ── */
+[data-theme="premium-aurora"] .day-achievements-container {
+  background: rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
+  box-shadow: 0 8px 28px rgba(109, 40, 217, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="premium-aurora"] .day-achievements-header span {
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.8px !important;
+  color: var(--text) !important;
+}
+
+[data-theme="premium-aurora"] .day-achievements-header i,
+[data-theme="premium-aurora"] .day-achievements-header svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+[data-theme="premium-aurora"] .day-achievements-container .achievement-item {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(243, 238, 255, 0.75) 100%) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.18) !important;
+  box-shadow: 0 3px 12px rgba(109, 40, 217, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-radius: 10px !important;
+}
+
+[data-theme="premium-aurora"] .day-achievements-container .achievement-item .ach-link {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="premium-aurora"] .day-achievements-container .achievement-item .btn-edit-ach {
+  background: rgba(254, 249, 195, 0.9) !important;
+  border: 1px solid rgba(234, 179, 8, 0.35) !important;
+  box-shadow: 0 2px 6px rgba(234, 179, 8, 0.15) !important;
+  color: #854d0e !important;
+}
+
+[data-theme="premium-aurora"] .day-achievements-container .achievement-item .btn-del-ach {
+  background: rgba(254, 226, 226, 0.9) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15) !important;
+  color: #dc2626 !important;
+}
+

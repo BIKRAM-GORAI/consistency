@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v127'; // Bumped for 24px inward padding of achievement-item
+const CACHE_NAME = 'consistency-cache-v132'; // Bumped for darker gray gradient and Open button with tilted arrow
 const STATIC_ASSETS = [
   '/',
   'index.html',

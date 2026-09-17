@@ -31,7 +31,7 @@ function getSafeThumbUrl(thumbUrl, fullUrl) {
 function buildLinksHTML(links, cls = 'ach-link') {
   if (!links || !links.length) return '';
   return links.map((l, i) =>
-    `<a class="${cls}" href="${escHtml(l)}" target="_blank" rel="noopener noreferrer"><i data-lucide="link"></i> Link ${links.length > 1 ? i + 1 : 'Proof'}</a>`
+    `<a class="${cls}" href="${escHtml(l)}" target="_blank" rel="noopener noreferrer">${links.length > 1 ? `Open ${i + 1}` : 'Open'} <i data-lucide="arrow-up-right"></i></a>`
   ).join('');
 }
 
@@ -86,9 +86,9 @@ function renderDayAchievements(dayId, achievements, cardEl, isOwner = null) {
   container.className = 'day-achievements-container';
 
   let html = `
-    <div class="day-achievements-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-      <span style="font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; color: var(--text);">
-        <i data-lucide="trophy" style="width: 13px; height: 13px; color: var(--yellow);"></i> Achievements
+    <div class="day-achievements-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+      <span style="font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 7px; color: var(--text);">
+        <i data-lucide="trophy" style="width: 16px; height: 16px; color: var(--yellow);"></i> Achievements
       </span>
     </div>
   `;
@@ -139,7 +139,6 @@ function renderDayAchievements(dayId, achievements, cardEl, isOwner = null) {
     for (const a of textAchs) {
       const linksHTML = buildLinksHTML(a.links || []);
       const descHTML  = a.description ? `<div class="ach-desc-wrap"><p class="ach-desc">${escHtml(a.description)}</p></div>` : '';
-      const linksWrap = linksHTML ? `<div class="ach-links-wrap">${linksHTML}</div>` : '';
       html += `
         <div class="achievement-item" id="ach-item-${a._id}">
           <div class="achievement-item-main">
@@ -147,15 +146,15 @@ function renderDayAchievements(dayId, achievements, cardEl, isOwner = null) {
               <i data-lucide="medal" style="width: 14px; height: 14px;"></i>
             </div>
             <span class="achievement-item-title">${escHtml(a.title)}</span>
-            ${userIsOwner ? `
-              <div class="achievement-item-actions">
+            <div class="achievement-item-actions">
+              ${linksHTML}
+              ${userIsOwner ? `
                 <button class="btn-edit-ach" onclick="openEditAchievementModal('${a._id}')" title="Edit"><i data-lucide="edit-3" style="width: 12px; height: 12px;"></i></button>
                 <button class="btn-del-ach" onclick="deleteAchievement('${a._id}', '${dayId}')" title="Delete"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i></button>
-              </div>
-            ` : ''}
+              ` : ''}
+            </div>
           </div>
           ${descHTML}
-          ${linksWrap}
         </div>`;
     }
     html += `</div>`;

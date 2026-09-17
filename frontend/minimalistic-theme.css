@@ -1337,3 +1337,53 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   box-shadow: 0 2px 4px rgba(21, 128, 61, 0.35) !important;
   transform: translateY(-1px) !important;
 }
+
+/* ── Minimalistic Day Achievements Container & Item Polish ── */
+[data-theme="minimalistic"] .day-achievements-container {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="minimalistic"] .day-achievements-header span {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.6px !important;
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .day-achievements-header i,
+[data-theme="minimalistic"] .day-achievements-header svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+[data-theme="minimalistic"] .day-achievements-container .achievement-item {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] .day-achievements-container .achievement-item .ach-link {
+  background: #10b981 !important;
+  border: 1px solid #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="minimalistic"] .day-achievements-container .achievement-item .btn-edit-ach {
+  background: #fef9c3 !important;
+  border: 1px solid #fde047 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  color: #854d0e !important;
+}
+
+[data-theme="minimalistic"] .day-achievements-container .achievement-item .btn-del-ach {
+  background: #fee2e2 !important;
+  border: 1px solid #fca5a5 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  color: #dc2626 !important;
+}
