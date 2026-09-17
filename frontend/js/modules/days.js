@@ -641,9 +641,22 @@ function buildDayCard(day, preLoadedAchievements = null) {
   card.id = `day-card-${day._id}`;
   card.setAttribute('data-date', cardDateNormalized);
 
+  // Auto-normalize any legacy multi-encoded entities
+  if (window.decodeEntities && day.summary) {
+    day.summary = window.decodeEntities(day.summary);
+  }
+
   // Build categories HTML
   let categoriesHTML = '';
   for (const cat of day.categories) {
+    if (window.decodeEntities) {
+      if (cat.name) cat.name = window.decodeEntities(cat.name);
+      if (Array.isArray(cat.tasks)) {
+        for (const t of cat.tasks) {
+          if (t && t.title) t.title = window.decodeEntities(t.title);
+        }
+      }
+    }
     let tasksHTML = '';
     const isLeetCode = cat.name === 'LeetCode';
     const isGoalCat = cat.name && cat.name.startsWith('🎯 Goal:');
@@ -1917,11 +1930,11 @@ function openEditCategoryModal(dayId, catId) {
   window.editingDayId = dayId;
   window.editingCatId = cat._id;
 
-  document.getElementById('edit-cat-name').value = cat.name;
+  document.getElementById('edit-cat-name').value = window.decodeEntities ? window.decodeEntities(cat.name) : cat.name;
   const builder = document.getElementById('edit-cat-tasks-builder');
   builder.innerHTML = '';
   for (const task of cat.tasks) {
-    addEditCatTaskField(task.title, task._id, task.completed);
+    addEditCatTaskField(window.decodeEntities ? window.decodeEntities(task.title) : task.title, task._id, task.completed);
   }
   if (!cat.tasks.length) addEditCatTaskField();
   openModal('modal-edit-category');
@@ -2063,7 +2076,7 @@ function openEditGoalModal(goalId) {
   }
 
   const titleInput = document.getElementById('edit-goal-title');
-  titleInput.value = goal.title;
+  titleInput.value = window.decodeEntities ? window.decodeEntities(goal.title) : goal.title;
 
   const deadlineInput = document.getElementById('edit-goal-deadline');
   const deadlineYMD = goal.deadline ? goal.deadline.split('T')[0] : '';
@@ -2166,7 +2179,7 @@ function openEditGoalModal(goalId) {
   const builder = document.getElementById('edit-goal-tasks-builder');
   builder.innerHTML = '';
   for (const task of goal.tasks) {
-    addEditGoalTaskField(task.title, task._id, task.completed, isWithin15Min);
+    addEditGoalTaskField(window.decodeEntities ? window.decodeEntities(task.title) : task.title, task._id, task.completed, isWithin15Min);
   }
   if (!goal.tasks.length) addEditGoalTaskField('', '', false, isWithin15Min);
   openModal('modal-edit-goal');

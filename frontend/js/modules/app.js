@@ -198,13 +198,13 @@ function openEditTemplateModal(templateId) {
   const t = window.allTemplates.find(x => x._id === templateId);
   if (!t) return;
   
-  document.getElementById('edit-template-name').value = t.name;
+  document.getElementById('edit-template-name').value = window.decodeEntities ? window.decodeEntities(t.name) : t.name;
   const builder = document.getElementById('edit-template-categories-builder');
   builder.innerHTML = '';
   editTemplateCategoryCount = 0;
   
   for (const cat of t.categories) {
-    addEditTemplateCategoryField(cat.name, cat.tasks);
+    addEditTemplateCategoryField(window.decodeEntities ? window.decodeEntities(cat.name) : cat.name, cat.tasks);
   }
   if (!t.categories.length) addEditTemplateCategoryField();
   

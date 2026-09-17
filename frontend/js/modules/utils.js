@@ -333,15 +333,28 @@ window.sortGoals = sortGoals;
 function decodeEntities(str) {
   if (!str) return '';
   let s = String(str);
-  for (let i = 0; i < 4; i++) {
-    if (!/&(amp|lt|gt|quot|#39|#x2F);/i.test(s)) break;
+  let prev;
+  let count = 0;
+  while (s !== prev && count < 30) {
+    prev = s;
+    count++;
+    if (!/&(?:amp|lt|gt|quot|apos|#0*39|#x27|#x22|#0*34|#96|#x60|#x2F|#0*47|#x5C|#0*92);/i.test(s)) break;
     s = s
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&#x2F;/gi, '/');
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&apos;/gi, "'")
+      .replace(/&#x27;/gi, "'")
+      .replace(/&#0*39;/g, "'")
+      .replace(/&#x22;/gi, '"')
+      .replace(/&#0*34;/g, '"')
+      .replace(/&#96;/g, '`')
+      .replace(/&#x60;/gi, '`')
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&#0*47;/g, '/')
+      .replace(/&#x5C;/gi, '\\')
+      .replace(/&#0*92;/g, '\\');
   }
   return s;
 }

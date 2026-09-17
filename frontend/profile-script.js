@@ -462,9 +462,40 @@ function renderContributionGraph(data, isPremium = false) {
   container.innerHTML = svg;
 }
 
+function decodeEntities(str) {
+  if (!str) return '';
+  let s = String(str);
+  let prev;
+  let count = 0;
+  while (s !== prev && count < 30) {
+    prev = s;
+    count++;
+    if (!/&(?:amp|lt|gt|quot|apos|#0*39|#x27|#x22|#0*34|#96|#x60|#x2F|#0*47|#x5C|#0*92);/i.test(s)) break;
+    s = s
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&apos;/gi, "'")
+      .replace(/&#x27;/gi, "'")
+      .replace(/&#0*39;/g, "'")
+      .replace(/&#x22;/gi, '"')
+      .replace(/&#0*34;/g, '"')
+      .replace(/&#96;/g, '`')
+      .replace(/&#x60;/gi, '`')
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&#0*47;/g, '/')
+      .replace(/&#x5C;/gi, '\\')
+      .replace(/&#0*92;/g, '\\');
+  }
+  return s;
+}
+
 function escHtml(str) {
+  if (!str) return '';
+  const decoded = decodeEntities(str);
   const div = document.createElement('div');
-  div.textContent = str;
+  div.textContent = decoded;
   return div.innerHTML;
 }
 

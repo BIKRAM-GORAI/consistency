@@ -209,6 +209,16 @@ function buildGoalCard(goal) {
   // Locking rules:
   // 1. Fully completed goals are locked.
   // 2. Uncompleted goals past the 5-day grace period (daysOverdue > 5, i.e. dl < -5) are completely locked.
+  // Auto-normalize any legacy multi-encoded entities
+  if (window.decodeEntities) {
+    if (goal.title) goal.title = window.decodeEntities(goal.title);
+    if (Array.isArray(goal.tasks)) {
+      for (const t of goal.tasks) {
+        if (t && t.title) t.title = window.decodeEntities(t.title);
+      }
+    }
+  }
+
   const isLocked = isComplete || (dl < -5);
 
   let tasksHTML = '';

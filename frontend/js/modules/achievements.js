@@ -1375,8 +1375,10 @@ async function openEditAchievementModal(achId) {
   window.editingAchievementId = achId;
   _achEditLinkPending = false;
 
-  const currentTitle = (a?.title || '').slice(0, 30);
-  const currentDesc = a ? (a.description || a.photos?.[0]?.caption || '') : '';
+  const rawTitle = a?.title || '';
+  const currentTitle = (window.decodeEntities ? window.decodeEntities(rawTitle) : rawTitle).slice(0, 30);
+  const rawDesc = a ? (a.description || a.photos?.[0]?.caption || '') : '';
+  const currentDesc = window.decodeEntities ? window.decodeEntities(rawDesc) : rawDesc;
   const titleInput = document.getElementById('edit-ach-title');
   const descInput = document.getElementById('edit-ach-desc');
   const counter = document.getElementById('edit-ach-title-counter');

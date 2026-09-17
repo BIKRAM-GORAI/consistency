@@ -18,6 +18,41 @@ const validate = (req, res, next) => {
   next();
 };
 
+/**
+ * Sanitize text input:
+ * 1. Decodes previously escaped HTML entities so data is stored cleanly and not multi-escaped.
+ * 2. Encodes dangerous HTML angle brackets (< and >) to prevent script and tag injection (XSS),
+ *    while preserving safe punctuation like apostrophes ('), quotes ("), and ampersands (&).
+ */
+const sanitizeSafeText = (val) => {
+  if (typeof val !== 'string') return val;
+  let s = val;
+  let prev;
+  let count = 0;
+  while (s !== prev && count < 30) {
+    prev = s;
+    count++;
+    if (!/&(?:amp|lt|gt|quot|apos|#0*39|#x27|#x22|#0*34|#96|#x60|#x2F|#0*47|#x5C|#0*92);/i.test(s)) break;
+    s = s
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&apos;/gi, "'")
+      .replace(/&#x27;/gi, "'")
+      .replace(/&#0*39;/g, "'")
+      .replace(/&#x22;/gi, '"')
+      .replace(/&#0*34;/g, '"')
+      .replace(/&#96;/g, '`')
+      .replace(/&#x60;/gi, '`')
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&#0*47;/g, '/')
+      .replace(/&#x5C;/gi, '\\')
+      .replace(/&#0*92;/g, '\\');
+  }
+  return s
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+};
+
 // Auth validation rules
 const registerValidation = [
   body('name')
@@ -114,19 +149,19 @@ const createDayValidation = [
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
-  body('categories.*.name').optional().trim().escape(),
+  body('categories.*.name').optional().trim().customSanitizer(sanitizeSafeText),
   body('categories.*.tasks').optional().isArray(),
-  body('categories.*.tasks.*.title').optional().trim().escape(),
+  body('categories.*.tasks.*.title').optional().trim().customSanitizer(sanitizeSafeText),
   body('summary')
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('aiSummary')
     .optional()
     .trim()
     .isLength({ max: 1000 }).withMessage('AI Insights must not exceed 1000 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('reminder')
     .optional()
     .isObject().withMessage('Reminder must be an object'),
@@ -160,19 +195,19 @@ const updateDayValidation = [
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
-  body('categories.*.name').optional().trim().escape(),
+  body('categories.*.name').optional().trim().customSanitizer(sanitizeSafeText),
   body('categories.*.tasks').optional().isArray(),
-  body('categories.*.tasks.*.title').optional().trim().escape(),
+  body('categories.*.tasks.*.title').optional().trim().customSanitizer(sanitizeSafeText),
   body('summary')
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('aiSummary')
     .optional()
     .trim()
     .isLength({ max: 1000 }).withMessage('AI Insights must not exceed 1000 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('reminder')
     .optional()
     .isObject().withMessage('Reminder must be an object'),
@@ -206,7 +241,7 @@ const createGoalValidation = [
     .trim()
     .notEmpty().withMessage('Title is required')
     .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('deadline')
     .notEmpty().withMessage('Deadline is required')
     .isISO8601().withMessage('Deadline must be a valid date')
@@ -228,7 +263,7 @@ const createGoalValidation = [
   body('tasks')
     .optional()
     .isArray().withMessage('Tasks must be an array'),
-  body('tasks.*.title').optional().trim().escape(),
+  body('tasks.*.title').optional().trim().customSanitizer(sanitizeSafeText),
   body('completedAt')
     .optional({ nullable: true, checkFalsy: true })
     .isISO8601().withMessage('Completed date must be a valid date'),
@@ -242,7 +277,7 @@ const updateGoalValidation = [
     .optional()
     .trim()
     .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('deadline')
     .optional()
     .isISO8601().withMessage('Deadline must be a valid date')
@@ -265,7 +300,7 @@ const updateGoalValidation = [
   body('tasks')
     .optional()
     .isArray().withMessage('Tasks must be an array'),
-  body('tasks.*.title').optional().trim().escape(),
+  body('tasks.*.title').optional().trim().customSanitizer(sanitizeSafeText),
   body('completedAt')
     .optional({ nullable: true, checkFalsy: true })
     .isISO8601().withMessage('Completed date must be a valid date'),
@@ -284,12 +319,12 @@ const createAchievementValidation = [
     .trim()
     .notEmpty().withMessage('Title is required')
     .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('description')
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('links')
     .optional()
     .isArray().withMessage('Links must be an array'),
@@ -303,12 +338,12 @@ const updateAchievementValidation = [
     .optional()
     .trim()
     .isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('description')
     .optional()
     .trim()
     .isLength({ max: 500 }).withMessage('Description must not exceed 500 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('links')
     .optional()
     .isArray().withMessage('Links must be an array'),
@@ -321,12 +356,12 @@ const createTemplateValidation = [
     .trim()
     .notEmpty().withMessage('Template name is required')
     .isLength({ min: 3, max: 50 }).withMessage('Template name must be between 3 and 50 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
-  body('categories.*.name').optional().trim().escape(),
-  body('categories.*.tasks.*.title').optional().trim().escape(),
+  body('categories.*.name').optional().trim().customSanitizer(sanitizeSafeText),
+  body('categories.*.tasks.*.title').optional().trim().customSanitizer(sanitizeSafeText),
   validate
 ];
 
@@ -337,12 +372,12 @@ const updateTemplateValidation = [
     .optional()
     .trim()
     .isLength({ min: 3, max: 50 }).withMessage('Template name must be between 3 and 50 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('categories')
     .optional()
     .isArray().withMessage('Categories must be an array'),
-  body('categories.*.name').optional().trim().escape(),
-  body('categories.*.tasks.*.title').optional().trim().escape(),
+  body('categories.*.name').optional().trim().customSanitizer(sanitizeSafeText),
+  body('categories.*.tasks.*.title').optional().trim().customSanitizer(sanitizeSafeText),
   validate
 ];
 
@@ -352,7 +387,7 @@ const createGroupValidation = [
     .trim()
     .notEmpty().withMessage('Group name is required')
     .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   validate
 ];
 
@@ -371,7 +406,7 @@ const joinPublicGroupValidation = [
     .optional({ checkFalsy: true })
     .trim()
     .isLength({ max: 200 }).withMessage('Message must not exceed 200 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   validate
 ];
 
@@ -382,7 +417,7 @@ const editGroupValidation = [
     .trim()
     .notEmpty().withMessage('Group name is required')
     .isLength({ min: 3, max: 25 }).withMessage('Group name must be between 3 and 25 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   validate
 ];
 
@@ -407,7 +442,7 @@ const submitReviewValidation = [
     .trim()
     .notEmpty().withMessage('Name is required')
     .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')
@@ -417,7 +452,7 @@ const submitReviewValidation = [
     .trim()
     .notEmpty().withMessage('Review description is required')
     .isLength({ min: 3, max: 1000 }).withMessage('Review must be between 3 and 1000 characters')
-    .escape(),
+    .customSanitizer(sanitizeSafeText),
   body('userBadges')
     .optional()
     .isArray().withMessage('userBadges must be an array'),

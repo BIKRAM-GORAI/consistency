@@ -1470,7 +1470,7 @@ function buildReadOnlyDayCard(day, allAchievements = []) {
   let tasksHtml = '<div style="margin-top:12px; display:none; flex-direction:column; gap:8px;" class="public-day-tasks">';
   (day.categories || []).forEach(cat => {
     if (cat.tasks && cat.tasks.length > 0) {
-      tasksHtml += `<div style="font-size:13px; font-weight:700; color:var(--text); margin-top:4px;">${cat.name}</div>`;
+      tasksHtml += `<div style="font-size:13px; font-weight:700; color:var(--text); margin-top:4px;">${escHtml(cat.name)}</div>`;
       cat.tasks.forEach(t => {
         totalTasks++;
         if (t.completed) completedTasks++;
