@@ -380,11 +380,14 @@ const syncManager = {
                 .equals(item.localId)
                 .modify({ localId: response._id || mainId });
             } else if (!item.localId && item.entity === 'days' && window.allDays) {
-              // For existing days, update memory state but do NOT renderDays (UI is already in sync)
+              // For existing days, update memory state and upgrade any temporary IDs in the DOM card
               if (remainingForThis === 0) {
                 const idx = window.allDays.findIndex(d => d._id === item.targetId);
                 if (idx !== -1) {
                   window.allDays[idx] = response;
+                }
+                if (typeof window.syncDayCardIds === 'function') {
+                  window.syncDayCardIds(response);
                 }
               }
             }

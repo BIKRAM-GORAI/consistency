@@ -1162,7 +1162,18 @@ async function deleteCategory(dayId, catId) {
     return;
   }
 
-  const catIndex = day.categories.findIndex(c => c._id === catId);
+  let catIndex = day.categories.findIndex(c => String(c._id) === String(catId));
+  // Fallback: If not found by ID (e.g. temporary IDs were transitioned to server MongoDB IDs in memory, but DOM still has temp ID)
+  if (catIndex < 0) {
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      const catBlocks = Array.from(cardEl.querySelectorAll('.category-block'));
+      const foundIdx = catBlocks.findIndex(el => el.getAttribute('data-cat-id') === catId);
+      if (foundIdx !== -1 && foundIdx < day.categories.length) {
+        catIndex = foundIdx;
+      }
+    }
+  }
   if (catIndex < 0) return;
 
   const catName = day.categories[catIndex].name;
@@ -1206,9 +1217,36 @@ async function deleteTask(dayId, catId, taskId) {
     return;
   }
 
-  const cat = day.categories.find(c => c._id === catId);
+  let cat = day.categories.find(c => String(c._id) === String(catId));
+  // Fallback: If category not found by ID (e.g. temporary ID transitioned in memory)
+  if (!cat) {
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      const catBlocks = Array.from(cardEl.querySelectorAll('.category-block'));
+      const catIndex = catBlocks.findIndex(el => el.getAttribute('data-cat-id') === catId);
+      if (catIndex !== -1 && catIndex < day.categories.length) {
+        cat = day.categories[catIndex];
+      }
+    }
+  }
   if (!cat) return;
-  const taskIndex = cat.tasks.findIndex(t => t._id === taskId);
+
+  let taskIndex = cat.tasks.findIndex(t => String(t._id) === String(taskId));
+  // Fallback: If task not found by ID
+  if (taskIndex < 0) {
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      const catBlocks = Array.from(cardEl.querySelectorAll('.category-block'));
+      const catBlock = catBlocks.find(el => el.getAttribute('data-cat-id') === catId) || catBlocks[day.categories.indexOf(cat)];
+      if (catBlock) {
+        const checkboxes = Array.from(catBlock.querySelectorAll('.task-checkbox'));
+        const foundTaskIdx = checkboxes.findIndex(chk => chk.id === `chk-${taskId}`);
+        if (foundTaskIdx !== -1 && foundTaskIdx < cat.tasks.length) {
+          taskIndex = foundTaskIdx;
+        }
+      }
+    }
+  }
   if (taskIndex < 0) return;
 
   const taskTitle = cat.tasks[taskIndex].title;
@@ -1832,7 +1870,20 @@ function openEditCategoryModal(dayId, catId) {
     window.showToast('You can only edit editable cards.', 'warn');
     return;
   }
-  const cat = day.categories.find(c => c._id === catId);
+  let cat = day.categories.find(c => String(c._id) === String(catId));
+
+  // Fallback: If not found by ID (e.g. temporary ID was replaced with server MongoDB ID in memory, but DOM still has temp ID)
+  if (!cat) {
+    const cardEl = document.getElementById(`day-card-${dayId}`);
+    if (cardEl) {
+      const catBlocks = Array.from(cardEl.querySelectorAll('.category-block'));
+      const catIndex = catBlocks.findIndex(el => el.getAttribute('data-cat-id') === catId);
+      if (catIndex !== -1 && catIndex < day.categories.length) {
+        cat = day.categories[catIndex];
+      }
+    }
+  }
+
   if (!cat) return;
   if (cat.name && cat.name.startsWith('🎯 Goal:')) {
     window.showToast('Goal categories on Daily Cards are locked snapshots and cannot be edited.', 'warn');
@@ -1840,7 +1891,7 @@ function openEditCategoryModal(dayId, catId) {
   }
 
   window.editingDayId = dayId;
-  window.editingCatId = catId;
+  window.editingCatId = cat._id;
 
   document.getElementById('edit-cat-name').value = cat.name;
   const builder = document.getElementById('edit-cat-tasks-builder');
@@ -1877,7 +1928,7 @@ async function submitEditCategory() {
 
   const day = window.allDays.find(d => d._id === dayId);
   if (!day) return;
-  const origCat = day.categories.find(c => c._id === catId);
+  const origCat = day.categories.find(c => String(c._id) === String(catId));
 
   const taskRows = document.querySelectorAll('#edit-cat-tasks-builder .task-input-row');
   const tasks = [];
@@ -1885,7 +1936,7 @@ async function submitEditCategory() {
     const title = row.querySelector('input').value.trim();
     if (!title) continue;
     const tId = row.dataset.taskId;
-    const existing = origCat ? origCat.tasks.find(t => t._id === tId) : null;
+    const existing = origCat ? origCat.tasks.find(t => String(t._id) === String(tId)) : null;
     tasks.push({ _id: tId || `temp_task_${Math.random()}`, title, completed: existing ? existing.completed : false });
   }
 
@@ -1920,6 +1971,27 @@ async function submitEditCategory() {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
   }
 }
+
+// ── Sync Day Card IDs (upgrades temporary IDs in DOM to server IDs) ──
+function syncDayCardIds(day) {
+  if (!day || !day._id) return;
+  const cardEl = document.getElementById(`day-card-${day._id}`);
+  if (!cardEl) return;
+
+  // Do not replace card if user currently has an edit modal open for this card
+  if (window.editingDayId === day._id && document.getElementById('modal-edit-category')?.classList.contains('open')) {
+    return;
+  }
+
+  // Check if card in DOM contains any temporary category or task IDs that should be upgraded to server IDs
+  const hasTempCat = cardEl.querySelector('[data-cat-id^="temp_"]');
+  const hasTempTask = cardEl.querySelector('[id^="chk-temp_"]');
+  if (hasTempCat || hasTempTask) {
+    const newCard = buildDayCard(day);
+    cardEl.replaceWith(newCard);
+  }
+}
+window.syncDayCardIds = syncDayCardIds;
 
 // ── Edit Goal (before deadline only) ──────────────────────
 function getObjectIdTimestamp(idStr) {
