@@ -579,7 +579,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     showPage(lastPage);
   }
 
-  loadDays();
+  if (typeof window.loadDays === 'function') {
+    window.loadDays();
+  } else if (typeof loadDays === 'function') {
+    loadDays();
+  }
   loadTemplates();
   if (typeof window.loadSubscriptionStatus === 'function') {
     window.loadSubscriptionStatus();
@@ -1044,8 +1048,19 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('scroll', updateMobileKeyboardState);
 }
 
+function isVirtualKeyboardInput(el) {
+  if (!el || !(el instanceof HTMLElement)) return false;
+  if (el.tagName === 'TEXTAREA' || el.isContentEditable) return true;
+  if (el.tagName === 'INPUT') {
+    const type = (el.getAttribute('type') || el.type || 'text').toLowerCase();
+    const nonKeyboardTypes = ['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'image', 'range', 'color', 'hidden'];
+    return !nonKeyboardTypes.includes(type);
+  }
+  return false;
+}
+
 window.addEventListener('focusin', (e) => {
-  if (window.innerWidth <= 768 && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+  if (window.innerWidth <= 768 && isVirtualKeyboardInput(e.target)) {
     document.body.classList.add('keyboard-visible');
     if (e.target.id === 'nav-search-input') {
       document.body.classList.add('search-active');
@@ -1054,10 +1069,10 @@ window.addEventListener('focusin', (e) => {
 });
 
 window.addEventListener('focusout', (e) => {
-  if (window.innerWidth <= 768 && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+  if (window.innerWidth <= 768) {
     setTimeout(() => {
       const active = document.activeElement;
-      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+      const isInput = isVirtualKeyboardInput(active);
       if (!isInput) {
         document.body.classList.remove('keyboard-visible');
         if (active?.id !== 'nav-search-input') {

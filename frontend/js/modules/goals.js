@@ -224,7 +224,7 @@ function buildGoalCard(goal) {
     
     const checkboxAttrs = isLocked
       ? `${task.completed ? 'checked' : ''} disabled`
-      : `${task.completed ? 'checked' : ''} onchange="toggleGoalTask('${goal._id}','${task._id}',this.checked)"`;
+      : `${task.completed ? 'checked' : ''} onchange="toggleGoalTask('${goal._id}','${task._id}',this.checked); this.blur();"`;
 
     tasksHTML += `
       <div class="task-item">
@@ -294,9 +294,12 @@ function buildGoalCard(goal) {
 }
 
 async function toggleGoalTask(goalId, taskId, checked) {
+  const chkEl = document.getElementById(`gtask-${taskId}`);
+  if (chkEl && typeof chkEl.blur === 'function') {
+    chkEl.blur();
+  }
   if (window.checkEmailVerificationBlocked && window.checkEmailVerificationBlocked()) {
-    const chk = document.getElementById(`gtask-${taskId}`);
-    if (chk) chk.checked = !checked;
+    if (chkEl) chkEl.checked = !checked;
     return;
   }
   const goal = window.allGoals.find(g => g._id === goalId);

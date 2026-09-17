@@ -661,7 +661,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
             <div class="task-item">
               <input type="checkbox" class="task-checkbox"
                 ${task.completed ? 'checked' : ''}
-                onchange="toggleTask('${day._id}','${cat._id}','${task._id}',this.checked)"
+                onchange="toggleTask('${day._id}','${cat._id}','${task._id}',this.checked); this.blur();"
                 id="chk-${task._id}" />
               <label class="task-title" for="chk-${task._id}">${window.escHtml(task.title)}</label>
               <button class="btn-del-task" onclick="deleteTask('${day._id}','${cat._id}','${task._id}')" title="Delete task"><i data-lucide="trash-2"></i></button>
@@ -1022,10 +1022,12 @@ async function toggleTask(dayId, catId, taskId, checked) {
   updateProgressBar(targetDomId, day.categories);
 
   // Micro animation on checkbox
-  if (window.gsap && checked) {
-    const chk = document.getElementById(`chk-${taskId}`);
-    if (chk) {
-      // 1. Tactile checkbox snap back bounce
+  const chk = document.getElementById(`chk-${taskId}`);
+  if (chk && typeof chk.blur === 'function') {
+    chk.blur();
+  }
+  if (window.gsap && checked && chk) {
+    // 1. Tactile checkbox snap back bounce
       gsap.fromTo(chk, { scale: 1.35 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
 
       // 2. Elastic spring row expansion bounce
@@ -1038,11 +1040,10 @@ async function toggleTask(dayId, catId, taskId, checked) {
       }
 
       // 3. Erupt outlined Neo-Brutalist Confetti
-      const rect = chk.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      triggerNeoConfetti(x, y);
-    }
+    const rect = chk.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    triggerNeoConfetti(x, y);
   }
 
   try {
