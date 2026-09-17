@@ -132,17 +132,30 @@ const deleteFromAchievementCloudinary = async (publicIdOrUrl) => {
     const creds = getAchievementCredentials();
     let publicId = publicIdOrUrl;
     if (publicIdOrUrl.includes('cloudinary.com')) {
-      const parts = publicIdOrUrl.split('/');
-      const folderPart = parts[parts.length - 2];
-      const fileName = parts[parts.length - 1].split('.')[0];
-      publicId = `${folderPart}/${fileName}`;
+      const uploadIndex = publicIdOrUrl.indexOf('/upload/');
+      if (uploadIndex !== -1) {
+        let afterUpload = publicIdOrUrl.substring(uploadIndex + 8);
+        afterUpload = afterUpload.replace(/^(?:[a-z]_[^/]+,?)+/i, '').replace(/^\/?v\d+\//, '').replace(/^\//, '');
+        publicId = afterUpload.replace(/\.[a-zA-Z0-9]+$/, '');
+      } else {
+        const parts = publicIdOrUrl.split('/');
+        const folderPart = parts[parts.length - 2];
+        const fileName = parts[parts.length - 1].split('.')[0];
+        publicId = `${folderPart}/${fileName}`;
+      }
+    } else {
+      publicId = publicId.replace(/\.[a-zA-Z0-9]+$/, '');
     }
-    await cloudinary.uploader.destroy(publicId, {
+
+    console.log(`[Cloudinary Delete] Destroying achievement photo "${publicId}" on cloud "${creds.cloud_name}"...`);
+    const res = await cloudinary.uploader.destroy(publicId, {
       cloud_name: creds.cloud_name,
       api_key: creds.api_key,
       api_secret: creds.api_secret,
       resource_type: 'image'
     });
+    console.log(`[Cloudinary Delete] Result:`, res);
+    return res;
   } catch (err) {
     console.error('Achievement Cloudinary delete error:', err);
   }

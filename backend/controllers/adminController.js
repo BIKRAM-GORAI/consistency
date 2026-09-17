@@ -445,6 +445,19 @@ async function deleteUser(req, res) {
     // Similar to authController.deleteAccount but for any user
     await Day.deleteMany({ userId });
     await Goal.deleteMany({ userId });
+    // Clean up all achievements and their Cloudinary photos
+    const userAchs = await Achievement.find({ userId });
+    if (userAchs && userAchs.length > 0) {
+      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+      for (const ach of userAchs) {
+        if (ach.photos && ach.photos.length > 0) {
+          for (const p of ach.photos) {
+            const idOrUrl = p.publicId || p.url;
+            if (idOrUrl) await deleteFromAchievementCloudinary(idOrUrl);
+          }
+        }
+      }
+    }
     await Achievement.deleteMany({ userId });
     await Review.deleteMany({ userId }); // Admin might want to keep or delete reviews
     

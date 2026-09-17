@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v132'; // Bumped for darker gray gradient and Open button with tilted arrow
+const CACHE_NAME = 'consistency-cache-v133'; // Bumped for Cloudinary photo cleanup on day deletion
 const STATIC_ASSETS = [
   '/',
   'index.html',

@@ -1130,11 +1130,22 @@ async function deleteDayCard(dayId) {
       await window.localDb.scratchpads.delete(dayId);
     }
 
+    if (window.localDb && window.localDb.achievements) {
+      try {
+        const dayAchs = await window.localDb.achievements.where('dayId').equals(dayId).toArray();
+        for (const a of dayAchs) {
+          await window.localDb.achievements.delete(a._id);
+        }
+      } catch (e) {
+        console.warn('Error cleaning local achievements for deleted day:', e);
+      }
+    }
+
     // 4. Sync / Offline Queue Logic
     if (String(dayId).startsWith('temp_')) {
       // If it is a local-only offline day card, clear all queued operations for it.
       const pendingItems = await window.localDb.syncQueue
-        .filter(x => x.entity === 'days' && (x.localId === dayId || x.targetId === dayId))
+        .filter(x => (x.entity === 'days' || x.entity === 'achievements') && (x.localId === dayId || x.targetId === dayId || (x.payload && x.payload.dayId === dayId)))
         .toArray();
       
       for (const item of pendingItems) {
@@ -1144,7 +1155,7 @@ async function deleteDayCard(dayId) {
     } else {
       // If it is an existing server-synced day card, clear any pending PUTs/POSTs for this day card
       const pendingItems = await window.localDb.syncQueue
-        .filter(x => x.entity === 'days' && x.targetId === dayId)
+        .filter(x => (x.entity === 'days' || x.entity === 'achievements') && (x.targetId === dayId || (x.payload && x.payload.dayId === dayId)))
         .toArray();
       
       for (const item of pendingItems) {

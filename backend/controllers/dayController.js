@@ -401,6 +401,36 @@ const updateDay = async (req, res) => {
     if (updateData.aiSummary !== undefined) allowedUpdates.aiSummary = updateData.aiSummary;
     if (updateData.reminder !== undefined) allowedUpdates.reminder = updateData.reminder;
 
+    // If all categories were deleted via PUT, treat as complete deletion of the day card
+    if (Array.isArray(updateData.categories) && updateData.categories.length === 0) {
+      const deleted = await Day.findOneAndDelete({ _id: req.params.id, userId });
+      if (!deleted) return res.status(404).json({ message: 'Day not found or unauthorized' });
+
+      const achQuery = {
+        userId,
+        $or: [
+          { dayId: req.params.id },
+          ...(deleted.date ? [{ date: deleted.date }] : [])
+        ]
+      };
+      const achsToDelete = await Achievement.find(achQuery);
+      if (achsToDelete && achsToDelete.length > 0) {
+        const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+        for (const ach of achsToDelete) {
+          if (ach.photos && ach.photos.length > 0) {
+            for (const p of ach.photos) {
+              const idOrUrl = p.publicId || p.url;
+              if (idOrUrl) await deleteFromAchievementCloudinary(idOrUrl);
+            }
+          }
+        }
+        await Achievement.deleteMany(achQuery);
+      }
+      await Scratchpad.deleteMany({ dayId: req.params.id, userId });
+      const newStreak = await updateUserStreakAndActivity(userId, clientDate);
+      return res.json({ message: 'Day deleted successfully as all categories were removed', deleted: true, streak: newStreak });
+    }
+
     const updated = await Day.findOneAndUpdate(
       { _id: req.params.id, userId },
       { $set: allowedUpdates },
@@ -419,7 +449,7 @@ const updateDay = async (req, res) => {
 
 /**
  * DELETE /api/days/:id
- * Delete a day by MongoDB _id.
+ * Delete a day by MongoDB _id, cleaning up achievements and Cloudinary photos.
  */
 const deleteDay = async (req, res) => {
   try {
@@ -430,8 +460,29 @@ const deleteDay = async (req, res) => {
       return res.status(404).json({ message: 'Day not found or unauthorized' });
     }
 
-    // Clean up any achievements associated with this day card for this user
-    await Achievement.deleteMany({ dayId: req.params.id, userId });
+    // Clean up any achievements associated with this day card for this user and destroy Cloudinary photos
+    const achQuery = {
+      userId,
+      $or: [
+        { dayId: req.params.id },
+        ...(deleted.date ? [{ date: deleted.date }] : [])
+      ]
+    };
+    const achsToDelete = await Achievement.find(achQuery);
+    if (achsToDelete && achsToDelete.length > 0) {
+      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+      for (const ach of achsToDelete) {
+        if (ach.photos && ach.photos.length > 0) {
+          for (const p of ach.photos) {
+            const idOrUrl = p.publicId || p.url;
+            if (idOrUrl) {
+              await deleteFromAchievementCloudinary(idOrUrl);
+            }
+          }
+        }
+      }
+      await Achievement.deleteMany(achQuery);
+    }
 
     // Clean up any scratchpads associated with this day card for this user
     await Scratchpad.deleteMany({ dayId: req.params.id, userId });
