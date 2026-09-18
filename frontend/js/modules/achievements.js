@@ -1236,11 +1236,24 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
   if (offlineBanner) offlineBanner.style.display = 'none';
 
   if (imgEl) {
+    if (navigator.onLine) {
+      imgEl.crossOrigin = 'anonymous';
+    } else {
+      imgEl.removeAttribute('crossorigin');
+    }
+
+    imgEl.onerror = () => {
+      if (safeThumb && imgEl.src !== safeThumb) {
+        imgEl.removeAttribute('crossorigin');
+        imgEl.src = safeThumb;
+      }
+    };
+
     imgEl.src = safeThumb || photoUrl; // Instant preview
 
     if (photoUrl && photoUrl !== safeThumb) {
       const fullImg = new Image();
-      fullImg.crossOrigin = 'anonymous';
+      if (navigator.onLine) fullImg.crossOrigin = 'anonymous';
       fullImg.src = photoUrl;
 
       // If full image is already cached in memory/disk:
@@ -1251,7 +1264,7 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
         }
       } else {
         fullImg.onload = () => {
-          if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+          if (activeLightboxData && activeLightboxData.photoUrl === photoUrl && fullImg.naturalWidth > 0) {
             imgEl.src = photoUrl;
             if (offlineBanner) offlineBanner.style.display = 'none';
           }
@@ -1484,26 +1497,79 @@ function initFullscreenPhotoZoom() {
 
 // ── Fullscreen Photo Overlay Handlers (Long Screenshot Scroll & Pinch-Zoom) ──
 function openPhotoFullscreen() {
-  const currentDisplayedSrc = document.getElementById('lightbox-img')?.src;
-  const photoUrl = currentDisplayedSrc || activeLightboxData?.photoUrl;
-  if (!photoUrl) return;
+  const lightboxImg = document.getElementById('lightbox-img');
+  const originalUrl = activeLightboxData?.photoUrl;
+  const safeThumb = getSafeThumbUrl(activeLightboxData?.thumbUrl, originalUrl);
+
+  // Reliable working preview source:
+  // If lightboxImg has rendered dimensions, use its currentSrc/src; otherwise fall back to safe thumbnail
+  const currentPreviewSrc = (lightboxImg && lightboxImg.naturalWidth > 0)
+    ? (lightboxImg.currentSrc || lightboxImg.src)
+    : (safeThumb || originalUrl);
 
   const overlay = document.getElementById('photo-fullscreen-overlay');
   const imgEl = document.getElementById('photo-fullscreen-img');
   if (!overlay || !imgEl) return;
 
-  imgEl.src = photoUrl;
+  // Set appropriate CORS policy:
+  // When offline, do not enforce crossOrigin to avoid browser cache partitioning rejection
+  if (navigator.onLine) {
+    imgEl.crossOrigin = 'anonymous';
+  } else {
+    imgEl.removeAttribute('crossorigin');
+  }
 
-  // If preview was still showing thumbnail when fullscreen was clicked, upgrade smoothly once full image loads
-  if (activeLightboxData?.photoUrl && activeLightboxData.photoUrl !== photoUrl) {
-    const fullImg = new Image();
-    fullImg.crossOrigin = 'anonymous';
-    fullImg.src = activeLightboxData.photoUrl;
-    fullImg.onload = () => {
-      if (overlay.style.display !== 'none') {
-        imgEl.src = activeLightboxData.photoUrl;
+  // Determine starting source:
+  // Check if the original high-resolution image is already present in memory/disk cache
+  let initialSrc = currentPreviewSrc;
+  if (originalUrl && originalUrl !== currentPreviewSrc) {
+    const testImg = new Image();
+    testImg.src = originalUrl;
+    if (testImg.complete && testImg.naturalWidth > 0) {
+      initialSrc = originalUrl;
+    }
+  }
+
+  // Fallback handler: if initialSrc fails (e.g. offline and uncached high-res),
+  // immediately fall back to the preview image so it NEVER shows a blank screen
+  imgEl.onerror = () => {
+    console.warn('[Fullscreen Photo] Failed to load:', imgEl.src, 'falling back to preview.');
+    imgEl.onerror = null; // Prevent recursion
+    imgEl.removeAttribute('crossorigin');
+    if (currentPreviewSrc && imgEl.src !== currentPreviewSrc) {
+      imgEl.src = currentPreviewSrc;
+    } else if (safeThumb && imgEl.src !== safeThumb) {
+      imgEl.src = safeThumb;
+    } else {
+      // Last-resort fallback: directly copy pixels from rendered lightboxImg
+      try {
+        if (lightboxImg && lightboxImg.naturalWidth > 0) {
+          const c = document.createElement('canvas');
+          c.width = lightboxImg.naturalWidth;
+          c.height = lightboxImg.naturalHeight;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(lightboxImg, 0, 0);
+          imgEl.src = c.toDataURL('image/jpeg', 0.95);
+        }
+      } catch (e) {
+        // Tainted canvas, ignore
+      }
+    }
+  };
+
+  imgEl.src = initialSrc;
+
+  // If we loaded the preview thumbnail initially, attempt to upgrade to original high-res in background
+  if (originalUrl && initialSrc !== originalUrl) {
+    const bgImg = new Image();
+    if (navigator.onLine) bgImg.crossOrigin = 'anonymous';
+    bgImg.src = originalUrl;
+    bgImg.onload = () => {
+      if (overlay.style.display !== 'none' && bgImg.naturalWidth > 0) {
+        imgEl.src = originalUrl;
       }
     };
+    // Note: If bgImg fails (e.g. offline), we do nothing; the preview image remains cleanly displayed!
   }
 
   resetFullscreenPhotoZoom();
@@ -1525,6 +1591,8 @@ function closePhotoFullscreen() {
   resetFullscreenPhotoZoom();
   overlay.style.display = 'none';
   document.body.style.overflow = '';
+  const imgEl = document.getElementById('photo-fullscreen-img');
+  if (imgEl) imgEl.onerror = null;
 }
 
 // ── Achievement Photo Download Handler (Cached/Direct Memory, APK Gallery & Desktop) ──
