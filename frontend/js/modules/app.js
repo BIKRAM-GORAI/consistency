@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ['modal-profile', 'modal-add-day', 'modal-add-goal', 'modal-add-category',
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
        'modal-edit-category', 'modal-edit-goal', 'modal-edit-group',
-       'modal-add-achievement', 'modal-edit-achievement',
+       'modal-add-achievement', 'modal-edit-achievement', 'modal-photo-lightbox',
        'modal-save-template', 'modal-manage-templates', 'modal-edit-template',
        'modal-group-analysis'].forEach(id => {
         const el = document.getElementById(id);

@@ -1670,6 +1670,12 @@ function closeModal(id) {
       onComplete: () => {
         overlay.classList.remove('open');
         gsap.set([overlay, modalEl], { clearProps: 'transform,opacity' });
+        if (id === 'modal-photo-lightbox' && typeof window.closePhotoFullscreen === 'function') {
+          window.closePhotoFullscreen();
+        }
+        if (!document.querySelector('.modal-overlay.open')) {
+          document.body.style.overflow = '';
+        }
         if (id === 'modal-add-leetcode') {
           resetLeetCodeModalState();
         }
@@ -1711,6 +1717,12 @@ function closeModal(id) {
     }
   } else {
     overlay.classList.remove('open');
+    if (id === 'modal-photo-lightbox' && typeof window.closePhotoFullscreen === 'function') {
+      window.closePhotoFullscreen();
+    }
+    if (!document.querySelector('.modal-overlay.open')) {
+      document.body.style.overflow = '';
+    }
     if (id === 'modal-add-leetcode') {
       resetLeetCodeModalState();
     }
@@ -1749,6 +1761,12 @@ function forceCloseModal(id) {
       // Setting style.display='none' creates an invisible full-screen overlay that
       // blocks all subsequent clicks because position:fixed;inset:0 still applies.
       overlay.style.removeProperty('display');
+      if (id === 'modal-photo-lightbox' && typeof window.closePhotoFullscreen === 'function') {
+        window.closePhotoFullscreen();
+      }
+      if (!document.querySelector('.modal-overlay.open')) {
+        document.body.style.overflow = '';
+      }
 
       // Reset LeetCode modal state if closing LeetCode modal
       if (id === 'modal-add-leetcode') {

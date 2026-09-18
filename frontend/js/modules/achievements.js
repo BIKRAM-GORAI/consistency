@@ -1524,11 +1524,7 @@ function closePhotoFullscreen() {
   if (!overlay) return;
   resetFullscreenPhotoZoom();
   overlay.style.display = 'none';
-
-  const modalEl = document.getElementById('modal-photo-lightbox');
-  if (!modalEl || !modalEl.classList.contains('open')) {
-    document.body.style.overflow = '';
-  }
+  document.body.style.overflow = '';
 }
 
 // ── Achievement Photo Download Handler (Cached/Direct Memory, APK Gallery & Desktop) ──
