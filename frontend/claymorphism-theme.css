@@ -87,7 +87,7 @@
 /* ============================================================
    3. DAY CARDS — Richer Medium Green, Colored Inner Blocks
    ============================================================ */
-[data-theme="claymorphism"] .day-card {
+[data-theme="claymorphism"] .day-card:not(.day-card-skeleton) {
   background: #74c69d !important;  /* Richer medium green — well saturated */
   border: none !important;
   border-radius: 22px !important;
@@ -97,7 +97,7 @@
   transform: none !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
-[data-theme="claymorphism"] .day-card:hover {
+[data-theme="claymorphism"] .day-card:not(.day-card-skeleton):hover {
   transform: translateY(-3px) !important;
   box-shadow: 0 12px 28px rgba(20, 60, 35, 0.26),
               inset 4px 4px 8px rgba(255,255,255,0.4),
@@ -1493,3 +1493,14 @@
   border: 1.5px solid rgba(13, 31, 21, 0.15) !important;
   box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(255, 255, 255, 0.8) !important;
 }
+
+/* Universal White Skeleton in Claymorphism */
+[data-theme="claymorphism"] .day-card.day-card-skeleton,
+[data-theme="claymorphism"] #day-card-skeleton {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+}
+
