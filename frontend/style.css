@@ -8984,18 +8984,30 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   z-index: 1000000;
   background: rgba(8, 10, 18, 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   user-select: none;
+  scrollbar-width: none !important; /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none !important; /* Hide scrollbar for IE/Edge */
+}
+
+/* Hide scrollbars for Chrome, Safari, Opera & Android WebView */
+.photo-fullscreen-overlay::-webkit-scrollbar,
+.photo-fullscreen-scroll-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 /* Permanent Fixed Top-Left Back Button */
@@ -9103,6 +9115,9 @@ body.native-android .photo-fullscreen-download-btn {
   width: 100%;
   padding: calc(max(48px, calc(env(safe-area-inset-top, 0px) + 16px)) + 52px) 16px calc(env(safe-area-inset-bottom, 0px) + 36px) 16px;
   box-sizing: border-box;
+  overflow-x: hidden;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 .photo-fullscreen-img {

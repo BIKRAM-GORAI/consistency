@@ -1197,22 +1197,45 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
     delBtn.style.display = (achId && photoId && isOwner !== false) ? 'inline-flex' : 'none';
   }
 
-  // Check online state: if offline, use the cached thumbnail and display disclaimer
+  // Smart image loading:
+  // 1. Instantly display safeThumb (already in memory/cache from day card) so UI is snappy.
+  // 2. Hide offline banner by default.
+  // 3. Attempt to load full-resolution photoUrl (from HTTP cache if offline, or network if online).
+  // 4. If fullImg loads, seamlessly upgrade imgEl.src = photoUrl with NO offline banner.
+  // 5. If fullImg fails to load (e.g. offline and was never opened before), keep safeThumb and show the offline banner.
   const safeThumb = getSafeThumbUrl(thumbUrl, photoUrl);
-  if (!navigator.onLine) {
-    if (offlineBanner) offlineBanner.style.display = 'flex';
-    if (imgEl) imgEl.src = safeThumb || photoUrl;
-  } else {
-    if (offlineBanner) offlineBanner.style.display = 'none';
-    if (imgEl) {
-      imgEl.src = safeThumb || photoUrl; // Instant preview
+  if (offlineBanner) offlineBanner.style.display = 'none';
+
+  if (imgEl) {
+    imgEl.src = safeThumb || photoUrl; // Instant preview
+
+    if (photoUrl && photoUrl !== safeThumb) {
       const fullImg = new Image();
+      fullImg.crossOrigin = 'anonymous';
       fullImg.src = photoUrl;
-      fullImg.onload = () => {
+
+      // If full image is already cached in memory/disk:
+      if (fullImg.complete && fullImg.naturalWidth > 0) {
         if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
           imgEl.src = photoUrl;
+          if (offlineBanner) offlineBanner.style.display = 'none';
         }
-      };
+      } else {
+        fullImg.onload = () => {
+          if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+            imgEl.src = photoUrl;
+            if (offlineBanner) offlineBanner.style.display = 'none';
+          }
+        };
+        fullImg.onerror = () => {
+          if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+            // Full resolution could not be loaded (e.g. device is offline and not in cache)
+            if (!navigator.onLine && offlineBanner) {
+              offlineBanner.style.display = 'flex';
+            }
+          }
+        };
+      }
     }
   }
 
@@ -1432,7 +1455,8 @@ function initFullscreenPhotoZoom() {
 
 // ── Fullscreen Photo Overlay Handlers (Long Screenshot Scroll & Pinch-Zoom) ──
 function openPhotoFullscreen() {
-  const photoUrl = activeLightboxData?.photoUrl || document.getElementById('lightbox-img')?.src;
+  const currentDisplayedSrc = document.getElementById('lightbox-img')?.src;
+  const photoUrl = currentDisplayedSrc || activeLightboxData?.photoUrl;
   if (!photoUrl) return;
 
   const overlay = document.getElementById('photo-fullscreen-overlay');
@@ -1440,6 +1464,19 @@ function openPhotoFullscreen() {
   if (!overlay || !imgEl) return;
 
   imgEl.src = photoUrl;
+
+  // If preview was still showing thumbnail when fullscreen was clicked, upgrade smoothly once full image loads
+  if (activeLightboxData?.photoUrl && activeLightboxData.photoUrl !== photoUrl) {
+    const fullImg = new Image();
+    fullImg.crossOrigin = 'anonymous';
+    fullImg.src = activeLightboxData.photoUrl;
+    fullImg.onload = () => {
+      if (overlay.style.display !== 'none') {
+        imgEl.src = activeLightboxData.photoUrl;
+      }
+    };
+  }
+
   resetFullscreenPhotoZoom();
   initFullscreenPhotoZoom();
 
