@@ -2,6 +2,149 @@
 import { scheduleLocalReminder, cancelLocalReminder, updateTodayStatusCache } from './reminders.js';
 console.log("[Module] days.js initializing...");
 
+// ── Days Skeleton Loader Helpers ────────────────────────────
+function getDaysSkeletonHTML() {
+  return `
+    <div class="day-card today-card day-card-skeleton" id="day-card-skeleton" aria-hidden="true">
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="card-date-wrap">
+          <div class="sk-shimmer sk-title" style="width: 175px;"></div>
+          <div class="sk-shimmer sk-subtitle" style="width: 90px; margin-top: 5px;"></div>
+        </div>
+        <div class="card-header-actions" style="display: flex; align-items: center; gap: 8px;">
+          <div class="sk-shimmer sk-badge" style="width: 95px;"></div>
+          <div class="sk-shimmer sk-badge" style="width: 52px;"></div>
+        </div>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="progress-section">
+        <div class="progress-meta">
+          <div class="sk-shimmer sk-prog-label"></div>
+          <div class="sk-shimmer sk-prog-pct"></div>
+        </div>
+        <div class="progress-track sk-prog-track">
+          <div class="progress-fill sk-shimmer sk-prog-fill" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- Categories List -->
+      <div class="categories-list">
+        <!-- Category 1: Academics (3 tasks) -->
+        <div class="category-block">
+          <div class="category-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="sk-cat-dot"></span>
+              <div class="sk-shimmer sk-cat-title" style="width: 95px;"></div>
+            </div>
+            <div class="sk-shimmer sk-cat-count"></div>
+          </div>
+          <div class="tasks-list">
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 46%;"></div>
+            </div>
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 64%;"></div>
+            </div>
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 32%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 2: Professional (2 tasks) -->
+        <div class="category-block">
+          <div class="category-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="sk-cat-dot"></span>
+              <div class="sk-shimmer sk-cat-title" style="width: 120px;"></div>
+            </div>
+            <div class="sk-shimmer sk-cat-count"></div>
+          </div>
+          <div class="tasks-list">
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 55%;"></div>
+            </div>
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 38%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 3: Personal (1 task) -->
+        <div class="category-block">
+          <div class="category-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="sk-cat-dot"></span>
+              <div class="sk-shimmer sk-cat-title" style="width: 85px;"></div>
+            </div>
+            <div class="sk-shimmer sk-cat-count"></div>
+          </div>
+          <div class="tasks-list">
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 42%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 4: LeetCode (2 tasks with difficulty badge) -->
+        <div class="category-block">
+          <div class="category-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="sk-cat-dot"></span>
+              <div class="sk-shimmer sk-cat-title" style="width: 90px;"></div>
+            </div>
+            <div class="sk-shimmer sk-cat-count"></div>
+          </div>
+          <div class="tasks-list">
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 60%;"></div>
+              <div class="sk-shimmer sk-diff-pill" style="margin-left: auto;"></div>
+            </div>
+            <div class="task-item">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 48%;"></div>
+              <div class="sk-shimmer sk-diff-pill" style="margin-left: auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Footer Actions -->
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-left: 14px;">
+        <div class="sk-shimmer sk-footer-btn" style="width: 82px;"></div>
+        <div class="sk-shimmer sk-footer-btn" style="width: 148px;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function showDaysSkeleton() {
+  const container = document.getElementById('cards-container');
+  if (!container) return;
+  if (container.querySelectorAll('.day-card:not(.day-card-skeleton)').length > 0) return;
+  if (!container.querySelector('.day-card-skeleton')) {
+    container.innerHTML = getDaysSkeletonHTML();
+  }
+}
+
+function hideDaysSkeleton() {
+  const sk = document.getElementById('day-card-skeleton');
+  if (sk) sk.remove();
+}
+
+window.getDaysSkeletonHTML = getDaysSkeletonHTML;
+window.showDaysSkeleton = showDaysSkeleton;
+window.hideDaysSkeleton = hideDaysSkeleton;
+
 // ── Days ───────────────────────────────────────────────────
 async function loadDays(page = 1) {
   if (window.syncManager && window.syncManager.isProcessing) {
@@ -80,17 +223,15 @@ async function loadDays(page = 1) {
           updateTodayStatusCache(today, false, []);
         }
 
+        hideDaysSkeleton();
         if (loadingEl) loadingEl.innerHTML = '';
       } else {
-        // New user or empty local cache: render immediately so empty state and "+ New Day Card" button appear instantly
-        window.allDays = [];
-        renderDays();
-        updateTodayStatusCache(window.todayStr(), false, []);
-        if (loadingEl) loadingEl.innerHTML = '';
+        // Empty local cache (e.g. fresh login): keep or display skeleton while server fetch is in flight
+        showDaysSkeleton();
       }
     } catch (err) {
       console.warn('Dexie read error:', err);
-      if (loadingEl) loadingEl.innerHTML = '';
+      showDaysSkeleton();
     }
   }
 
@@ -271,6 +412,7 @@ async function loadDays(page = 1) {
       }
     }
 
+    hideDaysSkeleton();
     if (loadingEl) loadingEl.innerHTML = '';
     // Confirmed server reachable — enable the leaderboard toggles
     setLeaderboardTogglesEnabled(true);
@@ -286,8 +428,14 @@ async function loadDays(page = 1) {
     
     // If we have cached data, don't show a big error, just a small notice
     if (window.allDays.length > 0) {
+      hideDaysSkeleton();
       if (loadingEl) loadingEl.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;">Showing offline data</p>';
       return;
+    }
+
+    hideDaysSkeleton();
+    if (!window.allDays.length) {
+      renderDays();
     }
 
     let errorMessage = '⚠️ Failed to load days. Please check your connection.';

@@ -1050,6 +1050,197 @@ body {
 .empty-state p { font-size: 14px; color: var(--text-muted); }
 
 /* ============================================================
+   DAILY CARD SKELETON LOADER
+   ============================================================ */
+@keyframes card-skeleton-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.day-card-skeleton {
+  pointer-events: none;
+  user-select: none;
+  cursor: wait !important;
+  opacity: 0.95;
+  transition: opacity 0.25s ease;
+}
+
+.sk-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(140, 140, 150, 0.14) 0%,
+    rgba(225, 225, 235, 0.45) 50%,
+    rgba(140, 140, 150, 0.14) 100%
+  );
+  background-size: 800px 100%;
+  animation: card-skeleton-shimmer 1.8s ease-in-out infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .sk-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 800px 100%;
+}
+
+[data-theme="claymorphism"] .sk-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.62) 50%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  background-size: 800px 100%;
+}
+
+[data-theme="aurora"] .sk-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(167, 139, 250, 0.26) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  background-size: 800px 100%;
+}
+
+.sk-title {
+  height: 20px;
+  border-radius: var(--r-sm, 6px);
+}
+
+.sk-subtitle {
+  height: 12px;
+  border-radius: var(--r-sm, 4px);
+}
+
+.sk-badge {
+  height: 24px;
+  border-radius: var(--r-full, 9999px);
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="claymorphism"] .sk-badge {
+  border: none;
+  box-shadow: inset 1px 1px 3px rgba(255, 255, 255, 0.7),
+              inset -1px -1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sk-prog-label {
+  width: 68px;
+  height: 12px;
+  border-radius: var(--r-sm, 4px);
+}
+
+.sk-prog-pct {
+  width: 34px;
+  height: 14px;
+  border-radius: var(--r-sm, 4px);
+}
+
+.sk-prog-track {
+  height: 12px;
+  background: var(--bg-muted);
+  border-radius: var(--r-sm, 6px);
+  overflow: hidden;
+  border: 2px solid var(--black);
+}
+
+.sk-prog-fill {
+  height: 100%;
+  background: var(--yellow) !important;
+  opacity: 0.9;
+}
+
+[data-theme="claymorphism"] .sk-prog-fill {
+  background: #f5c400 !important;
+}
+
+.sk-cat-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--green, #22c55e);
+  border: 2px solid var(--black);
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+[data-theme="claymorphism"] .sk-cat-dot {
+  border: none;
+  border-radius: 50%;
+  background: #27a55a;
+}
+
+.sk-cat-title {
+  height: 12px;
+  border-radius: var(--r-sm, 4px);
+}
+
+.sk-cat-count {
+  width: 32px;
+  height: 18px;
+  border-radius: var(--r-sm, 6px);
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="claymorphism"] .sk-cat-count {
+  border: none;
+  border-radius: 12px;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.sk-task-chk {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-sm, 4px);
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+[data-theme="claymorphism"] .sk-task-chk {
+  border-radius: 50%;
+  border: 2px solid rgba(13, 31, 21, 0.25);
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.sk-task-title {
+  height: 14px;
+  border-radius: var(--r-sm, 4px);
+}
+
+.sk-diff-pill {
+  width: 58px;
+  height: 20px;
+  border-radius: var(--r-sm, 6px);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="claymorphism"] .sk-diff-pill {
+  border: none;
+  border-radius: 12px;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.sk-footer-btn {
+  height: 26px;
+  border-radius: var(--r-full, 9999px);
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="claymorphism"] .sk-footer-btn {
+  border: none;
+  box-shadow: inset 1px 1px 3px rgba(255, 255, 255, 0.8),
+              inset -1px -1px 3px rgba(20, 60, 35, 0.12);
+}
+
+
+
+/* ============================================================
    GOALS PAGE
    ============================================================ */
 .goals-container { display: flex; flex-direction: column; gap: 20px; }
