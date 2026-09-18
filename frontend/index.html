@@ -3289,6 +3289,10 @@
 
       <!-- Clean Black Background Frame -->
       <div style="position: relative; background: #0b0f19; min-height: 280px; max-height: 65vh; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 12px;">
+        <!-- Fullscreen icon button at top right of the photo -->
+        <button id="lightbox-fullscreen-btn" type="button" onclick="window.openPhotoFullscreen()" title="Open Fullscreen (Scroll Long Screenshot)" style="position: absolute; top: 14px; right: 14px; z-index: 10; width: 34px; height: 34px; border-radius: 50%; background: #ffffff; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--black); box-shadow: 2px 2px 0 var(--black); transition: transform 0.15s ease;">
+          <i data-lucide="maximize-2" style="width: 16px; height: 16px;"></i>
+        </button>
         <img id="lightbox-img" src="" alt="Photo" style="max-width: 100%; max-height: 60vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; display: block;" />
       </div>
 
@@ -3304,6 +3308,20 @@
           <button type="button" class="btn-primary ripple" style="padding: 8px 24px; font-size: 13px; font-weight: 900; border-radius: 20px; background: #16a34a; border: 2px solid var(--black); box-shadow: 2px 2px 0 var(--black); color: #ffffff; cursor: pointer; letter-spacing: 0.5px;" onclick="closeModal('modal-photo-lightbox')">DONE</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== OVERLAY: Fullscreen Photo Viewer (Supports Long Scrolling Screenshots) ===== -->
+  <div id="photo-fullscreen-overlay" class="photo-fullscreen-overlay" style="display: none;">
+    <!-- Permanent Fixed Back Button at Top-Left (stays fixed during scroll) -->
+    <button id="photo-fullscreen-back-btn" type="button" onclick="window.closePhotoFullscreen()" class="photo-fullscreen-back-btn" title="Back to preview (Esc)">
+      <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+      <span>Back</span>
+    </button>
+
+    <!-- Scrollable Photo Container for Long Screenshots -->
+    <div id="photo-fullscreen-scroll-container" class="photo-fullscreen-scroll-container">
+      <img id="photo-fullscreen-img" src="" alt="Fullscreen Achievement Photo" class="photo-fullscreen-img" />
     </div>
   </div>
 

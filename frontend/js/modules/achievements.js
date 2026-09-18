@@ -1220,6 +1220,47 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
   if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-photo-lightbox') });
 }
 
+// ── Fullscreen Photo Overlay Handlers (Long Screenshot Scroll) ──
+function openPhotoFullscreen() {
+  const photoUrl = activeLightboxData?.photoUrl || document.getElementById('lightbox-img')?.src;
+  if (!photoUrl) return;
+
+  const overlay = document.getElementById('photo-fullscreen-overlay');
+  const imgEl = document.getElementById('photo-fullscreen-img');
+  if (!overlay || !imgEl) return;
+
+  imgEl.src = photoUrl;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  overlay.scrollTop = 0;
+  overlay.scrollLeft = 0;
+
+  if (window.lucide) {
+    lucide.createIcons({ root: overlay });
+  }
+}
+
+function closePhotoFullscreen() {
+  const overlay = document.getElementById('photo-fullscreen-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+
+  const modalEl = document.getElementById('modal-photo-lightbox');
+  if (!modalEl || !modalEl.classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('photo-fullscreen-overlay');
+    if (overlay && overlay.style.display !== 'none') {
+      closePhotoFullscreen();
+      e.stopImmediatePropagation();
+    }
+  }
+});
+
 function toggleLightboxEdit(show) {
   const panel = document.getElementById('lightbox-edit-panel');
   const titleInput = document.getElementById('lightbox-edit-title-input');
@@ -1582,6 +1623,8 @@ window.handleAchPhotoSelection = handleAchPhotoSelection;
 window.removeSelectedAchPhoto = removeSelectedAchPhoto;
 window.triggerPhotoSlotClick = triggerPhotoSlotClick;
 window.openPhotoLightbox = openPhotoLightbox;
+window.openPhotoFullscreen = openPhotoFullscreen;
+window.closePhotoFullscreen = closePhotoFullscreen;
 window.toggleLightboxEdit = toggleLightboxEdit;
 window.saveLightboxDetails = saveLightboxDetails;
 window.deleteActiveLightboxPhoto = deleteActiveLightboxPhoto;
