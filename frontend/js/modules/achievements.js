@@ -1220,7 +1220,217 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
   if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-photo-lightbox') });
 }
 
-// ── Fullscreen Photo Overlay Handlers (Long Screenshot Scroll) ──
+// ── Fullscreen Photo Pinch-to-Zoom & Pan Engine ──
+const fullscreenZoomState = {
+  scale: 1,
+  translateX: 0,
+  translateY: 0,
+  isDragging: false,
+  isPinching: false,
+  startX: 0,
+  startY: 0,
+  initialPinchDistance: 0,
+  initialScale: 1,
+  lastTapTime: 0
+};
+
+let hasFullscreenZoomInited = false;
+
+function applyFullscreenTransform(disableTransition = false) {
+  const imgEl = document.getElementById('photo-fullscreen-img');
+  if (!imgEl) return;
+  if (disableTransition) {
+    imgEl.style.transition = 'none';
+  } else {
+    imgEl.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+  }
+  if (fullscreenZoomState.scale <= 1) {
+    imgEl.style.transform = 'none';
+    imgEl.style.cursor = 'default';
+  } else {
+    imgEl.style.transform = `translate3d(${fullscreenZoomState.translateX}px, ${fullscreenZoomState.translateY}px, 0px) scale(${fullscreenZoomState.scale})`;
+    imgEl.style.cursor = fullscreenZoomState.isDragging ? 'grabbing' : 'grab';
+  }
+}
+
+function resetFullscreenPhotoZoom() {
+  fullscreenZoomState.scale = 1;
+  fullscreenZoomState.translateX = 0;
+  fullscreenZoomState.translateY = 0;
+  fullscreenZoomState.isDragging = false;
+  fullscreenZoomState.isPinching = false;
+  fullscreenZoomState.initialPinchDistance = 0;
+  fullscreenZoomState.initialScale = 1;
+  applyFullscreenTransform(true);
+}
+
+function initFullscreenPhotoZoom() {
+  if (hasFullscreenZoomInited) return;
+  const overlay = document.getElementById('photo-fullscreen-overlay');
+  const imgEl = document.getElementById('photo-fullscreen-img');
+  if (!overlay || !imgEl) return;
+
+  hasFullscreenZoomInited = true;
+
+  // Prevent browser native image dragging
+  imgEl.addEventListener('dragstart', (e) => e.preventDefault());
+
+  const getTouchDist = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  // Touch start: handle 2-finger pinch and 1-finger pan / double-tap
+  overlay.addEventListener('touchstart', (e) => {
+    if (e.target.closest('#photo-fullscreen-back-btn, #photo-fullscreen-download-btn')) {
+      return;
+    }
+
+    if (e.touches.length === 2) {
+      fullscreenZoomState.isPinching = true;
+      fullscreenZoomState.isDragging = false;
+      fullscreenZoomState.initialPinchDistance = getTouchDist(e.touches);
+      fullscreenZoomState.initialScale = fullscreenZoomState.scale;
+    } else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - fullscreenZoomState.lastTapTime < 320) {
+        // Double-tap detected: toggle between 1x and 2.5x
+        fullscreenZoomState.lastTapTime = 0;
+        if (fullscreenZoomState.scale > 1.15) {
+          resetFullscreenPhotoZoom();
+        } else {
+          fullscreenZoomState.scale = 2.5;
+          fullscreenZoomState.translateX = 0;
+          fullscreenZoomState.translateY = 0;
+          applyFullscreenTransform(false);
+        }
+        return;
+      }
+      fullscreenZoomState.lastTapTime = now;
+
+      // If already zoomed in, single touch begins panning
+      if (fullscreenZoomState.scale > 1) {
+        fullscreenZoomState.isDragging = true;
+        fullscreenZoomState.startX = e.touches[0].clientX - fullscreenZoomState.translateX;
+        fullscreenZoomState.startY = e.touches[0].clientY - fullscreenZoomState.translateY;
+      }
+    }
+  }, { passive: true });
+
+  // Touch move: handle pinch scaling or panning
+  overlay.addEventListener('touchmove', (e) => {
+    if (e.target.closest('#photo-fullscreen-back-btn, #photo-fullscreen-download-btn')) {
+      return;
+    }
+
+    if (fullscreenZoomState.isPinching && e.touches.length === 2) {
+      if (e.cancelable) e.preventDefault();
+      const currentDist = getTouchDist(e.touches);
+      if (fullscreenZoomState.initialPinchDistance > 0) {
+        const ratio = currentDist / fullscreenZoomState.initialPinchDistance;
+        let newScale = fullscreenZoomState.initialScale * ratio;
+        newScale = Math.min(5, Math.max(0.85, newScale));
+        fullscreenZoomState.scale = newScale;
+
+        if (newScale <= 1) {
+          fullscreenZoomState.translateX = 0;
+          fullscreenZoomState.translateY = 0;
+        } else {
+          const maxMoveX = Math.max(0, (imgEl.offsetWidth * newScale - imgEl.offsetWidth) / 2);
+          const maxMoveY = Math.max(0, (imgEl.offsetHeight * newScale - imgEl.offsetHeight) / 2);
+          fullscreenZoomState.translateX = Math.min(maxMoveX, Math.max(-maxMoveX, fullscreenZoomState.translateX));
+          fullscreenZoomState.translateY = Math.min(maxMoveY, Math.max(-maxMoveY, fullscreenZoomState.translateY));
+        }
+        applyFullscreenTransform(true);
+      }
+    } else if (fullscreenZoomState.isDragging && e.touches.length === 1 && fullscreenZoomState.scale > 1) {
+      if (e.cancelable) e.preventDefault();
+      const maxMoveX = Math.max(0, (imgEl.offsetWidth * fullscreenZoomState.scale - imgEl.offsetWidth) / 2);
+      const maxMoveY = Math.max(0, (imgEl.offsetHeight * fullscreenZoomState.scale - imgEl.offsetHeight) / 2);
+      const newX = e.touches[0].clientX - fullscreenZoomState.startX;
+      const newY = e.touches[0].clientY - fullscreenZoomState.startY;
+
+      fullscreenZoomState.translateX = Math.min(maxMoveX, Math.max(-maxMoveX, newX));
+      fullscreenZoomState.translateY = Math.min(maxMoveY, Math.max(-maxMoveY, newY));
+      applyFullscreenTransform(true);
+    }
+  }, { passive: false });
+
+  // Touch end: finalize gestures and snap back if needed
+  overlay.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      fullscreenZoomState.isPinching = false;
+    }
+    if (e.touches.length === 0) {
+      fullscreenZoomState.isDragging = false;
+      if (fullscreenZoomState.scale < 1.05) {
+        resetFullscreenPhotoZoom();
+      } else {
+        applyFullscreenTransform(false);
+      }
+    } else if (e.touches.length === 1 && fullscreenZoomState.scale > 1) {
+      fullscreenZoomState.isDragging = true;
+      fullscreenZoomState.startX = e.touches[0].clientX - fullscreenZoomState.translateX;
+      fullscreenZoomState.startY = e.touches[0].clientY - fullscreenZoomState.translateY;
+    }
+  });
+
+  overlay.addEventListener('touchcancel', () => {
+    fullscreenZoomState.isPinching = false;
+    fullscreenZoomState.isDragging = false;
+  });
+
+  // Desktop Mouse Drag / Panning
+  imgEl.addEventListener('mousedown', (e) => {
+    if (fullscreenZoomState.scale <= 1) return;
+    fullscreenZoomState.isDragging = true;
+    fullscreenZoomState.startX = e.clientX - fullscreenZoomState.translateX;
+    fullscreenZoomState.startY = e.clientY - fullscreenZoomState.translateY;
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!fullscreenZoomState.isDragging || overlay.style.display === 'none') return;
+    const maxMoveX = Math.max(0, (imgEl.offsetWidth * fullscreenZoomState.scale - imgEl.offsetWidth) / 2);
+    const maxMoveY = Math.max(0, (imgEl.offsetHeight * fullscreenZoomState.scale - imgEl.offsetHeight) / 2);
+    fullscreenZoomState.translateX = Math.min(maxMoveX, Math.max(-maxMoveX, e.clientX - fullscreenZoomState.startX));
+    fullscreenZoomState.translateY = Math.min(maxMoveY, Math.max(-maxMoveY, e.clientY - fullscreenZoomState.startY));
+    applyFullscreenTransform(true);
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (fullscreenZoomState.isDragging) {
+      fullscreenZoomState.isDragging = false;
+      applyFullscreenTransform(false);
+    }
+  });
+
+  // Desktop trackpad / Ctrl+wheel zoom
+  overlay.addEventListener('wheel', (e) => {
+    if (overlay.style.display === 'none') return;
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const zoomFactor = 0.08;
+      const delta = -e.deltaY;
+      let newScale = fullscreenZoomState.scale + (delta > 0 ? zoomFactor : -zoomFactor) * fullscreenZoomState.scale;
+      newScale = Math.min(5, Math.max(1, newScale));
+      fullscreenZoomState.scale = newScale;
+      if (newScale === 1) {
+        fullscreenZoomState.translateX = 0;
+        fullscreenZoomState.translateY = 0;
+      } else {
+        const maxMoveX = Math.max(0, (imgEl.offsetWidth * newScale - imgEl.offsetWidth) / 2);
+        const maxMoveY = Math.max(0, (imgEl.offsetHeight * newScale - imgEl.offsetHeight) / 2);
+        fullscreenZoomState.translateX = Math.min(maxMoveX, Math.max(-maxMoveX, fullscreenZoomState.translateX));
+        fullscreenZoomState.translateY = Math.min(maxMoveY, Math.max(-maxMoveY, fullscreenZoomState.translateY));
+      }
+      applyFullscreenTransform(false);
+    }
+  }, { passive: false });
+}
+
+// ── Fullscreen Photo Overlay Handlers (Long Screenshot Scroll & Pinch-Zoom) ──
 function openPhotoFullscreen() {
   const photoUrl = activeLightboxData?.photoUrl || document.getElementById('lightbox-img')?.src;
   if (!photoUrl) return;
@@ -1230,6 +1440,9 @@ function openPhotoFullscreen() {
   if (!overlay || !imgEl) return;
 
   imgEl.src = photoUrl;
+  resetFullscreenPhotoZoom();
+  initFullscreenPhotoZoom();
+
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   overlay.scrollTop = 0;
@@ -1243,6 +1456,7 @@ function openPhotoFullscreen() {
 function closePhotoFullscreen() {
   const overlay = document.getElementById('photo-fullscreen-overlay');
   if (!overlay) return;
+  resetFullscreenPhotoZoom();
   overlay.style.display = 'none';
 
   const modalEl = document.getElementById('modal-photo-lightbox');

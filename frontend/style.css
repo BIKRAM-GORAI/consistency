@@ -9001,8 +9001,8 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 /* Permanent Fixed Top-Left Back Button */
 .photo-fullscreen-back-btn {
   position: fixed;
-  top: 18px;
-  left: 18px;
+  top: 22px;
+  left: 20px;
   z-index: 1000010;
   display: inline-flex;
   align-items: center;
@@ -9034,8 +9034,8 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 /* Permanent Fixed Top-Right Download Button */
 .photo-fullscreen-download-btn {
   position: fixed;
-  top: 18px;
-  right: 18px;
+  top: 22px;
+  right: 20px;
   z-index: 1000010;
   display: inline-flex;
   align-items: center;
@@ -9069,18 +9069,44 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   transform: scale(1.1);
 }
 
-/* Photo Scroll Container & Image */
+/* Mobile Status Bar / Notification Bar Clearance */
+@media (max-width: 768px) {
+  .photo-fullscreen-back-btn,
+  .photo-fullscreen-download-btn {
+    top: max(48px, calc(env(safe-area-inset-top, 0px) + 16px));
+  }
+  .photo-fullscreen-back-btn {
+    left: 14px;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  .photo-fullscreen-download-btn {
+    right: 14px;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+body.native-android .photo-fullscreen-back-btn,
+body.native-android .photo-fullscreen-download-btn {
+  top: max(48px, calc(env(safe-area-inset-top, 0px) + 16px));
+}
+
+/* Photo Scroll Container & Image (Vertical Centering + Smooth Long Screenshot Scroll) */
 .photo-fullscreen-scroll-container {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
-  padding: 76px 16px 56px 16px;
+  padding: calc(max(48px, calc(env(safe-area-inset-top, 0px) + 16px)) + 52px) 16px calc(env(safe-area-inset-bottom, 0px) + 36px) 16px;
   box-sizing: border-box;
 }
 
 .photo-fullscreen-img {
+  margin: auto 0;
   max-width: min(100%, 960px);
   width: auto;
   height: auto;
@@ -9090,7 +9116,11 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   border: 2.5px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
   display: block;
-  transition: max-width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: pan-y;
+  transform-origin: center center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Natural 100% size view mode */
