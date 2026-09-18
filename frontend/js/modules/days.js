@@ -626,9 +626,11 @@ async function renderDays(appendOnly = false) {
       try {
         batchAchievements = await window.localDb.achievements.where('dayId').anyOf(dayIds).toArray();
         if (batchAchievements && batchAchievements.length > 0) {
-          const existingIds = new Set((window.allAchievements || []).map(a => String(a._id)));
           batchAchievements.forEach(ba => {
-            if (!existingIds.has(String(ba._id))) {
+            const idx = (window.allAchievements || []).findIndex(a => String(a._id) === String(ba._id));
+            if (idx >= 0) {
+              window.allAchievements[idx] = ba;
+            } else {
               window.allAchievements.push(ba);
             }
           });
@@ -638,23 +640,42 @@ async function renderDays(appendOnly = false) {
       }
     }
 
-    // If local cache was empty (e.g. fresh login) or missed cards, fetch in background without blocking day cards rendering
-    if ((!batchAchievements || batchAchievements.length === 0) && navigator.onLine) {
+    // Always revalidate with server in background when online (Stale-While-Revalidate pattern)
+    if (navigator.onLine) {
       (async () => {
         try {
           const freshAchs = await window.apiFetch(`${window.API}/api/achievements/days-batch`, {
             method: 'POST',
             body: JSON.stringify({ dayIds })
           });
-          if (freshAchs && freshAchs.length > 0) {
-            const existingIds = new Set((window.allAchievements || []).map(a => String(a._id)));
-            freshAchs.forEach(ba => {
-              if (!existingIds.has(String(ba._id))) {
-                window.allAchievements.push(ba);
+          if (freshAchs && Array.isArray(freshAchs)) {
+            // Update in-memory cache, properly replacing existing stale copies
+            freshAchs.forEach(fa => {
+              const idx = (window.allAchievements || []).findIndex(a => String(a._id) === String(fa._id));
+              if (idx >= 0) {
+                window.allAchievements[idx] = fa;
+              } else {
+                window.allAchievements.push(fa);
               }
             });
+
+            // Update local indexedDB
             if (window.localDb) {
               for (const a of freshAchs) await window.localDb.achievements.put(a);
+            }
+
+            // Immediately re-render achievements on all day cards mounted in DOM
+            if (typeof window.renderDayAchievements === 'function') {
+              for (const d of window.allDays) {
+                const cardEl = document.getElementById(`day-card-${d._id}`);
+                if (cardEl) {
+                  const dDateStr = (d.date || '').split('T')[0];
+                  const dAchs = (window.allAchievements || []).filter(a =>
+                    String(a.dayId) === String(d._id) || (dDateStr && (a.date || '').split('T')[0] === dDateStr)
+                  );
+                  window.renderDayAchievements(d._id, dAchs, cardEl);
+                }
+              }
             }
           }
         } catch (err) {
@@ -739,7 +760,11 @@ async function renderDays(appendOnly = false) {
       }
     }
 
-    const dayAchs = (batchAchievements || []).filter(a => String(a.dayId) === String(day._id));
+    const dayDateStr = (day.date || '').split('T')[0];
+    const isDayAch = a => String(a.dayId) === String(day._id) || (dayDateStr && (a.date || '').split('T')[0] === dayDateStr);
+    const dayAchs = (window.allAchievements && window.allAchievements.length > 0)
+      ? window.allAchievements.filter(isDayAch)
+      : (batchAchievements || []).filter(isDayAch);
     const card = buildDayCard(day, dayAchs);
     // Mark as new for animation if we are appending
     if (appendOnly) {
@@ -1005,9 +1030,11 @@ function buildDayCard(day, preLoadedAchievements = null) {
   }
 
   const totalTasks = (day.categories || []).reduce((acc, cat) => acc + (cat.tasks || []).length, 0);
+  const cardDateStr = (day.date || '').split('T')[0];
+  const isMatchCardAch = a => String(a.dayId) === String(day._id) || (cardDateStr && (a.date || '').split('T')[0] === cardDateStr);
   const dayAchsList = (preLoadedAchievements && preLoadedAchievements.length > 0)
     ? preLoadedAchievements
-    : (window.allAchievements || []).filter(a => a.dayId === day._id);
+    : (window.allAchievements || []).filter(isMatchCardAch);
   const isMilestoneOnlyDay = totalTasks === 0 && dayAchsList.length > 0;
 
   let progressSectionHTML = '';
@@ -1100,9 +1127,9 @@ function buildDayCard(day, preLoadedAchievements = null) {
   // Load achievements for this card (batch first, fallback to window.allAchievements)
   const achsForCard = (preLoadedAchievements && preLoadedAchievements.length > 0)
     ? preLoadedAchievements
-    : (window.allAchievements || []).filter(a => String(a.dayId) === String(day._id));
-  if (achsForCard.length > 0) {
-    renderDayAchievements(day._id, achsForCard, card);
+    : (window.allAchievements || []).filter(isMatchCardAch);
+  if (achsForCard.length > 0 && typeof window.renderDayAchievements === 'function') {
+    window.renderDayAchievements(day._id, achsForCard, card);
   }
 
   // Initialize Lucide icons after building the card content

@@ -901,12 +901,22 @@ function openAddAchievementModal(dayId) {
   if (dayId && navigator.onLine) {
     apiFetch(`${window.API}/api/achievements/day/${dayId}?own=1`).then(dayAchs => {
       if (Array.isArray(dayAchs)) {
-        window.allAchievements = (window.allAchievements || []).filter(a => String(a.dayId) !== String(dayId));
+        const dayObj = (window.allDays || []).find(d => String(d._id) === String(dayId));
+        const dayDateStr = dayObj ? (dayObj.date || '').split('T')[0] : '';
+        const isTarget = a => String(a.dayId) === String(dayId) || (dayDateStr && (a.date || '').split('T')[0] === dayDateStr);
+
+        window.allAchievements = (window.allAchievements || []).filter(a => !isTarget(a));
         window.allAchievements.unshift(...dayAchs);
         if (window.localDb) {
           for (const a of dayAchs) window.localDb.achievements.put(a);
         }
         renderAchSelectedPhotosPreview();
+
+        // Also update the day card on the page immediately!
+        const cardEl = document.getElementById(`day-card-${dayId}`);
+        if (cardEl) {
+          renderDayAchievements(dayId, dayAchs, cardEl);
+        }
       }
     }).catch(() => {});
   }
@@ -1059,67 +1069,80 @@ async function submitPhotoAchievement() {
   submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> Uploading...';
 
   if (banner) banner.style.display = 'flex';
-  if (statusText) statusText.textContent = 'Processing photos...';
-  if (subText) subText.textContent = 'Optimizing and preparing image files';
-
-  // Informative phased progress updates so user isn't left hanging during upload
-  const uploadStages = [
-    { delay: 1100, status: 'Uploading... just a sec', sub: 'Securely transferring photo proof to cloud' },
-    { delay: 2600, status: 'Optimizing cloud delivery...', sub: 'Generating fast thumbnails & responsive sizes' },
-    { delay: 4200, status: 'Almost done...', sub: 'Saving achievement and finalizing your streak' }
-  ];
-
-  const timerIds = [];
-  uploadStages.forEach(s => {
-    const t = setTimeout(() => {
-      if (statusText) statusText.textContent = s.status;
-      if (subText) subText.textContent = s.sub;
-      if (submitBtn && submitBtn.disabled) {
-        submitBtn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> ${s.status.split('...')[0]}...`;
-      }
-    }, s.delay);
-    timerIds.push(t);
-  });
+  const totalPhotos = selectedAchPhotoFiles.length;
+  let lastAchievementData = null;
 
   try {
-    const formData = new FormData();
-    formData.append('dayId', dayId);
-    formData.append('date', cardDate);
-    formData.append('title', '');
-    formData.append('description', '');
+    for (let idx = 0; idx < totalPhotos; idx++) {
+      const item = selectedAchPhotoFiles[idx];
+      const photoNum = idx + 1;
 
-    selectedAchPhotoFiles.forEach(item => {
+      // Realtime progressive feedback for each photo
+      if (totalPhotos > 1) {
+        if (statusText) statusText.textContent = `Uploading photo ${photoNum} of ${totalPhotos}...`;
+        if (subText) {
+          subText.textContent = idx === 0
+            ? `Transferring photo 1 of ${totalPhotos} to cloud`
+            : `Photo ${idx} of ${totalPhotos} uploaded • Transferring photo ${photoNum} of ${totalPhotos}`;
+        }
+        if (submitBtn && submitBtn.disabled) {
+          submitBtn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> ${photoNum} of ${totalPhotos}...`;
+        }
+      } else {
+        if (statusText) statusText.textContent = 'Uploading photo...';
+        if (subText) subText.textContent = 'Transferring photo proof to cloud';
+        if (submitBtn && submitBtn.disabled) {
+          submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> Uploading...';
+        }
+      }
+
+      const formData = new FormData();
+      formData.append('dayId', dayId);
+      formData.append('date', cardDate);
+      formData.append('title', idx === 0 ? title : '');
+      formData.append('description', idx === 0 ? desc : '');
       formData.append('photos', item.file);
-    });
 
-    const token = localStorage.getItem('token');
-    const offset = new Date().getTimezoneOffset();
-    const res = await fetch(`${window.API}/api/achievements/photo`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'x-client-date': currentToday,
-        'x-card-date': cardDate,
-        'x-day-id': dayId || '',
-        'x-client-timezone-offset': String(offset)
-      },
-      body: formData
-    });
+      const token = localStorage.getItem('token');
+      const offset = new Date().getTimezoneOffset();
+      const res = await fetch(`${window.API}/api/achievements/photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-client-date': currentToday,
+          'x-card-date': cardDate,
+          'x-day-id': dayId || '',
+          'x-client-timezone-offset': String(offset)
+        },
+        body: formData
+      });
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || 'Failed to upload photo achievement');
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || `Failed to upload photo ${photoNum} of ${totalPhotos}`);
+      }
+
+      lastAchievementData = data;
+    }
+
+    // Finalizing state
+    if (statusText) statusText.textContent = 'Almost done...';
+    if (subText) subText.textContent = 'Saving achievement';
+    if (submitBtn) {
+      submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;"></span> Saving...';
     }
 
     // Success! Update local state
-    const existingIdx = (window.allAchievements || []).findIndex(a => String(a._id) === String(data._id));
-    if (existingIdx >= 0) {
-      window.allAchievements[existingIdx] = data;
-    } else {
-      window.allAchievements.unshift(data);
-    }
-    if (window.localDb) {
-      await window.localDb.achievements.put(data);
+    if (lastAchievementData) {
+      const existingIdx = (window.allAchievements || []).findIndex(a => String(a._id) === String(lastAchievementData._id));
+      if (existingIdx >= 0) {
+        window.allAchievements[existingIdx] = lastAchievementData;
+      } else {
+        window.allAchievements.unshift(lastAchievementData);
+      }
+      if (window.localDb) {
+        await window.localDb.achievements.put(lastAchievementData);
+      }
     }
 
     selectedAchPhotoFiles.forEach(i => URL.revokeObjectURL(i.previewUrl));
@@ -1153,16 +1176,22 @@ async function submitPhotoAchievement() {
       renderAchievements();
     }
 
-    showToast('Photo achievement uploaded successfully! 📸', 'success');
+    showToast(totalPhotos > 1 ? `${totalPhotos} photos uploaded successfully! 📸` : 'Photo uploaded successfully! 📸', 'success');
     await fetchAchievementPhotoQuota(true);
   } catch (err) {
-    console.error('Photo achievement upload error:', err);
-    showToast(err.message || 'Failed to upload photo achievement.', 'error');
+    console.error('Photo upload error:', err);
+    showToast(err.message || 'Failed to upload photo achievement', 'error');
+    if (lastAchievementData) {
+      const cardEl = document.getElementById(`day-card-${dayId}`);
+      if (cardEl) {
+        const dayAchs = (window.allAchievements || []).filter(a => String(a.dayId) === String(dayId));
+        renderDayAchievements(dayId, dayAchs, cardEl);
+      }
+    }
   } finally {
-    timerIds.forEach(t => clearTimeout(t));
-    if (banner) banner.style.display = 'none';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Upload Photos';
+    if (banner) banner.style.display = 'none';
   }
 }
 
