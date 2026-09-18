@@ -9,9 +9,8 @@ const Scratchpad = require('../models/Scratchpad');
 /** Count completed tasks across all categories */
 function countCompletedTasks(categories) {
   let completed = 0;
-  for (const cat of categories) {
-    if (cat.name === 'LeetCode') continue; // LeetCode doesn't affect standard completion streak
-    for (const task of cat.tasks) {
+  for (const cat of (categories || [])) {
+    for (const task of (cat.tasks || [])) {
       if (task.completed) completed++;
     }
   }

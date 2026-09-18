@@ -53,8 +53,7 @@ window.getDayName = getDayName;
 
 function countTasks(categories) {
   let total = 0, completed = 0;
-  for (const cat of categories) {
-    if (cat.name === 'LeetCode') continue; // Exclude LeetCode category from daily completion count
+  for (const cat of (categories || [])) {
     for (const task of (cat.tasks || [])) {
       total++;
       if (task.completed) completed++;
