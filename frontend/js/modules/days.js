@@ -26,28 +26,9 @@ function getDaysSkeletonHTML() {
         </div>
       </div>
 
-      <!-- Clean Approximate Categories (Only 2 blocks, simple tasks, no buttons/pills clutter) -->
+      <!-- Clean Approximate Categories (8 categories to fill the screen vertically) -->
       <div class="sk-categories-wrap">
         <!-- Category 1 -->
-        <div class="sk-category-block">
-          <div class="sk-category-header">
-            <span class="sk-cat-dot"></span>
-            <div class="sk-shimmer sk-cat-title" style="width: 90px;"></div>
-            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
-          </div>
-          <div class="sk-tasks-wrap">
-            <div class="sk-task-row">
-              <div class="sk-shimmer sk-task-chk"></div>
-              <div class="sk-shimmer sk-task-title" style="width: 58%;"></div>
-            </div>
-            <div class="sk-task-row">
-              <div class="sk-shimmer sk-task-chk"></div>
-              <div class="sk-shimmer sk-task-title" style="width: 42%;"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Category 2 -->
         <div class="sk-category-block">
           <div class="sk-category-header">
             <span class="sk-cat-dot"></span>
@@ -57,11 +38,136 @@ function getDaysSkeletonHTML() {
           <div class="sk-tasks-wrap">
             <div class="sk-task-row">
               <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 62%;"></div>
+            </div>
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 44%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 2 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 95px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 54%;"></div>
+            </div>
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 38%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 3 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 125px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 70%;"></div>
+            </div>
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 48%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 4 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 85px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 58%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 5 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 105px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
               <div class="sk-shimmer sk-task-title" style="width: 65%;"></div>
             </div>
             <div class="sk-task-row">
               <div class="sk-shimmer sk-task-chk"></div>
-              <div class="sk-shimmer sk-task-title" style="width: 36%;"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 40%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 6 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 90px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 52%;"></div>
+            </div>
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 35%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 7 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 115px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 60%;"></div>
+            </div>
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 45%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 8 -->
+        <div class="sk-category-block">
+          <div class="sk-category-header">
+            <span class="sk-cat-dot"></span>
+            <div class="sk-shimmer sk-cat-title" style="width: 100px;"></div>
+            <div class="sk-shimmer sk-cat-count" style="margin-left: auto;"></div>
+          </div>
+          <div class="sk-tasks-wrap">
+            <div class="sk-task-row">
+              <div class="sk-shimmer sk-task-chk"></div>
+              <div class="sk-shimmer sk-task-title" style="width: 55%;"></div>
             </div>
           </div>
         </div>
