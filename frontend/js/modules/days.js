@@ -5,7 +5,7 @@ console.log("[Module] days.js initializing...");
 // ── Days Skeleton Loader Helpers ────────────────────────────
 function getDaysSkeletonHTML() {
   return `
-    <div class="day-card today-card day-card-skeleton" id="day-card-skeleton" aria-hidden="true">
+    <div class="day-card day-card-skeleton" id="day-card-skeleton" aria-hidden="true">
       <!-- Card Header -->
       <div class="card-header">
         <div class="card-date-wrap">
@@ -201,7 +201,7 @@ async function loadDays(page = 1) {
 
       if (cached.length > 0) {
         window.allDays = cached;
-        renderDays();
+        await renderDays();
         updateStreak();
         
         // Cache today's status offline
@@ -223,7 +223,6 @@ async function loadDays(page = 1) {
           updateTodayStatusCache(today, false, []);
         }
 
-        hideDaysSkeleton();
         if (loadingEl) loadingEl.innerHTML = '';
       } else {
         // Empty local cache (e.g. fresh login): keep or display skeleton while server fetch is in flight
@@ -389,7 +388,7 @@ async function loadDays(page = 1) {
 
     const isLoadMore = page > 1;
     window.currentPage = page;
-    renderDays(isLoadMore);
+    await renderDays(isLoadMore);
     updateStreak();
     
     if (page === 1) {
@@ -412,7 +411,6 @@ async function loadDays(page = 1) {
       }
     }
 
-    hideDaysSkeleton();
     if (loadingEl) loadingEl.innerHTML = '';
     // Confirmed server reachable — enable the leaderboard toggles
     setLeaderboardTogglesEnabled(true);
@@ -591,28 +589,29 @@ async function renderDays(appendOnly = false) {
       }
     }
 
-    // If local cache was empty (e.g. fresh login) or missed cards, fetch immediately from server
+    // If local cache was empty (e.g. fresh login) or missed cards, fetch in background without blocking day cards rendering
     if ((!batchAchievements || batchAchievements.length === 0) && navigator.onLine) {
-      try {
-        const freshAchs = await window.apiFetch(`${window.API}/api/achievements/days-batch`, {
-          method: 'POST',
-          body: JSON.stringify({ dayIds })
-        });
-        if (freshAchs && freshAchs.length > 0) {
-          batchAchievements = freshAchs;
-          const existingIds = new Set((window.allAchievements || []).map(a => String(a._id)));
-          freshAchs.forEach(ba => {
-            if (!existingIds.has(String(ba._id))) {
-              window.allAchievements.push(ba);
-            }
+      (async () => {
+        try {
+          const freshAchs = await window.apiFetch(`${window.API}/api/achievements/days-batch`, {
+            method: 'POST',
+            body: JSON.stringify({ dayIds })
           });
-          if (window.localDb) {
-            for (const a of freshAchs) await window.localDb.achievements.put(a);
+          if (freshAchs && freshAchs.length > 0) {
+            const existingIds = new Set((window.allAchievements || []).map(a => String(a._id)));
+            freshAchs.forEach(ba => {
+              if (!existingIds.has(String(ba._id))) {
+                window.allAchievements.push(ba);
+              }
+            });
+            if (window.localDb) {
+              for (const a of freshAchs) await window.localDb.achievements.put(a);
+            }
           }
+        } catch (err) {
+          console.warn('Background batch achievements load failed:', err);
         }
-      } catch (err) {
-        console.warn('Batch achievements load from server failed:', err);
-      }
+      })();
     }
   }
 
@@ -625,6 +624,8 @@ async function renderDays(appendOnly = false) {
 
   if (!appendOnly) {
     container.innerHTML = '';
+  } else {
+    hideDaysSkeleton();
   }
 
   // ── "New Day Card" button always pinned at the top (only if not appending) ──────
