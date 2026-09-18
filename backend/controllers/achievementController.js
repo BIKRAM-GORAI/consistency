@@ -371,13 +371,18 @@ const createPhotoAchievement = async (req, res) => {
       });
     }
 
-    // Upload each buffer to Cloudinary with achievement credentials
+    // Upload each buffer to Cloudinary with achievement credentials concurrently
+    const uploadResults = await Promise.all(
+      files.map(f =>
+        uploadToAchievementCloudinary(f.buffer, {
+          resource_type: 'image',
+          transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+        })
+      )
+    );
+
     const photos = [];
-    for (const f of files) {
-      const result = await uploadToAchievementCloudinary(f.buffer, {
-        resource_type: 'image',
-        transformation: [{ quality: 'auto', fetch_format: 'auto' }]
-      });
+    for (const result of uploadResults) {
       uploadedPublicIds.push(result.public_id);
       const rawUrl = result.secure_url;
       const thumbUrl = rawUrl.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
