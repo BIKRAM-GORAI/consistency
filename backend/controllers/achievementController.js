@@ -256,6 +256,8 @@ const getPhotoQuota = async (req, res) => {
   try {
     const userId = req.user.userId;
     const todayStr = getEffectiveToday(req);
+    const dayId = req.query.dayId || req.headers['x-day-id'];
+    const cardDate = req.query.cardDate || req.headers['x-card-date'] || todayStr;
     const User = require('../models/User');
     const user = await User.findById(userId).select('subscriptionTier subscriptionExpiresAt');
     const isPremium = user?.subscriptionTier === 'premium' && (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
@@ -264,14 +266,23 @@ const getPhotoQuota = async (req, res) => {
       ? (parseInt(process.env.PREMIUM_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3)
       : (parseInt(process.env.FREE_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3);
 
-    const todayAchievements = await Achievement.find({ userId, date: todayStr, type: 'photo' });
-    const used = todayAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
+    const mongoose = require('mongoose');
+    let query = { userId, type: 'photo' };
+    if (dayId && mongoose.Types.ObjectId.isValid(dayId)) {
+      query.dayId = dayId;
+    } else {
+      query.date = cardDate;
+    }
+
+    const cardAchievements = await Achievement.find(query);
+    const used = cardAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
     const remaining = Math.max(0, limit - used);
 
     res.json({
       used,
       limit,
       remaining,
+      cardDate,
       todayDate: todayStr
     });
   } catch (err) {
@@ -281,7 +292,7 @@ const getPhotoQuota = async (req, res) => {
 
 /**
  * POST /api/achievements/photo
- * Upload up to 3 compressed photos for today's card
+ * Upload up to 3 compressed photos for an active daily card (today or within 36-hour window / grace)
  */
 const createPhotoAchievement = async (req, res) => {
   const { deleteFromAchievementCloudinary, uploadToAchievementCloudinary } = require('../config/cloudinary');
@@ -295,9 +306,47 @@ const createPhotoAchievement = async (req, res) => {
       return res.status(400).json({ message: 'dayId and date are required' });
     }
 
-    // Strictly enforce present day only
-    if (date !== todayStr) {
-      return res.status(400).json({ message: 'Photo achievements can only be logged for today\'s card.' });
+    const Day = require('../models/Day');
+    const day = await Day.findOne({ _id: dayId, userId });
+    if (!day) {
+      return res.status(404).json({ message: 'Day card not found or unauthorized.' });
+    }
+
+    const cardDateNormalized = (day.date || date).split('T')[0];
+
+    // Reject future dates
+    if (cardDateNormalized > todayStr) {
+      return res.status(400).json({ message: 'Photo achievements cannot be logged for future cards.' });
+    }
+
+    // Check 36-hour window (until 12:00 noon next day) for past dates
+    let isWithinWindow = false;
+    if (cardDateNormalized < todayStr) {
+      const offsetHeader = req.headers['x-client-timezone-offset'];
+      if (offsetHeader !== undefined && !isNaN(parseInt(offsetHeader, 10))) {
+        const offsetMinutes = parseInt(offsetHeader, 10);
+        const clientLocalNow = new Date(Date.now() - offsetMinutes * 60000);
+        const [cy, cm, cd] = cardDateNormalized.split('-').map(Number);
+        const cardStartLocal = new Date(Date.UTC(cy, cm - 1, cd, 0, 0, 0, 0));
+        const diffHours = (clientLocalNow - cardStartLocal) / (1000 * 60 * 60);
+        isWithinWindow = diffHours <= 36;
+      } else {
+        const [cy, cm, cd] = cardDateNormalized.split('-').map(Number);
+        const [ty, tm, td] = todayStr.split('-').map(Number);
+        const diffDays = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(cy, cm - 1, cd)) / (24 * 3600 * 1000));
+        if (diffDays === 1) {
+          const now = new Date();
+          const cardDateObj = new Date(cardDateNormalized);
+          const serverDiffHours = (now - cardDateObj) / (1000 * 60 * 60);
+          isWithinWindow = serverDiffHours <= 40;
+        }
+      }
+    }
+
+    if (cardDateNormalized !== todayStr && !isWithinWindow && !day.graceApplied) {
+      return res.status(400).json({
+        message: 'Photo achievements can only be logged for active cards within the 36-hour window (until 12:00 noon the next day).'
+      });
     }
 
     const files = req.files || [];
@@ -312,12 +361,12 @@ const createPhotoAchievement = async (req, res) => {
       ? (parseInt(process.env.PREMIUM_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3)
       : (parseInt(process.env.FREE_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3);
 
-    const todayAchievements = await Achievement.find({ userId, date: todayStr, type: 'photo' });
-    const currentUsed = todayAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
+    const cardAchievements = await Achievement.find({ userId, dayId, type: 'photo' });
+    const currentUsed = cardAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
 
     if (currentUsed + files.length > limit) {
       return res.status(400).json({
-        message: `Daily limit reached. You can only upload ${Math.max(0, limit - currentUsed)} more photo(s) today.`,
+        message: `Daily limit reached. You can only upload ${Math.max(0, limit - currentUsed)} more photo(s) for this card.`,
         remaining: Math.max(0, limit - currentUsed)
       });
     }
@@ -342,8 +391,8 @@ const createPhotoAchievement = async (req, res) => {
       });
     }
 
-    // If a photo achievement already exists for this day, append photos to it
-    let existingAch = await Achievement.findOne({ userId, dayId, date: todayStr, type: 'photo' });
+    // If a photo achievement already exists for this day card, append photos to it
+    let existingAch = await Achievement.findOne({ userId, dayId, type: 'photo' });
     if (existingAch) {
       existingAch.photos.push(...photos);
       if (description && description.trim()) {
@@ -358,7 +407,7 @@ const createPhotoAchievement = async (req, res) => {
     const achievement = new Achievement({
       userId,
       dayId,
-      date,
+      date: cardDateNormalized,
       title: (title && title.trim()) ? title.trim() : '',
       description: (description && description.trim()) || '',
       type: 'photo',

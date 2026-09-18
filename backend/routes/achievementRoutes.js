@@ -34,14 +34,17 @@ const handleAchievementUpload = (req, res, next) => {
   });
 };
 
-// Fast pre-check to reject requests if daily quota is already exhausted before streaming to Cloudinary
+// Fast pre-check to reject requests if card photo quota is already exhausted before streaming to Cloudinary
 const preCheckPhotoQuota = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const clientDate = req.headers['x-client-date'];
+    const cardDateHeader = req.headers['x-card-date'];
+    const dayIdHeader = req.headers['x-day-id'];
     const d = new Date();
     const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const effectiveToday = (clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) ? clientDate : serverToday;
+    const targetDate = (cardDateHeader && /^\d{4}-\d{2}-\d{2}$/.test(cardDateHeader)) ? cardDateHeader : effectiveToday;
 
     const User = require('../models/User');
     const user = await User.findById(userId).select('subscriptionTier subscriptionExpiresAt');
@@ -51,12 +54,20 @@ const preCheckPhotoQuota = async (req, res, next) => {
       : (parseInt(process.env.FREE_DAILY_ACHIEVEMENT_PHOTOS_LIMIT, 10) || 3);
 
     const Achievement = require('../models/Achievement');
-    const todayAchievements = await Achievement.find({ userId, date: effectiveToday, type: 'photo' });
-    const used = todayAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
+    const mongoose = require('mongoose');
+    let query = { userId, type: 'photo' };
+    if (dayIdHeader && mongoose.Types.ObjectId.isValid(dayIdHeader)) {
+      query.dayId = dayIdHeader;
+    } else {
+      query.date = targetDate;
+    }
+
+    const cardAchievements = await Achievement.find(query);
+    const used = cardAchievements.reduce((acc, a) => acc + (a.photos ? a.photos.length : 0), 0);
 
     if (used >= limit) {
       return res.status(400).json({
-        message: `Daily photo upload quota reached (${limit}/${limit}). Delete an existing photo to free up quota.`,
+        message: `Photo upload limit reached (${limit}/${limit}) for this card. Delete an existing photo to upload new ones.`,
         remaining: 0
       });
     }

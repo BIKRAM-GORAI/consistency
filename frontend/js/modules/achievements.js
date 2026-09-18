@@ -521,24 +521,57 @@ async function compressImageFile(file, maxBytes = 1000000) {
 }
 
 let _lastQuotaFetchTime = 0;
+let _lastQuotaDayId = null;
 const QUOTA_CACHE_TTL_MS = 60000; // 60s cache TTL to prevent redundant network requests on tab switch
+
+function isCardWithinPhotoWindow(day) {
+  if (!day) return true;
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  const cardDateNormalized = (day.date || '').split('T')[0];
+  if (!cardDateNormalized) return true;
+
+  // Future cards are strictly not allowed for photo uploads
+  if (cardDateNormalized > currentToday) return false;
+
+  // Present day card is always allowed
+  if (cardDateNormalized === currentToday) return true;
+
+  // Cards with grace applied are allowed
+  if (day.graceApplied) return true;
+
+  // 36-hour window check: from 00:00:00 local time of the card date until 12:00 noon next day
+  const [y, m, d] = cardDateNormalized.split('-').map(Number);
+  const cardStartLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const diffHours = (new Date() - cardStartLocal) / (1000 * 60 * 60);
+  return diffHours <= 36;
+}
 
 async function fetchAchievementPhotoQuota(force = false) {
   if (!navigator.onLine) return;
-  // If we have cached quota and it was fetched within TTL and force is not true, reuse cache
-  if (!force && achPhotoQuota && (Date.now() - _lastQuotaFetchTime < QUOTA_CACHE_TTL_MS)) {
+  const dayId = window.activeDayIdForAchievement;
+  // If we have cached quota for this active card and it was fetched within TTL and force is not true, reuse cache
+  if (!force && _lastQuotaDayId === dayId && achPhotoQuota && (Date.now() - _lastQuotaFetchTime < QUOTA_CACHE_TTL_MS)) {
     updatePhotoQuotaUI();
     return;
   }
 
   try {
     const today = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
-    const res = await apiFetch(`${window.API}/api/achievements/photo-quota`, {
-      headers: { 'x-client-date': today }
+    const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
+    const cardDate = day ? (day.date ? day.date.split('T')[0] : today) : today;
+    const offset = new Date().getTimezoneOffset();
+    const res = await apiFetch(`${window.API}/api/achievements/photo-quota?cardDate=${encodeURIComponent(cardDate)}&dayId=${encodeURIComponent(dayId || '')}`, {
+      headers: {
+        'x-client-date': today,
+        'x-card-date': cardDate,
+        'x-day-id': dayId || '',
+        'x-client-timezone-offset': String(offset)
+      }
     });
     if (res && typeof res.remaining === 'number') {
       achPhotoQuota = res;
       _lastQuotaFetchTime = Date.now();
+      _lastQuotaDayId = dayId;
       updatePhotoQuotaUI();
     }
   } catch (err) {
@@ -551,16 +584,21 @@ function updatePhotoQuotaUI() {
   const textEl = document.getElementById('ach-photo-quota-text');
   const submitBtn = document.getElementById('submit-ach-btn');
 
+  const currentLimit = achPhotoQuota.limit || 3;
+  const uploadedPhotos = getTodayUploadedPhotosForActiveCard();
+  const used = uploadedPhotos.length;
+  const remaining = Math.max(0, currentLimit - used);
+
   if (pillEl) {
-    pillEl.textContent = `${achPhotoQuota.remaining} left`;
-    pillEl.style.background = achPhotoQuota.remaining > 0 ? '#16a34a' : '#ef4444';
+    pillEl.textContent = `${remaining} left`;
+    pillEl.style.background = remaining > 0 ? '#16a34a' : '#ef4444';
   }
   if (textEl) {
-    textEl.textContent = `${achPhotoQuota.used}/${achPhotoQuota.limit} used (${achPhotoQuota.remaining} remaining today)`;
-    textEl.style.background = achPhotoQuota.remaining > 0 ? '#16a34a' : '#dc2626';
+    textEl.textContent = `${used}/${currentLimit} used (${remaining} remaining for this card)`;
+    textEl.style.background = remaining > 0 ? '#16a34a' : '#dc2626';
   }
   if (submitBtn && currentAchModalTab === 'photo') {
-    submitBtn.disabled = achPhotoQuota.remaining <= 0;
+    submitBtn.disabled = remaining <= 0;
   }
   renderAchSelectedPhotosPreview();
 }
@@ -573,9 +611,10 @@ function getTodayUploadedPhotosForActiveCard() {
 
   const photoAchs = (window.allAchievements || []).filter(a => {
     const aDateStr = (a.date || '').split('T')[0];
-    const matchDay = dayId && String(a.dayId) === String(dayId);
-    const matchDate = aDateStr && (aDateStr === cardDate || aDateStr === currentToday);
-    return (matchDay || matchDate) && (a.type === 'photo' || (a.photos && a.photos.length > 0));
+    if (dayId && a.dayId) {
+      return String(a.dayId) === String(dayId) && (a.type === 'photo' || (a.photos && a.photos.length > 0));
+    }
+    return aDateStr === cardDate && (a.type === 'photo' || (a.photos && a.photos.length > 0));
   });
 
   const photos = [];
@@ -874,7 +913,8 @@ function openAddAchievementModal(dayId) {
 
   const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
   const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
-  const isToday = day ? (day.date ? day.date.split('T')[0] : currentToday) === currentToday : true;
+  const cardDateNormalized = day ? (day.date ? day.date.split('T')[0] : currentToday) : currentToday;
+  const isPhotoAllowed = isCardWithinPhotoWindow(day);
 
   // Clear text inputs
   const titleInput = document.getElementById('ach-title-input');
@@ -899,21 +939,29 @@ function openAddAchievementModal(dayId) {
   const activeUI = document.getElementById('ach-photo-active-ui');
   const photoTabBtn = document.getElementById('ach-tab-btn-photo');
 
-  if (!isToday) {
-    if (pastNotice) pastNotice.style.display = 'block';
+  if (!isPhotoAllowed) {
+    if (pastNotice) {
+      pastNotice.style.display = 'block';
+      const isFuture = cardDateNormalized > currentToday;
+      pastNotice.innerHTML = isFuture
+        ? '<p style="margin: 0; font-size: 13px; font-weight: 800; color: #dc2626;">🔒 Photo proof is unavailable for future cards</p><p style="margin: 4px 0 0; font-size: 11.5px; color: var(--text-muted);">Photos can only be logged for today\'s card or active past cards within the 36-hour window.</p>'
+        : '<p style="margin: 0; font-size: 13px; font-weight: 800; color: #dc2626;">🔒 Photo proof is locked for this card</p><p style="margin: 4px 0 0; font-size: 11.5px; color: var(--text-muted);">The 36-hour editable window (until 12:00 noon the next day) has ended. You can still log text and link proof in the "Links & Text" tab.</p>';
+    }
     if (offlineNotice) offlineNotice.style.display = 'none';
     if (activeUI) activeUI.style.display = 'none';
-    if (photoTabBtn) photoTabBtn.title = 'Photo proof is locked for past cards';
+    if (photoTabBtn) photoTabBtn.title = 'Photo proof is locked for this card';
     switchAchTab('text');
   } else if (!navigator.onLine) {
     if (pastNotice) pastNotice.style.display = 'none';
     if (offlineNotice) offlineNotice.style.display = 'block';
     if (activeUI) activeUI.style.display = 'none';
+    if (photoTabBtn) photoTabBtn.title = '';
     switchAchTab('text');
   } else {
     if (pastNotice) pastNotice.style.display = 'none';
     if (offlineNotice) offlineNotice.style.display = 'none';
     if (activeUI) activeUI.style.display = 'block';
+    if (photoTabBtn) photoTabBtn.title = '';
     fetchAchievementPhotoQuota(true);
     switchAchTab('text');
   }
@@ -983,12 +1031,12 @@ async function submitPhotoAchievement() {
   }
 
   const dayId = window.activeDayIdForAchievement;
-  const day = (window.allDays || []).find(d => d._id === dayId);
+  const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
   const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
-  const date = day ? day.date : currentToday;
+  const cardDate = day ? (day.date ? day.date.split('T')[0] : currentToday) : currentToday;
 
-  if (date !== currentToday) {
-    showToast('Photo achievements can only be logged for today\'s card.', 'error');
+  if (!isCardWithinPhotoWindow(day)) {
+    showToast('Photo proof can only be uploaded for active cards within the 36-hour window (until 12:00 noon the next day).', 'error');
     return;
   }
 
@@ -1036,7 +1084,7 @@ async function submitPhotoAchievement() {
   try {
     const formData = new FormData();
     formData.append('dayId', dayId);
-    formData.append('date', date);
+    formData.append('date', cardDate);
     formData.append('title', '');
     formData.append('description', '');
 
@@ -1045,11 +1093,15 @@ async function submitPhotoAchievement() {
     });
 
     const token = localStorage.getItem('token');
+    const offset = new Date().getTimezoneOffset();
     const res = await fetch(`${window.API}/api/achievements/photo`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'x-client-date': currentToday
+        'x-client-date': currentToday,
+        'x-card-date': cardDate,
+        'x-day-id': dayId || '',
+        'x-client-timezone-offset': String(offset)
       },
       body: formData
     });
