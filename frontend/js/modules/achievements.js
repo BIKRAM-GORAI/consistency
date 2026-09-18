@@ -1251,6 +1251,121 @@ function closePhotoFullscreen() {
   }
 }
 
+// ── Achievement Photo Download Handler (Cached/Direct Memory, APK Gallery & Desktop) ──
+async function downloadAchievementPhoto() {
+  const isFullscreen = document.getElementById('photo-fullscreen-overlay')?.style.display !== 'none';
+  const imgEl = isFullscreen
+    ? document.getElementById('photo-fullscreen-img')
+    : document.getElementById('lightbox-img');
+
+  const photoUrl = imgEl?.src || activeLightboxData?.photoUrl;
+  if (!photoUrl) {
+    if (typeof showToast === 'function') showToast('No photo available to download.', 'warn');
+    return;
+  }
+
+  if (typeof showToast === 'function') showToast('Saving photo...', 'info');
+
+  try {
+    let dataUrl = null;
+    let rawBlob = null;
+    let mimeType = 'image/jpeg';
+    if (photoUrl.toLowerCase().includes('.png')) mimeType = 'image/png';
+    else if (photoUrl.toLowerCase().includes('.webp')) mimeType = 'image/webp';
+
+    // 1. First attempt: draw directly from the already-rendered DOM image to canvas (instant, 0 network transfer)
+    try {
+      if (imgEl && imgEl.naturalWidth > 0 && imgEl.naturalHeight > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = imgEl.naturalWidth;
+        canvas.height = imgEl.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgEl, 0, 0);
+        dataUrl = canvas.toDataURL(mimeType, 0.95);
+      }
+    } catch (e) {
+      dataUrl = null;
+    }
+
+    // 2. Fallback: retrieve from browser disk/memory cache without re-downloading from cloud
+    if (!dataUrl) {
+      const res = await fetch(photoUrl, { cache: 'force-cache' });
+      rawBlob = await res.blob();
+      if (rawBlob.type) mimeType = rawBlob.type;
+      dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(rawBlob);
+      });
+    }
+
+    const ext = mimeType.includes('png') ? 'png' : (mimeType.includes('webp') ? 'webp' : 'jpg');
+    const datePart = (activeLightboxData?.dateStr || (window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0])).replace(/-/g, '');
+    const filename = `achievement_${datePart}_${Date.now()}.${ext}`;
+
+    // 3. Android APK Native wrapper handling:
+    // In Capacitor Android, window.isAndroidNative is true. Trigger link click on the data: URI.
+    // MainActivity.java's WebView DownloadListener intercepts data: URIs and writes them directly
+    // to the device's Downloads/Gallery via MediaStore!
+    if (window.isAndroidNative) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (typeof showToast === 'function') showToast('Photo saved to device Gallery / Downloads!', 'success');
+      return;
+    }
+
+    // Helper to turn dataUrl to Blob purely in memory
+    const toBlobPure = (dUrl) => {
+      try {
+        const parts = dUrl.split(',');
+        const mime = parts[0].match(/:(.*?);/)?.[1] || mimeType;
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        return new Blob([u8arr], { type: mime });
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // 4. Standard Browser File Download (triggers browser download pop-up)
+    const blobToDownload = rawBlob || (dataUrl ? toBlobPure(dataUrl) : null);
+    const link = document.createElement('a');
+    link.download = filename;
+    if (blobToDownload && window.URL && window.URL.createObjectURL) {
+      const blobUrl = URL.createObjectURL(blobToDownload);
+      link.href = blobUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+    } else {
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    if (typeof showToast === 'function') showToast('Photo downloaded successfully!', 'success');
+  } catch (err) {
+    console.error('Download photo error:', err);
+    // Direct URL fallback
+    const link = document.createElement('a');
+    link.href = photoUrl;
+    link.download = `achievement_${Date.now()}.jpg`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof showToast === 'function') showToast('Download started.', 'info');
+  }
+}
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     const overlay = document.getElementById('photo-fullscreen-overlay');
@@ -1625,6 +1740,7 @@ window.triggerPhotoSlotClick = triggerPhotoSlotClick;
 window.openPhotoLightbox = openPhotoLightbox;
 window.openPhotoFullscreen = openPhotoFullscreen;
 window.closePhotoFullscreen = closePhotoFullscreen;
+window.downloadAchievementPhoto = downloadAchievementPhoto;
 window.toggleLightboxEdit = toggleLightboxEdit;
 window.saveLightboxDetails = saveLightboxDetails;
 window.deleteActiveLightboxPhoto = deleteActiveLightboxPhoto;

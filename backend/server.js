@@ -115,6 +115,8 @@ app.use((req, res, next) => {
   const isDev = process.env.NODE_ENV === 'development';
   const connectSrc = [
     "'self'",
+    "data:",
+    "blob:",
     "https://*.firebaseio.com",
     "https://*.firebasedatabase.app",
     "https://firestore.googleapis.com",
