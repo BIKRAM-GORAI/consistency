@@ -33,7 +33,7 @@
   --orange:    #f97316;
 
   /* ── Minimalist Core Borders & Shadows (Thin, subtle) ── */
-  --black:     #1e293b; /* Slate-800 */
+  --black:     #272e38; /* Soft charcoal black */
   --border:    1px solid #e2e8f0; /* Ultra-thin slate border */
   --border-2:  1px solid #cbd5e1;
   --shadow:    0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
@@ -153,14 +153,14 @@
 }
 
 [data-theme="minimalistic"] .nav-btn.active {
-  background: #0f172a !important;
+  background: #272e38 !important;
   color: #ffffff !important;
-  border-color: #0f172a !important;
+  border-color: #333c48 !important;
   box-shadow: none !important;
 }
 
 [data-theme="minimalistic"] .nav-btn.active:hover {
-  background: #1e293b !important;
+  background: #384353 !important;
   color: #ffffff !important;
   box-shadow: none !important;
 }
@@ -203,10 +203,17 @@
 
 [data-theme="minimalistic"] .bottom-nav-btn.active,
 [data-theme="minimalistic"] .bottom-nav-btn.active:hover {
-  color: var(--black) !important;
-  background: var(--lime) !important;
-  border: var(--border-2) !important;
-  box-shadow: 2px 2px 0 var(--black) !important;
+  color: #ffffff !important;
+  background: #272e38 !important;
+  border: 1px solid #333c48 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="minimalistic"] .bottom-nav-btn.active *,
+[data-theme="minimalistic"] .bottom-nav-btn.active:hover * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 /* ── 5. Buttons (Clean, flat, rounded, no translation on hover) ── */
@@ -230,18 +237,18 @@
 
 /* Generic button hover — safely scopes hover and always enforces high-contrast dark text */
 [data-theme="minimalistic"] .btn:not(.btn-primary):not(.btn-danger):hover,
-[data-theme="minimalistic"] button:not(.btn-primary):not(.btn-danger):not(.btn-delete):not(.btn-remove):not(.btn-del-cat):not(.btn-del-task):not(.btn-del-ach):not(.btn-delete-day):not(.add-day-inline-btn):not(.btn-add-cat):not(.btn-save-template):not(.btn-add-leetcode):not(.summary-save-btn):not(.btn-view-ach-all):not(.btn-add-ach):not(.log-out-btn):not(#submit-ach-btn):not(#submit-profile-btn):not(#central-voice-btn):hover {
+[data-theme="minimalistic"] button:not(.btn-primary):not(.btn-danger):not(.btn-delete):not(.btn-remove):not(.btn-del-cat):not(.btn-del-task):not(.btn-del-ach):not(.btn-delete-day):not(.add-day-inline-btn):not(.btn-add-cat):not(.btn-save-template):not(.btn-add-leetcode):not(.summary-save-btn):not(.btn-view-ach-all):not(.btn-add-ach):not(.log-out-btn):not(#submit-ach-btn):not(#submit-profile-btn):not(#central-voice-btn):not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):hover {
   background: #f1f5f9 !important;
   border-color: #94a3b8 !important;
   color: #0f172a !important;
 }
 
-[data-theme="minimalistic"] button:not(.btn-primary):not(.btn-danger):not(.btn-delete):not(.btn-remove):not(.btn-del-cat):not(.btn-del-task):not(.btn-del-ach):not(.btn-delete-day):not(.add-day-inline-btn):not(.btn-add-cat):not(.btn-save-template):not(.btn-add-leetcode):not(.summary-save-btn):not(.btn-view-ach-all):not(.btn-add-ach):not(.log-out-btn):not(#submit-ach-btn):not(#submit-profile-btn):not(#central-voice-btn):hover * {
+[data-theme="minimalistic"] button:not(.btn-primary):not(.btn-danger):not(.btn-delete):not(.btn-remove):not(.btn-del-cat):not(.btn-del-task):not(.btn-del-ach):not(.btn-delete-day):not(.add-day-inline-btn):not(.btn-add-cat):not(.btn-save-template):not(.btn-add-leetcode):not(.summary-save-btn):not(.btn-view-ach-all):not(.btn-add-ach):not(.log-out-btn):not(#submit-ach-btn):not(#submit-profile-btn):not(#central-voice-btn):not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):hover * {
   color: #0f172a !important;
 }
 
-/* Primary & Action Buttons (Clean dark Slate-900 with crisp white text) */
-[data-theme="minimalistic"] .btn-primary,
+/* Primary & Action Buttons (Soft charcoal black with crisp white text) */
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn),
 [data-theme="minimalistic"] .add-day-inline-btn,
 [data-theme="minimalistic"] .btn-add-cat,
 [data-theme="minimalistic"] .btn-save-template,
@@ -251,14 +258,14 @@
 [data-theme="minimalistic"] .btn-add-ach,
 [data-theme="minimalistic"] #submit-ach-btn,
 [data-theme="minimalistic"] #submit-profile-btn {
-  background: #0f172a !important;
+  background: #272e38 !important;
   color: #ffffff !important;
-  border: 1px solid #0f172a !important;
+  border: 1px solid #333c48 !important;
   border-radius: 8px !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
-[data-theme="minimalistic"] .btn-primary *,
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn) *,
 [data-theme="minimalistic"] .add-day-inline-btn *,
 [data-theme="minimalistic"] .btn-add-cat *,
 [data-theme="minimalistic"] .btn-save-template *,
@@ -271,7 +278,7 @@
   color: #ffffff !important;
 }
 
-[data-theme="minimalistic"] .btn-primary:hover,
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):hover,
 [data-theme="minimalistic"] .add-day-inline-btn:hover,
 [data-theme="minimalistic"] .btn-add-cat:hover,
 [data-theme="minimalistic"] .btn-save-template:hover,
@@ -281,12 +288,12 @@
 [data-theme="minimalistic"] .btn-add-ach:hover,
 [data-theme="minimalistic"] #submit-ach-btn:hover,
 [data-theme="minimalistic"] #submit-profile-btn:hover {
-  background: #1e293b !important;
-  border-color: #1e293b !important;
+  background: #384353 !important;
+  border-color: #384353 !important;
   color: #ffffff !important;
 }
 
-[data-theme="minimalistic"] .btn-primary:hover *,
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):hover *,
 [data-theme="minimalistic"] .add-day-inline-btn:hover *,
 [data-theme="minimalistic"] .btn-add-cat:hover *,
 [data-theme="minimalistic"] .btn-save-template:hover *,
@@ -642,6 +649,21 @@
 [data-theme="minimalistic"] #scan-camera-btn:hover {
   background: #fce7f3 !important;
   border-color: #f9a8d4 !important;
+  color: #9d174d !important;
+}
+
+[data-theme="minimalistic"] #scan-list-btn:active,
+[data-theme="minimalistic"] #scan-camera-btn:active {
+  background: #fbcfe8 !important;
+  border-color: #f472b6 !important;
+  color: #831843 !important;
+}
+
+[data-theme="minimalistic"] #scan-list-btn span:not(#scan-credits-badge),
+[data-theme="minimalistic"] #scan-list-btn:hover span:not(#scan-credits-badge),
+[data-theme="minimalistic"] #scan-camera-btn span,
+[data-theme="minimalistic"] #scan-camera-btn:hover span {
+  color: #9d174d !important;
 }
 
 [data-theme="minimalistic"] #scan-list-btn i,
@@ -667,6 +689,18 @@
 [data-theme="minimalistic"] #voice-record-btn:hover {
   background: #d1fae5 !important;
   border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+}
+
+[data-theme="minimalistic"] #voice-record-btn:active {
+  background: #a7f3d0 !important;
+  border-color: #34d399 !important;
+  color: #064e3b !important;
+}
+
+[data-theme="minimalistic"] #voice-record-btn span:not(#voice-credits-badge),
+[data-theme="minimalistic"] #voice-record-btn:hover span:not(#voice-credits-badge) {
+  color: #065f46 !important;
 }
 
 [data-theme="minimalistic"] #voice-record-btn i,
@@ -1171,9 +1205,9 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 }
 
 [data-theme="minimalistic"] #page-pomodoro .pomo-mode-btn.active {
-  background: #0f172a !important;
+  background: #272e38 !important;
   color: #ffffff !important;
-  border-color: #0f172a !important;
+  border-color: #333c48 !important;
 }
 
 [data-theme="minimalistic"] #page-pomodoro #pomo-custom-panel {
@@ -1394,13 +1428,13 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 }
 
 [data-theme="minimalistic"] .pomo-robot-toggle-wrapper .toggle-track {
-  border: 1.5px solid #0f172a !important;
+  border: 1.5px solid #272e38 !important;
   box-shadow: none !important;
   background-color: #f1f5f9 !important;
 }
 
 [data-theme="minimalistic"] .pomo-robot-toggle-wrapper .toggle-thumb {
-  background-color: #0f172a !important;
+  background-color: #272e38 !important;
 }
 
 [data-theme="minimalistic"] .pomo-robot-toggle-wrapper .toggle-switch input:checked + .toggle-track {
