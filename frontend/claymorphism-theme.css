@@ -1162,6 +1162,16 @@
   bottom: 12px !important;
   margin: 0 12px !important;
   width: calc(100% - 24px) !important;
+  padding: 0 !important;
+}
+
+[data-theme="claymorphism"] .bottom-nav {
+  padding: 5px 36px !important;
+  padding-bottom: 5px !important;
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  box-sizing: border-box !important;
 }
 
 [data-theme="claymorphism"] .nav-link-btn {
