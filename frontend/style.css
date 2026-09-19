@@ -2397,7 +2397,7 @@ body.keyboard-visible #central-voice-btn-container {
     padding: 14px 18px;
     flex-wrap: wrap;
     border-radius: 0;
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(14px + max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px))) !important;
   }
 
   .modal-footer .btn-primary,
@@ -5923,7 +5923,7 @@ body.keyboard-visible #central-voice-btn-container {
 
   #modal-group-chat .modal-footer,
   #modal-direct-chat .modal-footer {
-    padding: 12px 12px env(safe-area-inset-bottom, 12px) !important;
+    padding: 12px 12px calc(12px + max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px))) !important;
     border-top: 3px solid var(--black) !important;
   }
 
