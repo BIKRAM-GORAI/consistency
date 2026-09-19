@@ -225,24 +225,117 @@
 [data-theme="minimalistic"] button {
   border: 1px solid #cbd5e1 !important;
   border-radius: 8px !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
 }
 
-[data-theme="minimalistic"] .btn:hover,
-[data-theme="minimalistic"] button:hover {
-  background: #f8fafc !important;
-  border-color: #cbd5e1 !important;
+/* Generic button hover — safely scopes hover and always enforces high-contrast dark text */
+[data-theme="minimalistic"] .btn:not(.btn-primary):not(.btn-danger):hover,
+[data-theme="minimalistic"] button:not(.btn-primary):not(.btn-danger):not(.btn-delete):not(.btn-remove):not(.btn-del-cat):not(.btn-del-task):not(.btn-del-ach):not(.btn-delete-day):not(.add-day-inline-btn):not(.btn-add-cat):not(.btn-save-template):not(.btn-add-leetcode):not(.summary-save-btn):not(.btn-view-ach-all):not(.btn-add-ach):not(.log-out-btn):not(#submit-ach-btn):not(#submit-profile-btn):not(#central-voice-btn):hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
 }
 
-[data-theme="minimalistic"] .btn-primary {
-  background: #0f172a; /* Slate-900 (No !important to allow inline backgrounds to take effect) */
+[data-theme="minimalistic"] button:not(.btn-primary):not(.btn-danger):not(.btn-delete):not(.btn-remove):not(.btn-del-cat):not(.btn-del-task):not(.btn-del-ach):not(.btn-delete-day):not(.add-day-inline-btn):not(.btn-add-cat):not(.btn-save-template):not(.btn-add-leetcode):not(.summary-save-btn):not(.btn-view-ach-all):not(.btn-add-ach):not(.log-out-btn):not(#submit-ach-btn):not(#submit-profile-btn):not(#central-voice-btn):hover * {
+  color: #0f172a !important;
+}
+
+/* Primary & Action Buttons (Clean dark Slate-900 with crisp white text) */
+[data-theme="minimalistic"] .btn-primary,
+[data-theme="minimalistic"] .add-day-inline-btn,
+[data-theme="minimalistic"] .btn-add-cat,
+[data-theme="minimalistic"] .btn-save-template,
+[data-theme="minimalistic"] .btn-add-leetcode,
+[data-theme="minimalistic"] .summary-save-btn,
+[data-theme="minimalistic"] .btn-view-ach-all,
+[data-theme="minimalistic"] .btn-add-ach,
+[data-theme="minimalistic"] #submit-ach-btn,
+[data-theme="minimalistic"] #submit-profile-btn {
+  background: #0f172a !important;
   color: #ffffff !important;
   border: 1px solid #0f172a !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
-[data-theme="minimalistic"] .btn-primary:hover {
+[data-theme="minimalistic"] .btn-primary *,
+[data-theme="minimalistic"] .add-day-inline-btn *,
+[data-theme="minimalistic"] .btn-add-cat *,
+[data-theme="minimalistic"] .btn-save-template *,
+[data-theme="minimalistic"] .btn-add-leetcode *,
+[data-theme="minimalistic"] .summary-save-btn *,
+[data-theme="minimalistic"] .btn-view-ach-all *,
+[data-theme="minimalistic"] .btn-add-ach *,
+[data-theme="minimalistic"] #submit-ach-btn *,
+[data-theme="minimalistic"] #submit-profile-btn * {
+  color: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .btn-primary:hover,
+[data-theme="minimalistic"] .add-day-inline-btn:hover,
+[data-theme="minimalistic"] .btn-add-cat:hover,
+[data-theme="minimalistic"] .btn-save-template:hover,
+[data-theme="minimalistic"] .btn-add-leetcode:hover,
+[data-theme="minimalistic"] .summary-save-btn:hover,
+[data-theme="minimalistic"] .btn-view-ach-all:hover,
+[data-theme="minimalistic"] .btn-add-ach:hover,
+[data-theme="minimalistic"] #submit-ach-btn:hover,
+[data-theme="minimalistic"] #submit-profile-btn:hover {
   background: #1e293b !important;
   border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="minimalistic"] .btn-primary:hover *,
+[data-theme="minimalistic"] .add-day-inline-btn:hover *,
+[data-theme="minimalistic"] .btn-add-cat:hover *,
+[data-theme="minimalistic"] .btn-save-template:hover *,
+[data-theme="minimalistic"] .btn-add-leetcode:hover *,
+[data-theme="minimalistic"] .summary-save-btn:hover *,
+[data-theme="minimalistic"] .btn-view-ach-all:hover *,
+[data-theme="minimalistic"] .btn-add-ach:hover *,
+[data-theme="minimalistic"] #submit-ach-btn:hover *,
+[data-theme="minimalistic"] #submit-profile-btn:hover * {
+  color: #ffffff !important;
+}
+
+/* Remove / Delete Buttons in Minimalist Theme */
+[data-theme="minimalistic"] .btn-remove,
+[data-theme="minimalistic"] .btn-del-cat,
+[data-theme="minimalistic"] .btn-del-task,
+[data-theme="minimalistic"] .btn-del-ach,
+[data-theme="minimalistic"] .btn-delete-day {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px !important;
+  transform: none !important;
+}
+
+[data-theme="minimalistic"] .btn-remove *,
+[data-theme="minimalistic"] .btn-del-cat *,
+[data-theme="minimalistic"] .btn-del-task *,
+[data-theme="minimalistic"] .btn-del-ach *,
+[data-theme="minimalistic"] .btn-delete-day * {
+  color: #dc2626 !important;
+}
+
+[data-theme="minimalistic"] .btn-remove:hover,
+[data-theme="minimalistic"] .btn-del-cat:hover,
+[data-theme="minimalistic"] .btn-del-task:hover,
+[data-theme="minimalistic"] .btn-del-ach:hover,
+[data-theme="minimalistic"] .btn-delete-day:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  transform: scale(1.06) !important;
+}
+
+[data-theme="minimalistic"] .btn-remove:hover *,
+[data-theme="minimalistic"] .btn-del-cat:hover *,
+[data-theme="minimalistic"] .btn-del-task:hover *,
+[data-theme="minimalistic"] .btn-del-ach:hover *,
+[data-theme="minimalistic"] .btn-delete-day:hover * {
   color: #ffffff !important;
 }
 
@@ -255,6 +348,7 @@
 [data-theme="minimalistic"] .btn-secondary:hover {
   background: #e2e8f0 !important;
   border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 [data-theme="minimalistic"] .btn-ghost {

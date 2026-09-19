@@ -1102,14 +1102,83 @@
   transform: translateY(1px) scale(0.98) !important;
 }
 
-/* Delete button */
-[data-theme="claymorphism"] .btn-delete {
-  background: #fca5a5 !important;
-  color: #7f1d1d !important;
+/* Delete & Remove Buttons in Claymorphism */
+[data-theme="claymorphism"] .btn-delete,
+[data-theme="claymorphism"] .btn-remove,
+[data-theme="claymorphism"] .btn-del-cat,
+[data-theme="claymorphism"] .btn-del-task,
+[data-theme="claymorphism"] .btn-del-ach,
+[data-theme="claymorphism"] .btn-delete-day {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
   border: none !important;
-  border-radius: 14px !important;
-  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.4),
-              inset -2px -2px 4px rgba(0,0,0,0.10) !important;
+  border-radius: 12px !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.7),
+              inset -1px -1px 3px rgba(220,38,38,0.15),
+              0 2px 5px rgba(220,38,38,0.12) !important;
+  transition: all 0.15s ease !important;
+  transform: none !important;
+}
+
+[data-theme="claymorphism"] .btn-delete:hover,
+[data-theme="claymorphism"] .btn-remove:hover,
+[data-theme="claymorphism"] .btn-del-cat:hover,
+[data-theme="claymorphism"] .btn-del-task:hover,
+[data-theme="claymorphism"] .btn-del-ach:hover,
+[data-theme="claymorphism"] .btn-delete-day:hover {
+  background: #fca5a5 !important;
+  color: #991b1b !important;
+  transform: scale(1.08) !important;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,0.5),
+              inset -1px -1px 3px rgba(220,38,38,0.25),
+              0 4px 8px rgba(220,38,38,0.2) !important;
+}
+
+[data-theme="claymorphism"] .btn-delete *,
+[data-theme="claymorphism"] .btn-remove *,
+[data-theme="claymorphism"] .btn-del-cat *,
+[data-theme="claymorphism"] .btn-del-task *,
+[data-theme="claymorphism"] .btn-del-ach *,
+[data-theme="claymorphism"] .btn-delete-day * {
+  color: inherit !important;
+}
+
+/* Primary Action Buttons (New Day Card, Add Category, etc.) in Claymorphism */
+[data-theme="claymorphism"] .add-day-inline-btn,
+[data-theme="claymorphism"] .btn-add-cat,
+[data-theme="claymorphism"] .btn-save-template,
+[data-theme="claymorphism"] .btn-add-leetcode,
+[data-theme="claymorphism"] .summary-save-btn {
+  background: #27a55a !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.35),
+              inset -3px -3px 6px rgba(0,0,0,0.18),
+              0 4px 12px rgba(20,90,50,0.20) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .add-day-inline-btn *,
+[data-theme="claymorphism"] .btn-add-cat *,
+[data-theme="claymorphism"] .btn-save-template *,
+[data-theme="claymorphism"] .btn-add-leetcode *,
+[data-theme="claymorphism"] .summary-save-btn * {
+  color: #ffffff !important;
+}
+
+[data-theme="claymorphism"] .add-day-inline-btn:hover,
+[data-theme="claymorphism"] .btn-add-cat:hover,
+[data-theme="claymorphism"] .btn-save-template:hover,
+[data-theme="claymorphism"] .btn-add-leetcode:hover,
+[data-theme="claymorphism"] .summary-save-btn:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  background: #22934f !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.2),
+              0 6px 16px rgba(20,90,50,0.24) !important;
 }
 
 /* ============================================================
