@@ -2209,7 +2209,7 @@ body.keyboard-visible #central-voice-btn-container {
   .bottom-nav-container {
     display: block;
     position: fixed;
-    bottom: 0;
+    bottom: max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     z-index: 300;
@@ -2339,7 +2339,7 @@ body.keyboard-visible #central-voice-btn-container {
   }
 
   /* Pages */
-  .page { padding: 20px 14px 110px; }
+  .page { padding: 20px 14px calc(110px + max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px))); }
   .page-header { margin-bottom: 22px; }
   .cards-container { gap: 14px; }
   .goals-container { gap: 14px; }
@@ -8803,7 +8803,7 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 
 @media (max-width: 768px) {
   #central-voice-btn-container {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(84px + max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px))) !important;
   }
 }
 

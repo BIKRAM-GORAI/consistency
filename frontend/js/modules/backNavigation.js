@@ -168,12 +168,37 @@
     }
   }
 
+  // ── Automatic 3-Button Navigation Bar Offset Detection ──
+  function updateNavBarOffset() {
+    const isMobile = window.innerWidth <= 1024;
+    let offset = 0;
+
+    if (isMobile) {
+      // In 3-button navigation, screenDiff is typically 44px - 64px.
+      // In full-screen gestures, screenDiff is <= 24px.
+      const screenDiff = Math.max(0, window.screen.height - window.screen.availHeight);
+      if (screenDiff >= 36) {
+        offset = Math.min(56, Math.max(44, screenDiff));
+      }
+    }
+
+    document.documentElement.style.setProperty(
+      '--bnav-bottom-offset',
+      offset > 0 ? `${offset}px` : '0px'
+    );
+  }
+
+  updateNavBarOffset();
+  window.addEventListener('resize', updateNavBarOffset, { passive: true });
+  window.addEventListener('orientationchange', () => setTimeout(updateNavBarOffset, 200), { passive: true });
+
   // Expose global API
   window.BackNav = {
     pushOverlay,
     popOverlay,
     recordPage,
     handleBack,
+    updateNavBarOffset,
     getStack: () => [...overlayStack],
     getHistory: () => [...pageHistory]
   };
