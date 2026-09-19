@@ -36,6 +36,7 @@ const authenticateAdmin = (req, res, next) => {
 };
 
 // Public Admin Login Flow (Rate Limited to prevent brute-force attacks)
+router.post('/verify-credentials', adminLimiter, adminController.adminVerifyCredentials);
 router.post('/request-otp', adminLimiter, adminController.adminRequestOtp);
 router.post('/login', adminLimiter, adminController.adminLogin);
 
@@ -105,6 +106,9 @@ router.post('/bulk-email', authenticateAdmin, adminController.sendBulkEmail);
 // Deleted Account Logs
 router.get('/deleted-logs', authenticateAdmin, adminController.getDeletedUserLogs);
 router.get('/deleted-logs/:id', authenticateAdmin, adminController.getDeletedUserLogDetails);
+
+// Cron & Reminder Logs
+router.get('/cron-logs', authenticateAdmin, adminController.getAdminCronLogs);
 
 // Motivation Quote Management
 const motivationController = require('../controllers/motivationController');

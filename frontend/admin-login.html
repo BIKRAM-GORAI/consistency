@@ -220,20 +220,27 @@
             </button>
           </div>
         </div>
-        <button type="button" id="btn-request-otp" class="btn-login">Send OTP <i data-lucide="mail"></i></button>
+        <button type="button" id="btn-continue" class="btn-login">Continue <i data-lucide="arrow-right"></i></button>
       </div>
 
       <div id="otp-step" style="display: none;">
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 8px;">
           <label for="otp">Verification Code</label>
           <div style="position: relative;">
-            <input type="password" id="otp" placeholder="••••••" maxlength="6" autocomplete="one-time-code" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 900; padding-right: 45px; padding-left: 45px;">
+            <input type="password" id="otp" placeholder="••••••" maxlength="10" autocomplete="one-time-code" style="text-align: center; font-size: 24px; letter-spacing: 6px; font-weight: 900; padding-right: 45px; padding-left: 45px;">
             <button type="button" id="toggleOtp" title="Toggle OTP visibility" aria-label="Toggle OTP visibility">
               <i data-lucide="eye"></i>
             </button>
           </div>
-          <p style="font-size: 11px; margin-top: 8px; font-weight: 700; color: #666; text-transform: uppercase;">Check your registered email</p>
         </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 12px; min-height: 20px;">
+          <button type="button" id="btn-send-email-otp" onclick="handleSendEmailOtp()" style="background: none; border: none; color: var(--black); font-weight: 800; cursor: pointer; text-decoration: underline; padding: 0; display: inline-flex; align-items: center; gap: 5px; font-family: inherit;">
+            <i data-lucide="mail" style="width:14px; height:14px;"></i> Send OTP to Email
+          </button>
+          <span id="otp-sent-status" style="font-size: 11px; font-weight: 800; color: #15803d; display: none;">✓ Code sent to email!</span>
+        </div>
+
         <button type="submit" id="btn-verify-otp" class="btn-login">Verify &amp; Login <i data-lucide="shield-check"></i></button>
         <button type="button" onclick="resetLogin()" style="background: none; border: none; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 12px; width: 100%; margin-bottom: 20px;">← Back to Credentials</button>
       </div>
@@ -242,7 +249,12 @@
     </form>
   </div>
 
-  <script src="/js/libs/lucide/lucide.min.js"></script>
+  <script src="libs/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="/js/libs/lucide/lucide.min.js"><\/script>');
+    }
+  </script>
   <script>
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
@@ -253,14 +265,23 @@
     
     const credentialsStep = document.getElementById('credentials-step');
     const otpStep = document.getElementById('otp-step');
-    const btnRequestOtp = document.getElementById('btn-request-otp');
+    const btnContinue = document.getElementById('btn-continue');
     const btnVerifyOtp = document.getElementById('btn-verify-otp');
+    const btnSendEmailOtp = document.getElementById('btn-send-email-otp');
+    const otpSentStatus = document.getElementById('otp-sent-status');
+
+    function initIcons(root) {
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        if (root) lucide.createIcons({ root });
+        else lucide.createIcons();
+      }
+    }
 
     togglePassword.addEventListener('click', function () {
       const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
       passwordInput.setAttribute('type', type);
       this.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
-      lucide.createIcons({ root: this });
+      initIcons(this);
     });
 
     if (toggleOtp) {
@@ -268,12 +289,13 @@
         const type = otpInput.getAttribute('type') === 'password' ? 'text' : 'password';
         otpInput.setAttribute('type', type);
         this.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
-        lucide.createIcons({ root: this });
+        initIcons(this);
       });
     }
 
     // Initial icons
-    lucide.createIcons();
+    initIcons();
+    window.addEventListener('DOMContentLoaded', () => initIcons());
 
     function showError(msg) {
       errorEl.textContent = msg;
@@ -286,14 +308,15 @@
       errorEl.style.display = 'none';
       otpInput.value = '';
       otpInput.setAttribute('type', 'password');
+      if (otpSentStatus) otpSentStatus.style.display = 'none';
       if (toggleOtp) {
         toggleOtp.innerHTML = '<i data-lucide="eye"></i>';
-        lucide.createIcons({ root: toggleOtp });
+        initIcons(toggleOtp);
       }
       passwordInput.focus();
     }
 
-    async function handleRequestOtp() {
+    async function handleContinue() {
       const email = emailInput.value.trim();
       const password = passwordInput.value;
       
@@ -301,13 +324,13 @@
         return showError('Please enter both email and password.');
       }
 
-      btnRequestOtp.disabled = true;
-      btnRequestOtp.innerHTML = 'Sending... <i data-lucide="mail"></i>';
-      lucide.createIcons({ root: btnRequestOtp });
+      btnContinue.disabled = true;
+      btnContinue.innerHTML = 'Verifying... <i data-lucide="arrow-right"></i>';
+      initIcons(btnContinue);
       errorEl.style.display = 'none';
 
       try {
-        const res = await fetch('/api/admin/request-otp', {
+        const res = await fetch('/api/admin/verify-credentials', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -319,9 +342,10 @@
           otpStep.style.display = 'block';
           otpInput.value = '';
           otpInput.setAttribute('type', 'password');
+          if (otpSentStatus) otpSentStatus.style.display = 'none';
           if (toggleOtp) {
             toggleOtp.innerHTML = '<i data-lucide="eye"></i>';
-            lucide.createIcons({ root: toggleOtp });
+            initIcons(toggleOtp);
           }
           setTimeout(() => otpInput.focus(), 100);
         } else {
@@ -330,9 +354,51 @@
       } catch (err) {
         showError('Network error. Please try again.');
       } finally {
-        btnRequestOtp.disabled = false;
-        btnRequestOtp.innerHTML = 'Send OTP <i data-lucide="mail"></i>';
-        lucide.createIcons({ root: btnRequestOtp });
+        btnContinue.disabled = false;
+        btnContinue.innerHTML = 'Continue <i data-lucide="arrow-right"></i>';
+        initIcons(btnContinue);
+      }
+    }
+
+    async function handleSendEmailOtp() {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        return showError('Missing credentials. Please return to step 1.');
+      }
+
+      if (btnSendEmailOtp) {
+        btnSendEmailOtp.disabled = true;
+        btnSendEmailOtp.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;"></i> Sending OTP...';
+        initIcons(btnSendEmailOtp);
+      }
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          if (otpSentStatus) {
+            otpSentStatus.textContent = '✓ Code sent to email!';
+            otpSentStatus.style.display = 'inline';
+          }
+        } else {
+          showError(data.message || 'Failed to send verification code.');
+        }
+      } catch (err) {
+        showError('Network error. Failed to send OTP.');
+      } finally {
+        if (btnSendEmailOtp) {
+          btnSendEmailOtp.disabled = false;
+          btnSendEmailOtp.innerHTML = '<i data-lucide="mail" style="width:14px;height:14px;"></i> Resend OTP to Email';
+          initIcons(btnSendEmailOtp);
+        }
       }
     }
 
@@ -346,7 +412,7 @@
       if (btnVerifyOtp) {
         btnVerifyOtp.disabled = true;
         btnVerifyOtp.innerHTML = 'Verifying... <i data-lucide="shield-check"></i>';
-        lucide.createIcons({ root: btnVerifyOtp });
+        initIcons(btnVerifyOtp);
       }
 
       try {
@@ -367,7 +433,7 @@
           if (btnVerifyOtp) {
             btnVerifyOtp.disabled = false;
             btnVerifyOtp.innerHTML = 'Verify &amp; Login <i data-lucide="shield-check"></i>';
-            lucide.createIcons({ root: btnVerifyOtp });
+            initIcons(btnVerifyOtp);
           }
         }
       } catch (err) {
@@ -375,21 +441,21 @@
         if (btnVerifyOtp) {
           btnVerifyOtp.disabled = false;
           btnVerifyOtp.innerHTML = 'Verify &amp; Login <i data-lucide="shield-check"></i>';
-          lucide.createIcons({ root: btnVerifyOtp });
+          initIcons(btnVerifyOtp);
         }
       }
     }
 
-    btnRequestOtp.addEventListener('click', (e) => {
+    btnContinue.addEventListener('click', (e) => {
       e.preventDefault();
-      handleRequestOtp();
+      handleContinue();
     });
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      // If credentials step is currently active, Enter should trigger OTP request
+      // If credentials step is currently active, Enter should trigger Continue
       if (otpStep.style.display === 'none') {
-        await handleRequestOtp();
+        await handleContinue();
       } else {
         await handleVerifyOtp();
       }

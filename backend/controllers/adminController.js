@@ -8,6 +8,7 @@ const Group = require('../models/Group');
 const Badge = require('../models/Badge');
 const Changelog = require('../models/Changelog');
 const DeletedUserLog = require('../models/DeletedUserLog');
+const CronLog = require('../models/CronLog');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
@@ -36,7 +37,35 @@ function escapeRegex(str) {
 }
 
 /**
- * Admin Step 1: Request OTP
+ * Admin Step 1: Verify Credentials (without dispatching OTP email)
+ */
+async function adminVerifyCredentials(req, res) {
+  try {
+    const { email, password } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      return res.status(500).json({ message: 'Admin credentials not configured in server environment.' });
+    }
+
+    if (Date.now() < adminLockoutUntil) {
+      const waitMinutes = Math.ceil((adminLockoutUntil - Date.now()) / 60000);
+      return res.status(429).json({ message: `Admin authentication locked due to multiple failed attempts. Try again in ${waitMinutes} minutes.` });
+    }
+
+    if (!safeStringCompare(email, adminEmail) || !safeStringCompare(password, adminPassword)) {
+      return res.status(401).json({ message: 'Invalid admin credentials.' });
+    }
+
+    res.json({ success: true, message: 'Credentials verified.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * Admin Step 1 (Optional): Request OTP
  * Verifies credentials and sends OTP to ADMIN_EMAIL
  */
 async function adminRequestOtp(req, res) {
@@ -297,7 +326,7 @@ async function getAdminUsers(req, res) {
       .sort({ createdAt: sortOrder })
       .skip(skip)
       .limit(limit)
-      .select('name email username profilePicture isBlacklisted blacklistedUntil createdAt');
+      .select('name email username profilePicture isBlacklisted blacklistedUntil createdAt lastActiveAt lastLoginIp');
 
     // Enhance ONLY the 10 users inside the paginated slice (super fast!)
     const enhancedUsers = await Promise.all(users.map(async (u) => {
@@ -339,8 +368,33 @@ async function getAdminUserDetails(req, res) {
       .populate('owner', 'name profilePicture username')
       .populate('members', 'name profilePicture username');
 
+    // Calculate effective last active time across all user activity streams
+    const candidateTimestamps = [];
+    if (user.lastActiveAt) candidateTimestamps.push(new Date(user.lastActiveAt).getTime());
+    if (user.updatedAt) candidateTimestamps.push(new Date(user.updatedAt).getTime());
+    if (user.createdAt) candidateTimestamps.push(new Date(user.createdAt).getTime());
+    if (days && days.length > 0) {
+      if (days[0].updatedAt) candidateTimestamps.push(new Date(days[0].updatedAt).getTime());
+      if (days[0].createdAt) candidateTimestamps.push(new Date(days[0].createdAt).getTime());
+      if (days[0].date) candidateTimestamps.push(new Date(days[0].date).getTime());
+    }
+    if (goals && goals.length > 0) {
+      if (goals[0].updatedAt) candidateTimestamps.push(new Date(goals[0].updatedAt).getTime());
+      if (goals[0].createdAt) candidateTimestamps.push(new Date(goals[0].createdAt).getTime());
+    }
+    if (achievements && achievements.length > 0) {
+      if (achievements[0].createdAt) candidateTimestamps.push(new Date(achievements[0].createdAt).getTime());
+      if (achievements[0].date) candidateTimestamps.push(new Date(achievements[0].date).getTime());
+    }
+
+    const maxTimestamp = candidateTimestamps.length > 0 ? Math.max(...candidateTimestamps.filter(t => !isNaN(t))) : null;
+    const effectiveLastActiveAt = maxTimestamp ? new Date(maxTimestamp) : (user.lastActiveAt || user.createdAt);
+
+    const userObj = user.toObject();
+    userObj.effectiveLastActiveAt = effectiveLastActiveAt;
+
     res.json({
-      user,
+      user: userObj,
       days,
       goals,
       achievements,
@@ -905,6 +959,7 @@ async function sendBulkEmail(req, res) {
 }
 
 module.exports = {
+  adminVerifyCredentials,
   adminRequestOtp,
   adminLogin,
   getAdminReviews,
@@ -1722,6 +1777,95 @@ module.exports = {
     } catch (err) {
       console.error('[ADMIN ERROR] getDeletedUserLogDetails:', err);
       res.status(500).json({ message: 'Server error while fetching log details.', error: err.message });
+    }
+  },
+
+  getAdminCronLogs: async (req, res) => {
+    try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+      const { type, search, startDate, endDate, sort } = req.query;
+
+      const query = {};
+
+      // Filter by type: 'streak' or 'inactive'
+      if (type && type !== 'all') {
+        query.type = type;
+      }
+
+      // Filter by date range on createdAt
+      if (startDate || endDate) {
+        query.createdAt = {};
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = start;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      }
+
+      // Search by recipient email or userAgent
+      if (search && search.trim()) {
+        const safeSearch = escapeRegex(search.trim());
+        query.$or = [
+          { 'emails.email': { $regex: safeSearch, $options: 'i' } },
+          { userAgent: { $regex: safeSearch, $options: 'i' } }
+        ];
+      }
+
+      const sortDirection = sort === 'asc' ? 1 : -1;
+
+      const [total, items, statsAggregation] = await Promise.all([
+        CronLog.countDocuments(query),
+        CronLog.find(query)
+          .sort({ createdAt: sortDirection })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        CronLog.aggregate([
+          {
+            $facet: {
+              overall: [
+                { $unwind: { path: '$emails', preserveNullAndEmptyArrays: true } },
+                {
+                  $group: {
+                    _id: null,
+                    totalEmails: { $sum: { $cond: [{ $ifNull: ['$emails', false] }, 1, 0] } },
+                    streakEmails: { $sum: { $cond: [{ $and: [{ $eq: ['$type', 'streak'] }, { $ifNull: ['$emails', false] }] }, 1, 0] } },
+                    inactiveEmails: { $sum: { $cond: [{ $and: [{ $eq: ['$type', 'inactive'] }, { $ifNull: ['$emails', false] }] }, 1, 0] } }
+                  }
+                }
+              ],
+              totalRuns: [
+                { $group: { _id: null, count: { $sum: 1 } } }
+              ]
+            }
+          }
+        ])
+      ]);
+
+      const metrics = {
+        totalRuns: statsAggregation[0]?.totalRuns[0]?.count || 0,
+        totalEmails: statsAggregation[0]?.overall[0]?.totalEmails || 0,
+        streakEmails: statsAggregation[0]?.overall[0]?.streakEmails || 0,
+        inactiveEmails: statsAggregation[0]?.overall[0]?.inactiveEmails || 0
+      };
+
+      res.json({
+        items,
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+        metrics
+      });
+    } catch (err) {
+      console.error('[ADMIN ERROR] getAdminCronLogs:', err);
+      res.status(500).json({ message: 'Server error while fetching cron logs.', error: err.message });
     }
   }
 };

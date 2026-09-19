@@ -621,6 +621,75 @@
       gap: 10px;
     }
 
+    /* ── Automated Cron Logs Component Styles ── */
+    .cron-filters-bar {
+      background: var(--white);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cron-filters-main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      flex: 1;
+      min-width: 280px;
+    }
+    .cron-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .cron-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cron-date-filters {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .cron-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .cron-table-card {
+      background: var(--white);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .cron-logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+    .cron-agent-tag {
+      font-size: 11px;
+      font-family: monospace;
+      color: #334155;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+
     /* ── Mobile & Tablet Responsiveness (<= 768px) ── */
     @media (max-width: 768px) {
       .container { padding: 0 14px; margin: 20px auto; }
@@ -823,6 +892,138 @@
       #section-bulk-email > div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
       }
+
+      /* ── Cron Logs Mobile Adaptations ── */
+      .cron-filters-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 12px !important;
+        gap: 12px !important;
+      }
+      .cron-filters-main {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 10px !important;
+      }
+      .cron-search-wrap {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .cron-search-wrap input {
+        width: 100% !important;
+      }
+      .cron-filter-group {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+      .cron-filter-group select {
+        flex: 1 !important;
+      }
+      .cron-date-filters {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: auto 1fr auto 1fr;
+        gap: 6px !important;
+        align-items: center !important;
+      }
+      .cron-date-filters input {
+        width: 100% !important;
+      }
+      .cron-sort-controls {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+      }
+      .cron-sort-controls button {
+        flex: 1 !important;
+      }
+      .cron-metrics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+      .cron-table-card {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+      .cron-logs-table {
+        min-width: 0 !important;
+        width: 100% !important;
+      }
+      .cron-logs-table td[data-label="#"] {
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border-bottom: 2px solid var(--black) !important;
+        padding-bottom: 6px !important;
+        padding-left: 0 !important;
+        color: var(--black) !important;
+      }
+      .cron-logs-table td[data-label="#"]::before {
+        display: none !important;
+      }
+      .cron-logs-table td[data-label="Action"] {
+        padding-left: 0 !important;
+        display: flex !important;
+        border-bottom: none !important;
+        margin-top: 6px;
+      }
+      .cron-logs-table td[data-label="Action"]::before {
+        display: none !important;
+      }
+      .cron-logs-table td[data-label="Action"] button {
+        width: 100% !important;
+        padding: 9px 12px !important;
+        font-size: 12px !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .cron-logs-table td[data-label="Trigger"] .cron-agent-tag {
+        max-width: 100% !important;
+        white-space: normal !important;
+        word-break: break-all;
+      }
+      #cron-detail-modal .modal {
+        padding: 16px !important;
+      }
+      .cron-modal-run-card {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .cron-modal-run-badge {
+        align-self: flex-start !important;
+      }
+      .cron-modal-recipients-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .cron-modal-recipients-header input {
+        width: 100% !important;
+      }
+      #btn-copy-cron-emails {
+        width: 100% !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .cron-metrics-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .cron-date-filters {
+        grid-template-columns: 1fr !important;
+        gap: 6px !important;
+      }
+      .cron-date-filters span {
+        font-size: 10px !important;
+      }
     }
   </style>
 </head>
@@ -849,6 +1050,7 @@
       <button class="nav-link" id="nav-changelogs" onclick="showSection('changelogs')">🚀 Changelogs</button>
       <button class="nav-link" id="nav-motivation" onclick="showSection('motivation')">🔥 Motivation</button>
       <button class="nav-link" id="nav-bulk-email" onclick="showSection('bulk-email')">📧 Bulk Email</button>
+      <button class="nav-link" id="nav-cron-logs" onclick="showSection('cron-logs')">⏰ Cron Logs</button>
     </div>
   </nav>
 
@@ -1274,6 +1476,94 @@
       <div id="motivation-quotes-grid" class="review-grid"></div>
     </div>
 
+    <!-- Cron Logs Section -->
+    <div id="section-cron-logs" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>⏰ Automated Cron Dispatch Logs</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Real-time audit history of system cron job runs, email reminders, and recipient deliveries.</p>
+        </div>
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <button class="btn-control" onclick="loadCronLogs()" style="background: var(--black); color: var(--white);"><i data-lucide="refresh-cw"></i> Refresh</button>
+          <button class="btn-control" onclick="resetCronFilters()" style="background: var(--white); color: var(--black);">↺ Reset Filters</button>
+        </div>
+      </div>
+
+      <!-- Filters Bar -->
+      <div class="cron-filters-bar">
+        <div class="cron-filters-main">
+          <!-- Search Email or Trigger -->
+          <div class="cron-search-wrap">
+            <input type="text" id="cron-search-input" placeholder="Search recipient email or user-agent..." class="btn-control" style="width: 100%; text-transform: none; text-align: left; padding-left: 12px;" onkeyup="debouncedSearchCronLogs()">
+          </div>
+
+          <!-- Type Filter -->
+          <div class="cron-filter-group">
+            <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #555;">Type:</span>
+            <select id="cron-type-filter" class="btn-control" style="background: white; border: var(--border); font-weight: 700; padding: 6px 12px;" onchange="applyCronFilters()">
+              <option value="all">⚡ All Crons</option>
+              <option value="streak">🔥 Streak Reminders</option>
+              <option value="inactive">👋 Inactive Reminders</option>
+            </select>
+          </div>
+
+          <!-- Date Pickers -->
+          <div class="cron-date-filters">
+            <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #555;">From:</span>
+            <input type="date" id="cron-start-date" class="btn-control" style="background: white; border: var(--border); padding: 5px 8px; font-size: 12px;" onchange="applyCronFilters()">
+            <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #555;">To:</span>
+            <input type="date" id="cron-end-date" class="btn-control" style="background: white; border: var(--border); padding: 5px 8px; font-size: 12px;" onchange="applyCronFilters()">
+          </div>
+        </div>
+
+        <!-- Sort Order Toggle -->
+        <div class="controls cron-sort-controls">
+          <button class="btn-control active" id="cron-sort-desc" onclick="setCronSort('desc')">Newest</button>
+          <button class="btn-control" id="cron-sort-asc" onclick="setCronSort('asc')">Oldest</button>
+        </div>
+      </div>
+
+      <!-- Compact Metric Boxes -->
+      <div class="cron-metrics-grid">
+        <div class="metric-mini-card" style="border-left: 5px solid var(--black);">
+          <span class="metric-mini-val" id="cron-metric-total">0</span>
+          <span class="metric-mini-label">Total Runs</span>
+        </div>
+        <div class="metric-mini-card" style="border-left: 5px solid var(--blue);">
+          <span class="metric-mini-val" id="cron-metric-emails">0</span>
+          <span class="metric-mini-label">Emails Delivered</span>
+        </div>
+        <div class="metric-mini-card" style="border-left: 5px solid var(--orange);">
+          <span class="metric-mini-val" id="cron-metric-streak">0</span>
+          <span class="metric-mini-label">Streak Reminders</span>
+        </div>
+        <div class="metric-mini-card" style="border-left: 5px solid var(--purple);">
+          <span class="metric-mini-val" id="cron-metric-inactive">0</span>
+          <span class="metric-mini-label">Inactive Reminders</span>
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div class="cron-table-card">
+        <table class="cron-logs-table">
+          <thead style="background: #f8fafc; border-bottom: 2px solid var(--black);">
+            <tr>
+              <th style="padding: 10px 12px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 50px;">#</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 180px;">Cron Type</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 190px;">Execution Time</th>
+              <th style="padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 220px;">Trigger / Agent</th>
+              <th style="padding: 10px 14px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 150px;">Recipients</th>
+              <th style="padding: 10px 12px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; width: 100px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="cron-logs-table-body">
+            <tr><td colspan="6" style="text-align:center; padding:24px; font-weight:800; color:#666;">Loading cron execution logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="cron-logs-pagination" style="margin-top: 28px; display: flex; justify-content: center; align-items: center; gap: 12px;"></div>
+    </div>
+
   </div>
 
   <!-- Email HTML Preview Modal -->
@@ -1515,6 +1805,27 @@
       <div class="modal-footer" style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
         <button type="button" class="btn-control" id="btn-copy-deleted-json" onclick="copyDeletedLogJson()" style="background: var(--yellow);"><i data-lucide="copy"></i> Copy JSON</button>
         <button type="button" class="btn-cancel" onclick="closeDeletedLogModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cron Execution Detail Modal -->
+  <div id="cron-detail-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 720px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--black); padding-bottom: 12px; margin-bottom: 18px; flex-shrink: 0;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>⏰</span> Cron Execution Recipients Detail
+        </h3>
+        <button class="btn-cancel" style="flex:none; padding: 6px 12px;" onclick="closeCronDetailModal()">✕ Close</button>
+      </div>
+
+      <div id="cron-detail-modal-content" style="overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px;">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="modal-footer" style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 14px; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;">
+        <button type="button" class="btn-control" id="btn-copy-cron-emails" onclick="copyCronEmails()" style="background: var(--yellow);"><i data-lucide="copy"></i> Copy All Emails</button>
+        <button type="button" class="btn-cancel" onclick="closeCronDetailModal()">Close</button>
       </div>
     </div>
   </div>

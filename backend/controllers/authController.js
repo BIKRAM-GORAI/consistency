@@ -65,6 +65,9 @@ const register = async (req, res) => {
       profileUrl = result.secure_url;
       profileId = result.public_id;
     }
+
+    const clientIp = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
+
     const user = new User({ 
       name, 
       username: username.toLowerCase().trim(), 
@@ -74,7 +77,10 @@ const register = async (req, res) => {
       profilePictureId: profileId,
       referralCode,
       referredBy: referrerId,
-      pointsBalance: referrerId ? 200 : 0
+      pointsBalance: referrerId ? 200 : 0,
+      lastActiveAt: new Date(),
+      lastLoginIp: clientIp || null,
+      registrationIp: clientIp || null
     });
     const saved = await user.save();
 
@@ -147,7 +153,9 @@ const login = async (req, res) => {
     }
 
     await resetFailedAttempts(user._id);
+    const clientIp = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
     user.lastActiveAt = new Date();
+    if (clientIp) user.lastLoginIp = clientIp;
 
     // Generate referral code for existing user if missing
     if (!user.referralCode) {
@@ -157,7 +165,7 @@ const login = async (req, res) => {
 
     await User.updateOne(
       { _id: user._id },
-      { $set: { lastActiveAt: user.lastActiveAt, referralCode: user.referralCode } }
+      { $set: { lastActiveAt: user.lastActiveAt, referralCode: user.referralCode, ...(clientIp ? { lastLoginIp: clientIp } : {}) } }
     );
     const token = generateToken(user._id, user.email);
     const refreshToken = generateRefreshToken(user._id, user.email);
@@ -209,6 +217,8 @@ const oauthLogin = async (req, res) => {
       await Group.updateOwnerBlacklistStatus(user._id, false);
     }
 
+    const clientIp = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
+
     if (user) {
       // If user exists and request is from Register page, block registration and prompt user to login
       if (mode === 'register') {
@@ -222,6 +232,8 @@ const oauthLogin = async (req, res) => {
         user.authProviders.push({ provider, uid });
       }
       user.isEmailVerified = true;
+      user.lastActiveAt = new Date();
+      if (clientIp) user.lastLoginIp = clientIp;
       
       // If the existing user doesn't have a profile picture set yet, import and compress it from Google
       if (!user.profilePicture && googlePhotoUrl) {
@@ -249,7 +261,15 @@ const oauthLogin = async (req, res) => {
         });
       }
 
-      user = new User({ name: name || 'User', email: normalizedEmail, authProviders: [{ provider, uid }], isEmailVerified: true });
+      user = new User({ 
+        name: name || 'User', 
+        email: normalizedEmail, 
+        authProviders: [{ provider, uid }], 
+        isEmailVerified: true,
+        lastActiveAt: new Date(),
+        lastLoginIp: clientIp || null,
+        registrationIp: clientIp || null
+      });
       
       const { generateUniqueReferralCode } = require('../utils/pointsHelper');
       user.referralCode = await generateUniqueReferralCode();

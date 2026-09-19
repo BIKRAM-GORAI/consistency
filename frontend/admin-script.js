@@ -6,7 +6,8 @@ let currentPages = {
   users: 1,
   groups: 1,
   payments: 1,
-  deletedLogs: 1
+  deletedLogs: 1,
+  cronLogs: 1
 };
 let allDeletedLogs = [];
 let currentSelectedDeletedLog = null;
@@ -136,6 +137,7 @@ function showSection(section) {
   if (section === 'changelogs') loadChangelogs();
   if (section === 'motivation') loadAdminMotivationQuotes();
   if (section === 'bulk-email') loadUserEmailsOnly('desc');
+  if (section === 'cron-logs') loadCronLogs();
 }
 
 /**
@@ -758,6 +760,51 @@ function showUserTab(tab) {
   let html = '';
   switch (tab) {
     case 'info':
+      // Format Onboarding Date and exact Time
+      const onboardDateObj = user.createdAt ? new Date(user.createdAt) : null;
+      const formattedOnboard = onboardDateObj 
+        ? `${onboardDateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} at ${onboardDateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}`
+        : 'N/A';
+      
+      let relativeOnboard = '';
+      if (onboardDateObj) {
+        const diffDays = Math.floor((Date.now() - onboardDateObj.getTime()) / (1000 * 60 * 60 * 24));
+        relativeOnboard = diffDays === 0 ? 'Today' : `${diffDays}d ago`;
+      }
+
+      // Format Last Active Time (use calculated effectiveLastActiveAt or lastActiveAt)
+      const lastActiveRaw = user.effectiveLastActiveAt || user.lastActiveAt || user.createdAt;
+      const lastActiveDateObj = lastActiveRaw ? new Date(lastActiveRaw) : null;
+      const formattedLastActive = lastActiveDateObj 
+        ? `${lastActiveDateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })} at ${lastActiveDateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true })}`
+        : 'Never';
+
+      let relativeLastActive = '';
+      let activityBadge = '';
+      if (lastActiveDateObj) {
+        const diffMs = Date.now() - lastActiveDateObj.getTime();
+        const diffMin = Math.floor(diffMs / (1000 * 60));
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffMin < 15) {
+          relativeLastActive = 'Just now';
+          activityBadge = '<span style="background: #dcfce7; color: #15803d; border: 1.5px solid #16a34a; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 900;">🟢 Active Now</span>';
+        } else if (diffHrs < 24) {
+          relativeLastActive = diffHrs === 1 ? '1h ago' : `${diffHrs}h ago`;
+          activityBadge = '<span style="background: #fef9c3; color: #854d0e; border: 1.5px solid #ca8a04; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 900;">🟡 Active Today</span>';
+        } else if (diffDays < 7) {
+          relativeLastActive = `${diffDays}d ago`;
+          activityBadge = '<span style="background: #f1f5f9; color: #475569; border: 1.5px solid #94a3b8; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">⚪ Recent</span>';
+        } else {
+          relativeLastActive = `${diffDays}d ago`;
+          activityBadge = '<span style="background: #fee2e2; color: #991b1b; border: 1.5px solid #ef4444; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">🔴 Inactive</span>';
+        }
+      }
+
+      // IP Address
+      const ipAddress = user.lastLoginIp || user.registrationIp || null;
+
       html = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding-bottom: 24px; border-bottom: 2px dashed #eee; margin-bottom: 24px;">
           <div id="admin-user-avatar-container">
@@ -769,10 +816,40 @@ function showUserTab(tab) {
           <input type="file" id="admin-user-pic-input" style="display:none" accept="image/*" onchange="handleAdminUserPicUpload(event, '${user._id}')">
           <p style="font-size: 11px; color: #666; font-weight: 700;">Click to upload a new avatar for this user</p>
           
-          <div style="width: 100%; max-width: 420px; padding: 16px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 #000; font-size: 13px; text-align: left; line-height: 1.6;">
-            <div>📅 <strong>Member Since:</strong> <span style="font-weight: 800; color: #000;">${new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
-            <div>🔥 <strong>Current Streak:</strong> <span style="font-weight: 900; color: var(--red);">${user.currentStreak || 0} days</span> (Highest: ${user.highestStreak || 0} days)</div>
-            <div>📧 <strong>Verification Status:</strong> ${user.isEmailVerified ? '<span style="color: #22c55e; font-weight: 800;">✔ Verified</span>' : '<span style="color: #ef4444; font-weight: 800;">⚠ Unverified (Grace Limit)</span>'}</div>
+          <div style="width: 100%; max-width: 480px; padding: 16px 18px; border: 3px solid #000; border-radius: 12px; background: #fff; box-shadow: 4px 4px 0 #000; font-size: 13px; text-align: left; line-height: 1.65;">
+            <div>
+              🗓️ <strong>Onboarded At:</strong> 
+              <span style="font-weight: 800; color: #000;">${formattedOnboard}</span>
+              ${relativeOnboard ? `<span style="font-size: 11px; color: #64748b; font-weight: 800; margin-left: 4px;">(${relativeOnboard})</span>` : ''}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 5px;">
+              <div>
+                ⚡ <strong>Last Active:</strong> 
+                <span style="font-weight: 800; color: #000;">${formattedLastActive}</span>
+                ${relativeLastActive ? `<span style="font-size: 11px; color: #64748b; font-weight: 800; margin-left: 4px;">(${relativeLastActive})</span>` : ''}
+              </div>
+              <div>${activityBadge}</div>
+            </div>
+
+            <div style="margin-top: 5px;">
+              🌐 <strong>IP Address:</strong> 
+              ${ipAddress 
+                ? `<code style="font-family: monospace; font-weight: 800; font-size: 12px; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; color: #0f172a;">${escapeHtml(ipAddress)}</code>`
+                : `<span style="color: #94a3b8; font-style: italic; font-size: 12px; font-weight: 700;">Not recorded yet</span>`
+              }
+            </div>
+
+            <div style="margin-top: 5px;">
+              🔥 <strong>Current Streak:</strong> 
+              <span style="font-weight: 900; color: var(--red);">${user.currentStreak || 0} days</span> 
+              <span style="font-size: 12px; color: #64748b; font-weight: 700;">(Highest: ${user.highestStreak || 0} days)</span>
+            </div>
+
+            <div style="margin-top: 5px;">
+              📧 <strong>Verification Status:</strong> 
+              ${user.isEmailVerified ? '<span style="color: #22c55e; font-weight: 800;">✔ Verified</span>' : '<span style="color: #ef4444; font-weight: 800;">⚠ Unverified (Grace Limit)</span>'}
+            </div>
           </div>
         </div>
 
@@ -3558,4 +3635,356 @@ window.loadDeletedLogs = loadDeletedLogs;
 window.openDeletedLogModal = openDeletedLogModal;
 window.closeDeletedLogModal = closeDeletedLogModal;
 window.copyDeletedLogJson = copyDeletedLogJson;
+
+// ─── Automated Cron Logs Management ──────────────────────────────────────────
+
+let allCronLogs = [];
+let currentSelectedCronLog = null;
+let cronLogsSort = 'desc';
+let cronLogsSearchTimeout = null;
+
+function setCronSort(sort) {
+  cronLogsSort = sort;
+  const sortBtnDesc = document.getElementById('cron-sort-desc');
+  const sortBtnAsc = document.getElementById('cron-sort-asc');
+  if (sortBtnDesc && sortBtnAsc) {
+    sortBtnDesc.classList.toggle('active', sort === 'desc');
+    sortBtnAsc.classList.toggle('active', sort === 'asc');
+  }
+  currentPages.cronLogs = 1;
+  loadCronLogs();
+}
+
+function applyCronFilters() {
+  currentPages.cronLogs = 1;
+  loadCronLogs();
+}
+
+function debouncedSearchCronLogs() {
+  clearTimeout(cronLogsSearchTimeout);
+  cronLogsSearchTimeout = setTimeout(() => {
+    currentPages.cronLogs = 1;
+    loadCronLogs();
+  }, 350);
+}
+
+function resetCronFilters() {
+  const searchInput = document.getElementById('cron-search-input');
+  const typeFilter = document.getElementById('cron-type-filter');
+  const startDate = document.getElementById('cron-start-date');
+  const endDate = document.getElementById('cron-end-date');
+  if (searchInput) searchInput.value = '';
+  if (typeFilter) typeFilter.value = 'all';
+  if (startDate) startDate.value = '';
+  if (endDate) endDate.value = '';
+  cronLogsSort = 'desc';
+  const sortBtnDesc = document.getElementById('cron-sort-desc');
+  const sortBtnAsc = document.getElementById('cron-sort-asc');
+  if (sortBtnDesc && sortBtnAsc) {
+    sortBtnDesc.classList.add('active');
+    sortBtnAsc.classList.remove('active');
+  }
+  currentPages.cronLogs = 1;
+  loadCronLogs();
+}
+
+async function loadCronLogs() {
+  const searchInput = document.getElementById('cron-search-input');
+  const search = searchInput ? searchInput.value.trim() : '';
+
+  const typeFilter = document.getElementById('cron-type-filter');
+  const type = typeFilter ? typeFilter.value : 'all';
+
+  const startDateEl = document.getElementById('cron-start-date');
+  const startDate = startDateEl ? startDateEl.value : '';
+
+  const endDateEl = document.getElementById('cron-end-date');
+  const endDate = endDateEl ? endDateEl.value : '';
+
+  const sortBtnDesc = document.getElementById('cron-sort-desc');
+  const sortBtnAsc = document.getElementById('cron-sort-asc');
+  if (sortBtnDesc && sortBtnAsc) {
+    sortBtnDesc.classList.toggle('active', cronLogsSort === 'desc');
+    sortBtnAsc.classList.toggle('active', cronLogsSort === 'asc');
+  }
+
+  const tbody = document.getElementById('cron-logs-table-body');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; font-weight:800; color:#666;">Loading cron execution logs...</td></tr>`;
+  }
+
+  try {
+    const page = currentPages.cronLogs || 1;
+    const params = new URLSearchParams({
+      page: page,
+      limit: 15,
+      sort: cronLogsSort
+    });
+    if (type && type !== 'all') params.append('type', type);
+    if (search) params.append('search', search);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const res = await fetch(`${API}/api/admin/cron-logs?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      logout();
+      return;
+    }
+
+    if (!res.ok) {
+      const errData = await res.json();
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#ef4444; font-weight:800;">Failed to load cron logs: ${escapeHtml(errData.message || 'Server error')}</td></tr>`;
+      }
+      return;
+    }
+
+    const data = await res.json();
+    allCronLogs = data.items || [];
+
+    // Update KPI metrics
+    if (data.metrics) {
+      const totalEl = document.getElementById('cron-metric-total');
+      const emailsEl = document.getElementById('cron-metric-emails');
+      const streakEl = document.getElementById('cron-metric-streak');
+      const inactiveEl = document.getElementById('cron-metric-inactive');
+
+      if (totalEl) totalEl.textContent = Number(data.metrics.totalRuns || 0).toLocaleString();
+      if (emailsEl) emailsEl.textContent = Number(data.metrics.totalEmails || 0).toLocaleString();
+      if (streakEl) streakEl.textContent = Number(data.metrics.streakEmails || 0).toLocaleString();
+      if (inactiveEl) inactiveEl.textContent = Number(data.metrics.inactiveEmails || 0).toLocaleString();
+    }
+
+    renderCronLogs(allCronLogs, data.page || page, data.limit || 15);
+    renderPaginationControls(data, 'cron-logs-pagination', 'cronLogs', () => loadCronLogs());
+  } catch (err) {
+    console.error('Error loading cron logs:', err);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#ef4444; font-weight:800;">Network or connection error.</td></tr>`;
+    }
+  }
+}
+
+function renderCronLogs(logs, page = 1, limit = 15) {
+  const tbody = document.getElementById('cron-logs-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!logs || !logs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:32px; font-weight:800; color:#888; font-size:14px;">No cron logs found matching your filter criteria.</td></tr>`;
+    return;
+  }
+
+  logs.forEach((log, index) => {
+    const serialNumber = (page - 1) * limit + index + 1;
+    const createdAt = log.createdAt ? new Date(log.createdAt) : null;
+    const formattedDate = createdAt
+      ? createdAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+      : 'N/A';
+    
+    // Relative time string
+    let relativeTime = '';
+    if (createdAt) {
+      const diffMin = Math.round((Date.now() - createdAt.getTime()) / (1000 * 60));
+      if (diffMin < 1) relativeTime = 'Just now';
+      else if (diffMin < 60) relativeTime = `${diffMin}m ago`;
+      else {
+        const diffHrs = Math.round(diffMin / 60);
+        if (diffHrs < 24) relativeTime = `${diffHrs}h ago`;
+        else {
+          const diffDays = Math.round(diffHrs / 24);
+          relativeTime = `${diffDays}d ago`;
+        }
+      }
+    }
+
+    // Type badge
+    let typeBadge = '';
+    if (log.type === 'streak') {
+      typeBadge = `<span style="background: #ffedd5; color: #c2410c; border: 1.5px solid #ea580c; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px;">🔥 Streak</span>`;
+    } else if (log.type === 'inactive') {
+      typeBadge = `<span style="background: #f3e8ff; color: #7e22ce; border: 1.5px solid #9333ea; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px;">👋 Inactive</span>`;
+    } else {
+      typeBadge = `<span style="background: #e0f2fe; color: #0369a1; border: 1.5px solid #0284c7; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px;">⚡ ${escapeHtml(log.type || 'Custom')}</span>`;
+    }
+
+    const emailCount = Array.isArray(log.emails) ? log.emails.length : 0;
+    const recipientsBadge = emailCount > 0
+      ? `<span style="background: #dcfce7; color: #15803d; border: 1.5px solid #16a34a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 900;">${emailCount} recipient${emailCount === 1 ? '' : 's'}</span>`
+      : `<span style="background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e1; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">0 recipients</span>`;
+
+    const triggerAgent = log.userAgent ? escapeHtml(log.userAgent) : 'Cron Service';
+
+    const row = document.createElement('tr');
+    row.style.borderBottom = '1px solid #e2e8f0';
+    row.innerHTML = `
+      <td data-label="#" style="padding: 12px; text-align: center; font-size: 12px; font-weight: 800; color: #64748b;">${serialNumber}</td>
+      <td data-label="Type" style="padding: 12px 14px;">${typeBadge}</td>
+      <td data-label="Execution" style="padding: 12px 14px;">
+        <div style="font-weight: 800; font-size: 12.5px; color: var(--text);">${formattedDate}</div>
+        <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-top: 2px;">${relativeTime}</div>
+      </td>
+      <td data-label="Trigger" style="padding: 12px 14px;">
+        <div class="cron-agent-tag" title="${triggerAgent}">
+          ${triggerAgent}
+        </div>
+      </td>
+      <td data-label="Recipients" style="padding: 12px 14px; text-align: center;">${recipientsBadge}</td>
+      <td data-label="Action" style="padding: 12px; text-align: center;">
+        <button class="btn-control" onclick="openCronDetailModal('${log._id}')" style="padding: 5px 10px; font-size: 11px; background: var(--yellow); box-shadow: 2px 2px 0 var(--black);">
+          <i data-lucide="eye"></i> Inspect
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+function openCronDetailModal(logId) {
+  const log = allCronLogs.find(l => String(l._id) === String(logId));
+  if (!log) {
+    alert('Cron log details not found in cache.');
+    return;
+  }
+
+  currentSelectedCronLog = log;
+  const container = document.getElementById('cron-detail-modal-content');
+  const modal = document.getElementById('cron-detail-modal');
+  if (!container || !modal) return;
+
+  const createdAt = log.createdAt ? new Date(log.createdAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'medium' }) : 'N/A';
+  const recipients = Array.isArray(log.emails) ? log.emails : [];
+  const typeLabel = log.type === 'streak' ? '🔥 Streak Reminder' : (log.type === 'inactive' ? '👋 Inactive Reminder' : escapeHtml(log.type || 'Cron Job'));
+
+  let recipientsListHtml = '';
+  if (recipients.length === 0) {
+    recipientsListHtml = `
+      <div style="padding: 24px; text-align: center; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-weight: 800; font-size: 13px;">
+        No emails were dispatched during this cron execution.
+      </div>
+    `;
+  } else {
+    const recipientItems = recipients.map((r, i) => {
+      let extraBadge = '';
+      if (r.streak !== undefined && r.streak !== null) {
+        extraBadge = `<span style="background: #ffedd5; color: #c2410c; border: 1px solid #ea580c; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 800;">🔥 Streak: ${r.streak}d</span>`;
+      } else if (r.daysInactive !== undefined && r.daysInactive !== null) {
+        extraBadge = `<span style="background: #f3e8ff; color: #7e22ce; border: 1px solid #9333ea; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 800;">💤 Inactive: ${r.daysInactive}d</span>`;
+      }
+
+      return `
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; background: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0; font-size: 12.5px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+            <span style="font-size: 11px; font-weight: 800; color: #94a3b8; width: 24px; flex-shrink: 0;">#${i + 1}</span>
+            <span style="font-weight: 800; color: var(--text); word-break: break-all; font-size: 12px;">${escapeHtml(r.email || 'unknown')}</span>
+          </div>
+          <div style="flex-shrink: 0;">
+            ${extraBadge}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    recipientsListHtml = `
+      <div style="border: 2px solid var(--black); border-radius: 8px; overflow: hidden; box-shadow: 2px 2px 0 var(--black);">
+        <div class="cron-modal-recipients-header" style="background: #f1f5f9; padding: 8px 12px; border-bottom: 2px solid var(--black); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 900; font-size: 12px; text-transform: uppercase;">Recipients List (${recipients.length})</span>
+          <input type="text" id="cron-recipient-filter-input" placeholder="Filter recipients..." onkeyup="filterModalRecipients(this.value)" style="padding: 5px 8px; font-size: 11px; border: 1.5px solid var(--black); border-radius: 4px; width: 170px;">
+        </div>
+        <div id="cron-modal-recipients-container" style="max-height: 280px; overflow-y: auto;">
+          ${recipientItems}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Run overview card -->
+      <div class="cron-modal-run-card" style="display: flex; justify-content: space-between; align-items: flex-start; background: #f8fafc; border: 2px solid var(--black); padding: 16px; border-radius: 8px; box-shadow: 2px 2px 0 var(--black);">
+        <div>
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Cron Run Type</div>
+          <h4 style="margin: 4px 0 6px; font-size: 17px; font-family: 'Space Grotesk'; font-weight: 900;">${typeLabel}</h4>
+          <div style="font-size: 12px; font-weight: 700; color: #475569;">${createdAt}</div>
+        </div>
+        <div class="cron-modal-run-badge" style="text-align: right;">
+          <div style="background: #dcfce7; border: 2px solid var(--black); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 900; display: inline-block;">
+            ✉️ ${recipients.length} Recipient${recipients.length === 1 ? '' : 's'}
+          </div>
+        </div>
+      </div>
+
+      <!-- Trigger Details -->
+      <div style="border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #ffffff;">
+        <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #475569; display: block; margin-bottom: 4px;">Dispatched User-Agent / Trigger:</span>
+        <div style="font-size: 11px; font-family: monospace; color: #334155; word-break: break-all; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px;">
+          ${escapeHtml(log.userAgent || 'Cron Service')}
+        </div>
+      </div>
+
+      <!-- Recipients Section -->
+      ${recipientsListHtml}
+    </div>
+  `;
+
+  modal.classList.add('open');
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+function filterModalRecipients(query) {
+  const q = (query || '').toLowerCase().trim();
+  const container = document.getElementById('cron-modal-recipients-container');
+  if (!container) return;
+  const items = container.querySelectorAll('div[style*="justify-content: space-between"]');
+  items.forEach(el => {
+    const text = el.textContent.toLowerCase();
+    el.style.display = text.includes(q) ? 'flex' : 'none';
+  });
+}
+
+function closeCronDetailModal() {
+  const modal = document.getElementById('cron-detail-modal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+  currentSelectedCronLog = null;
+}
+
+function copyCronEmails() {
+  if (!currentSelectedCronLog || !currentSelectedCronLog.emails || !currentSelectedCronLog.emails.length) {
+    alert('No recipient emails to copy.');
+    return;
+  }
+  const emails = currentSelectedCronLog.emails.map(e => e.email).filter(Boolean);
+  const text = emails.join(', ');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`Copied ${emails.length} email(s) to clipboard!`);
+    }).catch(() => {
+      prompt('Copy emails manually:', text);
+    });
+  } else {
+    prompt('Copy emails manually:', text);
+  }
+}
+
+window.setCronSort = setCronSort;
+window.applyCronFilters = applyCronFilters;
+window.debouncedSearchCronLogs = debouncedSearchCronLogs;
+window.resetCronFilters = resetCronFilters;
+window.loadCronLogs = loadCronLogs;
+window.openCronDetailModal = openCronDetailModal;
+window.closeCronDetailModal = closeCronDetailModal;
+window.copyCronEmails = copyCronEmails;
+window.filterModalRecipients = filterModalRecipients;
+
 

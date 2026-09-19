@@ -1368,6 +1368,14 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    lastLoginIp: {
+      type: String,
+      default: null,
+    },
+    registrationIp: {
+      type: String,
+      default: null,
+    },
     emailNotifications: {
       type: Boolean,
       default: true,
