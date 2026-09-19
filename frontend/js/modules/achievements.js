@@ -1250,6 +1250,7 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
   if (dateEl) {
     const formatted = dateStr ? (window.formatDisplayDate ? window.formatDisplayDate(dateStr) : (typeof formatDisplayDate === 'function' ? formatDisplayDate(dateStr) : dateStr)) : '';
     dateEl.innerHTML = formatted ? `<i data-lucide="calendar" style="width: 13px; height: 13px; display: inline-block; vertical-align: -1px; margin-right: 4px;"></i> Logged on ${escHtml(formatted)}` : '';
+    if (window.lucide) lucide.createIcons({ root: dateEl });
   }
 
   if (delBtn) {
@@ -1262,6 +1263,7 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
   revokeLightboxBlobUrl();
 
   if (imgEl) {
+    imgEl.decoding = 'async';
     imgEl.crossOrigin = 'anonymous';
 
     imgEl.onerror = () => {
@@ -1328,7 +1330,6 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
   }
 
   openModal('modal-photo-lightbox');
-  if (window.lucide) lucide.createIcons({ root: document.getElementById('modal-photo-lightbox') });
 }
 
 // ── Fullscreen Photo Pinch-to-Zoom & Pan Engine ──

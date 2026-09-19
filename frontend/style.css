@@ -8964,18 +8964,46 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 
 #modal-photo-lightbox {
   z-index: 99999 !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  background: rgba(8, 10, 18, 0.78) !important;
+  background: rgba(8, 10, 18, 0.88) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+}
+
+#modal-photo-lightbox.open {
+  display: flex !important;
 }
 
 #modal-photo-lightbox .modal {
-  animation: achModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  max-width: 640px;
+  width: 100%;
 }
 
-@keyframes achModalPop {
-  0% { transform: scale(0.95); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@media (max-width: 768px) {
+  #modal-photo-lightbox {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 14px !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+  }
+
+  #modal-photo-lightbox .modal {
+    max-height: 88dvh !important;
+    border-radius: 18px !important;
+    padding-top: 0 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  #modal-photo-lightbox .modal::before {
+    display: none !important;
+  }
 }
 
 /* ── Fullscreen Photo Overlay (Supports Long Scrolling Screenshots) ── */

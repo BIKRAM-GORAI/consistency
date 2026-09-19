@@ -1588,7 +1588,8 @@ function openModal(id) {
   }
   const modalEl = overlay.querySelector('.modal');
   const isMobile = typeof window.isMobile === 'function' ? window.isMobile() : (window.innerWidth <= 768);
-  console.log(`[Modal] openModal id: ${id}, isMobile: ${isMobile}`);
+  const isBottomSheet = isMobile && id !== 'modal-photo-lightbox';
+  console.log(`[Modal] openModal id: ${id}, isMobile: ${isMobile}, isBottomSheet: ${isBottomSheet}`);
 
   // Kill any in-flight tweens on both overlay and modal elements
   if (window.gsap) {
@@ -1597,12 +1598,12 @@ function openModal(id) {
     // Set initial states synchronously using vanilla JS to prevent any 1-frame flash
     overlay.style.opacity = '0';
     if (modalEl) {
-      if (isMobile) {
+      if (isBottomSheet) {
         modalEl.style.opacity = '1';
         modalEl.style.transform = 'translateY(100%) scale(1)';
       } else {
         modalEl.style.opacity = '0';
-        modalEl.style.transform = 'translateY(16px) scale(0.96)';
+        modalEl.style.transform = 'translateY(14px) scale(0.96)';
       }
     }
   }
@@ -1611,11 +1612,11 @@ function openModal(id) {
 
   if (window.gsap) {
     // Fade overlay in smoothly
-    gsap.to(overlay, { opacity: 1, duration: 0.24, ease: 'power2.out' });
+    gsap.to(overlay, { opacity: 1, duration: 0.22, ease: 'power2.out' });
 
     if (modalEl) {
-      if (isMobile) {
-        // Slide up on mobile
+      if (isBottomSheet) {
+        // Slide up on mobile for bottom-sheet drawers
         gsap.to(modalEl, {
           y: '0%',
           duration: 0.32,
@@ -1623,13 +1624,13 @@ function openModal(id) {
           clearProps: 'transform'
         });
       } else {
-        // Zoom in from center on desktop
+        // Smooth scale/fade in from center on desktop and centered photo lightbox
         gsap.to(modalEl, {
           opacity: 1,
           y: 0,
           scale: 1,
-          duration: 0.3,
-          ease: 'back.out(1.15)',
+          duration: 0.24,
+          ease: 'power2.out',
           clearProps: 'transform,opacity'
         });
       }
@@ -1697,7 +1698,8 @@ function closeModal(id) {
     }, 0);
 
     if (modalEl) {
-      if (isMobile) {
+      const isBottomSheet = isMobile && id !== 'modal-photo-lightbox';
+      if (isBottomSheet) {
         // Slide down off the screen on mobile
         tl.to(modalEl, {
           y: '100%',
@@ -1705,12 +1707,12 @@ function closeModal(id) {
           ease: 'power3.in'
         }, 0);
       } else {
-        // Zoom/fade out on desktop
+        // Zoom/fade out on desktop and centered photo lightbox
         tl.to(modalEl, {
           opacity: 0,
           y: 12,
           scale: 0.97,
-          duration: 0.22,
+          duration: 0.2,
           ease: 'power2.in'
         }, 0);
       }
