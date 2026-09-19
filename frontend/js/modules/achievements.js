@@ -1195,6 +1195,36 @@ async function submitPhotoAchievement() {
   }
 }
 
+// ── Persistent Media Cache Helpers (IndexedDB localDb.mediaCache) ──
+let currentLightboxBlobUrl = null;
+
+function revokeLightboxBlobUrl() {
+  if (currentLightboxBlobUrl) {
+    try { URL.revokeObjectURL(currentLightboxBlobUrl); } catch (_) {}
+    currentLightboxBlobUrl = null;
+  }
+}
+
+async function getPersistentMediaBlob(url) {
+  if (!url || !window.localDb || !window.localDb.mediaCache) return null;
+  try {
+    const record = await window.localDb.mediaCache.get(url);
+    if (record && record.blob) return record.blob;
+  } catch (err) {
+    console.warn('[MediaCache] Read error:', err);
+  }
+  return null;
+}
+
+async function savePersistentMediaBlob(url, blob) {
+  if (!url || !blob || !window.localDb || !window.localDb.mediaCache) return;
+  try {
+    await window.localDb.mediaCache.put({ url, blob });
+  } catch (err) {
+    console.warn('[MediaCache] Store error:', err);
+  }
+}
+
 // ── Photo Lightbox Modal Handler ───────────────────────────
 function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId, isOwner = true) {
   activeLightboxData = { photoUrl, thumbUrl, dateStr, achId, photoId, isOwner };
@@ -1226,58 +1256,74 @@ function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId,
     delBtn.style.display = (achId && photoId && isOwner !== false) ? 'inline-flex' : 'none';
   }
 
-  // Smart image loading:
-  // 1. Instantly display safeThumb (already in memory/cache from day card) so UI is snappy.
-  // 2. Hide offline banner by default.
-  // 3. Attempt to load full-resolution photoUrl (from HTTP cache if offline, or network if online).
-  // 4. If fullImg loads, seamlessly upgrade imgEl.src = photoUrl with NO offline banner.
-  // 5. If fullImg fails to load (e.g. offline and was never opened before), keep safeThumb and show the offline banner.
   const safeThumb = getSafeThumbUrl(thumbUrl, photoUrl);
   if (offlineBanner) offlineBanner.style.display = 'none';
 
+  revokeLightboxBlobUrl();
+
   if (imgEl) {
-    if (navigator.onLine) {
-      imgEl.crossOrigin = 'anonymous';
-    } else {
-      imgEl.removeAttribute('crossorigin');
-    }
+    imgEl.crossOrigin = 'anonymous';
 
     imgEl.onerror = () => {
       if (safeThumb && imgEl.src !== safeThumb) {
-        imgEl.removeAttribute('crossorigin');
         imgEl.src = safeThumb;
       }
     };
 
-    imgEl.src = safeThumb || photoUrl; // Instant preview
+    // 1. Instantly display safeThumb (already in memory/disk cache from day card) so UI is snappy
+    imgEl.src = safeThumb || photoUrl;
 
     if (photoUrl && photoUrl !== safeThumb) {
-      const fullImg = new Image();
-      if (navigator.onLine) fullImg.crossOrigin = 'anonymous';
-      fullImg.src = photoUrl;
-
-      // If full image is already cached in memory/disk:
-      if (fullImg.complete && fullImg.naturalWidth > 0) {
-        if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
-          imgEl.src = photoUrl;
+      // 2. Check persistent IndexedDB media cache first (fast, works offline across app restarts)
+      getPersistentMediaBlob(photoUrl).then((cachedBlob) => {
+        if (cachedBlob && activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+          const blobUrl = URL.createObjectURL(cachedBlob);
+          currentLightboxBlobUrl = blobUrl;
+          imgEl.src = blobUrl;
           if (offlineBanner) offlineBanner.style.display = 'none';
+          return;
         }
-      } else {
-        fullImg.onload = () => {
-          if (activeLightboxData && activeLightboxData.photoUrl === photoUrl && fullImg.naturalWidth > 0) {
-            imgEl.src = photoUrl;
-            if (offlineBanner) offlineBanner.style.display = 'none';
+
+        // 3. Not in persistent cache yet: if online, fetch as Blob and save into IndexedDB mediaCache
+        if (navigator.onLine) {
+          fetch(photoUrl, { mode: 'cors' })
+            .then(async (res) => {
+              if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+              const blob = await res.blob();
+              await savePersistentMediaBlob(photoUrl, blob);
+              if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+                const blobUrl = URL.createObjectURL(blob);
+                currentLightboxBlobUrl = blobUrl;
+                imgEl.src = blobUrl;
+                if (offlineBanner) offlineBanner.style.display = 'none';
+              }
+            })
+            .catch(() => {
+              // Fallback to standard Image loading if fetch mode cors encounters any issues
+              const fullImg = new Image();
+              fullImg.crossOrigin = 'anonymous';
+              fullImg.src = photoUrl;
+              fullImg.onload = () => {
+                if (activeLightboxData && activeLightboxData.photoUrl === photoUrl && fullImg.naturalWidth > 0) {
+                  imgEl.src = photoUrl;
+                  if (offlineBanner) offlineBanner.style.display = 'none';
+                }
+              };
+              fullImg.onerror = () => {
+                if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
+                  if (!navigator.onLine && offlineBanner) {
+                    offlineBanner.style.display = 'flex';
+                  }
+                }
+              };
+            });
+        } else {
+          // Device is offline and photo was not cached in full resolution yet
+          if (offlineBanner) {
+            offlineBanner.style.display = 'flex';
           }
-        };
-        fullImg.onerror = () => {
-          if (activeLightboxData && activeLightboxData.photoUrl === photoUrl) {
-            // Full resolution could not be loaded (e.g. device is offline and not in cache)
-            if (!navigator.onLine && offlineBanner) {
-              offlineBanner.style.display = 'flex';
-            }
-          }
-        };
-      }
+        }
+      });
     }
   }
 
@@ -1511,19 +1557,15 @@ function openPhotoFullscreen() {
   const imgEl = document.getElementById('photo-fullscreen-img');
   if (!overlay || !imgEl) return;
 
-  // Set appropriate CORS policy:
-  // When offline, do not enforce crossOrigin to avoid browser cache partitioning rejection
-  if (navigator.onLine) {
-    imgEl.crossOrigin = 'anonymous';
-  } else {
-    imgEl.removeAttribute('crossorigin');
-  }
+  // Set consistent CORS policy
+  imgEl.crossOrigin = 'anonymous';
 
   // Determine starting source:
   // Check if the original high-resolution image is already present in memory/disk cache
   let initialSrc = currentPreviewSrc;
   if (originalUrl && originalUrl !== currentPreviewSrc) {
     const testImg = new Image();
+    testImg.crossOrigin = 'anonymous';
     testImg.src = originalUrl;
     if (testImg.complete && testImg.naturalWidth > 0) {
       initialSrc = originalUrl;
@@ -1535,7 +1577,6 @@ function openPhotoFullscreen() {
   imgEl.onerror = () => {
     console.warn('[Fullscreen Photo] Failed to load:', imgEl.src, 'falling back to preview.');
     imgEl.onerror = null; // Prevent recursion
-    imgEl.removeAttribute('crossorigin');
     if (currentPreviewSrc && imgEl.src !== currentPreviewSrc) {
       imgEl.src = currentPreviewSrc;
     } else if (safeThumb && imgEl.src !== safeThumb) {
@@ -1559,17 +1600,25 @@ function openPhotoFullscreen() {
 
   imgEl.src = initialSrc;
 
-  // If we loaded the preview thumbnail initially, attempt to upgrade to original high-res in background
-  if (originalUrl && initialSrc !== originalUrl) {
-    const bgImg = new Image();
-    if (navigator.onLine) bgImg.crossOrigin = 'anonymous';
-    bgImg.src = originalUrl;
-    bgImg.onload = () => {
-      if (overlay.style.display !== 'none' && bgImg.naturalWidth > 0) {
-        imgEl.src = originalUrl;
+  // If we loaded the preview thumbnail initially, check persistent media cache first, then network
+  if (originalUrl && initialSrc !== originalUrl && !initialSrc.startsWith('blob:')) {
+    getPersistentMediaBlob(originalUrl).then((cachedBlob) => {
+      if (cachedBlob && overlay.style.display !== 'none') {
+        const blobUrl = URL.createObjectURL(cachedBlob);
+        imgEl.src = blobUrl;
+        return;
       }
-    };
-    // Note: If bgImg fails (e.g. offline), we do nothing; the preview image remains cleanly displayed!
+      if (navigator.onLine) {
+        const bgImg = new Image();
+        bgImg.crossOrigin = 'anonymous';
+        bgImg.src = originalUrl;
+        bgImg.onload = () => {
+          if (overlay.style.display !== 'none' && bgImg.naturalWidth > 0) {
+            imgEl.src = originalUrl;
+          }
+        };
+      }
+    });
   }
 
   resetFullscreenPhotoZoom();
@@ -1631,11 +1680,21 @@ async function downloadAchievementPhoto() {
       dataUrl = null;
     }
 
-    // 2. Fallback: retrieve from browser disk/memory cache without re-downloading from cloud
+    // 2. Fallback: retrieve from persistent IndexedDB cache or browser disk/memory cache
     if (!dataUrl) {
-      const res = await fetch(photoUrl, { cache: 'force-cache' });
-      rawBlob = await res.blob();
-      if (rawBlob.type) mimeType = rawBlob.type;
+      let cachedBlob = await getPersistentMediaBlob(photoUrl);
+      if (!cachedBlob && activeLightboxData?.photoUrl) {
+        cachedBlob = await getPersistentMediaBlob(activeLightboxData.photoUrl);
+      }
+
+      if (cachedBlob) {
+        rawBlob = cachedBlob;
+      } else {
+        const res = await fetch(photoUrl, { cache: 'force-cache' });
+        rawBlob = await res.blob();
+      }
+
+      if (rawBlob && rawBlob.type) mimeType = rawBlob.type;
       dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);
