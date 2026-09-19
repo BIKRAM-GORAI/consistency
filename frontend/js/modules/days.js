@@ -958,42 +958,46 @@ function buildDayCard(day, preLoadedAchievements = null) {
     ? `<div class="add-category-row"><button class="btn-add-cat ripple" onclick="openAddCategoryModal('${day._id}')"><i data-lucide="plus-circle"></i> Add Category</button></div>`
     : '';
 
-  // Scratchpad section (small header button)
+  // Scratchpad section (small header button) - hidden on future cards
   let scratchpadHeaderBtnHTML = '';
-  if (day.hasScratchpad) {
-    scratchpadHeaderBtnHTML = `
-      <button class="card-scratchpad-btn card-scratchpad-view ripple" onclick="openScratchpad('${day._id}')" title="View Scratchpad">
-        <i data-lucide="palette"></i>
-      </button>
-    `;
-  } else if (isEditable) {
-    scratchpadHeaderBtnHTML = `
-      <button class="card-scratchpad-btn card-scratchpad-create ripple" onclick="openScratchpad('${day._id}')" title="Add Scratchpad">
-        <i data-lucide="paintbrush"></i>
-      </button>
-    `;
+  if (!isFuture) {
+    if (day.hasScratchpad) {
+      scratchpadHeaderBtnHTML = `
+        <button class="card-scratchpad-btn card-scratchpad-view ripple" onclick="openScratchpad('${day._id}')" title="View Scratchpad">
+          <i data-lucide="palette"></i>
+        </button>
+      `;
+    } else if (isEditable) {
+      scratchpadHeaderBtnHTML = `
+        <button class="card-scratchpad-btn card-scratchpad-create ripple" onclick="openScratchpad('${day._id}')" title="Add Scratchpad">
+          <i data-lucide="paintbrush"></i>
+        </button>
+      `;
+    }
   }
 
-  // AI Daily Recap Section HTML
+  // AI Daily Recap Section HTML - hidden on future cards
   let aiRecapHTML = '';
-  const daySummary = day.aiSummary || '';
-  if (daySummary) {
-    aiRecapHTML = `
-      <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative; cursor: pointer;" onclick="toggleAiRecapExpansion(this, event)">
-        <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">
-          <span>✨</span> <span>AI Daily Insights</span>
-          <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;" onclick="event.stopPropagation()">
-            <button class="btn-refresh-recap" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
-            <button class="btn-delete-recap" data-requires-network="true" onclick="deleteDailySummary('${day._id}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--red);" title="Delete Summary"><i data-lucide="trash-2" style="width: 13px; height: 13px;"></i></button>
+  if (!isFuture) {
+    const daySummary = day.aiSummary || '';
+    if (daySummary) {
+      aiRecapHTML = `
+        <div class="ai-recap-block" id="ai-recap-block-${day._id}" style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.07) 0%, rgba(16, 185, 129, 0.07) 100%), var(--bg-muted); border: 2px solid var(--black); border-radius: 8px; box-shadow: 3px 3px 0 var(--black); font-size: 13px; line-height: 1.6; position: relative; cursor: pointer;" onclick="toggleAiRecapExpansion(this, event)">
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">
+            <span>✨</span> <span>AI Daily Insights</span>
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;" onclick="event.stopPropagation()">
+              <button class="btn-refresh-recap" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--text-muted);" title="Regenerate Summary"><i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i></button>
+              <button class="btn-delete-recap" data-requires-network="true" onclick="deleteDailySummary('${day._id}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--red);" title="Delete Summary"><i data-lucide="trash-2" style="width: 13px; height: 13px;"></i></button>
+            </div>
           </div>
+          <p class="ai-recap-text" id="ai-recap-text-${day._id}" style="color: var(--text); font-weight: 600; white-space: pre-wrap; margin: 0; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${window.escHtml(daySummary)}</p>
         </div>
-        <p class="ai-recap-text" id="ai-recap-text-${day._id}" style="color: var(--text); font-weight: 600; white-space: pre-wrap; margin: 0; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${window.escHtml(daySummary)}</p>
-      </div>
-    `;
-  } else {
-    aiRecapHTML = `
-      <div class="ai-recap-block empty-recap" id="ai-recap-block-${day._id}" style="display: none; margin-top: 0;"></div>
-    `;
+      `;
+    } else {
+      aiRecapHTML = `
+        <div class="ai-recap-block empty-recap" id="ai-recap-block-${day._id}" style="display: none; margin-top: 0;"></div>
+      `;
+    }
   }
 
   // Grace streak-protection control display
@@ -1020,7 +1024,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
   }
 
   let reminderBtnHTML = '';
-  if (isEditable) {
+  if (isEditable && !isFuture) {
     const hasReminder = day.reminder && day.reminder.enabled;
     reminderBtnHTML = `
       <button class="card-reminder-btn ripple" onclick="openReminderModal('${day._id}')" title="Set Reminder / Alarm" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; color: ${hasReminder ? 'var(--pink)' : 'var(--text-muted)'}; margin-right: 4px;">
@@ -1062,6 +1066,41 @@ function buildDayCard(day, preLoadedAchievements = null) {
     `;
   }
 
+  const notesAndAiRowHTML = isFuture ? '' : `
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-left: 14px;">
+      <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0; padding: 0 12px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px;">
+        <span style="display: inline-flex; align-items: center; margin-right: 4px;"><i data-lucide="file-text" style="width: 13px; height: 13px;"></i></span>
+        <span>Notes</span>
+        <span class="summary-chevron" style="display: inline-flex; align-items: center; margin-left: 4px;"><i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i></span>
+      </button>
+      ${(day.aiSummary || '') ? '' : `
+        <button class="summary-toggle ripple" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; padding: 0 10px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
+          <span>✨ AI Insights (<span class="ai-limit-badge">⚡ ${window.generationsLeft} left</span>)</span>
+        </button>
+      `}
+    </div>
+    <div class="summary-content" id="summary-content-${day._id}">
+      <div class="summary-inner">${summaryInner}</div>
+    </div>
+  `;
+
+  const bottomActionsHTML = isFuture ? `
+    <div class="ach-add-row" style="display: flex; justify-content: flex-end;">
+      <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')"><i data-lucide="save"></i> Save Template</button>
+    </div>
+  ` : `
+    <div class="ach-add-row">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')"><i data-lucide="trophy"></i> Log a Acheivement</button>
+        <span class="ach-no-progress-note">doesn't affect progress</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-add-leetcode ripple" onclick="openLeetCodeProblemModal('${day._id}','${day.date}')" title="Add LeetCode problem" id="leetcode-btn-${day._id}"><i data-lucide="target"></i> LeetCode</button>
+        <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')"><i data-lucide="save"></i> Save Template</button>
+      </div>
+    </div>
+  `;
+
   card.innerHTML = `
     <div class="card-header">
       <div class="card-date-wrap">
@@ -1088,33 +1127,9 @@ function buildDayCard(day, preLoadedAchievements = null) {
     
     ${aiRecapHTML}
 
-    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-left: 14px;">
-      <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0; padding: 0 12px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px;">
-        <span style="display: inline-flex; align-items: center; margin-right: 4px;"><i data-lucide="file-text" style="width: 13px; height: 13px;"></i></span>
-        <span>Notes</span>
-        <span class="summary-chevron" style="display: inline-flex; align-items: center; margin-left: 4px;"><i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i></span>
-      </button>
-      ${daySummary ? '' : `
-        <button class="summary-toggle ripple" data-requires-network="true" onclick="generateDailySummary('${day._id}', '${cardDateNormalized}')" style="margin-top: 0; margin-left: 0; padding: 0 10px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); color: var(--text); border-color: var(--black);" title="Generate AI Insights for today">
-          <span>✨ AI Insights (<span class="ai-limit-badge">⚡ ${window.generationsLeft} left</span>)</span>
-        </button>
-      `}
-    </div>
-    <div class="summary-content" id="summary-content-${day._id}">
-      <div class="summary-inner">${summaryInner}</div>
-    </div>
+    ${notesAndAiRowHTML}
 
-    <!-- Always-visible Log Win and Save Template buttons -->
-    <div class="ach-add-row">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn-add-ach ripple" onclick="openAddAchievementModal('${day._id}')"><i data-lucide="trophy"></i> Log a Acheivement</button>
-        <span class="ach-no-progress-note">doesn't affect progress</span>
-      </div>
-      <div style="display:flex; gap:10px;">
-        <button class="btn-add-leetcode ripple" onclick="openLeetCodeProblemModal('${day._id}','${day.date}')" title="Add LeetCode problem" id="leetcode-btn-${day._id}"><i data-lucide="target"></i> LeetCode</button>
-        <button class="btn-save-template ripple" onclick="openSaveTemplateModal('${day._id}')"><i data-lucide="save"></i> Save Template</button>
-      </div>
-    </div>
+    ${bottomActionsHTML}
   `;
 
   // Animate progress bar after card is inserted into DOM
@@ -1124,10 +1139,10 @@ function buildDayCard(day, preLoadedAchievements = null) {
     });
   });
 
-  // Load achievements for this card (batch first, fallback to window.allAchievements)
-  const achsForCard = (preLoadedAchievements && preLoadedAchievements.length > 0)
+  // Load achievements for this card (batch first, fallback to window.allAchievements) - skipped on future cards
+  const achsForCard = (!isFuture && (preLoadedAchievements && preLoadedAchievements.length > 0))
     ? preLoadedAchievements
-    : (window.allAchievements || []).filter(isMatchCardAch);
+    : (!isFuture ? (window.allAchievements || []).filter(isMatchCardAch) : []);
   if (achsForCard.length > 0 && typeof window.renderDayAchievements === 'function') {
     window.renderDayAchievements(day._id, achsForCard, card);
   }
@@ -2521,6 +2536,13 @@ function updateTodayCacheIfMatches(day) {
 function openReminderModal(dayId) {
   const day = window.allDays.find(d => d._id === dayId);
   if (!day) return;
+
+  const cardDateNormalized = (day.date || '').split('T')[0];
+  const today = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  if (cardDateNormalized > today) {
+    if (window.showToast) window.showToast('Alarms cannot be set for future days.', 'info');
+    return;
+  }
 
   document.getElementById("reminder-modal-day-id").value = dayId;
   const r = day.reminder || { enabled: false, time: "20:00", type: "notification", selectedTasks: [] };

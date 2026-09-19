@@ -40,6 +40,10 @@ async function openScratchpad(dayId) {
   const cardDateNormalized = (day.date || '').split('T')[0];
   const isToday = cardDateNormalized === today;
   const isFuture = cardDateNormalized > today;
+  if (isFuture) {
+    showToast('Scratchpad is not available for future days.', 'info');
+    return;
+  }
   let isWithinWindow = false;
   if (cardDateNormalized < today) {
     const [y, m, d] = cardDateNormalized.split('-').map(Number);

@@ -892,6 +892,14 @@ function submitActiveAchievement() {
 let _achAddLinkPending = false;
 
 function openAddAchievementModal(dayId) {
+  const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  const cardDateNormalized = day ? (day.date ? day.date.split('T')[0] : currentToday) : currentToday;
+  if (cardDateNormalized > currentToday) {
+    if (window.showToast) window.showToast('Achievements cannot be logged for future days.', 'info');
+    return;
+  }
+
   window.activeDayIdForAchievement = dayId;
   _achAddLinkPending = false;
   selectedAchPhotoFiles = [];
@@ -921,9 +929,6 @@ function openAddAchievementModal(dayId) {
     }).catch(() => {});
   }
 
-  const day = (window.allDays || []).find(d => String(d._id) === String(dayId));
-  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
-  const cardDateNormalized = day ? (day.date ? day.date.split('T')[0] : currentToday) : currentToday;
   const isPhotoAllowed = isCardWithinPhotoWindow(day);
 
   // Clear text inputs

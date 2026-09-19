@@ -1143,11 +1143,9 @@
   color: inherit !important;
 }
 
-/* Primary Action Buttons (New Day Card, Add Category, etc.) in Claymorphism */
+/* Primary Action Buttons (New Day Card, Add Category, Save Note) in Claymorphism */
 [data-theme="claymorphism"] .add-day-inline-btn,
 [data-theme="claymorphism"] .btn-add-cat,
-[data-theme="claymorphism"] .btn-save-template,
-[data-theme="claymorphism"] .btn-add-leetcode,
 [data-theme="claymorphism"] .summary-save-btn {
   background: #27a55a !important;
   color: #ffffff !important;
@@ -1162,16 +1160,12 @@
 
 [data-theme="claymorphism"] .add-day-inline-btn *,
 [data-theme="claymorphism"] .btn-add-cat *,
-[data-theme="claymorphism"] .btn-save-template *,
-[data-theme="claymorphism"] .btn-add-leetcode *,
 [data-theme="claymorphism"] .summary-save-btn * {
   color: #ffffff !important;
 }
 
 [data-theme="claymorphism"] .add-day-inline-btn:hover,
 [data-theme="claymorphism"] .btn-add-cat:hover,
-[data-theme="claymorphism"] .btn-save-template:hover,
-[data-theme="claymorphism"] .btn-add-leetcode:hover,
 [data-theme="claymorphism"] .summary-save-btn:hover {
   transform: translateY(-2px) scale(1.02) !important;
   background: #22934f !important;
@@ -1179,6 +1173,84 @@
   box-shadow: inset 3px 3px 6px rgba(255,255,255,0.4),
               inset -3px -3px 6px rgba(0,0,0,0.2),
               0 6px 16px rgba(20,90,50,0.24) !important;
+}
+
+/* LeetCode Button (Signature Blue Clay Pill) */
+[data-theme="claymorphism"] .btn-add-leetcode {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.35),
+              inset -3px -3px 6px rgba(0,0,0,0.18),
+              0 4px 12px rgba(37,99,235,0.25) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .btn-add-leetcode * {
+  color: #ffffff !important;
+}
+
+[data-theme="claymorphism"] .btn-add-leetcode:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.2),
+              0 6px 16px rgba(37,99,235,0.32) !important;
+}
+
+/* Save Template Button (Signature Purple Clay Pill) */
+[data-theme="claymorphism"] .btn-save-template {
+  background: #8b5cf6 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.35),
+              inset -3px -3px 6px rgba(0,0,0,0.18),
+              0 4px 12px rgba(124,58,237,0.25) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .btn-save-template * {
+  color: #ffffff !important;
+}
+
+[data-theme="claymorphism"] .btn-save-template:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.2),
+              0 6px 16px rgba(124,58,237,0.32) !important;
+}
+
+/* Log Achievement Button (Signature Amber/Gold Clay Pill) */
+[data-theme="claymorphism"] .btn-add-ach {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.35),
+              inset -3px -3px 6px rgba(0,0,0,0.18),
+              0 4px 12px rgba(217,119,6,0.25) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .btn-add-ach * {
+  color: #ffffff !important;
+}
+
+[data-theme="claymorphism"] .btn-add-ach:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  background: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 3px 6px rgba(255,255,255,0.4),
+              inset -3px -3px 6px rgba(0,0,0,0.2),
+              0 6px 16px rgba(217,119,6,0.32) !important;
 }
 
 /* ============================================================

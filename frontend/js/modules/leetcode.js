@@ -533,6 +533,13 @@ async function addLeetCodeProblem() {
 
 // Open LeetCode problem modal for a specific day
 async function openLeetCodeProblemModal(dayId, dayDate) {
+  const cardDateNormalized = (dayDate || '').split('T')[0];
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  if (cardDateNormalized && cardDateNormalized > currentToday) {
+    if (window.showToast) window.showToast('LeetCode problems cannot be added to future days.', 'info');
+    return;
+  }
+
   // Check if user has verified LeetCode profile first
   try {
     const isVerified = localStorage.getItem('leetcodeUsername');

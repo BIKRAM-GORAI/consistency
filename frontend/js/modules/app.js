@@ -1979,6 +1979,13 @@ function updateOfflineButtonState(forceOffline = false) {
  * Sends a POST request to generate a 2-sentence AI Daily Recap and updates the Day card.
  */
 async function generateDailySummary(dayId, dateStr) {
+  const currentToday = window.todayStr ? window.todayStr() : new Date().toISOString().split('T')[0];
+  const cardDateNormalized = (dateStr || '').split('T')[0];
+  if (cardDateNormalized && cardDateNormalized > currentToday) {
+    showToast('AI Insights are only available for current or past days.', 'info');
+    return;
+  }
+
   if (!navigator.onLine) {
     showToast('Offline: Cannot generate AI recap.', 'warn');
     return;
