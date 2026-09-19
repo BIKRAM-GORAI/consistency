@@ -2217,6 +2217,7 @@ body.keyboard-visible #central-voice-btn-container {
     border-top: var(--border);
     box-shadow: 0 -4px 0 var(--black);
     padding: 0;
+    padding-bottom: max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px)) !important;
   }
 
   body.search-active .bottom-nav-container,
@@ -2397,7 +2398,7 @@ body.keyboard-visible #central-voice-btn-container {
     padding: 14px 18px;
     flex-wrap: wrap;
     border-radius: 0;
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(14px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px)));
   }
 
   .modal-footer .btn-primary,
@@ -2406,7 +2407,7 @@ body.keyboard-visible #central-voice-btn-container {
   .form-control { font-size: 16px; }
 
   .toast {
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(80px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px)));
     white-space: normal;
     text-align: center;
     max-width: calc(100vw - 32px);
@@ -3688,7 +3689,7 @@ body.keyboard-visible #central-voice-btn-container {
 /* Fixed Floating Controls Bar (stays permanently fixed regardless of zoom/pan) */
 .lightbox-controls {
   position: fixed;
-  top: max(18px, env(safe-area-inset-top, 18px));
+  top: max(18px, env(safe-area-inset-top, 18px), var(--safe-top, 0px));
   right: max(18px, env(safe-area-inset-right, 18px));
   z-index: 1000000;
   display: flex;
@@ -3771,7 +3772,7 @@ body.keyboard-visible #central-voice-btn-container {
     padding: 12px;
   }
   .lightbox-controls {
-    top: max(14px, env(safe-area-inset-top, 14px));
+    top: max(14px, env(safe-area-inset-top, 14px), calc(var(--safe-top, 0px) + 8px));
     right: max(14px, env(safe-area-inset-right, 14px));
     gap: 8px;
   }
@@ -5923,7 +5924,7 @@ body.keyboard-visible #central-voice-btn-container {
 
   #modal-group-chat .modal-footer,
   #modal-direct-chat .modal-footer {
-    padding: 12px 12px env(safe-area-inset-bottom, 12px) !important;
+    padding: 12px 12px calc(12px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px))) !important;
     border-top: 3px solid var(--black) !important;
   }
 
@@ -6904,8 +6905,8 @@ body.keyboard-visible #central-voice-btn-container {
 @media (max-width: 1024px) {
   /* Adjust bottom nav margins or heights if needed for safe areas */
   .bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(64px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px))) !important;
   }
 }
 
@@ -8803,7 +8804,7 @@ body:has(#modal-profile.open) #central-voice-btn-container,
 
 @media (max-width: 768px) {
   #central-voice-btn-container {
-    bottom: 80px !important;
+    bottom: calc(80px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px))) !important;
   }
 }
 

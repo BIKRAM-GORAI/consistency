@@ -1626,6 +1626,9 @@ function openPhotoFullscreen() {
   initFullscreenPhotoZoom();
 
   overlay.style.display = 'flex';
+  if (window.BackNav) {
+    window.BackNav.pushOverlay('photo-fullscreen-overlay', () => closePhotoFullscreen(), 'fullscreen-photo');
+  }
   document.body.style.overflow = 'hidden';
   overlay.scrollTop = 0;
   overlay.scrollLeft = 0;
@@ -1636,6 +1639,9 @@ function openPhotoFullscreen() {
 }
 
 function closePhotoFullscreen() {
+  if (window.BackNav) {
+    window.BackNav.popOverlay('photo-fullscreen-overlay');
+  }
   const overlay = document.getElementById('photo-fullscreen-overlay');
   if (!overlay) return;
   resetFullscreenPhotoZoom();

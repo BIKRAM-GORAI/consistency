@@ -1610,6 +1610,10 @@ function openModal(id) {
 
   overlay.classList.add('open');
 
+  if (window.BackNav) {
+    window.BackNav.pushOverlay(id, () => closeModal(id), 'modal');
+  }
+
   if (window.gsap) {
     // Fade overlay in smoothly
     gsap.to(overlay, { opacity: 1, duration: 0.22, ease: 'power2.out' });
@@ -1661,6 +1665,10 @@ function closeModal(id) {
   const modalEl = overlay.querySelector('.modal');
   const isMobile = typeof window.isMobile === 'function' ? window.isMobile() : (window.innerWidth <= 768);
   console.log(`[Modal] closeModal id: ${id}, isMobile: ${isMobile}`);
+
+  if (window.BackNav) {
+    window.BackNav.popOverlay(id);
+  }
 
   if (window.gsap) {
     // Kill any in-flight tweens before closing

@@ -677,6 +677,9 @@ function openLightbox(url) {
   img.src = url;
   resetLightboxZoom(); // Ensure we open the image at 1x
   overlay.classList.add('open');
+  if (window.BackNav) {
+    window.BackNav.pushOverlay('lightbox-modal', () => closeLightbox(null, true), 'lightbox');
+  }
   if (window.lucide) lucide.createIcons({ root: overlay });
 }
 
@@ -976,6 +979,9 @@ function playAudioFromBlob(docId, blob) {
 
 function closeLightbox(event, force = false) {
   if (force || event.target === event.currentTarget) {
+    if (window.BackNav) {
+      window.BackNav.popOverlay('lightbox-modal');
+    }
     const { overlay, img } = getLightboxElements();
     if (overlay) overlay.classList.remove('open');
     setTimeout(() => { 

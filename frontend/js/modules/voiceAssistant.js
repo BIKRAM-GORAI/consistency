@@ -112,6 +112,9 @@ export function openVoiceAssistantModal() {
   const modal = document.getElementById('voice-assistant-modal');
   if (!modal) return;
   modal.style.display = 'flex';
+  if (window.BackNav) {
+    window.BackNav.pushOverlay('voice-assistant-modal', () => closeVoiceAssistantModal(), 'voice-modal');
+  }
 
   fetchVoiceAssistantLimits();
   resetVoiceAssistantUI();
@@ -161,6 +164,10 @@ export function closeVoiceAssistantModal() {
   }
   const modal = document.getElementById('voice-assistant-modal');
   if (modal) modal.style.display = 'none';
+
+  if (window.BackNav) {
+    window.BackNav.popOverlay('voice-assistant-modal');
+  }
 
   // Automatically refresh active views (Daily Cards & Goals)
   if (typeof window.loadDays === 'function') window.loadDays(1);

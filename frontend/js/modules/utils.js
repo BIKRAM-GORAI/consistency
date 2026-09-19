@@ -414,6 +414,9 @@ window.escJs = escJs;
 // ── Page switch ────────────────────────────────────────────
 function showPage(page) {
   localStorage.setItem('activePage', page);
+  if (window.BackNav) {
+    window.BackNav.recordPage(page);
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
