@@ -552,6 +552,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Escape key closes modals
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      const lb = document.getElementById('lightbox-modal');
+      if (lb && lb.classList.contains('open')) {
+        closeLightbox(e, true);
+        return;
+      }
       ['modal-profile', 'modal-add-day', 'modal-add-goal', 'modal-add-category',
        'modal-create-group', 'modal-join-group', 'modal-member-tasks',
        'modal-edit-category', 'modal-edit-goal', 'modal-edit-group',
@@ -633,8 +638,14 @@ function getDistance(touches) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function getLightboxElements() {
+  const overlay = document.getElementById('lightbox-modal');
+  const img = overlay ? (overlay.querySelector('#lightbox-img') || overlay.querySelector('img')) : document.getElementById('lightbox-img');
+  return { overlay, img };
+}
+
 function updateLightboxTransform(disableTransition = false) {
-  const img = document.getElementById('lightbox-img');
+  const { img } = getLightboxElements();
   if (!img) return;
   
   if (disableTransition) {
@@ -647,7 +658,7 @@ function updateLightboxTransform(disableTransition = false) {
 }
 
 function resetLightboxZoom() {
-  const img = document.getElementById('lightbox-img');
+  const { img } = getLightboxElements();
   if (img) {
     img.style.transform = 'none';
     img.style.transition = '';
@@ -661,8 +672,8 @@ function resetLightboxZoom() {
 }
 
 function openLightbox(url) {
-  const overlay = document.getElementById('lightbox-modal');
-  const img = document.getElementById('lightbox-img');
+  const { overlay, img } = getLightboxElements();
+  if (!overlay || !img) return;
   img.src = url;
   resetLightboxZoom(); // Ensure we open the image at 1x
   overlay.classList.add('open');
@@ -670,8 +681,7 @@ function openLightbox(url) {
 }
 
 function initLightboxZoom() {
-  const overlay = document.getElementById('lightbox-modal');
-  const img = document.getElementById('lightbox-img');
+  const { overlay, img } = getLightboxElements();
   if (!overlay || !img) return;
   
   // Prevent browser drag
@@ -806,11 +816,11 @@ function initLightboxZoom() {
 }
 
 async function downloadLightboxImage() {
-  const img = document.getElementById('lightbox-img');
+  const { overlay, img } = getLightboxElements();
   if (!img || !img.src) return;
   
   const url = img.src;
-  const downloadBtn = document.getElementById('lightbox-download-btn');
+  const downloadBtn = overlay ? overlay.querySelector('#lightbox-download-btn') : document.getElementById('lightbox-download-btn');
   if (downloadBtn) {
     downloadBtn.disabled = true;
     downloadBtn.style.opacity = '0.5';
@@ -966,10 +976,10 @@ function playAudioFromBlob(docId, blob) {
 
 function closeLightbox(event, force = false) {
   if (force || event.target === event.currentTarget) {
-    const overlay = document.getElementById('lightbox-modal');
-    overlay.classList.remove('open');
+    const { overlay, img } = getLightboxElements();
+    if (overlay) overlay.classList.remove('open');
     setTimeout(() => { 
-      document.getElementById('lightbox-img').src = ''; 
+      if (img) img.src = ''; 
       resetLightboxZoom();
     }, 300);
   }

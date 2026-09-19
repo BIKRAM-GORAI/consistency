@@ -3296,14 +3296,14 @@
       <div style="position: relative; background: #0b0f19; min-height: 280px; max-height: 65vh; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 12px;">
         <!-- Action buttons at top right of the photo (Download + Fullscreen) -->
         <div style="position: absolute; top: 14px; right: 14px; z-index: 10; display: flex; align-items: center; gap: 8px;">
-          <button id="lightbox-download-btn" type="button" onclick="window.downloadAchievementPhoto()" title="Download Photo to Device / Gallery" style="width: 34px; height: 34px; border-radius: 50%; background: #ffffff; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--black); box-shadow: 2px 2px 0 var(--black); transition: transform 0.15s ease;">
+          <button id="ach-lightbox-download-btn" type="button" onclick="window.downloadAchievementPhoto()" title="Download Photo to Device / Gallery" style="width: 34px; height: 34px; border-radius: 50%; background: #ffffff; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--black); box-shadow: 2px 2px 0 var(--black); transition: transform 0.15s ease;">
             <i data-lucide="download" style="width: 16px; height: 16px;"></i>
           </button>
           <button id="lightbox-fullscreen-btn" type="button" onclick="window.openPhotoFullscreen()" title="Open Fullscreen (Scroll Long Screenshot)" style="width: 34px; height: 34px; border-radius: 50%; background: #ffffff; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--black); box-shadow: 2px 2px 0 var(--black); transition: transform 0.15s ease;">
             <i data-lucide="maximize-2" style="width: 16px; height: 16px;"></i>
           </button>
         </div>
-        <img id="lightbox-img" src="" alt="Photo" style="max-width: 100%; max-height: 60vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; display: block;" />
+        <img id="ach-lightbox-img" src="" alt="Photo" style="max-width: 100%; max-height: 60vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; display: block;" />
       </div>
 
       <div style="padding: 16px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--bg-card); border-top: 2.5px solid var(--black);">
@@ -4269,11 +4269,16 @@
 
   <!-- ===== MODAL: Lightbox Viewer ===== -->
   <div class="lightbox-overlay" id="lightbox-modal" onclick="closeLightbox(event)">
-    <div class="lightbox-content">
-      <button class="lightbox-download" id="lightbox-download-btn" onclick="event.stopPropagation(); window.downloadLightboxImage()" title="Download Image">
+    <!-- Fixed Floating Controls Bar (stays fixed at top-right even when photo zooms/pans) -->
+    <div class="lightbox-controls" onclick="event.stopPropagation()">
+      <button class="lightbox-btn" id="lightbox-download-btn" onclick="window.downloadLightboxImage()" title="Download Image" aria-label="Download Image">
         <i data-lucide="download"></i>
       </button>
-      <button class="lightbox-close" onclick="closeLightbox(event, true)">✕</button>
+      <button class="lightbox-btn lightbox-btn-close" onclick="closeLightbox(event, true)" title="Close Viewer (Esc)" aria-label="Close Viewer">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="lightbox-content" onclick="event.stopPropagation()">
       <img id="lightbox-img" src="" alt="Profile Picture" />
     </div>
   </div>

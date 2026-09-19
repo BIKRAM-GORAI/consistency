@@ -1229,7 +1229,7 @@ async function savePersistentMediaBlob(url, blob) {
 function openPhotoLightbox(photoUrl, thumbUrl, caption, dateStr, achId, photoId, isOwner = true) {
   activeLightboxData = { photoUrl, thumbUrl, dateStr, achId, photoId, isOwner };
 
-  const imgEl = document.getElementById('lightbox-img');
+  const imgEl = document.getElementById('ach-lightbox-img');
   const titleTextEl = document.getElementById('lightbox-title-text');
   const captionEl = document.getElementById('lightbox-caption');
   const dateEl = document.getElementById('lightbox-date');
@@ -1544,7 +1544,7 @@ function initFullscreenPhotoZoom() {
 
 // ── Fullscreen Photo Overlay Handlers (Long Screenshot Scroll & Pinch-Zoom) ──
 function openPhotoFullscreen() {
-  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxImg = document.getElementById('ach-lightbox-img');
   const originalUrl = activeLightboxData?.photoUrl;
   const safeThumb = getSafeThumbUrl(activeLightboxData?.thumbUrl, originalUrl);
 
@@ -1650,7 +1650,7 @@ async function downloadAchievementPhoto() {
   const isFullscreen = document.getElementById('photo-fullscreen-overlay')?.style.display !== 'none';
   const imgEl = isFullscreen
     ? document.getElementById('photo-fullscreen-img')
-    : document.getElementById('lightbox-img');
+    : document.getElementById('ach-lightbox-img');
 
   const photoUrl = imgEl?.src || activeLightboxData?.photoUrl;
   if (!photoUrl) {
