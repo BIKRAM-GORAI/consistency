@@ -173,9 +173,17 @@
     const isMobile = window.innerWidth <= 1024;
     let offset = 0;
 
-    if (isMobile) {
-      // In 3-button navigation, screenDiff is typically 44px - 64px.
-      // In full-screen gestures, screenDiff is <= 24px.
+    // Detect if running inside Capacitor Android native wrapper or standalone PWA
+    const isNativeAndroid = (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+                            navigator.userAgent.includes("CapacitorNative/Android") ||
+                            navigator.userAgent.includes("Capacitor") ||
+                            document.body?.classList.contains('native-android') ||
+                            (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+
+    // In regular mobile web browsers (Chrome, Safari, Firefox, Brave), the browser viewport
+    // already ends cleanly above the Android 3-button navigation bar (never edge-to-edge).
+    // The offset must ONLY be applied in native Android APK / standalone mode.
+    if (isMobile && isNativeAndroid) {
       const screenDiff = Math.max(0, window.screen.height - window.screen.availHeight);
       if (screenDiff >= 36) {
         offset = Math.min(56, Math.max(44, screenDiff));

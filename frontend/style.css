@@ -2209,7 +2209,7 @@ body.keyboard-visible #central-voice-btn-container {
   .bottom-nav-container {
     display: block;
     position: fixed;
-    bottom: max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px));
+    bottom: 0;
     left: 0;
     right: 0;
     z-index: 300;
@@ -2217,6 +2217,7 @@ body.keyboard-visible #central-voice-btn-container {
     border-top: var(--border);
     box-shadow: 0 -4px 0 var(--black);
     padding: 0;
+    padding-bottom: max(var(--bnav-bottom-offset, 0px), env(safe-area-inset-bottom, 0px));
   }
 
   body.search-active .bottom-nav-container,
