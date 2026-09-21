@@ -155,7 +155,7 @@ const createDayValidation = [
   body('summary')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
+    .isLength({ max: 5000 }).withMessage('Summary must not exceed 5000 characters')
     .customSanitizer(sanitizeSafeText),
   body('aiSummary')
     .optional()
@@ -201,7 +201,7 @@ const updateDayValidation = [
   body('summary')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Summary must not exceed 500 characters')
+    .isLength({ max: 5000 }).withMessage('Summary must not exceed 5000 characters')
     .customSanitizer(sanitizeSafeText),
   body('aiSummary')
     .optional()
@@ -464,7 +464,7 @@ const userSearchValidation = [
   query('q')
     .optional()
     .trim()
-    .isLength({ min: 1, max: 20 }).withMessage('Search query must be between 1 and 20 characters'),
+    .isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
   validate
 ];
 

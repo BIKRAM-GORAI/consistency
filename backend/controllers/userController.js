@@ -26,25 +26,30 @@ function countTasks(categories) {
  */
 async function searchUsers(req, res) {
   try {
-    const q = req.query.q || '';
+    const q = (req.query.q || '').trim();
     if (q.length < 1) return res.json([]);
 
-    // Prefix match regex, case insensitive
-    const regex = new RegExp('^' + q, 'i');
+    // Escape regex special characters to prevent regex injection or syntax crashes
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp('^' + escapeRegex(q), 'i');
 
     const users = await User.find({
-      username: regex,
+      $or: [
+        { username: regex },
+        { email: regex }
+      ],
       isBlacklisted: { $ne: true }
     })
-    .select('username profilePicture currentStreak highestStreak subscriptionTier subscriptionExpiresAt')
+    .select('username name email profilePicture currentStreak highestStreak subscriptionTier subscriptionExpiresAt')
     .limit(10);
 
     const usersMapped = users.map(user => {
       const isPremium = user.subscriptionTier === 'premium' && 
         (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+      const username = user.username || user.name || (user.email ? user.email.split('@')[0] : 'User');
       return {
         _id: user._id,
-        username: user.username,
+        username,
         profilePicture: user.profilePicture,
         currentStreak: user.currentStreak,
         highestStreak: user.highestStreak,

@@ -1175,6 +1175,150 @@
               0 6px 16px rgba(20,90,50,0.24) !important;
 }
 
+/* Note Components in Claymorphism */
+[data-theme="claymorphism"] .summary-inner {
+  background: var(--bg-muted) !important;
+  border-radius: 16px !important;
+  padding: 18px 22px !important;
+  margin: 10px 0 0 14px !important;
+  box-shadow: inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.6),
+              inset -1.5px -1.5px 3px rgba(20, 50, 35, 0.08) !important;
+}
+
+[data-theme="claymorphism"] .note-view-container {
+  width: 100% !important;
+}
+
+[data-theme="claymorphism"] .note-view-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin-bottom: 10px !important;
+  padding: 0 2px !important;
+}
+
+[data-theme="claymorphism"] .note-view-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+[data-theme="claymorphism"] .btn-edit-note {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: #0d1f15 !important;
+  box-shadow: inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.9),
+              inset -1.5px -1.5px 3px rgba(20, 60, 35, 0.14),
+              0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: transform 0.15s ease, background 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .btn-edit-note i,
+[data-theme="claymorphism"] .btn-edit-note svg {
+  width: 14px !important;
+  height: 14px !important;
+  color: #0d1f15 !important;
+  stroke: #0d1f15 !important;
+  stroke-width: 2.2 !important;
+  display: block !important;
+}
+
+[data-theme="claymorphism"] .btn-edit-note:hover {
+  background: #f5a623 !important;
+  color: #1a0f00 !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+[data-theme="claymorphism"] .btn-edit-note:hover i,
+[data-theme="claymorphism"] .btn-edit-note:hover svg {
+  color: #1a0f00 !important;
+  stroke: #1a0f00 !important;
+}
+
+[data-theme="claymorphism"] .btn-del-note {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(254, 242, 242, 0.95) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: #dc2626 !important;
+  box-shadow: inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.9),
+              inset -1.5px -1.5px 3px rgba(220, 38, 38, 0.18),
+              0 2px 6px rgba(220, 38, 38, 0.1) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: transform 0.15s ease, background 0.15s ease !important;
+}
+
+[data-theme="claymorphism"] .btn-del-note i,
+[data-theme="claymorphism"] .btn-del-note svg {
+  width: 14px !important;
+  height: 14px !important;
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+  stroke-width: 2.2 !important;
+  display: block !important;
+}
+
+[data-theme="claymorphism"] .btn-del-note:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+[data-theme="claymorphism"] .btn-del-note:hover i,
+[data-theme="claymorphism"] .btn-del-note:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="claymorphism"] .note-view-text {
+  padding: 6px 10px !important;
+  margin: 2px 0 !important;
+  line-height: 1.7 !important;
+}
+
+[data-theme="claymorphism"] textarea.summary-edit,
+[data-theme="claymorphism"] .summary-edit {
+  padding: 14px 20px !important;
+  box-sizing: border-box !important;
+  line-height: 1.65 !important;
+  min-height: 90px !important;
+  border-radius: 14px !important;
+  width: 100% !important;
+  margin: 6px 0 !important;
+}
+
+[data-theme="claymorphism"] .btn-cancel-note {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: none !important;
+  border-radius: 20px !important;
+  color: #334155 !important;
+  box-shadow: inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.8),
+              inset -1.5px -1.5px 3px rgba(0, 0, 0, 0.1) !important;
+  padding: 6px 14px !important;
+}
+
 /* LeetCode Button (Signature Blue Clay Pill) */
 [data-theme="claymorphism"] .btn-add-leetcode {
   background: #3b82f6 !important;
@@ -1270,6 +1414,7 @@
   border-radius: 14px !important;
   color: #0d1f15 !important;
   font-weight: 600 !important;
+  padding: 10px 16px !important;
   box-shadow: inset 3px 3px 6px rgba(20,50,35,0.14),
               inset -3px -3px 6px rgba(255,255,255,0.8) !important;
   outline: none !important;

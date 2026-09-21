@@ -1203,8 +1203,10 @@ async function performSearch(query) {
         const item = document.createElement('div');
         item.className = 'search-item';
 
+        const username = u.username || u.name || 'User';
+        const initial = (username.charAt(0) || 'U').toUpperCase();
         const avatarClass = u.isPremium ? 'search-avatar premium-nav-ring' : 'search-avatar';
-        let avatarHtml = `<div class="${avatarClass}" style="background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${u.username.charAt(0).toUpperCase()}</div>`;
+        let avatarHtml = `<div class="${avatarClass}" style="background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0;">${initial}</div>`;
         if (u.profilePicture) {
           avatarHtml = `<img src="${u.profilePicture}" class="${avatarClass}" />`;
         }
@@ -1217,7 +1219,7 @@ async function performSearch(query) {
           ${avatarHtml}
           <div class="search-info">
             <div class="search-name" style="display:flex; align-items:center;">
-              <span>${u.username}</span>
+              <span>${window.escHtml(username)}</span>
               ${u.isPremium ? '<span style="margin-left:4px; font-size:12px;" title="Premium Builder">👑</span>' : ''}
             </div>
             ${streakBadge ? `<div style="margin-top:2px;">${streakBadge}</div>` : ''}
@@ -1233,7 +1235,7 @@ async function performSearch(query) {
           document.body.classList.remove('search-active');
           document.body.classList.remove('keyboard-visible');
           if (window.collapseSearchInput) window.collapseSearchInput();
-          openQuickView(u.username);
+          openQuickView(username);
         };
         
         searchDropdown.appendChild(item);

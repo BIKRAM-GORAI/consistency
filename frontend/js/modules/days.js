@@ -765,7 +765,7 @@ async function renderDays(appendOnly = false) {
     const dayAchs = (window.allAchievements && window.allAchievements.length > 0)
       ? window.allAchievements.filter(isDayAch)
       : (batchAchievements || []).filter(isDayAch);
-    const card = buildDayCard(day, dayAchs);
+    const card = buildDayCard(day, dayAchs, i);
     // Mark as new for animation if we are appending
     if (appendOnly) {
       card.classList.add('is-new-card');
@@ -826,6 +826,9 @@ async function renderDays(appendOnly = false) {
   if (typeof evaluateDaysDistractions === 'function') {
     evaluateDaysDistractions();
   }
+
+  // Initialize scroll-based lazy loading observer for notes
+  initNotesLazyObserver();
 }
 
 function isDayEditable(day) {
@@ -844,7 +847,7 @@ function isDayEditable(day) {
   return isToday || isFuture || isWithinWindow || !!day.graceApplied;
 }
 
-function buildDayCard(day, preLoadedAchievements = null) {
+function buildDayCard(day, preLoadedAchievements = null, cardIndex = 0) {
   const today   = window.todayStr();
   const cardDateNormalized = (day.date || '').split('T')[0];
   const isToday = cardDateNormalized === today;
@@ -947,11 +950,13 @@ function buildDayCard(day, preLoadedAchievements = null) {
       </div>`;
   }
 
-  // Summary
-  const summaryInner = isEditable
-    ? `<textarea class="summary-edit" id="summary-edit-${day._id}" rows="3">${window.escHtml(day.summary || '')}</textarea>
-       <button class="summary-save-btn ripple" onclick="saveSummary('${day._id}')"><i data-lucide="save"></i> Save Note</button>`
-    : `<p class="summary-text">${window.escHtml(day.summary || '(no notes for this day)')}</p>`;
+  // Summary & Day Note logic
+  const cleanSummary = (day.summary || '').trim();
+  const hasNote = cleanSummary.length > 0;
+  const isLazy = hasNote && cardIndex >= 3;
+  const summaryInner = isLazy
+    ? `<div class="note-lazy-placeholder" style="padding:10px 0;color:var(--text-muted);font-size:12px;font-style:italic;">Loading note...</div>`
+    : renderSummaryInner(day._id, day.summary || '', !hasNote, false);
 
   // Add category button (today/graced only)
   const addCatBtn = isEditable
@@ -1068,7 +1073,7 @@ function buildDayCard(day, preLoadedAchievements = null) {
 
   const notesAndAiRowHTML = isFuture ? '' : `
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-left: 14px;">
-      <button class="summary-toggle" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0; padding: 0 12px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px;">
+      <button class="summary-toggle ${hasNote ? 'expanded' : ''}" id="summary-toggle-${day._id}" onclick="toggleSummary('${day._id}')" style="margin-top: 0; margin-left: 0; padding: 0 12px; font-size: 9px; font-weight: 700; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 0.3px;">
         <span style="display: inline-flex; align-items: center; margin-right: 4px;"><i data-lucide="file-text" style="width: 13px; height: 13px;"></i></span>
         <span>Notes</span>
         <span class="summary-chevron" style="display: inline-flex; align-items: center; margin-left: 4px;"><i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i></span>
@@ -1079,8 +1084,8 @@ function buildDayCard(day, preLoadedAchievements = null) {
         </button>
       `}
     </div>
-    <div class="summary-content" id="summary-content-${day._id}">
-      <div class="summary-inner">${summaryInner}</div>
+    <div class="summary-content ${hasNote ? 'expanded' : ''}" id="summary-content-${day._id}" ${isLazy ? `data-lazy-note="${day._id}"` : ''}>
+      <div class="summary-inner" id="summary-inner-${day._id}">${summaryInner}</div>
     </div>
   `;
 
@@ -1565,31 +1570,305 @@ function updateProgressBar(dayId, categories) {
   }
 }
 
-function toggleSummary(dayId) {
-  const toggle  = document.getElementById(`summary-toggle-${dayId}`);
+// ── Daily Card Note Logic (View Mode, Edit Mode, Character Count & Truncation) ──
+
+function renderSummaryInner(dayId, summary = '', isEditMode = false, isFullView = false) {
+  const cleanSummary = (summary || '').trim();
+  const hasNote = cleanSummary.length > 0;
+
+  if (!isEditMode && hasNote) {
+    const isLong = cleanSummary.length > 180 || cleanSummary.split('\n').length > 4;
+    const clampedClass = (!isFullView && isLong) ? 'clamped' : '';
+    const viewMoreBtn = isLong ? `
+      <button type="button" class="btn-note-view-more" id="btn-view-more-${dayId}" onclick="window.toggleNoteViewMore('${dayId}')">
+        <span>${isFullView ? 'View Less' : 'View More'}</span>
+        <i data-lucide="${isFullView ? 'chevron-up' : 'chevron-down'}" style="width: 12px; height: 12px;"></i>
+      </button>
+    ` : '';
+
+    const editBtn = `
+      <button type="button" class="btn-edit-note ripple" onclick="window.editSummary('${dayId}')" title="Edit Note" aria-label="Edit Note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+      </button>
+    `;
+
+    const delBtn = `
+      <button type="button" class="btn-del-note ripple" onclick="window.deleteSummary('${dayId}')" title="Delete Note" aria-label="Delete Note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+      </button>
+    `;
+
+    return `
+      <div class="note-view-container">
+        <div class="note-view-header">
+          <span class="note-view-title"><i data-lucide="file-text" style="width: 13px; height: 13px;"></i> Day Note</span>
+          <div class="note-view-actions">
+            ${editBtn}
+            ${delBtn}
+          </div>
+        </div>
+        <p class="note-view-text ${clampedClass}" id="note-view-text-${dayId}">${window.escHtml(cleanSummary)}</p>
+        ${viewMoreBtn}
+      </div>
+    `;
+  }
+
+  // Edit Mode
+  const charCount = (summary || '').length;
+  const countClass = charCount >= 5000 ? 'note-char-count at-limit' : (charCount >= 4500 ? 'note-char-count near-limit' : 'note-char-count');
+  return `
+    <div class="note-edit-container">
+      <div class="note-view-header" style="margin-bottom: 6px;">
+        <span class="note-view-title"><i data-lucide="edit-3" style="width: 13px; height: 13px;"></i> ${hasNote ? 'Edit Day Note' : 'Add Day Note'}</span>
+      </div>
+      <textarea class="summary-edit" id="summary-edit-${dayId}" rows="3" maxlength="5000" placeholder="Write your notes for this day (max 5,000 characters)..." oninput="window.updateNoteCharCount(this, '${dayId}')">${window.escHtml(summary || '')}</textarea>
+      <div class="note-edit-footer">
+        <span class="${countClass}" id="note-char-count-${dayId}">${charCount.toLocaleString()} / 5,000</span>
+        <div class="note-edit-actions">
+          <button type="button" class="btn-cancel-note ripple" onclick="window.cancelEditSummary('${dayId}')">Cancel</button>
+          <button type="button" class="summary-save-btn ripple" onclick="window.saveSummary('${dayId}')"><i data-lucide="save" style="width: 13px; height: 13px;"></i> Save Note</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleNoteViewMore(dayId) {
+  const textEl = document.getElementById(`note-view-text-${dayId}`);
+  const btnEl = document.getElementById(`btn-view-more-${dayId}`);
+  if (!textEl || !btnEl) return;
+  const isClamped = textEl.classList.contains('clamped');
+  if (isClamped) {
+    textEl.classList.remove('clamped');
+    btnEl.innerHTML = `<span>View Less</span> <i data-lucide="chevron-up" style="width: 12px; height: 12px;"></i>`;
+  } else {
+    textEl.classList.add('clamped');
+    btnEl.innerHTML = `<span>View More</span> <i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i>`;
+  }
+  if (window.lucide) {
+    lucide.createIcons({ root: btnEl });
+  }
+}
+
+function editSummary(dayId) {
+  const day = window.allDays && window.allDays.find(d => String(d._id) === String(dayId));
+  const innerEl = document.getElementById(`summary-inner-${dayId}`);
+  if (!innerEl) return;
+  innerEl.innerHTML = renderSummaryInner(dayId, day ? (day.summary || '') : '', true, false);
+  const toggle = document.getElementById(`summary-toggle-${dayId}`);
   const content = document.getElementById(`summary-content-${dayId}`);
-  toggle.classList.toggle('expanded');
-  content.classList.toggle('expanded');
+  if (toggle) toggle.classList.add('expanded');
+  if (content) content.classList.add('expanded');
+  if (window.lucide) {
+    lucide.createIcons({ root: innerEl });
+  }
+  const textarea = document.getElementById(`summary-edit-${dayId}`);
+  if (textarea) {
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+}
+
+function cancelEditSummary(dayId) {
+  const day = window.allDays && window.allDays.find(d => String(d._id) === String(dayId));
+  const innerEl = document.getElementById(`summary-inner-${dayId}`);
+  if (!innerEl) return;
+  if (day && day.summary && day.summary.trim()) {
+    innerEl.innerHTML = renderSummaryInner(dayId, day.summary, false, false);
+    if (window.lucide) {
+      lucide.createIcons({ root: innerEl });
+    }
+  } else {
+    const toggle = document.getElementById(`summary-toggle-${dayId}`);
+    const content = document.getElementById(`summary-content-${dayId}`);
+    if (toggle) toggle.classList.remove('expanded');
+    if (content) content.classList.remove('expanded');
+    innerEl.innerHTML = renderSummaryInner(dayId, '', false, false);
+  }
+}
+
+function updateNoteCharCount(textarea, dayId) {
+  if (!textarea) return;
+  const countEl = document.getElementById(`note-char-count-${dayId}`);
+  if (!countEl) return;
+  const len = textarea.value.length;
+  countEl.textContent = `${len.toLocaleString()} / 5,000`;
+  if (len >= 5000) {
+    countEl.className = 'note-char-count at-limit';
+  } else if (len >= 4500) {
+    countEl.className = 'note-char-count near-limit';
+  } else {
+    countEl.className = 'note-char-count';
+  }
+}
+
+function toggleSummary(dayId) {
+  const toggle = document.getElementById(`summary-toggle-${dayId}`);
+  const content = document.getElementById(`summary-content-${dayId}`);
+  if (!content) return;
+
+  if (content.hasAttribute('data-lazy-note')) {
+    hydrateNoteCard(dayId);
+  }
+
+  const isExpanding = !content.classList.contains('expanded');
+  if (toggle) toggle.classList.toggle('expanded', isExpanding);
+  content.classList.toggle('expanded', isExpanding);
+
+  if (isExpanding) {
+    const day = window.allDays && window.allDays.find(d => String(d._id) === String(dayId));
+    const hasNote = !!(day && day.summary && day.summary.trim());
+    if (!hasNote) {
+      const innerEl = document.getElementById(`summary-inner-${dayId}`);
+      if (innerEl) {
+        innerEl.innerHTML = renderSummaryInner(dayId, '', true, false);
+        if (window.lucide) lucide.createIcons({ root: innerEl });
+      }
+      const textarea = document.getElementById(`summary-edit-${dayId}`);
+      if (textarea) {
+        setTimeout(() => textarea.focus(), 50);
+      }
+    }
+  }
 }
 
 async function saveSummary(dayId) {
   const textarea = document.getElementById(`summary-edit-${dayId}`);
   if (!textarea) return;
-  const summary = textarea.value.trim();
-  const day = window.allDays.find(d => d._id === dayId);
+  let summary = textarea.value.trim();
+  if (summary.length > 5000) {
+    summary = summary.substring(0, 5000);
+    window.showToast('Note was trimmed to the 5,000 character limit.', 'warn');
+  }
+
+  const day = window.allDays && window.allDays.find(d => String(d._id || d.id) === String(dayId));
   if (day) {
     day.summary = summary;
     day.lastLocalEdit = Date.now();
   }
 
   try {
-    // 1. Update Local
-    await window.localDb.days.put(day);
-    // 2. Queue Sync
-    window.syncManager.addToQueue('PUT', 'days', dayId, { summary });
-    window.showToast('Notes saved locally!', 'success');
+    if (window.localDb && day) {
+      await window.localDb.days.put(day);
+    }
+    if (window.syncManager) {
+      window.syncManager.addToQueue('PUT', 'days', dayId, { summary });
+    }
+
+    const innerEl = document.getElementById(`summary-inner-${dayId}`);
+    const contentEl = document.getElementById(`summary-content-${dayId}`);
+    const toggleEl = document.getElementById(`summary-toggle-${dayId}`);
+
+    if (summary.length > 0) {
+      if (innerEl) {
+        innerEl.innerHTML = renderSummaryInner(dayId, summary, false, false);
+        if (window.lucide) {
+          lucide.createIcons({ root: innerEl });
+        }
+      }
+      if (contentEl) contentEl.classList.add('expanded');
+      if (toggleEl) toggleEl.classList.add('expanded');
+      window.showToast('Notes saved locally!', 'success');
+    } else {
+      // Cleared note -> collapse back to normal non-expanded button form
+      if (contentEl) contentEl.classList.remove('expanded');
+      if (toggleEl) toggleEl.classList.remove('expanded');
+      if (innerEl) {
+        innerEl.innerHTML = renderSummaryInner(dayId, '', false, false);
+      }
+      window.showToast('Note cleared.', 'info');
+    }
   } catch (err) {
     console.error('Offline save error:', err);
+    window.showToast('Failed to save notes.', 'error');
+  }
+}
+
+async function deleteSummary(dayId) {
+  if (!confirm('Are you sure you want to delete this note?')) return;
+
+  const day = window.allDays && window.allDays.find(d => String(d._id || d.id) === String(dayId));
+  if (day) {
+    day.summary = '';
+    day.lastLocalEdit = Date.now();
+  }
+
+  try {
+    if (window.localDb && day) {
+      await window.localDb.days.put(day);
+    }
+    if (window.syncManager) {
+      window.syncManager.addToQueue('PUT', 'days', dayId, { summary: '' });
+    }
+
+    const contentEl = document.getElementById(`summary-content-${dayId}`);
+    const toggleEl = document.getElementById(`summary-toggle-${dayId}`);
+    const innerEl = document.getElementById(`summary-inner-${dayId}`);
+
+    if (contentEl) contentEl.classList.remove('expanded');
+    if (toggleEl) toggleEl.classList.remove('expanded');
+    if (innerEl) {
+      innerEl.innerHTML = renderSummaryInner(dayId, '', false, false);
+    }
+
+    window.showToast('Note deleted.', 'info');
+  } catch (err) {
+    console.error('Delete note error:', err);
+    window.showToast('Failed to delete note.', 'error');
+  }
+}
+
+// ── Notes Scroll-Based Lazy Loading Observer ────────────────────────────
+let notesLazyObserver = null;
+function initNotesLazyObserver() {
+  const lazyElements = document.querySelectorAll('[data-lazy-note]');
+  if (!lazyElements.length) return;
+
+  if (typeof IntersectionObserver === 'undefined') {
+    lazyElements.forEach(el => {
+      const dayId = el.getAttribute('data-lazy-note');
+      if (dayId) hydrateNoteCard(dayId);
+    });
+    return;
+  }
+
+  if (notesLazyObserver) {
+    notesLazyObserver.disconnect();
+  }
+
+  notesLazyObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const dayId = el.getAttribute('data-lazy-note');
+        if (dayId) {
+          hydrateNoteCard(dayId);
+          observer.unobserve(el);
+        }
+      }
+    });
+  }, { rootMargin: '300px 0px', threshold: 0.01 });
+
+  lazyElements.forEach(el => {
+    notesLazyObserver.observe(el);
+  });
+}
+
+function hydrateNoteCard(dayId) {
+  const contentEl = document.getElementById(`summary-content-${dayId}`);
+  if (!contentEl) return;
+  contentEl.removeAttribute('data-lazy-note');
+  const innerEl = document.getElementById(`summary-inner-${dayId}`);
+  if (!innerEl) return;
+  const day = window.allDays && window.allDays.find(d => String(d._id) === String(dayId));
+  if (day && day.summary && day.summary.trim()) {
+    innerEl.innerHTML = renderSummaryInner(dayId, day.summary, false, false);
+    contentEl.classList.add('expanded');
+    const toggle = document.getElementById(`summary-toggle-${dayId}`);
+    if (toggle) toggle.classList.add('expanded');
+    if (window.lucide) {
+      setTimeout(() => lucide.createIcons({ root: innerEl }), 10);
+    }
   }
 }
 
@@ -2732,6 +3011,14 @@ window.deleteTask = deleteTask;
 window.updateProgressBar = updateProgressBar;
 window.toggleSummary = toggleSummary;
 window.saveSummary = saveSummary;
+window.deleteSummary = deleteSummary;
+window.renderSummaryInner = renderSummaryInner;
+window.toggleNoteViewMore = toggleNoteViewMore;
+window.editSummary = editSummary;
+window.cancelEditSummary = cancelEditSummary;
+window.updateNoteCharCount = updateNoteCharCount;
+window.hydrateNoteCard = hydrateNoteCard;
+window.initNotesLazyObserver = initNotesLazyObserver;
 window.loadClaimedBadges = loadClaimedBadges;
 window.renderClaimedBadges = renderClaimedBadges;
 window.openReminderModal = openReminderModal;

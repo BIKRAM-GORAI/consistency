@@ -1515,3 +1515,56 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
   color: #dc2626 !important;
 }
+
+/* ── Minimalistic Note Components ── */
+[data-theme="minimalistic"] .summary-inner {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="minimalistic"] .btn-edit-note {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  color: #334155 !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="minimalistic"] .btn-edit-note:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  transform: none !important;
+}
+
+[data-theme="minimalistic"] .btn-note-view-more {
+  color: #2563eb !important;
+}
+
+[data-theme="minimalistic"] .btn-cancel-note {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .btn-cancel-note:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .btn-del-note {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: none !important;
+  color: #dc2626 !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="minimalistic"] .btn-del-note:hover {
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+  color: #b91c1c !important;
+}
