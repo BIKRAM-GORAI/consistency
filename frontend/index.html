@@ -64,10 +64,10 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=76" />
-  <link rel="stylesheet" href="aurora-theme.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=78" />
+  <link rel="stylesheet" href="aurora-theme.css?v=6" />
   <link rel="stylesheet" href="minimalistic-theme.css?v=3" />
-  <link rel="stylesheet" href="claymorphism-theme.css?v=9" />
+  <link rel="stylesheet" href="claymorphism-theme.css?v=11" />
   <style>
     /* ── Offline mode: disable all network-dependent buttons instantly via body class ── */
     body.is-offline [data-requires-network="true"] {
@@ -441,7 +441,11 @@
     <div class="nav-user-area">
       <!-- Search Bar -->
       <div class="nav-search-container">
-        <input type="text" id="nav-search-input" class="nav-search-input" placeholder="🔍" onfocus="window.expandSearchInput()" onblur="if(!this.value.trim()) { window.collapseSearchInput(); }" autocomplete="off" />
+        <input type="text" id="nav-search-input" class="nav-search-input" placeholder="" onfocus="window.expandSearchInput()" onblur="if(!this.value.trim()) { window.collapseSearchInput(); }" autocomplete="off" title="Search users" aria-label="Search users" />
+        <svg class="nav-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
         <div id="nav-search-dropdown" style="display: none; position: absolute; top: 110%; right: 0; background: var(--bg-card); border: 2.5px solid var(--black); border-radius: 12px; box-shadow: 4px 4px 0 var(--black); width: 260px; max-height: 320px; overflow-y: auto; z-index: 99999; flex-direction: column;">
           <!-- Suggestions injected here -->
         </div>
@@ -4787,7 +4791,7 @@
   <script type="module" src="js/modules/profile.js"></script>
   <script type="module" src="js/modules/pomodoro.js"></script>
   <script type="module" src="js/modules/dm.js"></script>
-  <script type="module" src="js/modules/app.js?v=70"></script>
+  <script type="module" src="js/modules/app.js?v=71"></script>
 
   <script src="script.js?v=69"></script>
   <script>

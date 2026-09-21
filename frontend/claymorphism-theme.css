@@ -1779,6 +1779,21 @@
   box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.06), inset -2px -2px 4px rgba(255, 255, 255, 0.7) !important;
 }
 
+[data-theme="claymorphism"] .nav-search-icon {
+  color: rgba(13, 31, 21, 0.65) !important;
+}
+
+[data-theme="claymorphism"] .nav-search-container:hover .nav-search-icon {
+  color: #0d1f15 !important;
+}
+
+[data-theme="claymorphism"] .nav-search-input:focus ~ .nav-search-icon,
+[data-theme="claymorphism"] .nav-search-input.expanded ~ .nav-search-icon,
+[data-theme="claymorphism"] .nav-search-input:not(:placeholder-shown) ~ .nav-search-icon {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 [data-theme="claymorphism"] .nav-search-input:hover {
   background: rgba(13, 31, 21, 0.1) !important;
 }

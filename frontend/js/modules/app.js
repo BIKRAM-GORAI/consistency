@@ -1111,7 +1111,7 @@ window.expandSearchInput = function() {
   if (navbar) navbar.classList.add('search-focused');
   if (inp) {
     inp.classList.add('expanded');
-    inp.placeholder = '🔍 Search...';
+    inp.placeholder = 'Search users...';
   }
 
   // On mobile screens (<= 768px), top nav action buttons are hidden (bottom nav is used)
@@ -1172,7 +1172,7 @@ window.collapseSearchInput = function() {
   }
   if (inp) {
     inp.classList.remove('expanded');
-    inp.placeholder = '🔍';
+    inp.placeholder = '';
     inp.style.width = '';
     inp.style.padding = '';
     inp.style.textAlign = '';
