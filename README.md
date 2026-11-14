@@ -286,4 +286,4 @@ We love community updates! To help us keep the code style consistent:
 1. **Fork the Repository** and push code to your feature branch (`feature/amazing-feature`).
 2. **Brutalist Style Guide**: Keep margins bold, use high-contrast primary buttons, and enforce raw black borders (`4px solid #000`) for regular themes.
 3. **No Frameworks**: Keep the source code dependencies clean. Avoid adding large frameworks like React, Vue, TailwindCSS, or Bootstrap.
-4. **Offline Preservation**: When modifying models or state transitions, ensure you update Dexie/IndexedDB schemas accordingly to prevent offline cache synchronization collisions.
+4. **Offline Preservation**: When modifying models or state transitions, ensure you update Dexie/IndexedDB schemas accordingly to prevent offline cache synchronization collisions..
