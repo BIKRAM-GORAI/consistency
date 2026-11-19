@@ -847,6 +847,109 @@ function isDayEditable(day) {
   return isToday || isFuture || isWithinWindow || !!day.graceApplied;
 }
 
+function renderScreenTimeBlockHtml(screenTimeStats, limits = null) {
+  if (!screenTimeStats) return '';
+  
+  let top5 = [];
+  let totalMinutes = 0;
+
+  if (Array.isArray(screenTimeStats)) {
+    if (screenTimeStats.length === 0) return '';
+    top5 = screenTimeStats;
+    top5.forEach(app => {
+      totalMinutes += app.actualMinutes || 0;
+    });
+  } else if (typeof screenTimeStats === 'object') {
+    const keys = Object.keys(screenTimeStats);
+    if (keys.length === 0) return '';
+
+    const appLimitsApps = (limits && limits.apps && limits.apps.length > 0) 
+      ? limits.apps 
+      : (window.currentAppLimits && window.currentAppLimits.apps ? window.currentAppLimits.apps : []);
+
+    let appStats = [];
+    if (appLimitsApps.length > 0) {
+      appStats = appLimitsApps.map(app => {
+        const actualMinutes = screenTimeStats[app.packageName] !== undefined ? screenTimeStats[app.packageName] : 0;
+        return {
+          packageName: app.packageName,
+          appName: app.appName,
+          limitMinutes: app.limitMinutes,
+          iconBase64: app.iconBase64,
+          actualMinutes,
+          completed: actualMinutes <= app.limitMinutes
+        };
+      });
+    } else {
+      appStats = keys.map(pkg => ({
+        packageName: pkg,
+        appName: pkg.split('.').pop(),
+        limitMinutes: 60,
+        iconBase64: '',
+        actualMinutes: screenTimeStats[pkg] || 0,
+        completed: true
+      }));
+    }
+
+    appStats.sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return b.actualMinutes - a.actualMinutes;
+    });
+
+    top5 = appStats.slice(0, 5);
+    for (const pkg in screenTimeStats) {
+      totalMinutes += screenTimeStats[pkg] || 0;
+    }
+  }
+
+  if (top5.length === 0) return '';
+
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMins = totalMinutes % 60;
+  const totalScreenTimeStr = totalHours > 0 ? `${totalHours}h ${remainingMins}m` : `${remainingMins}m`;
+
+  let listHtml = '';
+  top5.forEach(app => {
+    const iconSrc = app.iconBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const isCompleted = app.completed !== undefined ? app.completed : (app.limitMinutes ? app.actualMinutes <= app.limitMinutes : true);
+    const rowStyle = isCompleted
+      ? 'background: var(--bg-distraction-green); border-color: var(--distraction-green);'
+      : 'background: var(--bg-distraction-red); border-color: var(--distraction-red);';
+    const limitDisplay = app.limitMinutes !== undefined ? `${app.actualMinutes || 0}m / ${app.limitMinutes}m` : `${app.actualMinutes || 0}m`;
+
+    listHtml += `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; ${rowStyle} border: 2px solid; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
+        <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+          <img src="${iconSrc}" style="width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; object-fit: contain;" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='" />
+          <span style="font-weight: 700; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.appName || app.packageName || 'App'}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <span style="font-size: 11px; font-weight: 800; padding: 2px 6px; border: 1px solid var(--black); border-radius: 12px; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; background: var(--bg-card); color: var(--text); box-shadow: 1px 1px 0 var(--black);">
+            ${limitDisplay}
+          </span>
+        </div>
+      </div>
+    `;
+  });
+
+  return `
+    <div class="app-distraction-block category-section" style="margin-top: 16px; padding: 14px; background: rgba(168, 85, 247, 0.08); border: 2px solid #a855f7; border-radius: 8px; box-shadow: 3px 3px 0 var(--black);">
+      <div style="display: flex; align-items: center; gap: 6px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 10px; font-size: 11px; color: #a855f7; letter-spacing: 0.5px;">
+        <i data-lucide="zap" style="width: 14px; height: 14px; fill: #a855f7;"></i>
+        <span>Screen Time &amp; Limits</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
+        ${listHtml}
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px dashed rgba(168, 85, 247, 0.3); padding-top: 8px; margin-top: 6px;">
+        <i data-lucide="smartphone" style="width: 14px; height: 14px;"></i>
+        <span>Total Mobile Screen Time: <strong style="color: var(--text);">${totalScreenTimeStr}</strong></span>
+      </div>
+    </div>
+  `;
+}
+window.renderScreenTimeBlockHtml = renderScreenTimeBlockHtml;
+
 function buildDayCard(day, preLoadedAchievements = null, cardIndex = 0) {
   const today   = window.todayStr();
   const cardDateNormalized = (day.date || '').split('T')[0];
@@ -1106,6 +1209,10 @@ function buildDayCard(day, preLoadedAchievements = null, cardIndex = 0) {
     </div>
   `;
 
+  const distractionBlockHTML = (!isToday && !isFuture && day.screenTimeStats && typeof renderScreenTimeBlockHtml === 'function')
+    ? renderScreenTimeBlockHtml(day.screenTimeStats, window.currentAppLimits)
+    : '';
+
   card.innerHTML = `
     <div class="card-header">
       <div class="card-date-wrap">
@@ -1131,6 +1238,8 @@ function buildDayCard(day, preLoadedAchievements = null, cardIndex = 0) {
     ${addCatBtn}
     
     ${aiRecapHTML}
+
+    ${distractionBlockHTML}
 
     ${notesAndAiRowHTML}
 
@@ -3135,203 +3244,82 @@ async function evaluateDaysDistractions() {
     yDate.setDate(yDate.getDate() - 1);
     const yesterdayStr = `${yDate.getFullYear()}-${String(yDate.getMonth()+1).padStart(2,'0')}-${String(yDate.getDate()).padStart(2,'0')}`;
 
-    // Retrieve last 7 available past days strictly before today
-    const sortedPastDays = [...(window.allDays || [])]
-      .filter(d => (d.date || '').split('T')[0] < today)
-      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const last7DaysSet = new Set(sortedPastDays.slice(0, 7).map(d => (d.date || '').split('T')[0]));
-
-    // 3. Iterate over rendered day cards to append distraction limit stats
+    // 3. Iterate over rendered day cards to append or update distraction limit stats
     cards.forEach(card => {
       const cardDate = card.getAttribute('data-date');
-      if (!cardDate) return;
+      if (!cardDate || cardDate >= today) {
+        const existing = card.querySelector('.app-distraction-block');
+        if (existing) existing.remove();
+        return;
+      }
 
       // Find day in memory
       const day = window.allDays && window.allDays.find(d => (d.date || '').split('T')[0] === cardDate);
       if (!day) return;
 
-      let top5 = [];
-      let totalMinutes = 0;
-      let showStats = false;
-      let rawStats = null;
+      // Case A: Card ALREADY has screenTimeStats (saved in database from today or months ago!)
+      const hasStats = day.screenTimeStats && (
+        Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0
+      );
 
-      if (cardDate >= today) {
-        // Exclude today's and future cards from showing screen time stats (only display from yesterday onwards)
-        showStats = false;
-      } else if (last7DaysSet.has(cardDate)) {
-        // One of the last 7 available cards:
-        if (Array.isArray(day.screenTimeStats) && day.screenTimeStats.length > 0) {
-          // Already frozen snapshot array: display directly without re-querying or re-syncing
-          top5 = day.screenTimeStats;
-          top5.forEach(app => {
-            totalMinutes += app.actualMinutes || 0;
-          });
-          showStats = true;
-        } else if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && Object.keys(day.screenTimeStats).length > 0) {
-          // Historical past day already has recorded stats: use directly to prevent overwriting uninstalled apps
-          rawStats = day.screenTimeStats;
-          showStats = true;
-        } else if (isNative && permissionGranted && usageStats) {
-          // Newly concluded past card or missing saved stats: load from native usage stats!
-          const nativeDayStats = usageStats[cardDate];
-          if (nativeDayStats && Object.keys(nativeDayStats).length > 0) {
-            rawStats = nativeDayStats;
-            day.screenTimeStats = rawStats;
-            day.lastLocalEdit = Date.now();
-            window.localDb.days.put(day).catch(err => console.error("Error saving raw stats:", err));
+      if (hasStats) {
+        const blockHtml = renderScreenTimeBlockHtml(day.screenTimeStats, limits);
+        let existing = card.querySelector('.app-distraction-block');
+        if (blockHtml) {
+          if (existing) {
+            existing.outerHTML = blockHtml;
+          } else {
+            const insertionPoint = card.querySelector('.notes-and-ai-row') || card.querySelector('.ach-add-row') || card.querySelector('.summary-content');
+            if (insertionPoint) {
+              const temp = document.createElement('div');
+              temp.innerHTML = blockHtml;
+              card.insertBefore(temp.firstElementChild, insertionPoint);
+            } else {
+              card.insertAdjacentHTML('beforeend', blockHtml);
+            }
+          }
+        } else if (existing) {
+          existing.remove();
+        }
+        return;
+      }
 
-            // CRITICAL OPTIMIZATION: Only send a network PUT request for YESTERDAY'S CARD!
-            // Older past days (2 to 7 days ago) are saved in local IndexedDB and rendered in the UI,
-            // costing ZERO network calls while preserving historical accuracy.
-            if (cardDate === yesterdayStr) {
-              const alreadySyncedThisSession = window._syncedScreenTimeDayIds && window._syncedScreenTimeDayIds.has(day._id);
-              if (!alreadySyncedThisSession) {
-                window._syncedScreenTimeDayIds.add(day._id);
-                window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: rawStats });
+      // Case B: Card does NOT have stats yet, but native Android OS has them (e.g. newly concluded yesterday card)
+      if (isNative && permissionGranted && usageStats && usageStats[cardDate]) {
+        const nativeDayStats = usageStats[cardDate];
+        if (Object.keys(nativeDayStats).length > 0) {
+          day.screenTimeStats = nativeDayStats;
+          day.lastLocalEdit = Date.now();
+          window.localDb.days.put(day).catch(err => console.error("Error saving raw stats:", err));
+
+          // Only sync yesterday's card over the network
+          if (cardDate === yesterdayStr) {
+            const alreadySyncedThisSession = window._syncedScreenTimeDayIds && window._syncedScreenTimeDayIds.has(day._id);
+            if (!alreadySyncedThisSession) {
+              window._syncedScreenTimeDayIds.add(day._id);
+              window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: nativeDayStats });
+            }
+          }
+
+          const blockHtml = renderScreenTimeBlockHtml(nativeDayStats, limits);
+          if (blockHtml) {
+            let existing = card.querySelector('.app-distraction-block');
+            if (existing) {
+              existing.outerHTML = blockHtml;
+            } else {
+              const insertionPoint = card.querySelector('.notes-and-ai-row') || card.querySelector('.ach-add-row') || card.querySelector('.summary-content');
+              if (insertionPoint) {
+                const temp = document.createElement('div');
+                temp.innerHTML = blockHtml;
+                card.insertBefore(temp.firstElementChild, insertionPoint);
+              } else {
+                card.insertAdjacentHTML('beforeend', blockHtml);
               }
             }
-            showStats = true;
-          } else {
-            showStats = false;
-          }
-        } else {
-          showStats = false;
-        }
-      } else {
-        // 8th card and older: display frozen stats permanently from IndexedDB/memory if they exist
-        if (day.screenTimeStats) {
-          if (Array.isArray(day.screenTimeStats)) {
-            top5 = day.screenTimeStats;
-            top5.forEach(app => {
-              totalMinutes += app.actualMinutes || 0;
-            });
-            showStats = true;
-          } else if (typeof day.screenTimeStats === 'object' && Object.keys(day.screenTimeStats).length > 0) {
-            const freezeKey = `frozen_${day._id}`;
-            const alreadyFrozenThisSession = window._syncedScreenTimeDayIds && window._syncedScreenTimeDayIds.has(freezeKey);
-
-            if (!alreadyFrozenThisSession) {
-              window._syncedScreenTimeDayIds.add(freezeKey);
-              // Convert raw stats object to a frozen snapshot array using limits app configuration
-              const appLimitsApps = limits && limits.apps ? limits.apps : [];
-              const appStats = appLimitsApps.map(app => {
-                const actualMinutes = day.screenTimeStats[app.packageName] !== undefined ? day.screenTimeStats[app.packageName] : 0;
-                return {
-                  packageName: app.packageName,
-                  appName: app.appName,
-                  limitMinutes: app.limitMinutes,
-                  iconBase64: app.iconBase64,
-                  actualMinutes,
-                  completed: actualMinutes <= app.limitMinutes
-                };
-              });
-
-              // Save the frozen array back to IndexedDB (local snapshot)
-              day.screenTimeStats = appStats;
-              day.lastLocalEdit = Date.now();
-              window.localDb.days.put(day).catch(err => console.error("Error freezing old day stats:", err));
-
-              top5 = appStats;
-            } else {
-              top5 = Array.isArray(day.screenTimeStats) ? day.screenTimeStats : [];
-            }
-            top5.forEach(app => {
-              totalMinutes += app.actualMinutes || 0;
-            });
-            showStats = true;
           }
         }
       }
-
-    if (!showStats) {
-      const existing = card.querySelector('.app-distraction-block');
-      if (existing) existing.remove();
-      return;
-    }
-
-    // If rawStats is set, map limits to rawStats and get top 5
-    if (rawStats) {
-      const appStats = limits.apps.map(app => {
-        const actualMinutes = rawStats[app.packageName] !== undefined ? rawStats[app.packageName] : 0;
-        return {
-          packageName: app.packageName,
-          appName: app.appName,
-          limitMinutes: app.limitMinutes,
-          iconBase64: app.iconBase64,
-          actualMinutes,
-          completed: actualMinutes <= app.limitMinutes
-        };
-      });
-
-      appStats.sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        return b.actualMinutes - a.actualMinutes;
-      });
-
-      top5 = appStats.slice(0, 5);
-
-      for (const pkg in rawStats) {
-        totalMinutes += rawStats[pkg] || 0;
-      }
-    }
-
-    const totalHours = Math.floor(totalMinutes / 60);
-    const remainingMins = totalMinutes % 60;
-    const totalScreenTimeStr = totalHours > 0 ? `${totalHours}h ${remainingMins}m` : `${remainingMins}m`;
-
-    // 7. Compose HTML
-    let listHtml = '';
-    top5.forEach(app => {
-      const iconSrc = app.iconBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-      const rowStyle = app.completed
-        ? 'background: var(--bg-distraction-green); border-color: var(--distraction-green);'
-        : 'background: var(--bg-distraction-red); border-color: var(--distraction-red);';
-
-      listHtml += `
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; ${rowStyle} border: 2px solid; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
-          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-            <img src="${iconSrc}" style="width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; object-fit: contain;" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='" />
-            <span style="font-weight: 700; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.appName}</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-            <span style="font-size: 11px; font-weight: 800; padding: 2px 6px; border: 1px solid var(--black); border-radius: 12px; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; background: var(--bg-card); color: var(--text); box-shadow: 1px 1px 0 var(--black);">
-              ${app.actualMinutes}m / ${app.limitMinutes}m
-            </span>
-          </div>
-        </div>
-      `;
     });
-
-    const blockHtml = `
-      <div class="app-distraction-block category-section" style="margin-top: 16px; padding: 14px; background: rgba(168, 85, 247, 0.08); border: 2px solid #a855f7; border-radius: 8px; box-shadow: 3px 3px 0 var(--black);">
-        <div style="display: flex; align-items: center; gap: 6px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; margin-bottom: 10px; font-size: 11px; color: #a855f7; letter-spacing: 0.5px;">
-          <i data-lucide="zap" style="width: 14px; height: 14px; fill: #a855f7;"></i>
-          <span>Screen Time &amp; Limits</span>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
-          ${listHtml}
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px dashed rgba(168, 85, 247, 0.3); padding-top: 8px; margin-top: 6px;">
-          <i data-lucide="smartphone" style="width: 14px; height: 14px;"></i>
-          <span>Total Mobile Screen Time: <strong style="color: var(--text);">${totalScreenTimeStr}</strong></span>
-        </div>
-      </div>
-    `;
-
-    let existing = card.querySelector('.app-distraction-block');
-    if (existing) {
-      existing.outerHTML = blockHtml;
-    } else {
-      const insertionPoint = card.querySelector('.ach-add-row') || card.querySelector('.summary-content');
-      if (insertionPoint) {
-        const temp = document.createElement('div');
-        temp.innerHTML = blockHtml;
-        card.insertBefore(temp.firstElementChild, insertionPoint);
-      } else {
-        card.insertAdjacentHTML('beforeend', blockHtml);
-      }
-    }
-  });
 
     if (window.lucide) {
       lucide.createIcons({ root: document.getElementById('cards-container') });
