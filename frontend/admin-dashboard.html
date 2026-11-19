@@ -410,6 +410,10 @@
 
     .modal-overlay.open { display: flex; }
 
+    #email-preview-modal {
+      z-index: 2000;
+    }
+
     .modal {
       background: var(--white);
       border: var(--border);
@@ -692,140 +696,311 @@
 
     /* ── Mobile & Tablet Responsiveness (<= 768px) ── */
     @media (max-width: 768px) {
-      .container { padding: 0 14px; margin: 20px auto; }
+      .container { padding: 0 12px; margin: 16px auto; }
 
       /* Fluid Navigation */
       .admin-nav {
-        flex-direction: column;
-        align-items: stretch !important;
-        padding: 12px 14px;
-        gap: 12px;
+        padding: 8px 12px !important;
+        gap: 8px !important;
       }
-      .nav-left {
-        flex-direction: column;
-        align-items: stretch !important;
-        width: 100%;
-        gap: 10px;
+      .admin-nav-top {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 8px !important;
       }
       .nav-brand {
+        font-size: 13.5px !important;
+        white-space: nowrap !important;
         margin-right: 0 !important;
-        text-align: center;
       }
-      .nav-links {
-        width: 100%;
-        justify-content: flex-start;
-        padding-bottom: 6px;
+      .nav-brand span {
+        padding: 2px 6px !important;
+      }
+      .nav-top-right {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+      }
+      .session-timer-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
       }
       .btn-logout {
-        width: 100%;
-        text-align: center;
-        padding: 10px;
+        width: auto !important;
+        padding: 5px 10px !important;
+        font-size: 10.5px !important;
+      }
+      .nav-links {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
+        padding: 3px 2px 6px 2px !important;
+        scrollbar-width: none !important;
+      }
+      .nav-links::-webkit-scrollbar {
+        display: none !important;
+      }
+      .nav-link {
+        flex-shrink: 0 !important;
+        font-size: 11px !important;
+        padding: 6px 11px !important;
       }
 
       /* Stack Headers & Search Bars */
       .dashboard-header {
-        flex-direction: column;
+        flex-direction: column !important;
         align-items: stretch !important;
-        gap: 12px;
+        gap: 10px !important;
+      }
+      .dashboard-header h2 {
+        font-size: 20px !important;
       }
       .header-actions {
-        flex-direction: column;
+        flex-direction: column !important;
         align-items: stretch !important;
-        width: 100%;
+        width: 100% !important;
+        gap: 8px !important;
       }
       .header-actions > * {
         width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
-      .controls {
-        display: flex;
-        width: 100%;
-      }
-      .controls > button {
-        flex: 1;
-      }
-      #user-search {
+      .header-actions input,
+      .header-actions select,
+      .header-actions > button,
+      #user-search,
+      #deleted-logs-search,
+      #report-search,
+      #report-filter-category,
+      #report-filter-status,
+      #motivation-search,
+      #bulk-email-search {
         width: 100% !important;
         max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .controls {
+        display: flex !important;
+        width: 100% !important;
+        gap: 6px !important;
+      }
+      .controls > button {
+        flex: 1 !important;
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+      }
+
+      /* Responsive Metric Grids */
+      .refunds-metrics,
+      .cron-metrics-grid,
+      #section-deleted-logs > div[style*="flex-wrap: wrap"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .metric-mini-card,
+      .refund-metric-card {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 10px 12px !important;
+      }
+      .refund-metric-val {
+        font-size: 20px !important;
+      }
+      .refund-metric-label {
+        font-size: 10.5px !important;
       }
 
       /* Table-to-Card Neo-Brutalist Layout Transformation */
+      div[style*="overflow-x: auto"],
+      div[style*="overflow-x:auto"],
+      .cron-table-card,
+      .admin-table-card {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        margin-top: 12px !important;
+        width: 100% !important;
+      }
+      table {
+        min-width: 0 !important;
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+      }
       table, thead, tbody, th, td, tr {
-        display: block;
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
       table thead {
-        display: none; /* Hide standard headers */
+        display: none !important; /* Hide standard headers */
       }
       tbody tr {
-        background: var(--white);
+        background: var(--white) !important;
         border: var(--border) !important;
         box-shadow: var(--shadow) !important;
-        margin-bottom: 20px;
-        padding: 16px;
-        border-radius: 12px;
+        margin-bottom: 14px !important;
+        padding: 14px !important;
+        border-radius: 10px !important;
+        width: 100% !important;
+        position: relative !important;
       }
       tbody td {
-        text-align: left !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        text-align: right !important;
         padding: 8px 0 !important;
-        border-bottom: 1px dashed #eee;
-        position: relative;
-        padding-left: 40% !important; /* Spacing for label */
+        border-bottom: 1px dashed #e2e8f0 !important;
+        position: relative !important;
+        padding-left: 0 !important;
+        font-size: 12.5px !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+        gap: 8px !important;
+        width: 100% !important;
+        min-height: 36px !important;
       }
       tbody td:last-child {
-        border-bottom: none;
+        border-bottom: none !important;
       }
       tbody td::before {
         content: attr(data-label);
-        position: absolute;
-        left: 0;
-        width: 35%;
-        font-weight: 900;
-        text-transform: uppercase;
-        font-size: 11px;
-        color: #666;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        font-size: 11px !important;
+        color: #64748b !important;
+        text-align: left !important;
+        flex-shrink: 0 !important;
+        max-width: 46% !important;
+        position: static !important;
+        display: inline-block !important;
       }
 
-      /* Override data-label padding for specific td elements */
-      td[data-label="S.No"] {
-        font-size: 16px;
-        border-bottom: 2px solid var(--black);
-        padding-bottom: 6px;
+      /* Card Header Labels (S.No / #) */
+      td[data-label="S.No"],
+      td[data-label="#"] {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border-bottom: 2px solid var(--black) !important;
+        padding-bottom: 6px !important;
+        margin-bottom: 4px !important;
+        color: var(--black) !important;
       }
-      td[data-label="Profile"] {
-        padding-left: 0 !important;
-        display: flex;
-        justify-content: flex-start;
-      }
-      td[data-label="Profile"]::before {
-        display: none;
-      }
-      td[data-label="User Info"], td[data-label="Promo Code"] {
-        padding-left: 0 !important;
-        font-size: 15px;
-      }
-      td[data-label="User Info"]::before, td[data-label="Promo Code"]::before {
-        display: none;
+      td[data-label="S.No"]::before,
+      td[data-label="#"]::before {
+        content: "Record #" !important;
+        font-size: 11.5px !important;
+        color: var(--black) !important;
+        font-weight: 900 !important;
       }
 
-      td[data-label="Actions"] {
-        padding-left: 0 !important;
-        display: flex;
-        justify-content: flex-start !important;
-        gap: 8px;
-        border-bottom: none;
+      /* User Identity & Full-Width Info Blocks */
+      td[data-label="Profile"],
+      td[data-label="User Info"],
+      td[data-label="User"],
+      td[data-label="User Identity"],
+      td[data-label="Promo Code"] {
+        display: block !important;
+        text-align: left !important;
+        padding: 8px 0 !important;
+        border-bottom: 1.5px dashed #cbd5e1 !important;
       }
-      td[data-label="Actions"]::before {
-        display: none;
+      td[data-label="Profile"]::before,
+      td[data-label="User Info"]::before,
+      td[data-label="User"]::before,
+      td[data-label="User Identity"]::before,
+      td[data-label="Promo Code"]::before {
+        display: none !important;
       }
-      td[data-label="Actions"] > div {
-        width: 100%;
-        display: flex;
-        gap: 8px;
+      td[data-label="Profile"] > div,
+      td[data-label="User Info"] > div,
+      td[data-label="User"] > div,
+      td[data-label="User Identity"] > div {
+        width: 100% !important;
       }
-      td[data-label="Actions"] button {
-        flex: 1 !important;
+
+      /* Text Block Fields */
+      td[data-label="Deletion Reason"],
+      td[data-label="Description"] {
+        display: block !important;
+        text-align: left !important;
+        padding: 8px 0 !important;
+        max-width: 100% !important;
+      }
+      td[data-label="Deletion Reason"]::before,
+      td[data-label="Description"]::before {
+        display: block !important;
+        max-width: 100% !important;
+        margin-bottom: 4px !important;
+      }
+
+      /* Action Buttons */
+      td[data-label="Actions"],
+      td[data-label="Action"] {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: stretch !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        padding-top: 10px !important;
+        padding-bottom: 0 !important;
+        border-bottom: none !important;
+        width: 100% !important;
+      }
+      td[data-label="Actions"]::before,
+      td[data-label="Action"]::before {
+        display: none !important;
+      }
+      td[data-label="Actions"] > div,
+      td[data-label="Action"] > div {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      td[data-label="Actions"] button,
+      td[data-label="Action"] button,
+      td[data-label="Actions"] .btn-control,
+      td[data-label="Action"] .btn-control {
+        flex: 1 1 calc(50% - 6px) !important;
+        min-width: 80px !important;
+        width: auto !important;
+        padding: 9px 10px !important;
+        font-size: 11.5px !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
+
+      /* Colspan cells (Loading, empty, and refund activity drawers) */
+      tbody td[colspan] {
+        display: block !important;
+        text-align: center !important;
+        padding: 16px 8px !important;
+      }
+      tbody td[colspan]::before {
+        display: none !important;
+      }
+      #refunds-table-body tr:nth-child(even) {
+        margin-top: -10px !important;
+        border-top: none !important;
+        border-radius: 0 0 10px 10px !important;
+        background: #fffdf5 !important;
       }
 
       /* Modals Full Screen Touch Overlays */
@@ -835,18 +1010,66 @@
       .modal {
         width: 100% !important;
         height: 100% !important;
+        min-height: 100vh !important;
         max-height: 100vh !important;
         margin: 0 !important;
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
+        padding: 16px 14px 28px 14px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
       }
-      #user-detail-modal .modal {
-        height: 100% !important;
+      #user-detail-modal .modal,
+      #deleted-log-modal .modal,
+      #email-preview-modal .modal,
+      #cron-detail-modal .modal {
+        height: 100vh !important;
         max-height: 100vh !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* User Detail Modal Scrollable Tab Bar */
+      #user-detail-modal div[style*="border-bottom: 2px dashed #eee"] {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 6px !important;
+        padding-bottom: 8px !important;
+        scrollbar-width: none !important;
+        width: 100% !important;
+      }
+      #user-detail-modal div[style*="border-bottom: 2px dashed #eee"]::-webkit-scrollbar {
+        display: none !important;
+      }
+      #user-detail-modal .nav-link {
+        flex-shrink: 0 !important;
+        padding: 6px 12px !important;
+      }
+
+      /* Deleted Log Modal Stacking */
+      #deleted-log-modal div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+      #deleted-log-modal div[style*="display: flex; justify-content: space-between"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      #deleted-log-modal div[style*="text-align: right"] {
+        text-align: left !important;
+      }
+
+      /* Pagination */
+      div[id$="-pagination"] {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      div[id$="-pagination"] button {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
       }
 
       .form-grid { grid-template-columns: 1fr; }
@@ -865,12 +1088,12 @@
 
       /* Responsive Groups Card styling */
       .group-card {
-        padding: 16px !important;
+        padding: 14px !important;
       }
       .group-card-header {
         flex-direction: column;
         align-items: stretch !important;
-        gap: 12px;
+        gap: 10px;
       }
       .group-card-right {
         align-items: stretch !important;
@@ -1014,15 +1237,24 @@
     }
 
     @media (max-width: 480px) {
-      .cron-metrics-grid {
-        grid-template-columns: 1fr !important;
-      }
       .cron-date-filters {
         grid-template-columns: 1fr !important;
         gap: 6px !important;
       }
       .cron-date-filters span {
         font-size: 10px !important;
+      }
+      td[data-label="Actions"] button,
+      td[data-label="Action"] button {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+      }
+    }
+    @media (max-width: 340px) {
+      .refunds-metrics,
+      .cron-metrics-grid,
+      #section-deleted-logs > div[style*="flex-wrap: wrap"] {
+        grid-template-columns: 1fr !important;
       }
     }
   </style>
@@ -1567,7 +1799,7 @@
   </div>
 
   <!-- Email HTML Preview Modal -->
-  <div id="email-preview-modal" class="modal-overlay">
+  <div id="email-preview-modal" class="modal-overlay" onclick="if(event.target === this) closeEmailPreviewModal()" style="z-index: 2000;">
     <div class="modal" style="max-width: 760px; height: 85vh; display: flex; flex-direction: column;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3>👁 Email HTML Preview</h3>

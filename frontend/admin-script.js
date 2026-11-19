@@ -738,7 +738,7 @@ function generateHeatmapHtml(days) {
     <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-height: 280px; overflow-y: auto; padding: 4px;">
       ${monthsHtml}
     </div>
-    <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 11px; font-weight: 800; justify-content: center;">
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 15px; font-size: 11px; font-weight: 800; justify-content: center;">
       <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:2px;"></div> No Card</div>
       <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#e0e7ff; border:1px solid #000; border-radius:2px;"></div> 0% Completed</div>
       <div style="display: flex; align-items: center; gap: 4px;"><div style="width:12px; height:12px; background:#c7d2fe; border:1px solid #000; border-radius:2px;"></div> 1-49% Completed</div>
@@ -3034,8 +3034,18 @@ function previewBulkEmail() {
 }
 
 function closeEmailPreviewModal() {
-  document.getElementById('email-preview-modal').classList.remove('open');
+  document.getElementById('email-preview-modal')?.classList.remove('open');
 }
+
+// Allow ESC key to dismiss email preview
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const previewModal = document.getElementById('email-preview-modal');
+    if (previewModal && previewModal.classList.contains('open')) {
+      closeEmailPreviewModal();
+    }
+  }
+});
 
 async function sendBulkEmailFromAdmin() {
   const subject   = document.getElementById('bulk-subject')?.value?.trim();
