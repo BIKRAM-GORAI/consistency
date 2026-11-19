@@ -2032,11 +2032,11 @@ async function loadDevToPublicFeedFiltered(tag = '', page = 1) {
 
   const backendUrl = getResolvedAPI();
   try {
-    let endpoint = `/api/articles?per_page=9&page=${page}`;
+    let url = `${backendUrl}/api/proxy/devto?endpoint=/api/articles&per_page=9&page=${page}`;
     if (tag) {
-      endpoint += `&tag=${encodeURIComponent(tag)}`;
+      url += `&tag=${encodeURIComponent(tag)}`;
     }
-    const response = await fetch(`${backendUrl}/api/proxy/devto?endpoint=${encodeURIComponent(endpoint)}`);
+    const response = await fetch(url);
     if (response.ok) {
       const publicArticles = await response.json();
       const oldBtn = document.getElementById('devto-load-more-wrap');
@@ -2352,7 +2352,7 @@ window.executeUniversalSearch = async function() {
       }).catch(err => console.warn('Universal SO search error:', err)),
 
     // 3. Dev.to Articles
-    fetch(`${backendUrl}/api/proxy/devto?endpoint=${encodeURIComponent('/api/articles?per_page=6&tag=' + encodeURIComponent(query))}`)
+    fetch(`${backendUrl}/api/proxy/devto?endpoint=/api/articles&per_page=6&tag=${encodeURIComponent(query)}`)
       .then(r => r.ok ? r.json() : [])
       .then(articles => {
         if (Array.isArray(articles)) {
@@ -2436,13 +2436,14 @@ window.executeUniversalSearch = async function() {
       <div class="uni-result-card" data-source="${resItem.source}" style="display:flex; flex-direction:column; border:2px solid var(--black); border-radius:12px; padding:14px; background:var(--bg-card); box-shadow:3px 3px 0 var(--black); gap:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:10px; font-weight:900; padding:2px 8px; border-radius:6px; background:${resItem.badgeBg}; color:white; font-family:Space Grotesk,sans-serif;">${resItem.sourceLabel}</span>
-          <button onclick="window.bookmarkUniversalResult(${idx})" title="Bookmark Link" class="uni-save-btn" style="padding:5px 12px; border:2px solid var(--black); border-radius:6px; background:var(--bg-card); color:var(--text); cursor:pointer; font-size:11px; font-weight:800; box-shadow:2px 2px 0 var(--black);">Save</button>
+          <button onclick="window.bookmarkUniversalResult(${idx})" title="Bookmark & Save Note" class="uni-save-btn" style="padding:4px 10px; border:2px solid var(--black); border-radius:6px; background:var(--bg-card); color:var(--text); cursor:pointer; font-size:11px; font-weight:800; box-shadow:2px 2px 0 var(--black); display:inline-flex; align-items:center; gap:4px;" onmouseenter="this.style.background='var(--yellow)';" onmouseleave="this.style.background='var(--bg-card)';">🔖 Save</button>
         </div>
         <h4 style="margin:0; font-size:13.5px; font-weight:900; line-height:1.4; color:var(--text);">${resItem.title}</h4>
         <p style="margin:0; font-size:11.5px; line-height:1.55; color:var(--text-muted); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; overflow-wrap:anywhere; max-height:4.6em;">${resItem.description}</p>
         ${tagsHtml ? `<div style="margin-top:2px;">${tagsHtml}</div>` : ''}
         <div style="display:flex; gap:6px; margin-top:auto; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1); align-items:center;">
           <button onclick="window.openContentViewer(${idx})" style="flex:1; padding:8px 12px; border:2.5px solid var(--black); border-radius:8px; background:var(--yellow); color:var(--black); font-weight:900; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 var(--black); display:flex; align-items:center; justify-content:center; gap:6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📖 Open In-App</button>
+          <button onclick="window.bookmarkUniversalResult(${idx})" title="Bookmark & Save Note" style="width:36px; height:36px; flex-shrink:0; padding:0; border:2.5px solid var(--black); border-radius:8px; background:var(--bg-card); color:var(--text); cursor:pointer; box-shadow:2px 2px 0 var(--black); font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center;" onmouseenter="this.style.background='var(--yellow)';" onmouseleave="this.style.background='var(--bg-card)';">🔖</button>
           <a href="${resItem.url}" target="_blank" rel="noopener" title="Open External Tab ↗" style="width:36px; height:36px; flex-shrink:0; padding:0; border:2.5px solid var(--black); border-radius:8px; background:var(--bg-card); color:var(--text); text-decoration:none; display:flex; align-items:center; justify-content:center; box-shadow:2px 2px 0 var(--black);" onmouseenter="this.style.background='var(--yellow)';this.style.color='var(--black)';" onmouseleave="this.style.background='var(--bg-card)';this.style.color='var(--text)';"><span style="font-size:18px;font-weight:900;line-height:1;">↗</span></a>
         </div>
       </div>

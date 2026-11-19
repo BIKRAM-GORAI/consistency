@@ -340,19 +340,25 @@ app.get('/api/proxy/medium-rss', (req, res) => {
 });
 
 // Dev.to API Proxy — avoids browser CSP/cache issues
-// ?endpoint=/api/articles&username=bikram_gorai&per_page=12
+// Supports both:
+// 1. ?endpoint=/api/articles&username=bikram_gorai&per_page=12
+// 2. ?endpoint=/api/articles?per_page=9&page=1
 app.get('/api/proxy/devto', (req, res) => {
-  const endpoint = String(req.query.endpoint || '/api/articles').trim();
+  const rawEndpoint = String(req.query.endpoint || '/api/articles').trim();
+  const [endpointPath, embeddedQs] = rawEndpoint.split('?');
   const endpointPattern = /^\/api\/[a-zA-Z0-9_\-]+(\/[a-zA-Z0-9_\-]+)*$/;
-  if (!endpointPattern.test(endpoint) || endpoint.includes('@') || endpoint.includes(':')) {
+  if (!endpointPattern.test(endpointPath) || rawEndpoint.includes('@') || rawEndpoint.includes(':')) {
     return res.status(400).json({ error: 'Invalid Dev.to API endpoint path' });
   }
 
-  const qs = Object.entries(req.query)
-    .filter(([k]) => k !== 'endpoint')
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join('&');
-  const targetUrl = `https://dev.to${endpoint}${qs ? '?' + qs : ''}`;
+  const queryParams = new URLSearchParams(embeddedQs || '');
+  for (const [k, v] of Object.entries(req.query)) {
+    if (k !== 'endpoint') {
+      queryParams.set(k, String(v));
+    }
+  }
+  const qs = queryParams.toString();
+  const targetUrl = `https://dev.to${endpointPath}${qs ? '?' + qs : ''}`;
   serverProxy(targetUrl, res, { 'Accept': 'application/json' });
 });
 
