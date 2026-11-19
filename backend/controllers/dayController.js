@@ -324,7 +324,8 @@ const createDay = async (req, res) => {
       categories: categories || [], 
       summary: summary || '',
       aiSummary: aiSummary || '',
-      reminder: reminder || { enabled: false, time: "", type: "notification", selectedTasks: [] }
+      reminder: reminder || { enabled: false, time: "", type: "notification", selectedTasks: [] },
+      screenTimeStats: req.body.screenTimeStats || null
     });
     const saved = await day.save();
 
@@ -399,6 +400,7 @@ const updateDay = async (req, res) => {
     if (updateData.summary !== undefined) allowedUpdates.summary = updateData.summary;
     if (updateData.aiSummary !== undefined) allowedUpdates.aiSummary = updateData.aiSummary;
     if (updateData.reminder !== undefined) allowedUpdates.reminder = updateData.reminder;
+    if (updateData.screenTimeStats !== undefined) allowedUpdates.screenTimeStats = updateData.screenTimeStats;
 
     // If all categories were deleted via PUT, treat as complete deletion of the day card
     if (Array.isArray(updateData.categories) && updateData.categories.length === 0) {

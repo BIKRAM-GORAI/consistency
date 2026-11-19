@@ -500,12 +500,18 @@ const syncManager = {
               if (remainingForThis === 0) {
                 const idx = window.allDays.findIndex(d => d._id === item.targetId);
                 if (idx !== -1) {
+                  const localScreenTime = window.allDays[idx].screenTimeStats;
                   window.allDays[idx] = response;
+                  if (item.data && item.data.screenTimeStats) {
+                    window.allDays[idx].screenTimeStats = item.data.screenTimeStats;
+                  } else if (localScreenTime && !response.screenTimeStats) {
+                    window.allDays[idx].screenTimeStats = localScreenTime;
+                  }
                 }
                 if (typeof window.syncDayCardIds === 'function') {
                   window.syncDayCardIds(response);
                 }
-                await localDb[item.entity].put(response);
+                await localDb[item.entity].put(window.allDays[idx] || response);
               }
             } else if (!item.localId && localDb[item.entity]) {
               const remainingForThis = await localDb.syncQueue
@@ -536,6 +542,21 @@ const syncManager = {
       const resolveFn = resolveProcessing;
       this.processingPromise = null;
       if (resolveFn) resolveFn();
+
+      const remaining = await localDb.syncQueue.count().catch(() => 0);
+      if (remaining === 0) {
+        updateSyncIndicator('saved');
+      } else if (!navigator.onLine) {
+        updateSyncIndicator('offline');
+      } else {
+        // Queue halted (e.g. rate limit, temporary server error).
+        // Transition indicator to saved after a short delay so UI does not spin indefinitely
+        setTimeout(() => {
+          if (!syncManager.isProcessing) {
+            updateSyncIndicator('saved');
+          }
+        }, 3000);
+      }
     }
   }
 };

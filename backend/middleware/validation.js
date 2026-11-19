@@ -186,6 +186,8 @@ const createDayValidation = [
       }
       throw new Error('reminder.selectedTasks must contain valid task IDs');
     }),
+  body('screenTimeStats')
+    .optional(),
   validate
 ];
 
@@ -232,6 +234,8 @@ const updateDayValidation = [
       }
       throw new Error('reminder.selectedTasks must contain valid task IDs');
     }),
+  body('screenTimeStats')
+    .optional(),
   validate
 ];
 
