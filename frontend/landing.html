@@ -2635,6 +2635,22 @@
     .samurai-thought::before { width: 11px; height: 11px; bottom: -14px; left: 20px; }
     .samurai-thought::after  { width:  7px; height:  7px; bottom: -23px; left: 12px; }
 
+    /* Flipped to left side of samurai when right edge touches screen boundary */
+    .samurai-thought.flip-left {
+      right: calc(50% + 85px);
+      left: auto;
+      border-radius: 18px 18px 4px 18px; /* Sharp bottom-RIGHT corner */
+      transform-origin: bottom right;
+    }
+    .samurai-thought.flip-left::before {
+      left: auto;
+      right: 20px;
+    }
+    .samurai-thought.flip-left::after {
+      left: auto;
+      right: 12px;
+    }
+
     .banner-text {
       position: absolute;
       top: 50%;
@@ -4689,6 +4705,7 @@
             rightArmGroup.rotation.set(normalRightArmRotX, normalRightArmRotY, normalRightArmRotZ);
             rightForearmGroup.rotation.set(normalForearmRotX, 0, 0);
             // Restore thought bubble once samurai returns to idle
+            updateThoughtPosition();
             thoughtBubble.classList.add('visible');
             katanaGroup.rotation.set(normalKatanaRotX, normalKatanaRotY, 0);
           }
@@ -4896,6 +4913,22 @@
           camera.updateProjectionMatrix();
           renderer.setSize(w, h);
         });
+
+        // Dynamic thought bubble position adjuster:
+        // Automatically flips bubble to the left side of the samurai if it touches the right viewport edge
+        function updateThoughtPosition() {
+          if (!thoughtBubble || !container) return;
+          const cRect = container.getBoundingClientRect();
+          const normalRightEdge = cRect.right + 120;
+          if (normalRightEdge > (window.innerWidth - 16)) {
+            thoughtBubble.classList.add('flip-left');
+          } else {
+            thoughtBubble.classList.remove('flip-left');
+          }
+        }
+
+        updateThoughtPosition();
+        window.addEventListener('resize', updateThoughtPosition);
 
         // ===== Samurai thought bubble — always visible except during slash =====
         // Show immediately on load, only hide when samurai is slashing
