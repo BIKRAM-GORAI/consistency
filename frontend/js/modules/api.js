@@ -211,6 +211,61 @@ function getServerNow() {
 }
 window.getServerNow = getServerNow;
 
+// ── Sync Visual Indicator Helper ────────────────────────────
+function updateSyncIndicator(status, text) {
+  const bar = document.getElementById('global-sync-bar');
+  const pill = document.getElementById('global-sync-pill');
+  const pillText = document.getElementById('global-sync-pill-text');
+
+  if (!bar && !pill) return;
+
+  if (status === 'syncing') {
+    if (bar) {
+      bar.classList.remove('saved');
+      bar.classList.add('syncing');
+      bar.style.opacity = '1';
+    }
+    if (pill) {
+      pill.classList.remove('saved', 'offline');
+      pill.classList.add('syncing');
+      if (pillText) pillText.textContent = text || 'Syncing changes...';
+      pill.style.display = 'flex';
+      pill.style.opacity = '1';
+    }
+  } else if (status === 'saved') {
+    if (bar) {
+      bar.classList.remove('syncing');
+      bar.classList.add('saved');
+      setTimeout(() => {
+        if (!syncManager.isProcessing && syncManager.inFlightQueueIds.size === 0) {
+          bar.style.opacity = '0';
+          bar.classList.remove('saved');
+        }
+      }, 1500);
+    }
+    if (pill) {
+      pill.classList.remove('syncing');
+      pill.classList.add('saved');
+      if (pillText) pillText.textContent = text || 'Saved to cloud';
+      setTimeout(() => {
+        if (!syncManager.isProcessing && syncManager.inFlightQueueIds.size === 0) {
+          pill.style.opacity = '0';
+          setTimeout(() => { pill.style.display = 'none'; }, 300);
+        }
+      }, 1800);
+    }
+  } else if (status === 'offline') {
+    if (pill) {
+      pill.classList.remove('syncing', 'saved');
+      pill.classList.add('offline');
+      if (pillText) pillText.textContent = 'Offline (Saved locally)';
+      pill.style.display = 'flex';
+      pill.style.opacity = '1';
+    }
+  }
+}
+window.updateSyncIndicator = updateSyncIndicator;
+
 // ── Offline Sync Queue Manager (syncManager) ────────────────
 const syncManager = {
   isProcessing: false,
@@ -225,18 +280,22 @@ const syncManager = {
     if (!db) return;
     try {
       // ── SPECIAL CASE: If updating a temp item that hasn't synced yet ──
+      // Merge only if the original POST request has NOT already been sent over the network!
       if (method === 'PUT' && String(id).startsWith('temp_')) {
         const pending = await db.syncQueue
           .filter(x => x.entity === entity && x.localId === id && x.method === 'POST')
           .first();
         
-        if (pending) {
-          // Merge the update into the original creation request
+        if (pending && !this.inFlightQueueIds.has(pending.id)) {
+          // Merge the update into the original creation request only if still pending in queue
           pending.data = { ...pending.data, ...data };
+          pending.timestamp = Date.now();
           await db.syncQueue.put(pending);
           console.log(`Merged update into pending ${entity} creation:`, id);
+          updateSyncIndicator('syncing');
           return;
         }
+        // If pending POST is already in flight, fall through and add a chained PUT request so user edits are not lost!
       }
 
       // ── DEDUP: For PUTs on real IDs, replace any existing queued PUT ──
@@ -250,6 +309,7 @@ const syncManager = {
           existing.timestamp = Date.now();
           await db.syncQueue.put(existing);
           console.log(`Deduped PUT for ${entity}/${id}`);
+          updateSyncIndicator('syncing');
           this.processQueue();
           return;
         }
@@ -263,6 +323,7 @@ const syncManager = {
         localId,
         timestamp: Date.now()
       });
+      updateSyncIndicator('syncing');
       this.processQueue();
     } catch (err) {
       console.warn('Sync queue add failed:', err);
@@ -273,13 +334,17 @@ const syncManager = {
     if (this.isProcessing) {
       return this.processingPromise;
     }
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+      updateSyncIndicator('offline');
+      return;
+    }
 
     let resolveProcessing;
     this.processingPromise = new Promise(resolve => {
       resolveProcessing = resolve;
     });
     this.isProcessing = true;
+    updateSyncIndicator('syncing');
 
     try {
       const localDb = window.localDb;
@@ -301,13 +366,25 @@ const syncManager = {
 
       while (true) {
         const queue = await localDb.syncQueue.orderBy('timestamp').toArray();
-        if (queue.length === 0) break;
+        if (queue.length === 0) {
+          updateSyncIndicator('saved');
+          break;
+        }
 
         const item = queue[0];
         this.inFlightQueueIds.add(item.id);
         try {
           let url = '';
           const API = window.API || '';
+          
+          // Safety: If item.targetId was a temp ID that was upgraded in localDb, use the real MongoDB ID
+          if (item.targetId && String(item.targetId).startsWith('temp_') && localDb[item.entity]) {
+            const mapped = await localDb[item.entity].get(item.targetId);
+            if (mapped && mapped._id && !String(mapped._id).startsWith('temp_')) {
+              item.targetId = mapped._id;
+            }
+          }
+
           if (item.entity === 'days') url = `${API}/api/days/${item.targetId || ''}`;
           else if (item.entity === 'goals') url = `${API}/api/goals/${item.targetId || ''}`;
           else if (item.entity === 'achievements') url = `${API}/api/achievements/${item.targetId || ''}`;
@@ -325,13 +402,9 @@ const syncManager = {
           await localDb.syncQueue.delete(item.id);
           this.inFlightQueueIds.delete(item.id);
 
-          const remainingForThis = await localDb.syncQueue
-            .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
-            .count();
+          const mainId = response && (response._id || response.dayId);
 
-          if (response && (response._id || response.dayId)) {
-            const mainId = response._id || response.dayId;
-
+          if (response && mainId) {
             // Sync streak from server response if available
             if (typeof response.streak !== 'undefined') {
               window.backendStreak = response.streak;
@@ -344,10 +417,62 @@ const syncManager = {
             if (item.localId && item.localId !== mainId) {
               await localDb[item.entity].delete(item.localId);
 
+              // 1. Upgrade any pending sync items in queue that referenced the temp ID
+              await localDb.syncQueue
+                .where('targetId')
+                .equals(item.localId)
+                .modify({ targetId: mainId });
+
+              await localDb.syncQueue
+                .where('localId')
+                .equals(item.localId)
+                .modify({ localId: mainId });
+
+              // 2. Check if there are queued operations waiting for this entity
+              const remainingForThis = await localDb.syncQueue
+                .filter(x => x.entity === item.entity && (x.targetId === mainId || x.localId === mainId))
+                .count();
+
               if (item.entity === 'days') {
                 if (window.allDays) {
                   const idx = window.allDays.findIndex(d => d._id === item.localId);
-                  if (idx !== -1) window.allDays[idx] = response;
+                  if (idx !== -1) {
+                    if (remainingForThis > 0) {
+                      // There are pending local edits (e.g. task completed) waiting to sync!
+                      // Do NOT overwrite local task completion state with the initial creation response!
+                      const localDay = window.allDays[idx];
+                      localDay._id = mainId;
+                      // Update subdocument IDs from server while preserving local task completion state
+                      if (localDay.categories && response.categories) {
+                        response.categories.forEach((serverCat, cIdx) => {
+                          const localCat = localDay.categories[cIdx] || localDay.categories.find(c => c.name === serverCat.name);
+                          if (localCat) {
+                            localCat._id = serverCat._id;
+                            if (localCat.tasks && serverCat.tasks) {
+                              serverCat.tasks.forEach((serverTask, tIdx) => {
+                                const localTask = localCat.tasks[tIdx] || localCat.tasks.find(t => t.title === serverTask.title);
+                                if (localTask) {
+                                  localTask._id = serverTask._id;
+                                  // Keep localTask.completed as set by user!
+                                }
+                              });
+                            }
+                          }
+                        });
+                      }
+                      const cardEl = document.getElementById(`day-card-${item.localId}`);
+                      if (cardEl) {
+                        cardEl.id = `day-card-${mainId}`;
+                      }
+                      await localDb.days.put(localDay);
+                    } else {
+                      window.allDays[idx] = response;
+                      await localDb.days.put(response);
+                      if (typeof window.renderDays === 'function') {
+                        window.renderDays();
+                      }
+                    }
+                  }
                 }
 
                 if (localDb.scratchpads) {
@@ -358,9 +483,6 @@ const syncManager = {
                     await localDb.scratchpads.put(cachedScratchpad);
                   }
                 }
-                if (typeof window.renderDays === 'function') {
-                  window.renderDays();
-                }
               } else if (item.entity === 'goals') {
                 if (window.allGoals) {
                   const idx = window.allGoals.findIndex(g => g._id === item.localId);
@@ -369,18 +491,12 @@ const syncManager = {
                 if (typeof window.sortGoals === 'function') window.sortGoals();
                 if (typeof window.renderGoals === 'function') window.renderGoals();
               }
-
-              await localDb.syncQueue
-                .where('targetId')
-                .equals(item.localId)
-                .modify({ targetId: response._id || mainId });
-
-              await localDb.syncQueue
-                .where('localId')
-                .equals(item.localId)
-                .modify({ localId: response._id || mainId });
             } else if (!item.localId && item.entity === 'days' && window.allDays) {
               // For existing days, update memory state and upgrade any temporary IDs in the DOM card
+              const remainingForThis = await localDb.syncQueue
+                .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
+                .count();
+
               if (remainingForThis === 0) {
                 const idx = window.allDays.findIndex(d => d._id === item.targetId);
                 if (idx !== -1) {
@@ -389,11 +505,15 @@ const syncManager = {
                 if (typeof window.syncDayCardIds === 'function') {
                   window.syncDayCardIds(response);
                 }
+                await localDb[item.entity].put(response);
               }
-            }
-
-            if (remainingForThis === 0) {
-              await localDb[item.entity].put(response);
+            } else if (!item.localId && localDb[item.entity]) {
+              const remainingForThis = await localDb.syncQueue
+                .filter(x => x.entity === item.entity && (x.targetId === item.targetId || x.localId === item.localId))
+                .count();
+              if (remainingForThis === 0) {
+                await localDb[item.entity].put(response);
+              }
             }
           }
         } catch (err) {

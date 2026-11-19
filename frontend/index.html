@@ -64,7 +64,7 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=78" />
+  <link rel="stylesheet" href="style.css?v=80" />
   <link rel="stylesheet" href="aurora-theme.css?v=6" />
   <link rel="stylesheet" href="minimalistic-theme.css?v=3" />
   <link rel="stylesheet" href="claymorphism-theme.css?v=11" />
@@ -362,6 +362,15 @@
         Maybe Later
       </button>
     </div>
+  </div>
+
+  <!-- Top Global Cloud Sync Progress Line -->
+  <div id="global-sync-bar" class="global-sync-bar" aria-hidden="true"></div>
+
+  <!-- Floating Cloud Sync Status Pill -->
+  <div id="global-sync-pill" class="global-sync-pill" style="display: none;" aria-live="polite">
+    <span class="sync-spinner-icon"></span>
+    <span id="global-sync-pill-text">Syncing...</span>
   </div>
 
   <!-- ===== NAVIGATION ===== -->
@@ -4774,12 +4783,12 @@
   <!-- ES Modules for Refactored Architecture -->
   <script src="js/modules/backNavigation.js"></script>
   <script type="module" src="js/modules/utils.js"></script>
-  <script type="module" src="js/modules/api.js?v=2"></script>
+  <script type="module" src="js/modules/api.js?v=3"></script>
   <script type="module" src="js/modules/state.js"></script>
   <script type="module" src="js/modules/robot.js"></script>
   <script type="module" src="js/modules/motivation.js"></script>
   <script type="module" src="js/modules/reminders.js"></script>
-  <script type="module" src="js/modules/days.js?v=78"></script>
+  <script type="module" src="js/modules/days.js?v=79"></script>
   <script type="module" src="js/modules/goals.js"></script>
   <script type="module" src="js/modules/groups.js"></script>
   <script type="module" src="js/modules/chat.js"></script>
@@ -4791,7 +4800,7 @@
   <script type="module" src="js/modules/profile.js"></script>
   <script type="module" src="js/modules/pomodoro.js"></script>
   <script type="module" src="js/modules/dm.js"></script>
-  <script type="module" src="js/modules/app.js?v=71"></script>
+  <script type="module" src="js/modules/app.js?v=72"></script>
 
   <script src="script.js?v=69"></script>
   <script>

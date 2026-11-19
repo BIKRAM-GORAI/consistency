@@ -584,18 +584,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     showPage(lastPage);
   }
 
+  // 1. High Priority: Immediately load and revalidate user's Daily Task cards
   if (typeof window.loadDays === 'function') {
     window.loadDays();
   } else if (typeof loadDays === 'function') {
     loadDays();
   }
-  loadTemplates();
-  if (typeof window.loadSubscriptionStatus === 'function') {
-    window.loadSubscriptionStatus();
-  }
+
+  // 2. Secondary Priority: Stagger non-essential background calls so daily cards get immediate network bandwidth (especially in APK)
   setTimeout(() => {
+    loadTemplates();
+    if (typeof window.loadSubscriptionStatus === 'function') {
+      window.loadSubscriptionStatus();
+    }
     proactiveSync(); // Syncs profile, goals, achievements in background
-  }, 100);
+  }, 2000);
 
   // Trigger sync of all native reminders on startup
   setTimeout(async () => {

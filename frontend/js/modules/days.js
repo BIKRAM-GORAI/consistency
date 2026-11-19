@@ -2531,7 +2531,21 @@ async function submitEditCategory() {
 // ── Sync Day Card IDs (upgrades temporary IDs in DOM to server IDs) ──
 function syncDayCardIds(day) {
   if (!day || !day._id) return;
-  const cardEl = document.getElementById(`day-card-${day._id}`);
+  let cardEl = document.getElementById(`day-card-${day._id}`);
+  
+  // Fallback: If card in DOM still has a temp ID, match by data-date attribute
+  if (!cardEl && day.date) {
+    const cardDate = (day.date || '').split('T')[0];
+    const allCards = document.querySelectorAll('.day-card');
+    for (const c of allCards) {
+      if (c.getAttribute('data-date') === cardDate) {
+        cardEl = c;
+        cardEl.id = `day-card-${day._id}`;
+        break;
+      }
+    }
+  }
+
   if (!cardEl) return;
 
   // Do not replace card if user currently has an edit modal open for this card
