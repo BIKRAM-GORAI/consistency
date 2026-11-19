@@ -3103,13 +3103,36 @@ async function evaluateDaysDistractions() {
       permissionGranted = await window.checkAndroidPermissionStatus();
     }
 
-    // 3. Query native foreground stats for the last 8 days if native and permission is active
+    const cards = document.querySelectorAll('.day-card');
+    const today = window.todayStr();
+
+    // 2. Optimization: Check if any past card strictly before today actually needs native usage stats.
+    // Historical days that already have recorded screenTimeStats are permanent immutable snapshots;
+    // they never need to be re-queried or recalculated, preserving battery, network, and uninstalled app stats.
+    let needsNativeFetch = false;
+    if (isNative && permissionGranted && limits && limits.enabled && limits.apps && limits.apps.length > 0) {
+      cards.forEach(card => {
+        const cardDate = card.getAttribute('data-date');
+        if (!cardDate || cardDate >= today) return;
+        const day = window.allDays && window.allDays.find(d => (d.date || '').split('T')[0] === cardDate);
+        if (!day) return;
+        const hasStats = day.screenTimeStats && (
+          Array.isArray(day.screenTimeStats) ? day.screenTimeStats.length > 0 : Object.keys(day.screenTimeStats).length > 0
+        );
+        if (!hasStats) {
+          needsNativeFetch = true;
+        }
+      });
+    }
+
+    // 3. Query native foreground stats ONLY if an unrecorded past day (e.g. yesterday) actually needs data
     const now = Date.now();
     let usageStats = null;
-    if (isNative && permissionGranted) {
+    if (isNative && permissionGranted && needsNativeFetch) {
       if (!window.cachedUsageStats || (now - window.cachedUsageStatsTime > 30000)) {
         try {
-          window.cachedUsageStats = await window.Capacitor.Plugins.UsageStatsPlugin.getUsageStats({ days: 8 });
+          // Query recent 3 days (covers yesterday and recent closing days) instead of full 8 days
+          window.cachedUsageStats = await window.Capacitor.Plugins.UsageStatsPlugin.getUsageStats({ days: 3 });
           window.cachedUsageStatsTime = now;
         } catch (err) {
           console.error('Failed to get usage stats from plugin:', err);
@@ -3119,9 +3142,6 @@ async function evaluateDaysDistractions() {
     }
 
     // 4. Iterate over rendered day cards to append distraction limit stats
-    const cards = document.querySelectorAll('.day-card');
-    const today = window.todayStr();
-
     cards.forEach(card => {
       const cardDate = card.getAttribute('data-date');
       if (!cardDate) return;
@@ -3146,7 +3166,7 @@ async function evaluateDaysDistractions() {
         // Exclude today's and future cards from showing screen time stats (only display from yesterday onwards)
         showStats = false;
       } else if (isOneOfLast7) {
-        // One of the last 7 available cards: display pre-saved stats or query dynamically (if limits are enabled)
+        // One of the last 7 available cards: display pre-saved stats or query dynamically for newly concluded days (e.g. yesterday)
         if (limits && limits.enabled && limits.apps && limits.apps.length > 0) {
           if (Array.isArray(day.screenTimeStats) && day.screenTimeStats.length > 0) {
             // Already frozen snapshot array: display directly without re-querying or re-syncing
@@ -3155,14 +3175,18 @@ async function evaluateDaysDistractions() {
               totalMinutes += app.actualMinutes || 0;
             });
             showStats = true;
-          } else {
-            // Native device is source of truth for app usage stats; fallback to pre-saved stats on web/laptop
-            const nativeDayStats = (isNative && permissionGranted && usageStats) ? usageStats[cardDate] : null;
+          } else if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && Object.keys(day.screenTimeStats).length > 0) {
+            // Historical past day already has recorded stats: use directly to prevent overwriting uninstalled apps
+            rawStats = day.screenTimeStats;
+            showStats = true;
+          } else if (isNative && permissionGranted && usageStats) {
+            // Newly closed past card (e.g. yesterday) without recorded stats yet: capture once and sync
+            const nativeDayStats = usageStats[cardDate];
             if (nativeDayStats && Object.keys(nativeDayStats).length > 0) {
               rawStats = nativeDayStats;
               const alreadySyncedThisSession = window._syncedScreenTimeDayIds && window._syncedScreenTimeDayIds.has(day._id);
 
-              if (!areStatsObjectsEqual(day.screenTimeStats, rawStats) && !alreadySyncedThisSession) {
+              if (!alreadySyncedThisSession) {
                 day.screenTimeStats = rawStats;
                 day.lastLocalEdit = Date.now();
                 window._syncedScreenTimeDayIds.add(day._id);
@@ -3170,12 +3194,11 @@ async function evaluateDaysDistractions() {
                 window.syncManager.addToQueue('PUT', 'days', day._id, { screenTimeStats: rawStats });
               }
               showStats = true;
-            } else if (day.screenTimeStats && typeof day.screenTimeStats === 'object' && !Array.isArray(day.screenTimeStats) && Object.keys(day.screenTimeStats).length > 0) {
-              rawStats = day.screenTimeStats;
-              showStats = true;
             } else {
               showStats = false;
             }
+          } else {
+            showStats = false;
           }
         } else {
           showStats = false;
