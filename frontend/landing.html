@@ -538,6 +538,124 @@
       }
     }
 
+    /* ── Desktop Mountain Backdrop (Drawing Animation) ── */
+    .mountain-backdrop {
+      display: none;
+    }
+
+    @media (min-width: 1024px) {
+      .mountain-backdrop {
+        display: block;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .mountain-svg {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 62%;
+        pointer-events: none;
+        /* Deep blend directly on the SVG: maintains full dark green body, then smoothly dissolves the bottom 30% without any straight line */
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 68%, rgba(0, 0, 0, 0.8) 80%, rgba(0, 0, 0, 0.45) 90%, rgba(0, 0, 0, 0.1) 97%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 68%, rgba(0, 0, 0, 0.8) 80%, rgba(0, 0, 0, 0.45) 90%, rgba(0, 0, 0, 0.1) 97%, transparent 100%);
+      }
+
+      .m-layer {
+        transform: translateY(450px);
+        opacity: 0;
+        will-change: transform, opacity;
+      }
+
+      .m-sun {
+        transform: translateY(220px) scale(0.6);
+        opacity: 0;
+        transform-origin: 1120px 180px;
+        will-change: transform, opacity;
+      }
+
+      /* Mountains rise up from below over ~4 seconds */
+      .mountain-backdrop.drawn .m-layer-back {
+        animation: riseUpBack 3.4s cubic-bezier(0.16, 1, 0.3, 1) 0s forwards;
+      }
+
+      .mountain-backdrop.drawn .m-layer-mid {
+        animation: riseUpMid 3.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+      }
+
+      .mountain-backdrop.drawn .m-layer-fore {
+        animation: riseUpFore 3.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+      }
+
+      /* Sun rises from behind the mountains, reaching its final position at exactly 4.5 seconds (2.3s delay + 2.2s duration) */
+      .mountain-backdrop.drawn .m-sun {
+        animation: riseSun 2.2s cubic-bezier(0.16, 1, 0.3, 1) 2.3s forwards;
+      }
+
+      @keyframes riseUpBack {
+        0% {
+          transform: translateY(450px);
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes riseUpMid {
+        0% {
+          transform: translateY(420px);
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes riseUpFore {
+        0% {
+          transform: translateY(380px);
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes riseSun {
+        0% {
+          transform: translateY(220px) scale(0.6);
+          opacity: 0;
+        }
+        20% {
+          opacity: 0.85;
+        }
+        100% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+    }
+
     .marquee-container, .scrolled .marquee-container, .marquee-content, .marquee-item, .jagged-edge {
       display: none;
     }
@@ -2599,6 +2717,93 @@
     <div class="shape shape-7" aria-hidden="true"></div>
     <div class="shape shape-8" aria-hidden="true"></div>
 
+    <!-- Mountain Backdrop (Desktop Only) -->
+    <div class="mountain-backdrop" id="mountain-backdrop" aria-hidden="true">
+      <svg class="mountain-svg" viewBox="0 0 1440 600" preserveAspectRatio="none">
+        <defs>
+          <!-- Sun Gradient -->
+          <linearGradient id="sunGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#E86842" />
+            <stop offset="100%" stop-color="#D2603C" />
+          </linearGradient>
+          
+          <!-- Distant Mountain Gradient -->
+          <linearGradient id="backGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#EBE3D7" />
+            <stop offset="100%" stop-color="#DAD1C3" />
+          </linearGradient>
+          <linearGradient id="backFacetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E3DAD0" />
+            <stop offset="100%" stop-color="#D0C6B8" />
+          </linearGradient>
+
+          <!-- Mid Mountain (Sage / Olive Green) Gradients -->
+          <linearGradient id="midGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#B2BA98" />
+            <stop offset="100%" stop-color="#8B9670" />
+          </linearGradient>
+          <linearGradient id="midLightFacet" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#BCC4A2" />
+            <stop offset="100%" stop-color="#9CA780" />
+          </linearGradient>
+          <linearGradient id="midDarkFacet" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#88936D" />
+            <stop offset="100%" stop-color="#737D59" />
+          </linearGradient>
+
+          <!-- Foreground Mountain (Deep Pine Green) Gradients -->
+          <linearGradient id="foreGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#46543A" />
+            <stop offset="100%" stop-color="#283321" />
+          </linearGradient>
+          <linearGradient id="foreLightFacet" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4F5E42" />
+            <stop offset="100%" stop-color="#3A4630" />
+          </linearGradient>
+          <linearGradient id="foreDarkFacet" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#343F2A" />
+            <stop offset="100%" stop-color="#1E2618" />
+          </linearGradient>
+        </defs>
+
+        <!-- BACK MOUNTAIN LAYER -->
+        <g class="m-layer m-layer-back">
+          <polygon points="0,600 0,260 260,110 540,240 760,180 1020,260 1260,190 1440,240 1440,600" fill="url(#backGrad)" />
+          <polygon points="0,260 260,110 540,240" fill="url(#backFacetGrad)" opacity="0.6" />
+          <polygon points="760,180 1020,260 1260,190" fill="url(#backFacetGrad)" opacity="0.5" />
+        </g>
+
+        <!-- THE SUN -->
+        <g class="m-sun">
+          <circle cx="1120" cy="180" r="85" fill="url(#sunGrad)" />
+        </g>
+
+        <!-- MID MOUNTAIN LAYER (Sage Green) -->
+        <g class="m-layer m-layer-mid">
+          <polygon points="0,600 0,340 180,210 380,310 620,190 840,300 1080,220 1300,320 1440,270 1440,600" fill="url(#midGrad)" />
+          <polygon points="0,340 180,210 180,600 0,600" fill="url(#midLightFacet)" opacity="0.45" />
+          <polygon points="380,310 620,190 620,600 380,600" fill="url(#midLightFacet)" opacity="0.5" />
+          <polygon points="840,300 1080,220 1080,600 840,600" fill="url(#midLightFacet)" opacity="0.5" />
+          <polygon points="180,210 380,310 380,600 180,600" fill="url(#midDarkFacet)" opacity="0.4" />
+          <polygon points="620,190 840,300 840,600 620,600" fill="url(#midDarkFacet)" opacity="0.45" />
+          <polygon points="1080,220 1300,320 1300,600 1080,600" fill="url(#midDarkFacet)" opacity="0.45" />
+        </g>
+
+        <!-- FOREGROUND MOUNTAIN LAYER (Deep Pine Green) -->
+        <g class="m-layer m-layer-fore">
+          <polygon points="0,600 0,440 120,360 260,430 440,340 640,450 840,370 1020,440 1220,350 1380,420 1440,390 1440,600" fill="url(#foreGrad)" />
+          <polygon points="0,440 120,360 120,600 0,600" fill="url(#foreLightFacet)" opacity="0.5" />
+          <polygon points="260,430 440,340 440,600 260,600" fill="url(#foreLightFacet)" opacity="0.55" />
+          <polygon points="640,450 840,370 840,600 640,600" fill="url(#foreLightFacet)" opacity="0.5" />
+          <polygon points="1020,440 1220,350 1220,600 1020,600" fill="url(#foreLightFacet)" opacity="0.55" />
+          <polygon points="120,360 260,430 260,600 120,600" fill="url(#foreDarkFacet)" opacity="0.5" />
+          <polygon points="440,340 640,450 640,600 440,600" fill="url(#foreDarkFacet)" opacity="0.55" />
+          <polygon points="840,370 1020,440 1020,600 840,600" fill="url(#foreDarkFacet)" opacity="0.5" />
+          <polygon points="1220,350 1380,420 1380,600 1220,600" fill="url(#foreDarkFacet)" opacity="0.5" />
+        </g>
+      </svg>
+    </div>
+
     <div class="hero-layout-wrapper" id="hero-layout-wrapper">
       <div class="hero-left-content">
         <div class="landing-badge">
@@ -4067,6 +4272,13 @@
     const splashEl = document.getElementById('web-splash');
     const isAlreadyLoggedIn = !!localStorage.getItem('userId');
 
+    function triggerMountainDraw() {
+      const backdrop = document.getElementById('mountain-backdrop');
+      if (backdrop && !backdrop.classList.contains('drawn')) {
+        backdrop.classList.add('drawn');
+      }
+    }
+
     // Run the bouncing animation for 1.8 seconds
     setTimeout(() => {
       if (isAlreadyLoggedIn) {
@@ -4077,9 +4289,18 @@
           setTimeout(() => {
             splashEl.style.display = 'none';
           }, 600); // Wait for CSS transition to complete
+          // Trigger mountain drawing right as splash lifts
+          setTimeout(triggerMountainDraw, 100);
+        } else {
+          triggerMountainDraw();
         }
       }
     }, 1800); // 1.8 seconds
+
+    // Fallback if splash was skipped or not present
+    if (!splashEl || splashEl.classList.contains('hide')) {
+      triggerMountainDraw();
+    }
   </script>
   <script>
     function toggleFaq(header) {
