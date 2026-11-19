@@ -2960,122 +2960,160 @@ async function proactiveSync(force = false) {
       updateNavAvatar();
     }
 
-    // 2. Sync Leaderboard (Top 10 of each sort)
-    const current = await apiFetch(`${window.API}/api/users/leaderboard?sort=current&page=1&limit=10`);
-    if (current && current.users) {
-      await window.localDb.leaderboard.put({ sort: 'current', users: current.users, timestamp: Date.now() });
-    }
-    const highest = await apiFetch(`${window.API}/api/users/leaderboard?sort=highest&page=1&limit=10`);
-    if (highest && highest.users) {
-      await window.localDb.leaderboard.put({ sort: 'highest', users: highest.users, timestamp: Date.now() });
-    }
-
-    // 3. Sync Days (Only if forced or not already populated by loadDays)
-    if (force || !window.allDays || window.allDays.length === 0) {
-      const daysData = await apiFetch(`${window.API}/api/days?page=1&limit=${window.daysPerPage || 30}`);
-      if (daysData && daysData.days) {
-        // Preserve local-only changes (those not yet synced)
-        const localOnly = await window.localDb.syncQueue.where('entity').equals('days').toArray();
-        const localIds = localOnly.map(q => q.targetId);
-        
-        const toUpdate = daysData.days.filter(d => !localIds.includes(d._id));
-        await window.localDb.days.bulkPut(toUpdate);
-        
-        // Update in-memory state if on first page
-        if (window.currentPage === 1) {
-          window.allDays = (await window.localDb.days.toArray()).sort((a,b) => b.date.localeCompare(a.date)).slice(0, window.daysPerPage || 30);
-          renderDays();
-          updateStreak();
+    // 2. Parallel Stage: Independent data domains sync simultaneously using Promise.allSettled
+    // Non-negotiable cross-device audit (Stage 1 above) has already finished cleanly.
+    // Each domain operates on separate Dexie tables, eliminating race conditions while slashing sync time.
+    const syncLeaderboards = async () => {
+      try {
+        const [current, highest] = await Promise.all([
+          apiFetch(`${window.API}/api/users/leaderboard?sort=current&page=1&limit=10`),
+          apiFetch(`${window.API}/api/users/leaderboard?sort=highest&page=1&limit=10`)
+        ]);
+        if (current && current.users) {
+          await window.localDb.leaderboard.put({ sort: 'current', users: current.users, timestamp: Date.now() });
         }
-      }
-    }
-
-    // 4. Sync Goals
-    const goals = await apiFetch(`${window.API}/api/goals`);
-    if (goals) {
-      const pendingGoalItems = await localDb.syncQueue
-        .filter(x => x.entity === 'goals')
-        .toArray();
-      const pendingIds = new Set(pendingGoalItems.map(q => q.targetId).filter(Boolean));
-      const pendingLocalIds = new Set(pendingGoalItems.map(q => q.localId).filter(Boolean));
-
-      const safeToUpdate = goals.filter(g => !pendingIds.has(g._id));
-      const localGoals = await localDb.goals.toArray();
-      const toDelete = localGoals
-        .filter(g => !pendingIds.has(g._id) && !pendingLocalIds.has(g._id))
-        .map(g => g._id);
-      
-      await localDb.goals.bulkDelete(toDelete);
-      await localDb.goals.bulkPut(safeToUpdate);
-
-      // Reconstruct final window.allGoals in memory
-      const localPendingGoals = await Promise.all(
-        [...pendingIds, ...pendingLocalIds].map(id => localDb.goals.get(id))
-      );
-      const localPendingMap = new Map();
-      localPendingGoals.filter(Boolean).forEach(g => localPendingMap.set(g._id, g));
-
-      window.allGoals = goals.map(sg => localPendingMap.get(sg._id) || sg);
-      for (const [id, goal] of localPendingMap) {
-        if (!window.allGoals.find(g => g._id === id)) {
-          window.allGoals.push(goal);
+        if (highest && highest.users) {
+          await window.localDb.leaderboard.put({ sort: 'highest', users: highest.users, timestamp: Date.now() });
         }
+      } catch (err) {
+        console.warn('Leaderboard sync failed:', err);
       }
-      
-      sortGoals();
-    }
+    };
 
-    // 5. Sync Achievements
-    const achs = await apiFetch(`${window.API}/api/achievements`);
-    if (achs && achs.achievements) {
-      const serverAchs = achs.achievements;
-      const pendingAchItems = await localDb.syncQueue
-        .filter(x => x.entity === 'achievements')
-        .toArray();
-      const pendingIds = new Set(pendingAchItems.map(q => q.targetId).filter(Boolean));
-      const pendingLocalIds = new Set(pendingAchItems.map(q => q.localId).filter(Boolean));
-
-      const safeToUpdate = serverAchs.filter(a => !pendingIds.has(a._id));
-      const localAchs = await localDb.achievements.toArray();
-      const toDelete = localAchs
-        .filter(a => !pendingIds.has(a._id) && !pendingLocalIds.has(a._id))
-        .map(a => a._id);
-      
-      await localDb.achievements.bulkDelete(toDelete);
-      await localDb.achievements.bulkPut(safeToUpdate);
-
-      // Reconstruct final window.allAchievements in memory
-      const localPendingAchs = await Promise.all(
-        [...pendingIds, ...pendingLocalIds].map(id => localDb.achievements.get(id))
-      );
-      const localPendingMap = new Map();
-      localPendingAchs.filter(Boolean).forEach(a => localPendingMap.set(a._id, a));
-
-      window.allAchievements = serverAchs.map(sa => localPendingMap.get(sa._id) || sa);
-      for (const [id, ach] of localPendingMap) {
-        if (!window.allAchievements.find(a => a._id === id)) {
-          window.allAchievements.push(ach);
-        }
-      }
-
-      // Live update day cards in DOM so achievements appear immediately on login
-      if (serverAchs && serverAchs.length > 0 && typeof window.renderDayAchievements === 'function') {
-        (window.allDays || []).forEach(day => {
-          const cardEl = document.getElementById(`day-card-${day._id}`);
-          if (cardEl) {
-            const dayAchs = (window.allAchievements || []).filter(a => String(a.dayId) === String(day._id));
-            window.renderDayAchievements(day._id, dayAchs, cardEl);
+    const syncDaysIfNeeded = async () => {
+      if (force || !window.allDays || window.allDays.length === 0) {
+        try {
+          const daysData = await apiFetch(`${window.API}/api/days?page=1&limit=${window.daysPerPage || 30}`);
+          if (daysData && daysData.days) {
+            const localOnly = await window.localDb.syncQueue.where('entity').equals('days').toArray();
+            const localIds = localOnly.map(q => q.targetId);
+            
+            const toUpdate = daysData.days.filter(d => !localIds.includes(d._id));
+            await window.localDb.days.bulkPut(toUpdate);
+            
+            if (window.currentPage === 1) {
+              window.allDays = (await window.localDb.days.toArray()).sort((a,b) => b.date.localeCompare(a.date)).slice(0, window.daysPerPage || 30);
+              renderDays();
+              updateStreak();
+            }
           }
-        });
+        } catch (err) {
+          console.warn('Days sync failed:', err);
+        }
       }
-    }
+    };
 
-    // Sync templates for offline task creation
-    const templates = await apiFetch(`${window.API}/api/templates`);
-    if (window.localDb) {
-      await window.localDb.templates.clear();
-      await window.localDb.templates.bulkPut(templates);
-    }
+    const syncGoals = async () => {
+      try {
+        const goals = await apiFetch(`${window.API}/api/goals`);
+        if (goals) {
+          const pendingGoalItems = await localDb.syncQueue
+            .filter(x => x.entity === 'goals')
+            .toArray();
+          const pendingIds = new Set(pendingGoalItems.map(q => q.targetId).filter(Boolean));
+          const pendingLocalIds = new Set(pendingGoalItems.map(q => q.localId).filter(Boolean));
+
+          const safeToUpdate = goals.filter(g => !pendingIds.has(g._id));
+          const localGoals = await localDb.goals.toArray();
+          const toDelete = localGoals
+            .filter(g => !pendingIds.has(g._id) && !pendingLocalIds.has(g._id))
+            .map(g => g._id);
+          
+          await localDb.goals.bulkDelete(toDelete);
+          await localDb.goals.bulkPut(safeToUpdate);
+
+          // Reconstruct final window.allGoals in memory
+          const localPendingGoals = await Promise.all(
+            [...pendingIds, ...pendingLocalIds].map(id => localDb.goals.get(id))
+          );
+          const localPendingMap = new Map();
+          localPendingGoals.filter(Boolean).forEach(g => localPendingMap.set(g._id, g));
+
+          window.allGoals = goals.map(sg => localPendingMap.get(sg._id) || sg);
+          for (const [id, goal] of localPendingMap) {
+            if (!window.allGoals.find(g => g._id === id)) {
+              window.allGoals.push(goal);
+            }
+          }
+          
+          sortGoals();
+        }
+      } catch (err) {
+        console.warn('Goals sync failed:', err);
+      }
+    };
+
+    const syncAchievements = async () => {
+      try {
+        const achs = await apiFetch(`${window.API}/api/achievements`);
+        if (achs && achs.achievements) {
+          const serverAchs = achs.achievements;
+          const pendingAchItems = await localDb.syncQueue
+            .filter(x => x.entity === 'achievements')
+            .toArray();
+          const pendingIds = new Set(pendingAchItems.map(q => q.targetId).filter(Boolean));
+          const pendingLocalIds = new Set(pendingAchItems.map(q => q.localId).filter(Boolean));
+
+          const safeToUpdate = serverAchs.filter(a => !pendingIds.has(a._id));
+          const localAchs = await localDb.achievements.toArray();
+          const toDelete = localAchs
+            .filter(a => !pendingIds.has(a._id) && !pendingLocalIds.has(a._id))
+            .map(a => a._id);
+          
+          await localDb.achievements.bulkDelete(toDelete);
+          await localDb.achievements.bulkPut(safeToUpdate);
+
+          // Reconstruct final window.allAchievements in memory
+          const localPendingAchs = await Promise.all(
+            [...pendingIds, ...pendingLocalIds].map(id => localDb.achievements.get(id))
+          );
+          const localPendingMap = new Map();
+          localPendingAchs.filter(Boolean).forEach(a => localPendingMap.set(a._id, a));
+
+          window.allAchievements = serverAchs.map(sa => localPendingMap.get(sa._id) || sa);
+          for (const [id, ach] of localPendingMap) {
+            if (!window.allAchievements.find(a => a._id === id)) {
+              window.allAchievements.push(ach);
+            }
+          }
+
+          // Live update day cards in DOM so achievements appear immediately on login
+          if (serverAchs && serverAchs.length > 0 && typeof window.renderDayAchievements === 'function') {
+            (window.allDays || []).forEach(day => {
+              const cardEl = document.getElementById(`day-card-${day._id}`);
+              if (cardEl) {
+                const dayAchs = (window.allAchievements || []).filter(a => String(a.dayId) === String(day._id));
+                window.renderDayAchievements(day._id, dayAchs, cardEl);
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Achievements sync failed:', err);
+      }
+    };
+
+    const syncTemplates = async () => {
+      try {
+        const templates = await apiFetch(`${window.API}/api/templates`);
+        if (window.localDb && templates) {
+          await window.localDb.templates.clear();
+          await window.localDb.templates.bulkPut(templates);
+        }
+      } catch (err) {
+        console.warn('Templates sync failed:', err);
+      }
+    };
+
+    // Execute independent domains in parallel with Promise.allSettled
+    await Promise.allSettled([
+      syncLeaderboards(),
+      syncDaysIfNeeded(),
+      syncGoals(),
+      syncAchievements(),
+      syncTemplates(),
+      fetchAiLimit()
+    ]);
 
     // If reconciliation or sync changed data, force a UI refresh
     if (itemsDeleted) {
