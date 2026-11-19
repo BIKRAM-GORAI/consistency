@@ -457,7 +457,7 @@ exports.generateProductivityBio = async (req, res) => {
         'x-ai-service-secret': aiServiceSecret,
         'Content-Type': 'application/json'
       },
-      timeout: 25000
+      timeout: 40000 // 40s timeout for weekly summary synthesis
     });
 
     const bioText = aiResponse.data.result;
@@ -672,7 +672,7 @@ exports.generateWeeklySummary = async (req, res) => {
         'x-ai-service-secret': aiServiceSecret,
         'Content-Type': 'application/json'
       },
-      timeout: 25000
+      timeout: 40000 // 40s timeout for weekly summary synthesis
     });
 
     const wrapUpText = aiResponse.data.result;
@@ -939,7 +939,7 @@ exports.generateMonthlySummary = async (req, res) => {
         'x-ai-service-secret': aiServiceSecret,
         'Content-Type': 'application/json'
       },
-      timeout: 25000
+      timeout: 50000 // 50s timeout for comprehensive 30-day AI compilation
     });
 
     const wrapUpText = aiResponse.data.result;

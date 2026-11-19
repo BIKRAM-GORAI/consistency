@@ -2212,7 +2212,8 @@ async function generateWeeklySummaryCard(dayId) {
 
   try {
     const responseSummary = await apiFetch(`${window.API}/api/ai/weekly-summary/${dayId}`, {
-      method: 'POST'
+      method: 'POST',
+      timeout: 60000
     });
 
     if (responseSummary && responseSummary._id) {
@@ -2246,6 +2247,34 @@ async function generateWeeklySummaryCard(dayId) {
     }
   } catch (err) {
     console.error('Failed to generate weekly summary:', err);
+
+    // Smart recovery: Check if the server finished and saved the summary despite client timeout/blip
+    try {
+      const dayObj = (window.allDays || []).find(d => String(d._id) === String(dayId));
+      const freshSummaries = await apiFetch(`${window.API}/api/ai/weekly-summaries`, { timeout: 15000 });
+      if (Array.isArray(freshSummaries)) {
+        const matching = freshSummaries.find(s => 
+          (s.daysCount === 7 || !s.daysCount) && ((dayObj && s.date === dayObj.date) || (s.dayIds && s.dayIds.includes(dayId)))
+        );
+        if (matching && matching._id) {
+          window.allWeeklySummaries = window.allWeeklySummaries.filter(s => s._id !== matching._id);
+          window.allWeeklySummaries.push(matching);
+          if (window.localDb) {
+            await window.localDb.weeklySummaries.put(matching).catch(() => {});
+          }
+          const freshCard = buildWeeklySummaryCard(matching);
+          container.replaceWith(freshCard);
+          if (window.gsap) {
+            gsap.from(freshCard, { scale: 0.95, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' });
+          }
+          showToast('7-Day wrap-up retrieved successfully!', 'success');
+          return;
+        }
+      }
+    } catch (checkErr) {
+      console.warn('Weekly summary recovery check failed:', checkErr);
+    }
+
     showToast(err.message || 'Failed to generate wrap-up.', 'error');
     container.innerHTML = originalHTML; // restore button
   }
@@ -2418,7 +2447,8 @@ async function generateMonthlySummaryCard(dayId) {
 
   try {
     const responseSummary = await apiFetch(`${window.API}/api/ai/monthly-summary/${dayId}`, {
-      method: 'POST'
+      method: 'POST',
+      timeout: 90000 // 90s timeout for comprehensive 30-day AI compilation
     });
 
     if (responseSummary && responseSummary._id) {
@@ -2434,6 +2464,15 @@ async function generateMonthlySummaryCard(dayId) {
       updateAllAiInsightButtons();
       window.allWeeklySummaries.push(responseSummary);
       
+      // Save locally in Dexie for offline persistence
+      if (window.localDb) {
+        try {
+          await window.localDb.weeklySummaries.put(responseSummary);
+        } catch (dexieErr) {
+          console.warn('Failed to cache monthly summary offline:', dexieErr);
+        }
+      }
+
       // Morphs/replaces the button card with the final AI summary card smoothly
       const freshCard = buildMonthlySummaryCard(responseSummary);
       container.replaceWith(freshCard);
@@ -2446,6 +2485,35 @@ async function generateMonthlySummaryCard(dayId) {
     }
   } catch (err) {
     console.error('Failed to generate monthly summary:', err);
+
+    // Smart recovery: On mobile networks or slow connections, check if the server finished
+    // generating and saving the 30-day summary even if the client-side socket timed out or blipped.
+    try {
+      const dayObj = (window.allDays || []).find(d => String(d._id) === String(dayId));
+      const freshSummaries = await apiFetch(`${window.API}/api/ai/weekly-summaries`, { timeout: 15000 });
+      if (Array.isArray(freshSummaries)) {
+        const matching = freshSummaries.find(s => 
+          s.daysCount === 30 && ((dayObj && s.date === dayObj.date) || (s.dayIds && s.dayIds.includes(dayId)))
+        );
+        if (matching && matching._id) {
+          window.allWeeklySummaries = window.allWeeklySummaries.filter(s => s._id !== matching._id);
+          window.allWeeklySummaries.push(matching);
+          if (window.localDb) {
+            await window.localDb.weeklySummaries.put(matching).catch(() => {});
+          }
+          const freshCard = buildMonthlySummaryCard(matching);
+          container.replaceWith(freshCard);
+          if (window.gsap) {
+            gsap.from(freshCard, { scale: 0.95, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' });
+          }
+          showToast('30-Day summary retrieved successfully!', 'success');
+          return;
+        }
+      }
+    } catch (checkErr) {
+      console.warn('Monthly summary recovery check failed:', checkErr);
+    }
+
     showToast(err.message || 'Failed to generate monthly summary.', 'error');
     container.innerHTML = originalHTML; // restore button
   }
