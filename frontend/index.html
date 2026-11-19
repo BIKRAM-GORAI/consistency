@@ -445,6 +445,18 @@
       opacity: 0.75;
     }
 
+    .greeting-skip-subtext {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: clamp(13.5px, 3.2vw, 15px);
+      font-weight: 500;
+      color: #1a0008;
+      opacity: 0.6;
+      margin-top: clamp(28px, 4.5vh, 38px);
+      text-align: center;
+      letter-spacing: 0.2px;
+      user-select: none;
+    }
+
     #greeting-countdown-timer {
       font-weight: 900;
       color: #1a0008;
@@ -489,6 +501,10 @@
         font-size: 15px;
         margin-top: 28px;
       }
+      .greeting-skip-subtext {
+        font-size: 16px;
+        margin-top: 36px;
+      }
     }
 
     @media (min-width: 1200px) {
@@ -523,6 +539,14 @@
       .greeting-quote-text {
         font-size: 23px;
         line-height: 1.7;
+      }
+      .greeting-tap-hint {
+        font-size: 16px;
+        margin-top: 32px;
+      }
+      .greeting-skip-subtext {
+        font-size: 17.5px;
+        margin-top: 46px;
       }
     }
   </style>
@@ -565,6 +589,9 @@
 
       <div id="greeting-countdown-hint" class="greeting-tap-hint">
         Redirecting in <span id="greeting-countdown-timer">3</span>...
+      </div>
+      <div class="greeting-skip-subtext">
+        tap anywhere to skip
       </div>
     </div>
   </div>

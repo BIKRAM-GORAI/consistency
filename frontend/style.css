@@ -8706,6 +8706,7 @@ body.is-offline [data-requires-network="true"] {
 
   .nav-brand {
     gap: 0 !important;
+    margin-left: 6px !important;
   }
 
   .nav-brand .brand-name {
