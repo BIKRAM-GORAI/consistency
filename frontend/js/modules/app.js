@@ -304,6 +304,7 @@ async function toggleAppTheme(theme, skipApi = false) {
     theme = 'light';
   }
 
+  // 1. Instantly apply theme to DOM & localStorage (synchronous & immediate)
   if (theme === 'premium-aurora') {
     document.documentElement.setAttribute('data-theme', 'premium-aurora');
     localStorage.setItem('theme', 'premium-aurora');
@@ -322,19 +323,31 @@ async function toggleAppTheme(theme, skipApi = false) {
   }
   
   const themeSelect = document.getElementById('theme-select');
-  if (themeSelect) {
+  if (themeSelect && themeSelect.value !== theme) {
     themeSelect.value = theme;
+  }
+
+  // 2. Keep local offline database in sync immediately
+  if (window.localDb && window.userId) {
+    window.localDb.userProfile.get(window.userId).then(cached => {
+      if (cached) {
+        window.localDb.userProfile.put({ ...cached, theme, userId: window.userId });
+      }
+    }).catch(() => {});
   }
 
   if (skipApi) return;
   
-  try {
-    await apiFetch(`${window.API}/api/auth/settings`, {
+  // 3. Non-blocking background sync to server (never blocks UI)
+  if (navigator.onLine) {
+    apiFetch(`${window.API}/api/auth/settings`, {
       method: 'PATCH',
       body: JSON.stringify({ theme })
+    }).catch(err => {
+      console.warn('Failed to sync theme preference:', err);
     });
-  } catch(err) {
-    console.error('Failed to sync theme preference:', err);
+  } else if (window.syncManager) {
+    window.syncManager.addToQueue('PATCH', 'auth/settings', null, { theme });
   }
 }
 

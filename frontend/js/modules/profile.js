@@ -357,15 +357,21 @@ function renderProfileData(user) {
   if (typeof window.applyThemeConfigRules === 'function') {
     window.applyThemeConfigRules();
   }
-  if (themeSelect && user.theme) {
-    const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
-    const effectiveUserTheme = (user.theme === 'dark' && !isDarkAllowed) ? 'claymorphism' : (user.theme || 'claymorphism');
-    themeSelect.value = effectiveUserTheme;
-    
-    // Automatically apply synced theme to the layout if it differs from current local theme
-    const currentTheme = localStorage.getItem('theme') || 'claymorphism';
-    if (effectiveUserTheme !== currentTheme && typeof window.toggleAppTheme === 'function') {
-      window.toggleAppTheme(effectiveUserTheme);
+  const localTheme = localStorage.getItem('theme');
+  if (themeSelect) {
+    if (localTheme) {
+      // Respect the user's active local choice; never let a stale server response revert it!
+      themeSelect.value = localTheme;
+    } else if (user && user.theme) {
+      // First-time device login: adopt the synced user theme from server
+      const isDarkAllowed = !!(window.globalConfig && window.globalConfig.enableDarkBrutalistTheme);
+      const effectiveUserTheme = (user.theme === 'dark' && !isDarkAllowed) ? 'claymorphism' : (user.theme || 'claymorphism');
+      themeSelect.value = effectiveUserTheme;
+      if (typeof window.toggleAppTheme === 'function') {
+        window.toggleAppTheme(effectiveUserTheme, true);
+      }
+    } else {
+      themeSelect.value = 'claymorphism';
     }
   }
 
@@ -426,7 +432,16 @@ async function submitProfileSettings() {
     const name = nameInput ? nameInput.value.trim() : '';
     const profilePicture = document.getElementById('profile-pic-dataurl').value;
     const themeSelect = document.getElementById('theme-select');
-    const selectedTheme = themeSelect ? themeSelect.value : 'light';
+    const selectedTheme = themeSelect ? themeSelect.value : (localStorage.getItem('theme') || 'claymorphism');
+
+    // 0. INSTANT UI THEME SWITCH: Apply theme the exact moment Save is clicked
+    // Zero delay: does not wait for offline DB, device reminders, or server sync
+    const currentTheme = localStorage.getItem('theme') || 'claymorphism';
+    if (selectedTheme !== currentTheme) {
+      if (typeof window.toggleAppTheme === 'function') {
+        window.toggleAppTheme(selectedTheme, true); // skipApi = true: immediate synchronous DOM & storage update
+      }
+    }
     const payload = { 
       emailNotifications, 
       isPublicProfile, 
@@ -480,34 +495,6 @@ async function submitProfileSettings() {
       window.currentAppLimits = JSON.parse(JSON.stringify(window.tempAppLimits));
       await persistAppLimits(window.currentAppLimits);
     }
-
-    // Apply and sync theme if changed
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    if (selectedTheme !== currentTheme) {
-      if (typeof window.toggleAppTheme === 'function') {
-        await window.toggleAppTheme(selectedTheme);
-      } else {
-          if (selectedTheme === 'dark') {
-            await window.toggleDarkTheme(true);
-          } else if (selectedTheme === 'light') {
-            await window.toggleDarkTheme(false);
-          } else if (selectedTheme === 'premium-aurora') {
-            document.documentElement.setAttribute('data-theme', 'premium-aurora');
-            localStorage.setItem('theme', 'premium-aurora');
-            await apiFetch(`${window.API}/api/auth/settings`, {
-              method: 'PATCH',
-              body: JSON.stringify({ theme: 'premium-aurora' })
-            });
-          } else if (selectedTheme === 'minimalistic') {
-            document.documentElement.setAttribute('data-theme', 'minimalistic');
-            localStorage.setItem('theme', 'minimalistic');
-            await apiFetch(`${window.API}/api/auth/settings`, {
-              method: 'PATCH',
-              body: JSON.stringify({ theme: 'minimalistic' })
-            });
-          }
-        }
-      }
 
     // 3. SHOW SUCCESS INSTANTLY
     showToast('Settings saved!', 'success');

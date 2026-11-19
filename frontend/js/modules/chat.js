@@ -2933,7 +2933,7 @@ async function proactiveSync(force = false) {
       localStorage.setItem('showOnLeaderboard', (profile.showOnLeaderboard !== false).toString());
 
       // Apply profile updates to UI
-      if (profile.theme && localStorage.getItem('theme') !== profile.theme) {
+      if (profile.theme && !localStorage.getItem('theme')) {
         if (typeof window.toggleAppTheme === 'function') {
           window.toggleAppTheme(profile.theme, true);
         }
