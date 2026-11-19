@@ -292,9 +292,10 @@ window.escapeHTML = escapeHTML;
 // ── Auth ───────────────────────────────────────────────────
 window.userId = localStorage.getItem('userId') || '';
 window.userName = localStorage.getItem('userName') || 'User';
+window.userGreetingName = localStorage.getItem('userGreetingName') || '';
 window.userProfilePicture = localStorage.getItem('userProfilePicture') || '';
 
-// Sync premium status from IndexedDB cache immediately on boot
+// Sync premium status & greeting name from IndexedDB cache immediately on boot
 if (window.userId) {
   (async () => {
     try {
@@ -303,6 +304,14 @@ if (window.userId) {
         if (cached && cached.isPremium !== undefined) {
           localStorage.setItem('isPremium', cached.isPremium.toString());
           localStorage.setItem('subscriptionTier', cached.isPremium ? 'premium' : 'free');
+        }
+        if (cached && cached.greetingName !== undefined) {
+          localStorage.setItem('userGreetingName', cached.greetingName);
+          window.userGreetingName = cached.greetingName;
+          const greetingTitle = document.getElementById('greeting-title');
+          if (greetingTitle && cached.greetingName) {
+            greetingTitle.textContent = `Have a great day, ${cached.greetingName.toUpperCase()}!`;
+          }
         }
       }
     } catch (e) {

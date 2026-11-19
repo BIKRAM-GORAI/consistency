@@ -11,6 +11,12 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    greetingName: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: null,
+    },
     username: {
       type: String,
       unique: true,

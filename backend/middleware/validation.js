@@ -59,6 +59,11 @@ const registerValidation = [
     .trim()
     .notEmpty().withMessage('Name is required')
     .isLength({ min: 1, max: 60 }).withMessage('Name must be between 1 and 60 characters'),
+  body('greetingName')
+    .optional()
+    .isString().withMessage('greetingName must be a string')
+    .trim()
+    .isLength({ max: 50 }).withMessage('Greeting name cannot exceed 50 characters'),
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')
@@ -87,6 +92,11 @@ const loginValidation = [
 ];
 
 const updateProfileValidation = [
+  body('greetingName')
+    .optional()
+    .isString().withMessage('greetingName must be a string')
+    .trim()
+    .isLength({ max: 50 }).withMessage('Greeting name cannot exceed 50 characters'),
   body('emailNotifications')
     .optional()
     .isBoolean().withMessage('emailNotifications must be a boolean'),

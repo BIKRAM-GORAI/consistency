@@ -54,6 +54,7 @@ async function openProfileModal() {
 
   const baselineUser = {
     name: storedName,
+    greetingName: localStorage.getItem('userGreetingName') || storedUsername || (storedName ? storedName.split(' ')[0] : ''),
     email: storedEmail,
     username: storedUsername,
     profilePicture: storedPic,
@@ -256,6 +257,13 @@ function renderProfileData(user) {
     checkNameCooldown(user.lastNameChangeAt);
   }
 
+  const greetingInput = document.getElementById('profile-greeting-name');
+  if (greetingInput) {
+    greetingInput.value = (user.greetingName !== undefined && user.greetingName !== null)
+      ? user.greetingName
+      : (localStorage.getItem('userGreetingName') || user.username || (user.name ? user.name.split(' ')[0] : ''));
+  }
+
   const emailInput = document.getElementById('profile-email');
   if (emailInput) emailInput.value = user.email || '';
   
@@ -430,6 +438,8 @@ async function submitProfileSettings() {
   try {
     const nameInput = document.getElementById('profile-name');
     const name = nameInput ? nameInput.value.trim() : '';
+    const greetingNameInput = document.getElementById('profile-greeting-name');
+    const greetingName = greetingNameInput ? greetingNameInput.value.trim() : '';
     const profilePicture = document.getElementById('profile-pic-dataurl').value;
     const themeSelect = document.getElementById('theme-select');
     const selectedTheme = themeSelect ? themeSelect.value : (localStorage.getItem('theme') || 'claymorphism');
@@ -454,8 +464,11 @@ async function submitProfileSettings() {
       motivationStartTime,
       motivationEndTime,
       leetcodeAutoSync,
-      theme: selectedTheme
+      theme: selectedTheme,
+      greetingName
     };
+    localStorage.setItem('userGreetingName', greetingName);
+    window.userGreetingName = greetingName;
     if (nameInput && !nameInput.readOnly && name) {
       payload.name = name;
     }
@@ -533,6 +546,10 @@ async function submitProfileSettings() {
         }
         if (res.username) {
           localStorage.setItem('userUsername', res.username);
+        }
+        if (res.greetingName !== undefined) {
+          window.userGreetingName = res.greetingName;
+          localStorage.setItem('userGreetingName', res.greetingName);
         }
         // Reload leaderboard to reflect visibility settings changes instantly in-place!
         const activePage = document.querySelector('.page.active');

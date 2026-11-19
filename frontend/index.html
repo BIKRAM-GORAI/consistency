@@ -278,6 +278,253 @@
         width: 100%;
       }
     }
+
+    /* ===== WARM & ENCOURAGING GREETING MIST OVERLAY ===== */
+    .greeting-mist-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background: var(--pink, #FF3EA5);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 999998;
+      cursor: pointer;
+      user-select: none;
+      padding: 24px 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+      transition: none;
+    }
+
+    [data-theme="claymorphism"] .greeting-mist-overlay {
+      background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%) !important;
+    }
+
+    [data-theme="minimalistic"] .greeting-mist-overlay {
+      background: #fdf2f8 !important;
+    }
+
+    .greeting-mist-overlay.mist-fade-out {
+      animation: mistFadeDissolve 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      pointer-events: none;
+    }
+
+    @keyframes mistFadeDissolve {
+      0% {
+        opacity: 1;
+        filter: blur(0px) brightness(1);
+        transform: scale(1);
+      }
+      40% {
+        opacity: 0.75;
+        filter: blur(6px) brightness(1.08);
+        transform: scale(1.018);
+      }
+      100% {
+        opacity: 0;
+        filter: blur(24px) brightness(1.22);
+        transform: scale(1.05);
+      }
+    }
+
+    .greeting-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      box-sizing: border-box;
+      animation: greetingContentIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes greetingContentIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .greeting-spark-wrap {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: #FFD60A;
+      border: 2.5px solid #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 3px 3px 0px #000000;
+    }
+
+    .greeting-spark-icon {
+      font-size: 26px;
+      line-height: 1;
+      display: inline-block;
+      animation: sparkPulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes sparkPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    .greeting-title {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      font-size: clamp(26px, 6vw, 34px);
+      font-weight: 900;
+      color: #1a0008;
+      margin: 0 0 8px;
+      letter-spacing: -0.3px;
+      line-height: 1.25;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    .greeting-sub {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: clamp(14px, 3.8vw, 16px);
+      font-weight: 700;
+      color: rgba(26, 0, 8, 0.72);
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .greeting-quote-card {
+      width: 100%;
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 20px;
+      padding: clamp(22px, 4.8vw, 28px);
+      box-shadow: 6px 6px 0px #000000;
+      text-align: center;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    [data-theme="claymorphism"] .greeting-quote-card {
+      border: 1.5px solid rgba(184, 163, 140, 0.35) !important;
+      box-shadow: 0 14px 32px rgba(92, 73, 50, 0.08), 0 2px 6px rgba(92, 73, 50, 0.04) !important;
+    }
+
+    .greeting-quote-mark {
+      font-family: Georgia, serif;
+      font-size: 42px;
+      line-height: 1;
+      color: var(--pink, #FF3EA5);
+      opacity: 0.95;
+      margin-bottom: 6px;
+    }
+
+    .greeting-quote-text {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: clamp(16px, 4.4vw, 18.5px);
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .greeting-tap-hint {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      font-size: clamp(13px, 3.2vw, 15px);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #1a0008;
+      margin-top: 24px;
+      text-align: center;
+      opacity: 0.75;
+    }
+
+    #greeting-countdown-timer {
+      font-weight: 900;
+      color: #1a0008;
+    }
+
+    /* ── Laptop & Larger Screen Scaling (>= 768px & >= 1200px) ── */
+    @media (min-width: 768px) {
+      .greeting-container {
+        max-width: 660px;
+      }
+      .greeting-spark-wrap {
+        width: 68px;
+        height: 68px;
+        margin-bottom: 18px;
+        box-shadow: 4px 4px 0px #000000;
+      }
+      .greeting-spark-icon {
+        font-size: 32px;
+      }
+      .greeting-title {
+        font-size: clamp(36px, 3.8vw, 44px);
+        margin-bottom: 10px;
+      }
+      .greeting-sub {
+        font-size: 17.5px;
+        margin-bottom: 30px;
+      }
+      .greeting-quote-card {
+        padding: 34px 44px;
+        border-radius: 24px;
+        box-shadow: 8px 8px 0px #000000;
+      }
+      .greeting-quote-mark {
+        font-size: 52px;
+        margin-bottom: 8px;
+      }
+      .greeting-quote-text {
+        font-size: 21px;
+        line-height: 1.65;
+      }
+      .greeting-tap-hint {
+        font-size: 15px;
+        margin-top: 28px;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .greeting-container {
+        max-width: 740px;
+      }
+      .greeting-spark-wrap {
+        width: 74px;
+        height: 74px;
+        margin-bottom: 20px;
+      }
+      .greeting-spark-icon {
+        font-size: 36px;
+      }
+      .greeting-title {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+      .greeting-sub {
+        font-size: 19px;
+        margin-bottom: 36px;
+      }
+      .greeting-quote-card {
+        padding: 42px 52px;
+        border-radius: 26px;
+        box-shadow: 10px 10px 0px #000000;
+      }
+      .greeting-quote-mark {
+        font-size: 58px;
+        margin-bottom: 10px;
+      }
+      .greeting-quote-text {
+        font-size: 23px;
+        line-height: 1.7;
+      }
+    }
   </style>
 </head>
 <body>
@@ -298,6 +545,26 @@
       <h2 class="web-splash-title">Consistency Daily</h2>
       <div class="web-splash-loader">
         <div class="web-splash-progress"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WARM GREETING MIST OVERLAY ===== -->
+  <div id="greeting-mist-overlay" class="greeting-mist-overlay">
+    <div class="greeting-container">
+      <div class="greeting-spark-wrap">
+        <span class="greeting-spark-icon">✨</span>
+      </div>
+      <h1 id="greeting-title" class="greeting-title">Have a great day!</h1>
+      <p class="greeting-sub">Every moment is a fresh beginning</p>
+
+      <div class="greeting-quote-card">
+        <div class="greeting-quote-mark">“</div>
+        <p id="greeting-quote-text" class="greeting-quote-text">Small steps every day add up to big accomplishments over time.</p>
+      </div>
+
+      <div id="greeting-countdown-hint" class="greeting-tap-hint">
+        Redirecting in <span id="greeting-countdown-timer">3</span>...
       </div>
     </div>
   </div>
@@ -3472,6 +3739,21 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
+            <label for="profile-greeting-name" style="font-weight: 700; margin-bottom: 6px; display: block; font-size: 13px;">Greeting Name</label>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="text" id="profile-greeting-name" class="form-control" placeholder="Enter greeting name (e.g. Rahul)" data-clarity-unmask="true" style="padding-right: 40px; font-weight: 600;" maxlength="50" />
+              <div style="position: absolute; right: 8px; display: flex; align-items: center;">
+                <button type="button" onclick="document.getElementById('profile-greeting-name').focus()" title="Edit Greeting Name" style="background: transparent; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="pencil" style="width: 16px; height: 16px;"></i>
+                </button>
+              </div>
+            </div>
+            <p class="form-hint" style="margin-top: 6px; font-size: 11.5px; color: var(--text-muted); font-weight: 600;">
+              This name will be used to greet you on the app's opening screen. Can be updated anytime.
+            </p>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
             <label for="profile-email" style="font-weight: 600;">Email (Read Only)</label>
             <input type="email" id="profile-email" class="form-control" readonly data-clarity-mask="true" />
             <div id="email-verification-section" style="margin-top: 8px;"></div>
@@ -5212,12 +5494,118 @@
   <script>
     (function() {
       const splashEl = document.getElementById('web-splash');
-      if (splashEl) {
+      const greetingEl = document.getElementById('greeting-mist-overlay');
+
+      // Populate personalized greeting & warm daily quote
+      if (greetingEl) {
+        try {
+          const rawGreeting = (localStorage.getItem('userGreetingName') || '').trim();
+          const fallbackName = (localStorage.getItem('userName') || '').trim().split(' ')[0];
+          const activeName = rawGreeting || fallbackName;
+
+          const titleEl = document.getElementById('greeting-title');
+          if (titleEl) {
+            titleEl.textContent = activeName ? `Have a great day, ${activeName.toUpperCase()}!` : 'Have a wonderful day!';
+          }
+
+          // Curated warm and encouraging quotes (rotates on every page visit / reload)
+          const WARM_QUOTES = [
+            "Small steps every day add up to big accomplishments over time.",
+            "Focus on progress, not perfection. Every effort counts.",
+            "Your dedication today is quietly building your future.",
+            "Believe in the power of showing up, even on ordinary days.",
+            "Every moment is a fresh opportunity to grow and shine.",
+            "Consistency is the greatest kindness you can show your future self.",
+            "Take it one breath, one step at a time. You've got this.",
+            "Great journeys are simply a series of small steps walked with care.",
+            "Be proud of how far you’ve come, and excited for today.",
+            "You don't have to be extreme, just consistent.",
+            "What you do today can improve all your tomorrows.",
+            "Success is the sum of small efforts repeated day in and day out.",
+            "Action is the foundational key to all success.",
+            "Start where you are. Use what you have. Do what you can.",
+            "The energy you bring to today shapes the results of tomorrow.",
+            "Don't count the days, make the days count.",
+            "Small daily improvements over time lead to stunning results.",
+            "Every day is another chance to become a better version of yourself.",
+            "Keep showing up for yourself. It is always worth it.",
+            "Doubt kills more dreams than failure ever will. Believe and begin."
+          ];
+
+          // Rotate to a fresh quote on every single load / refresh
+          let lastIdx = parseInt(sessionStorage.getItem('lastGreetingQuoteIdx') ?? '-1', 10);
+          let quoteIndex;
+          if (isNaN(lastIdx) || lastIdx < 0) {
+            quoteIndex = Math.floor(Math.random() * WARM_QUOTES.length);
+          } else {
+            quoteIndex = (lastIdx + 1) % WARM_QUOTES.length;
+          }
+          sessionStorage.setItem('lastGreetingQuoteIdx', quoteIndex.toString());
+
+          const quoteTextEl = document.getElementById('greeting-quote-text');
+          if (quoteTextEl) {
+            quoteTextEl.textContent = WARM_QUOTES[quoteIndex];
+          }
+        } catch (err) {
+          console.warn('[Greeting Screen] Init error:', err);
+        }
+
+        let countdownSecs = 3;
+        let countdownInterval = null;
+
+        function startCountdown() {
+          const timerEl = document.getElementById('greeting-countdown-timer');
+          if (timerEl) timerEl.textContent = countdownSecs.toString();
+
+          countdownInterval = setInterval(() => {
+            if (isDismissed) {
+              clearInterval(countdownInterval);
+              return;
+            }
+            countdownSecs--;
+            if (timerEl) {
+              timerEl.textContent = Math.max(1, countdownSecs).toString();
+            }
+            if (countdownSecs <= 0) {
+              clearInterval(countdownInterval);
+              dismissGreeting();
+            }
+          }, 1000);
+        }
+
+        let isDismissed = false;
+        function dismissGreeting() {
+          if (isDismissed) return;
+          isDismissed = true;
+          if (countdownInterval) clearInterval(countdownInterval);
+          greetingEl.classList.add('mist-fade-out');
+          setTimeout(() => {
+            greetingEl.style.display = 'none';
+            greetingEl.remove();
+          }, 850);
+        }
+
+        // Tap anywhere to skip instantly
+        greetingEl.addEventListener('click', dismissGreeting);
+
+        // Sequence: Splash Screen -> Greeting Mist Screen -> Countdown -> Mist Dissolve
+        if (splashEl) {
+          setTimeout(() => {
+            splashEl.classList.add('hide');
+            setTimeout(() => {
+              splashEl.style.display = 'none';
+              startCountdown();
+            }, 600);
+          }, 1400);
+        } else {
+          startCountdown();
+        }
+      } else if (splashEl) {
         setTimeout(() => {
           splashEl.classList.add('hide');
           setTimeout(() => {
             splashEl.style.display = 'none';
-          }, 600); // Wait for CSS transition to complete
+          }, 600);
         }, 1800);
       }
     })();

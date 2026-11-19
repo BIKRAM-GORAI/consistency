@@ -770,6 +770,219 @@
       transition: 0.15s;
     }
     .oauth-tnc-cancel:hover { border-color: #999; color: #333; }
+
+    /* ── Refined Profile Avatar Styling (Centered) ── */
+    .register-avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .register-avatar-container {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    #register-avatar-wrap {
+      width: 100%;
+      height: 100%;
+      border: 2.5px solid var(--black);
+      border-radius: 50%;
+      background: #ede8e3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 3px 3px 0 var(--black);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .register-avatar-container:hover #register-avatar-wrap {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    #register-avatar-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+    }
+    #register-avatar-badge {
+      position: absolute;
+      bottom: 0px;
+      right: 0px;
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 0 var(--black);
+      z-index: 2;
+      transition: transform 0.15s;
+    }
+    .register-avatar-container:hover #register-avatar-badge {
+      transform: scale(1.08);
+    }
+
+    /* ── Two Styled Section Boxes (Personal Details & Credentials) ── */
+    .register-section-box {
+      background: linear-gradient(180deg, #faf9f6 0%, #f1efe9 100%);
+      background-image: 
+        linear-gradient(180deg, rgba(250, 249, 246, 0.94) 0%, rgba(241, 239, 233, 0.94) 100%),
+        radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+      background-size: auto, 10px 10px;
+      border: 2px solid var(--black);
+      border-radius: 8px;
+      box-shadow: 3px 3px 0 var(--black);
+      padding: 18px 20px 20px;
+      box-sizing: border-box;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .register-section-header {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      border-bottom: 2px dashed #d1d5db;
+    }
+
+    .register-section-header i {
+      width: 15px;
+      height: 15px;
+      color: var(--black);
+    }
+
+    /* ── Collapsible Referral Accordion ── */
+    .referral-accordion {
+      width: 100%;
+      max-width: 440px;
+      margin-bottom: 14px;
+    }
+
+    .referral-toggle-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fdfaf2;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 6px;
+      padding: 9px 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #4b5563;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .referral-toggle-btn:hover {
+      background: #fff9e6;
+      border-color: var(--black);
+      color: var(--black);
+    }
+
+    .referral-chevron {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s ease;
+      color: #6b7280;
+    }
+
+    .referral-chevron.open {
+      transform: rotate(180deg);
+    }
+
+    /* ── Desktop Horizontal Two-Column Layout (>= 768px) ── */
+    @media (min-width: 768px) {
+      .auth-card {
+        position: relative;
+        transition: max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .auth-card.mode-register {
+        max-width: 860px;
+      }
+      .register-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: stretch;
+      }
+      #auth-transition-overlay {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 99;
+        background: var(--black);
+        color: var(--yellow);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        border-radius: 12px;
+        pointer-events: all;
+      }
+      #auth-transition-overlay.overlay-enter {
+        animation: authOverlayEnter 0.12s ease forwards;
+      }
+      #auth-transition-overlay.overlay-exit {
+        animation: authOverlayExit 0.14s ease forwards;
+      }
+      @keyframes authOverlayEnter {
+        0% { opacity: 0; transform: scaleY(0.92); }
+        100% { opacity: 1; transform: scaleY(1); }
+      }
+      @keyframes authOverlayExit {
+        0% { opacity: 1; transform: scaleY(1); }
+        100% { opacity: 0; transform: scaleY(1.05); }
+      }
+      .overlay-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--yellow);
+        text-shadow: 2px 2px 0 var(--pink);
+      }
+      .overlay-glitch-line {
+        width: 130px;
+        height: 3px;
+        background: var(--pink);
+        box-shadow: 0 0 10px var(--pink);
+      }
+    }
+
+    /* ── Mobile Screen Rules (< 768px): Keep standard single vertical column, no animations ── */
+    @media (max-width: 767px) {
+      .register-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      #auth-transition-overlay {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -913,6 +1126,15 @@
   <div class="auth-wrap">
     <div class="auth-card">
 
+      <!-- Transition Overlay (Active only on desktop >= 768px during tab transition) -->
+      <div id="auth-transition-overlay" aria-hidden="true">
+        <div class="overlay-brand">
+          <i data-lucide="zap" style="width: 26px; height: 26px; fill: var(--yellow); color: var(--yellow);"></i>
+          <span>CONSISTENCY</span>
+        </div>
+        <div class="overlay-glitch-line"></div>
+      </div>
+
       <!-- Card Header Band -->
       <div class="auth-card-header">
         <div class="auth-brand">
@@ -927,7 +1149,7 @@
         <!-- Tab switcher -->
         <div class="auth-tabs">
           <button class="auth-tab" id="tab-login" onclick="switchTab('login')">Login</button>
-          <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Register</button>
+          <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Create Account</button>
         </div>
 
         <!-- ── LOGIN FORM ── -->
@@ -970,12 +1192,18 @@
               <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </button>
           </div>
+
+          <div style="margin-top: 18px; font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: center;">
+            Don't have an account? <a href="javascript:void(0)" onclick="switchTab('register')" style="color: var(--primary); text-decoration: underline; font-weight: 800;">Create one here</a>
+          </div>
         </div>
 
         <!-- ── REGISTER FORM ── -->
         <div class="auth-form" id="form-register">
-          <h1 class="auth-title">Create Account <i data-lucide="sparkles"></i></h1>
-          <p class="auth-subtitle">Join in and start tracking your consistency</p>
+          <div class="register-header-text" style="margin-bottom: 18px; text-align: center;">
+            <h1 class="auth-title" style="justify-content: center;">Create Account <i data-lucide="sparkles"></i></h1>
+            <p class="auth-subtitle" style="margin-bottom: 0;">Join in and start tracking your consistency</p>
+          </div>
 
           <div class="auth-error" id="register-error">
             <span><i data-lucide="alert-triangle"></i></span>
@@ -987,107 +1215,194 @@
             <span id="register-success-msg">Account created! Redirecting...</span>
           </div>
 
-          <div class="auth-field" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
-            <label class="auth-label" style="margin-bottom: 12px;">Profile Photo <span style="color:var(--red)">*</span></label>
-            <div id="register-avatar-wrap" style="position: relative; width: 100px; height: 100px; border: 3px solid var(--black); border-radius: 50%; background: var(--bg-muted); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; box-shadow: 4px 4px 0 var(--black);" onclick="document.getElementById('register-avatar-input').click()">
-              <img id="register-avatar-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
-              <div id="register-avatar-placeholder" style="font-size: 32px; font-weight: 900; color: var(--text-muted);"><i data-lucide="camera"></i></div>
-              <div style="position: absolute; bottom: 0; right: 0; background: var(--yellow); border: 2px solid var(--black); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px;"><i data-lucide="plus" style="width: 16px; height: 16px;"></i></div>
+          <!-- TOP CENTER: Profile Photo DP Field -->
+          <div class="register-avatar-section">
+            <div style="font-size: 12px; font-weight: 900; color: var(--black); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">
+              Profile Photo <span style="color:var(--red)">*</span>
+            </div>
+            <div class="register-avatar-container" onclick="document.getElementById('register-avatar-input').click()" title="Click to upload profile photo">
+              <div id="register-avatar-wrap">
+                <img id="register-avatar-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+                <div id="register-avatar-placeholder">
+                  <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+              </div>
+              <div id="register-avatar-badge" title="Upload Photo">
+                <i data-lucide="plus" style="width: 15px; height: 15px; stroke-width: 3;"></i>
+              </div>
+            </div>
+            <div id="register-photo-status" style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: var(--red); letter-spacing: 0.6px; margin-top: 8px;">
+              Required (Max 5MB)
             </div>
             <input type="file" id="register-avatar-input" style="display: none;" accept="image/*" onchange="handleRegisterProfilePicSelect(event)" />
             <input type="hidden" id="register-profile-pic-dataurl" value="" />
-            <p id="register-photo-status" style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-top: 8px; color: var(--text-muted);">Required</p>
           </div>
 
-          <div class="auth-field">
-            <label class="auth-label" for="register-name">Your Name <span style="color:var(--red)">*</span></label>
-            <input class="auth-input" type="text" id="register-name" placeholder="e.g. Bikram" autocomplete="name" oninput="validateRegisterForm()" />
-          </div>
+          <!-- TWO-COLUMN GRID (SPLIT ON DESKTOP >= 768px, STACK ON MOBILE) -->
+          <div class="register-grid">
+            <!-- LEFT COLUMN: Personal Details Box -->
+            <div class="register-col">
+              <div class="register-section-box">
+                <div class="register-section-header">
+                  <i data-lucide="user"></i>
+                  <span>Personal Details</span>
+                </div>
 
-          <div class="auth-field">
-            <label class="auth-label" for="register-username">Username <span style="color:var(--red)">*</span></label>
-            <input class="auth-input" type="text" id="register-username" placeholder="Choose a unique username (e.g. alex_pro)" autocomplete="username" oninput="validateRegisterForm()" />
-            
-            <div class="auth-error" id="username-format-error" style="margin-top: 8px;">
-              <span><i data-lucide="alert-triangle"></i></span>
-              <span id="username-format-error-msg"></span>
+                <!-- Full Name -->
+                <div class="auth-field">
+                  <label class="auth-label" for="register-name">Your Name <span style="color:var(--red)">*</span></label>
+                  <input class="auth-input" type="text" id="register-name" placeholder="e.g. Bikram" autocomplete="name" oninput="handleRegisterNameInput()" />
+                </div>
+
+                <!-- Greeting Name -->
+                <div class="auth-field">
+                  <label class="auth-label" for="register-greeting-name">Greeting Name</label>
+                  <input class="auth-input" type="text" id="register-greeting-name" placeholder="Name to greet you with" maxlength="50" oninput="validateRegisterForm()" />
+                  <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                    <input type="checkbox" id="register-greeting-same" checked onchange="toggleGreetingSameAsName()" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary);" />
+                    <label for="register-greeting-same" style="font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; user-select: none;">Same as the full name</label>
+                  </div>
+                  <p class="auth-hint" style="margin-top: 4px; font-size: 11px;">This name will be used to greet you on the app's opening screen.</p>
+                </div>
+
+                <!-- Username -->
+                <div class="auth-field" style="margin-bottom: 0;">
+                  <label class="auth-label" for="register-username">Username <span style="color:var(--red)">*</span></label>
+                  <input class="auth-input" type="text" id="register-username" placeholder="Choose a unique username (e.g. alex_pro)" autocomplete="username" oninput="validateRegisterForm()" />
+                  
+                  <div class="auth-error" id="username-format-error" style="margin-top: 8px;">
+                    <span><i data-lucide="alert-triangle"></i></span>
+                    <span id="username-format-error-msg"></span>
+                  </div>
+
+                  <div class="username-rules-card" style="margin-top: 8px; padding: 8px 12px; background: #FFF9F2; border: 2px solid #FF8C42; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 11.5px; color: #222; line-height: 1.5; font-weight: 600;">
+                      <li style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
+                        <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
+                        <span><strong style="color: #D95D00;">Allowed:</strong> <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>_</code></span>
+                      </li>
+                      <li style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
+                        <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
+                        <span><strong style="color: #D95D00;">Not Allowed:</strong> Spaces, symbols</span>
+                      </li>
+                      <li style="display: flex; align-items: baseline; gap: 6px;">
+                        <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
+                        <span><strong style="color: #D95D00;">Length:</strong> 4 to 20 characters</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="username-rules-card" style="margin-top: 8px; padding: 8px 12px; background: #FFF9F2; border: 2px solid #FF8C42; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
-              <ul style="list-style: none; padding: 0; margin: 0; font-size: 11.5px; color: #222; line-height: 1.5; font-weight: 600;">
-                <li style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
-                  <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
-                  <span><strong style="color: #D95D00;">Allowed:</strong> <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>_</code></span>
-                </li>
-                <li style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
-                  <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
-                  <span><strong style="color: #D95D00;">Not Allowed:</strong> Spaces, symbols (no <code>@</code>, <code>#</code>, <code>-</code>, <code>.</code>, etc.)</span>
-                </li>
-                <li style="display: flex; align-items: baseline; gap: 6px;">
-                  <span style="color: #FF8C42; font-size: 13px; font-weight: 900; line-height: 1;">•</span>
-                  <span><strong style="color: #D95D00;">Length:</strong> 4 to 20 characters</span>
-                </li>
-              </ul>
+            <!-- RIGHT COLUMN: Account Credentials Box -->
+            <div class="register-col">
+              <div class="register-section-box">
+                <div class="register-section-header">
+                  <i data-lucide="key-round"></i>
+                  <span>Credentials</span>
+                </div>
+
+                <!-- Email -->
+                <div class="auth-field">
+                  <label class="auth-label" for="register-email">Email <span style="color:var(--red)">*</span></label>
+                  <input class="auth-input" type="email" id="register-email" placeholder="you@example.com" autocomplete="email" oninput="validateRegisterForm()" />
+                </div>
+
+                <!-- Password with On-Demand Revealable Hint -->
+                <div class="auth-field">
+                  <label class="auth-label" for="register-password">Password <span style="color:var(--red)">*</span></label>
+                  <div class="password-wrapper">
+                    <input class="auth-input has-toggle" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" onfocus="revealPasswordHint()" oninput="validateRegisterForm()" />
+                    <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+                  </div>
+                  
+                  <!-- Password Requirements Card (Hidden by default, reveals on click & stays visible) -->
+                  <div id="password-requirements-hint" style="display: none; margin-top: 8px; padding: 8px 12px; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 6px; box-shadow: 2px 2px 0 var(--black);">
+                    <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #15803d; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                      <i data-lucide="shield-check" style="width: 13px; height: 13px;"></i> Password Requirements:
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 11px; color: #166534; line-height: 1.5; font-weight: 600;">
+                      <li>• 5+ characters, no spaces</li>
+                      <li>• At least 1 uppercase &amp; 1 lowercase letter</li>
+                      <li>• At least 1 special character</li>
+                    </ul>
+                  </div>
+
+                  <div class="auth-error" id="password-format-error" style="margin-top: 8px;">
+                    <span><i data-lucide="alert-triangle"></i></span>
+                    <span id="password-format-error-msg"></span>
+                  </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="auth-field" style="margin-bottom: 0;">
+                  <label class="auth-label" for="register-confirm-password">Confirm Password <span style="color:var(--red)">*</span></label>
+                  <div class="password-wrapper">
+                    <input class="auth-input has-toggle" type="password" id="register-confirm-password" placeholder="Repeat your password" autocomplete="new-password" oninput="validateRegisterForm()" />
+                    <button type="button" class="password-toggle" onclick="togglePassword('register-confirm-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+                  </div>
+                  <p id="password-match-hint" class="auth-hint" style="display: none; color: var(--red); font-weight: 800; margin-top: 6px;">Passwords do not match!</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="auth-field">
-            <label class="auth-label" for="register-email">Email <span style="color:var(--red)">*</span></label>
-            <input class="auth-input" type="email" id="register-email" placeholder="you@example.com" autocomplete="email" oninput="validateRegisterForm()" />
-          </div>
-
-          <div class="auth-field">
-            <label class="auth-label" for="register-password">Password <span style="color:var(--red)">*</span></label>
-            <div class="password-wrapper">
-              <input class="auth-input has-toggle" type="password" id="register-password" placeholder="Create a password" autocomplete="new-password" oninput="validateRegisterForm()" />
-              <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
+          <!-- BOTTOM CENTER SECTION -->
+          <div class="register-bottom" style="margin-top: 22px; display: flex; flex-direction: column; align-items: center;">
+            <!-- Collapsible Referral Accordion -->
+            <div class="referral-accordion">
+              <button type="button" id="referral-toggle-btn" class="referral-toggle-btn" onclick="toggleReferralField()">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="gift" style="width: 16px; height: 16px; color: #d97706;"></i>
+                  <span>Have a referral code? (Optional)</span>
+                </span>
+                <i data-lucide="chevron-down" id="referral-chevron" class="referral-chevron"></i>
+              </button>
+              <div id="referral-content" class="referral-content" style="display: none;">
+                <div style="padding-top: 10px;">
+                  <input class="auth-input" type="text" id="register-referral-code" placeholder="CONS-XXXXXX" style="text-transform: uppercase;" />
+                  <p class="auth-hint" style="font-size: 11px; margin-top: 6px;">Enter a friend's code to get a 200 CP welcome bonus instantly!</p>
+                </div>
+              </div>
             </div>
-            <p class="auth-hint">Must be 5+ characters with at least 1 uppercase, 1 lowercase, 1 special character, and no spaces.</p>
-            <div class="auth-error" id="password-format-error" style="margin-top: 8px;">
-              <span><i data-lucide="alert-triangle"></i></span>
-              <span id="password-format-error-msg"></span>
+
+            <!-- Terms & Conditions checkbox -->
+            <div class="tnc-row" style="width: 100%; max-width: 440px; box-sizing: border-box; margin: 4px 0 16px;">
+              <input type="checkbox" class="tnc-checkbox" id="register-tnc" onchange="validateRegisterForm()" />
+              <label class="tnc-label" for="register-tnc">
+                I have read and agree to the
+                <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
+                and
+                <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+              </label>
             </div>
-          </div>
 
-          <div class="auth-field">
-            <label class="auth-label" for="register-confirm-password">Confirm Password <span style="color:var(--red)">*</span></label>
-            <div class="password-wrapper">
-              <input class="auth-input has-toggle" type="password" id="register-confirm-password" placeholder="Repeat your password" autocomplete="new-password" oninput="validateRegisterForm()" />
-              <button type="button" class="password-toggle" onclick="togglePassword('register-confirm-password', this)" tabindex="-1" title="Toggle password visibility"><i data-lucide="eye"></i></button>
-            </div>
-            <p id="password-match-hint" class="auth-hint" style="display: none; color: var(--red); font-weight: 800;">Passwords do not match!</p>
-          </div>
-
-          <div class="auth-field">
-            <label class="auth-label" for="register-referral-code">Referral Code <span style="font-weight: 500; font-size: 11px; color: #888;">(Optional)</span></label>
-            <input class="auth-input" type="text" id="register-referral-code" placeholder="CONS-XXXXXX" style="text-transform: uppercase;" />
-            <p class="auth-hint">Enter a friend's code to get a 200 CP welcome bonus instantly!</p>
-          </div>
-
-          <!-- Terms & Conditions checkbox — required before Create Account enables -->
-          <div class="tnc-row">
-            <input type="checkbox" class="tnc-checkbox" id="register-tnc" onchange="validateRegisterForm()" />
-            <label class="tnc-label" for="register-tnc">
-              I have read and agree to the
-              <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
-              and
-              <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
-            </label>
-          </div>
-
-          <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()" disabled>Create Account <i data-lucide="arrow-right"></i></button>
-
-          <div class="oauth-divider"><span>Or sign up with</span></div>
-          <div class="oauth-buttons">
-            <button class="oauth-btn" id="oauth-register-google" type="button" title="Sign up with Google">
-              <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+            <!-- Big Prominent Create Account Button -->
+            <button class="auth-submit-btn" id="register-btn" onclick="handleRegister()" disabled style="width: 100%; max-width: 440px; font-size: 15px; font-weight: 900; padding: 13px 24px; text-transform: uppercase;">
+              Create Account <i data-lucide="arrow-right"></i>
             </button>
-            <button class="oauth-btn" id="oauth-register-github" type="button" title="Sign up with GitHub">
-              <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            </button>
-            <button class="oauth-btn" id="oauth-register-facebook" type="button" title="Sign up with Facebook">
-              <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            </button>
+
+            <!-- Already have an account login link -->
+            <div style="margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: center;">
+              Already have an account? <a href="javascript:void(0)" onclick="switchTab('login')" style="color: var(--primary); text-decoration: underline; font-weight: 800;">Log in here</a>
+            </div>
+
+            <div class="oauth-divider" style="width: 100%; max-width: 440px; margin: 18px 0 14px;"><span>Or sign up with</span></div>
+            <div class="oauth-buttons" style="width: 100%; max-width: 440px;">
+              <button class="oauth-btn" id="oauth-register-google" type="button" title="Sign up with Google">
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+              </button>
+              <button class="oauth-btn" id="oauth-register-github" type="button" title="Sign up with GitHub">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              </button>
+              <button class="oauth-btn" id="oauth-register-facebook" type="button" title="Sign up with Facebook">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1174,6 +1489,38 @@
 
     // ── Tab switching ──────────────────────────────────────────
     function switchTab(tab) {
+      const isDesktop = window.innerWidth >= 768;
+      const card = document.querySelector('.auth-card');
+      const overlay = document.getElementById('auth-transition-overlay');
+
+      if (isDesktop && overlay && (tab === 'login' || tab === 'register')) {
+        const isRegisterActive = document.getElementById('tab-register')?.classList.contains('active');
+        const currentTab = isRegisterActive ? 'register' : 'login';
+
+        if (currentTab !== tab) {
+          overlay.style.display = 'flex';
+          overlay.classList.remove('overlay-exit');
+          overlay.classList.add('overlay-enter');
+
+          setTimeout(() => {
+            applyTabSwitch(tab);
+            if (card) card.classList.toggle('mode-register', tab === 'register');
+            overlay.classList.remove('overlay-enter');
+            overlay.classList.add('overlay-exit');
+            setTimeout(() => {
+              overlay.style.display = 'none';
+              overlay.classList.remove('overlay-exit');
+            }, 140);
+          }, 120);
+          return;
+        }
+      }
+
+      applyTabSwitch(tab);
+      if (card) card.classList.toggle('mode-register', tab === 'register');
+    }
+
+    function applyTabSwitch(tab) {
       document.getElementById('form-login').classList.toggle('active', tab === 'login');
       document.getElementById('form-register').classList.toggle('active', tab === 'register');
       document.getElementById('form-forgot').classList.toggle('active', tab === 'forgot');
@@ -1186,6 +1533,19 @@
         document.getElementById('tab-register').classList.toggle('active', tab === 'register');
       }
       clearErrors();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    let passwordHintRevealed = false;
+    function revealPasswordHint() {
+      if (!passwordHintRevealed) {
+        passwordHintRevealed = true;
+        const hint = document.getElementById('password-requirements-hint');
+        if (hint) {
+          hint.style.display = 'block';
+          if (window.lucide) lucide.createIcons({ root: hint });
+        }
+      }
     }
 
     function togglePassword(inputId, btn) {
@@ -1256,6 +1616,7 @@
         localStorage.setItem('token', data.token);
         if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('userUsername', data.username || '');
+        localStorage.setItem('userGreetingName', data.greetingName || data.username || (data.name ? data.name.split(' ')[0] : ''));
         localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
         localStorage.setItem('userHighestStreak', data.highestStreak || 0);
         localStorage.setItem('pointsBalance', data.pointsBalance || 0);
@@ -1277,6 +1638,60 @@
 
     // ── Register ───────────────────────────────────────────────
     let isCompressing = false;
+
+    function handleRegisterNameInput() {
+      const sameCheckbox = document.getElementById('register-greeting-same');
+      if (sameCheckbox && sameCheckbox.checked) {
+        const greetingInput = document.getElementById('register-greeting-name');
+        if (greetingInput) greetingInput.value = document.getElementById('register-name').value;
+      }
+      validateRegisterForm();
+    }
+
+    function toggleGreetingSameAsName() {
+      const sameCheckbox = document.getElementById('register-greeting-same');
+      const greetingInput = document.getElementById('register-greeting-name');
+      if (!sameCheckbox || !greetingInput) return;
+      if (sameCheckbox.checked) {
+        greetingInput.value = document.getElementById('register-name').value;
+        greetingInput.readOnly = true;
+        greetingInput.style.backgroundColor = 'var(--bg-muted, #f3f4f6)';
+        greetingInput.style.opacity = '0.85';
+      } else {
+        greetingInput.readOnly = false;
+        greetingInput.style.backgroundColor = '';
+        greetingInput.style.opacity = '1';
+        greetingInput.focus();
+      }
+      validateRegisterForm();
+    }
+
+    function toggleReferralField() {
+      const content = document.getElementById('referral-content');
+      const chevron = document.getElementById('referral-chevron');
+      if (!content) return;
+      const isHidden = content.style.display === 'none' || !content.style.display;
+      content.style.display = isHidden ? 'block' : 'none';
+      if (chevron) {
+        chevron.classList.toggle('open', isHidden);
+      }
+      if (isHidden) {
+        const input = document.getElementById('register-referral-code');
+        if (input) setTimeout(() => input.focus(), 50);
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Initialize greeting name field sync state
+    window.addEventListener('DOMContentLoaded', () => {
+      const sameCheckbox = document.getElementById('register-greeting-same');
+      const greetingInput = document.getElementById('register-greeting-name');
+      if (sameCheckbox && sameCheckbox.checked && greetingInput) {
+        greetingInput.readOnly = true;
+        greetingInput.style.backgroundColor = 'var(--bg-muted, #f3f4f6)';
+        greetingInput.style.opacity = '0.85';
+      }
+    });
 
     function validateRegisterForm() {
       const name     = document.getElementById('register-name').value.trim();
@@ -1417,6 +1832,13 @@
               avatarImg.style.display = 'block';
               avatarPlaceholder.style.display = 'none';
 
+              const avatarBadge = document.getElementById('register-avatar-badge');
+              if (avatarBadge) {
+                avatarBadge.innerHTML = '<i data-lucide="check" style="width: 15px; height: 15px; stroke-width: 3; color: var(--black);"></i>';
+                avatarBadge.style.background = '#22c55e';
+                if (window.lucide) lucide.createIcons({ root: avatarBadge });
+              }
+
               isCompressing = false;
               statusEl.textContent = 'Ready!';
               statusEl.style.color = 'var(--green)';
@@ -1431,6 +1853,12 @@
     async function handleRegister() {
       clearErrors();
       const name     = document.getElementById('register-name').value.trim();
+      const greetingInput = document.getElementById('register-greeting-name');
+      let greetingName = greetingInput ? greetingInput.value.trim() : '';
+      if (!greetingName) {
+        greetingName = name;
+        if (greetingInput) greetingInput.value = name;
+      }
       const username = document.getElementById('register-username').value.trim();
       const email    = document.getElementById('register-email').value.trim();
       const password = document.getElementById('register-password').value;
@@ -1510,7 +1938,7 @@
         const res = await fetch(API + '/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, username, email, password, profilePicture, referralCode }),
+          body: JSON.stringify({ name, greetingName, username, email, password, profilePicture, referralCode }),
         });
         const data = await res.json();
 
@@ -1544,6 +1972,7 @@
         localStorage.setItem('token', data.token);
         if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('userUsername', data.username || '');
+        localStorage.setItem('userGreetingName', data.greetingName || data.username || (data.name ? data.name.split(' ')[0] : ''));
         localStorage.setItem('pointsBalance', data.pointsBalance || 0);
         localStorage.setItem('referralCode', data.referralCode || '');
         localStorage.setItem('showReferralPrompt', data.showReferralPrompt ? 'true' : 'false');
@@ -1679,7 +2108,22 @@
       }
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab');
-      switchTab(tab === 'register' ? 'register' : 'login');
+      const initialTab = tab === 'register' ? 'register' : 'login';
+      applyTabSwitch(initialTab);
+      const card = document.querySelector('.auth-card');
+      if (card) {
+        card.classList.toggle('mode-register', initialTab === 'register');
+      }
+
+      const refParam = params.get('ref') || params.get('referral');
+      if (refParam) {
+        const refInput = document.getElementById('register-referral-code');
+        if (refInput) refInput.value = refParam.trim().toUpperCase();
+        const content = document.getElementById('referral-content');
+        const chevron = document.getElementById('referral-chevron');
+        if (content) content.style.display = 'block';
+        if (chevron) chevron.classList.add('open');
+      }
 
       if (params.get('blacklisted') === 'true') {
         const reason = params.get('reason') || 'Your account is blacklisted.';
@@ -1903,6 +2347,7 @@
       localStorage.setItem('token', data.token);
       if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('userUsername', data.username || '');
+      localStorage.setItem('userGreetingName', data.greetingName || data.username || (data.name ? data.name.split(' ')[0] : ''));
       localStorage.setItem('userCurrentStreak', data.currentStreak || 0);
       localStorage.setItem('userHighestStreak', data.highestStreak || 0);
       localStorage.setItem('pointsBalance', data.pointsBalance || 0);

@@ -36,10 +36,13 @@ const buildEmailQuery = (rawEmail) => {
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, username, profilePicture, referralCode: referralCodeUsed } = req.body;
+    const { name, greetingName, email, password, username, profilePicture, referralCode: referralCodeUsed } = req.body;
     if (!name || !email || !password || !username || !profilePicture) {
       return res.status(400).json({ message: 'All fields are required' });
     }
+    const cleanGreetingName = (typeof greetingName === 'string' && greetingName.trim())
+      ? greetingName.trim()
+      : (name ? name.trim() : username.toLowerCase().trim());
     const existing = await User.findOne(buildEmailQuery(email));
     if (existing) return res.status(400).json({ message: 'An account already exists with this email. Please log in using your existing account to merge.' });
     const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
@@ -70,6 +73,7 @@ const register = async (req, res) => {
 
     const user = new User({ 
       name, 
+      greetingName: cleanGreetingName,
       username: username.toLowerCase().trim(), 
       email: email.toLowerCase().trim(), 
       password: hashedPassword, 
@@ -111,6 +115,7 @@ const register = async (req, res) => {
     res.status(201).json({ 
       _id: saved._id, 
       name: saved.name, 
+      greetingName: saved.greetingName,
       email: saved.email, 
       profilePicture: saved.profilePicture, 
       pointsBalance: saved.pointsBalance || 0,
@@ -169,12 +174,17 @@ const login = async (req, res) => {
     );
     const token = generateToken(user._id, user.email);
     const refreshToken = generateRefreshToken(user._id, user.email);
+    const defaultGreeting = user.username || (user.name ? user.name.split(' ')[0] : '');
+    const greetingName = (user.greetingName !== undefined && user.greetingName !== null)
+      ? user.greetingName
+      : defaultGreeting;
     res.json({ 
       _id: user._id, 
       name: user.name, 
       email: user.email, 
       profilePicture: user.profilePicture, 
       username: user.username, 
+      greetingName,
       currentStreak: user.currentStreak || 0, 
       highestStreak: user.highestStreak || 0, 
       pointsBalance: user.pointsBalance || 0,
@@ -304,12 +314,17 @@ const oauthLogin = async (req, res) => {
 
     const token = generateToken(user._id, user.email);
     const refreshToken = generateRefreshToken(user._id, user.email);
+    const defaultGreeting = user.username || (user.name ? user.name.split(' ')[0] : '');
+    const greetingName = (user.greetingName !== undefined && user.greetingName !== null)
+      ? user.greetingName
+      : defaultGreeting;
     res.json({ 
       _id: user._id, 
       name: user.name, 
       email: user.email, 
       profilePicture: user.profilePicture, 
       username: user.username, 
+      greetingName,
       currentStreak: user.currentStreak || 0, 
       highestStreak: user.highestStreak || 0, 
       pointsBalance: user.pointsBalance || 0,
@@ -346,8 +361,14 @@ async function getProfileSettings(req, res) {
     const isPremium = user.subscriptionTier === 'premium' && 
       (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > now);
 
+    const defaultGreeting = user.username || (user.name ? user.name.split(' ')[0] : '');
+    const greetingName = (user.greetingName !== undefined && user.greetingName !== null)
+      ? user.greetingName
+      : defaultGreeting;
+
     res.json({
       name: user.name,
+      greetingName: greetingName,
       lastNameChangeAt: user.lastNameChangeAt || null,
       email: user.email,
       username: user.username || '',
@@ -394,7 +415,11 @@ async function getProfileSettings(req, res) {
 async function setProfileSettings(req, res) {
   try {
     const user = await User.findById(req.user.userId);
-    const { name, emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, motivationRemindersEnabled, motivationIntervalHours, motivationStartTime, motivationEndTime, leetcodeAutoSync } = req.body;
+    const { name, greetingName, emailNotifications, isPublicProfile, showOnLeaderboard, theme, profilePicture, newPassword, oldPassword, username, globalStreakReminderEnabled, globalStreakReminderTime, globalStreakReminderType, motivationRemindersEnabled, motivationIntervalHours, motivationStartTime, motivationEndTime, leetcodeAutoSync } = req.body;
+
+    if (typeof greetingName === 'string') {
+      user.greetingName = greetingName.trim();
+    }
 
     if (typeof name === 'string' && name.trim() !== '') {
       const cleanName = name.trim();
@@ -477,6 +502,7 @@ async function setProfileSettings(req, res) {
     res.json({
       message: 'Profile updated',
       name: user.name,
+      greetingName: user.greetingName !== undefined && user.greetingName !== null ? user.greetingName : '',
       email: user.email,
       username: user.username || '',
       profilePicture: user.profilePicture || '',
