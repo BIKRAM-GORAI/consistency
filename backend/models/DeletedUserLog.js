@@ -12,7 +12,7 @@ const DeletedUserLogSchema = new mongoose.Schema({
   },
   username: {
     type: String,
-    required: true,
+    default: '',
     index: true
   },
   email: {

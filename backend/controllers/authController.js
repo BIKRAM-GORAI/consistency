@@ -628,92 +628,117 @@ async function deleteAccount(req, res) {
     }
     
     const userAgentStr = String(req.headers['user-agent'] || '');
+    const safeUsername = user.username || (user.email ? user.email.split('@')[0] : 'user');
 
-    // 1. Create permanent DeletedUserLog archive record (never deleted)
-    const DeletedUserLog = require('../models/DeletedUserLog');
-    await DeletedUserLog.create({
-      userId: user._id.toString(),
-      name: user.name || '',
-      username: user.username || '',
-      email: user.email || '',
-      deletionReason: cleanReason,
-      accountCreatedAt: user.createdAt || (user._id ? user._id.getTimestamp() : null),
-      deletedAt: new Date(),
-      currentStreak: user.currentStreak || 0,
-      highestStreak: user.highestStreak || 0,
-      isPremium: user.subscriptionTier === 'premium',
-      ipAddress: clientIp,
-      userAgent: userAgentStr
-    });
+    // 1. Create permanent DeletedUserLog archive record (never blocks deletion)
+    try {
+      const DeletedUserLog = require('../models/DeletedUserLog');
+      await DeletedUserLog.create({
+        userId: user._id.toString(),
+        name: user.name || '',
+        username: safeUsername,
+        email: user.email || '',
+        deletionReason: cleanReason,
+        accountCreatedAt: user.createdAt || (user._id ? user._id.getTimestamp() : null),
+        deletedAt: new Date(),
+        currentStreak: user.currentStreak || 0,
+        highestStreak: user.highestStreak || 0,
+        isPremium: user.subscriptionTier === 'premium',
+        ipAddress: clientIp,
+        userAgent: userAgentStr
+      });
+    } catch (logErr) {
+      console.error('Failed to create DeletedUserLog on deleteAccount:', logErr);
+    }
 
     // 2. Send SMTP Email notification alert to Admin
     const adminRecipient = process.env.ADMIN_OTP_RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || process.env.GMAIL_EMAIL;
     if (adminRecipient) {
-      const { sendEmail } = require('../utils/email');
-      const formattedCreatedDate = user.createdAt ? new Date(user.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
-      const formattedDeletedDate = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+      try {
+        const { sendEmail } = require('../utils/email');
+        const formattedCreatedDate = user.createdAt ? new Date(user.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+        const formattedDeletedDate = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
-      sendEmail({
-        to: adminRecipient,
-        subject: `🚨 Account Deleted: @${user.username} (${user.email})`,
-        html: `
-          <div style="font-family: 'Space Grotesk', Arial, sans-serif; padding: 24px; color: #111; max-width: 600px; margin: 0 auto; border: 3px solid #000; border-radius: 12px; background: #ffffff;">
-            <div style="background: #ef4444; color: #ffffff; padding: 16px 20px; border-radius: 8px; font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; border: 2px solid #000;">
-              🚨 Permanent Account Deletion Notice
+        sendEmail({
+          to: adminRecipient,
+          subject: `🚨 Account Deleted: @${safeUsername} (${user.email})`,
+          html: `
+            <div style="font-family: 'Space Grotesk', Arial, sans-serif; padding: 24px; color: #111; max-width: 600px; margin: 0 auto; border: 3px solid #000; border-radius: 12px; background: #ffffff;">
+              <div style="background: #ef4444; color: #ffffff; padding: 16px 20px; border-radius: 8px; font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; border: 2px solid #000;">
+                🚨 Permanent Account Deletion Notice
+              </div>
+              
+              <p style="font-size: 14px; font-weight: 700; color: #333; margin-bottom: 20px;">
+                User <strong>@${safeUsername}</strong> has explicitly deleted their account from Consistency Tracker.
+              </p>
+
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+                <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Full Name:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">${user.name || 'N/A'}</td></tr>
+                <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Username:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">@${safeUsername}</td></tr>
+                <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Email:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">${user.email}</td></tr>
+                <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">User ID:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700; font-family: monospace;">${user._id}</td></tr>
+                <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Account Created:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">${formattedCreatedDate}</td></tr>
+                <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Deleted At:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700; color: #ef4444;">${formattedDeletedDate}</td></tr>
+                <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Streaks:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">Current: ${user.currentStreak || 0} 🔥 | Highest: ${user.highestStreak || 0} 🏆</td></tr>
+                <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">IP Address:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700; font-family: monospace;">${clientIp}</td></tr>
+              </table>
+
+              <div style="padding: 16px; background: rgba(239, 68, 68, 0.08); border-left: 5px solid #ef4444; border-radius: 8px; border: 1.5px solid #000;">
+                <h4 style="margin: 0 0 8px 0; color: #b91c1c; font-size: 13px; font-weight: 900; text-transform: uppercase;">Feedback / Reason Provided by User:</h4>
+                <p style="margin: 0; font-size: 13.5px; font-style: italic; white-space: pre-wrap; color: #111; line-height: 1.4;">${cleanReason || '(No feedback or reason provided)'}</p>
+              </div>
+
+              <p style="margin-top: 20px; font-size: 11px; color: #64748b; text-align: center; text-transform: uppercase; font-weight: 800;">
+                Consistency Audit Trail System • Log ID: ${user._id}
+              </p>
             </div>
-            
-            <p style="font-size: 14px; font-weight: 700; color: #333; margin-bottom: 20px;">
-              User <strong>@${user.username}</strong> has explicitly deleted their account from Consistency Tracker.
-            </p>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
-              <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Full Name:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">${user.name || 'N/A'}</td></tr>
-              <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Username:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">@${user.username}</td></tr>
-              <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Email:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">${user.email}</td></tr>
-              <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">User ID:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700; font-family: monospace;">${user._id}</td></tr>
-              <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Account Created:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">${formattedCreatedDate}</td></tr>
-              <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Deleted At:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700; color: #ef4444;">${formattedDeletedDate}</td></tr>
-              <tr style="background: #f8fafc;"><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">Streaks:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700;">Current: ${user.currentStreak || 0} 🔥 | Highest: ${user.highestStreak || 0} 🏆</td></tr>
-              <tr><td style="padding: 10px; border: 1.5px solid #000; font-weight: 800; text-transform: uppercase;">IP Address:</td><td style="padding: 10px; border: 1.5px solid #000; font-weight: 700; font-family: monospace;">${clientIp}</td></tr>
-            </table>
-
-            <div style="padding: 16px; background: rgba(239, 68, 68, 0.08); border-left: 5px solid #ef4444; border-radius: 8px; border: 1.5px solid #000;">
-              <h4 style="margin: 0 0 8px 0; color: #b91c1c; font-size: 13px; font-weight: 900; text-transform: uppercase;">Feedback / Reason Provided by User:</h4>
-              <p style="margin: 0; font-size: 13.5px; font-style: italic; white-space: pre-wrap; color: #111; line-height: 1.4;">${cleanReason || '(No feedback or reason provided)'}</p>
-            </div>
-
-            <p style="margin-top: 20px; font-size: 11px; color: #64748b; text-align: center; text-transform: uppercase; font-weight: 800;">
-              Consistency Audit Trail System • Log ID: ${user._id}
-            </p>
-          </div>
-        `
-      }).catch(e => console.error('Failed to send admin deletion email alert:', e));
+          `
+        }).catch(e => console.error('Failed to send admin deletion email alert:', e));
+      } catch (emailErr) {
+        console.error('Failed to generate admin deletion email:', emailErr);
+      }
     }
 
     // 3. Cleanup social data (friendships, requests) and DMs in Firestore before account deletion
-    const { cleanupUserSocialData } = require('../utils/firestoreSync');
-    await cleanupUserSocialData(userId);
+    try {
+      const { cleanupUserSocialData } = require('../utils/firestoreSync');
+      await cleanupUserSocialData(userId);
+    } catch (socialErr) {
+      console.error('Failed to cleanup user social data:', socialErr);
+    }
 
     await Day.deleteMany({ userId });
     await Goal.deleteMany({ userId });
     await Template.deleteMany({ userId });
+
     // Clean up all achievements and their Cloudinary photos
-    const userAchs = await Achievement.find({ userId });
-    if (userAchs && userAchs.length > 0) {
-      const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
-      for (const ach of userAchs) {
-        if (ach.photos && ach.photos.length > 0) {
-          for (const p of ach.photos) {
-            const idOrUrl = p.publicId || p.url;
-            if (idOrUrl) await deleteFromAchievementCloudinary(idOrUrl);
+    try {
+      const userAchs = await Achievement.find({ userId });
+      if (userAchs && userAchs.length > 0) {
+        const { deleteFromAchievementCloudinary } = require('../config/cloudinary');
+        for (const ach of userAchs) {
+          if (ach.photos && ach.photos.length > 0) {
+            for (const p of ach.photos) {
+              const idOrUrl = p.publicId || p.url;
+              if (idOrUrl) await deleteFromAchievementCloudinary(idOrUrl).catch(() => {});
+            }
           }
         }
       }
+    } catch (achErr) {
+      console.warn('Failed to clean achievement photos during deletion:', achErr);
     }
     await Achievement.deleteMany({ userId });
     await Group.updateMany({ members: userId }, { $pull: { members: userId } });
     await User.findByIdAndDelete(userId);
-    if (user.profilePictureId) await cloudinary.uploader.destroy(user.profilePictureId);
+
+    if (user.profilePictureId) {
+      try {
+        await cloudinary.uploader.destroy(user.profilePictureId);
+      } catch (cloudErr) {
+        console.warn('Failed to delete profile picture from Cloudinary:', cloudErr);
+      }
+    }
     
     res.json({ message: 'Account deleted successfully' });
   } catch (err) { 

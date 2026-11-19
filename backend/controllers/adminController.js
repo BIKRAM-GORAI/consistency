@@ -477,7 +477,7 @@ async function deleteUser(req, res) {
       await DeletedUserLog.create({
         userId: user._id.toString(),
         name: user.name || '',
-        username: user.username || '',
+        username: user.username || (user.email ? user.email.split('@')[0] : 'user'),
         email: user.email || '',
         deletionReason: 'Deleted by Admin via Admin Dashboard',
         accountCreatedAt: user.createdAt || (user._id ? user._id.getTimestamp() : null),
