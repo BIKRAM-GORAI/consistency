@@ -64,10 +64,10 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=80" />
+  <link rel="stylesheet" href="style.css?v=83" />
   <link rel="stylesheet" href="aurora-theme.css?v=6" />
   <link rel="stylesheet" href="minimalistic-theme.css?v=3" />
-  <link rel="stylesheet" href="claymorphism-theme.css?v=11" />
+  <link rel="stylesheet" href="claymorphism-theme.css?v=18" />
   <style>
     /* ── Offline mode: disable all network-dependent buttons instantly via body class ── */
     body.is-offline [data-requires-network="true"] {
@@ -390,7 +390,9 @@
   <nav class="navbar" id="navbar">
     <div class="nav-brand-group">
       <div class="nav-brand">
-        <span class="brand-icon" style="font-size: 26px; color: var(--black); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);"><i data-lucide="zap" class="no-theme"></i></span>
+        <span class="brand-icon">
+          <img src="icon-192.png" alt="Consistency Logo" class="brand-logo-img" width="28" height="28" />
+        </span>
         <span class="brand-name">Consistency</span>
       </div>
 
@@ -2700,7 +2702,7 @@
         <div class="form-group">
           <label>Categories &amp; Tasks</label>
           <div id="categories-builder"></div>
-          <button class="btn-ghost ripple" onclick="addCategoryField()" id="add-category-btn">
+          <button type="button" class="btn-ghost ripple btn-add-category-main" onclick="addCategoryField()" id="add-category-btn">
             <span><i data-lucide="plus"></i></span> Add Category
           </button>
         </div>

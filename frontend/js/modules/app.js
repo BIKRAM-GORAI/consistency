@@ -65,11 +65,11 @@ function applyTemplate() {
     item.id = `cat-build-${idx}`;
     item.innerHTML = `
       <div class="cat-top-row">
-        <input type="text" class="form-control" placeholder="Category name" id="cat-name-${idx}" value="${window.escHtml(cat.name)}" />
+        <input type="text" class="form-control" placeholder="Category name (e.g. Work)" id="cat-name-${idx}" value="${window.escHtml(cat.name)}" />
         <button class="btn-remove" onclick="removeCategoryField(${idx})" title="Remove"><i data-lucide="trash-2"></i></button>
       </div>
       <div class="tasks-builder" id="tasks-build-${idx}"></div>
-      <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
+      <button type="button" class="btn-add-task-field ripple" onclick="addTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
     `;
     builder.appendChild(item);
     
@@ -220,11 +220,11 @@ function addEditTemplateCategoryField(name = '', tasks = []) {
   item.id = `edit-template-cat-build-${idx}`;
   item.innerHTML = `
     <div class="cat-top-row">
-      <input type="text" class="form-control" placeholder="Category name" value="${escHtml(name)}" />
+      <input type="text" class="form-control" placeholder="Category name (e.g. Work)" value="${escHtml(name)}" />
       <button class="btn-remove" onclick="this.parentElement.parentElement.remove()" title="Remove"><i data-lucide="trash-2"></i></button>
     </div>
     <div class="tasks-builder" id="edit-template-tasks-build-${idx}"></div>
-    <button class="btn-ghost ripple" style="font-size:12px;padding:6px 12px;border-radius:8px;" onclick="addEditTemplateTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
+    <button type="button" class="btn-add-task-field ripple" onclick="addEditTemplateTaskField(${idx})"><i data-lucide="plus"></i> Add Task</button>
   `;
   builder.appendChild(item);
   if (window.lucide) lucide.createIcons({ root: item });

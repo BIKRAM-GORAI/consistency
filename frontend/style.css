@@ -305,7 +305,7 @@ body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  min-width: 0;
+  min-width: max-content;
 }
 
 /* Animations */
@@ -321,18 +321,35 @@ body {
 .brand-icon {
   font-size: 22px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  border-radius: 6px;
+  transition: transform 0.2s ease;
+}
+
+.brand-logo-img:hover {
+  transform: scale(1.06);
 }
 
 .brand-name {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(13px, 2.5vw, 17px);
+  font-size: clamp(14px, 1.4vw, 17px);
   font-weight: 900;
   color: var(--black);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: -0.3px;
+  overflow: visible;
+  letter-spacing: -0.2px;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 /* Streak pill */
@@ -2163,7 +2180,13 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.cat-top-row { display: flex; align-items: center; gap: 8px; }
+.cat-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap !important;
+  width: 100%;
+}
 
 /* Highlight category inputs to distinguish them from task inputs */
 .cat-top-row .form-control,
@@ -2173,14 +2196,16 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-radius: var(--r-sm);
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 900;
-  font-size: 16px;
+  font-size: 15px;
   color: var(--black);
-  width: 100%;
-  padding: 10px 15px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  padding: 10px 14px;
   outline: none;
   text-align: center;
   box-shadow: 3px 3px 0 var(--black);
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 [data-theme="dark"] .cat-top-row .form-control,
@@ -2194,6 +2219,7 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
 .cat-top-row .form-control::placeholder,
 .category-input-faded::placeholder {
   color: rgba(0, 0, 0, 0.5);
+  text-align: center;
 }
 
 [data-theme="dark"] .cat-top-row .form-control::placeholder,
@@ -2238,12 +2264,21 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   transform: scale(1.08);
 }
 
-.tasks-builder { display: flex; flex-direction: column; gap: 6px; }
+.tasks-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 2px dashed rgba(0, 0, 0, 0.15);
+}
 
 .task-input-row {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: nowrap !important;
+  width: 100%;
   animation: slideIn 0.2s var(--ease);
 }
 
@@ -2253,13 +2288,15 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-radius: var(--r-sm);
   font-family: 'Inter', sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--black);
-  width: 100%;
-  padding: 8px 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  padding: 7px 12px;
   outline: none;
   box-shadow: 2px 2px 0 var(--black);
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 [data-theme="dark"] .task-input-row .form-control {
@@ -2268,7 +2305,39 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator {
   border-color: var(--black);
 }
 
-.task-input-row .form-control { flex: 1; padding: 8px 12px; }
+.task-input-row .btn-remove {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.btn-add-task-field {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 6px auto 2px;
+  padding: 6.5px 24px;
+  min-width: 130px;
+  font-size: 11.5px;
+  font-weight: 800;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  border: 2px solid var(--black);
+  box-shadow: 2px 2px 0 var(--black);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.btn-add-task-field:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--black);
+}
 
 /* ============================================================
    TOAST
@@ -2603,7 +2672,7 @@ body.keyboard-visible #central-voice-btn-container {
     max-width: calc(100vw - 32px);
   }
 
-  .cat-top-row { flex-wrap: wrap; }
+  .cat-top-row { flex-wrap: nowrap !important; }
   .add-day-section { padding: 20px 0 8px; }
 }
 
@@ -2636,7 +2705,14 @@ body.keyboard-visible #central-voice-btn-container {
    ≤ 360px
    ============================================================ */
 @media (max-width: 360px) {
-  .brand-name { display: none; }
+  .brand-icon,
+  .brand-logo-img {
+    display: none !important;
+  }
+  .brand-name {
+    display: inline-block !important;
+    font-size: 11.5px !important;
+  }
   .nav-streak { padding: 5px 9px; }
   .page { padding: 14px 10px 106px; }
   .page-title { font-size: clamp(18px, 6vw, 22px); }
@@ -8423,25 +8499,28 @@ body.is-offline [data-requires-network="true"] {
 .nav-brand-group {
   display: flex !important;
   align-items: center !important;
-  gap: clamp(18px, 1.8vw, 28px) !important;
+  gap: clamp(14px, 1.4vw, 22px) !important;
   flex-shrink: 0 !important;
-  margin-right: clamp(12px, 1.5vw, 24px) !important;
+  margin-right: clamp(10px, 1.2vw, 20px) !important;
   position: relative !important;
   z-index: 5 !important;
 }
 
 .nav-brand {
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
-  gap: clamp(6px, 0.6vw, 10px) !important;
+  gap: clamp(8px, 0.7vw, 12px) !important;
   flex-shrink: 0 !important;
-  font-size: clamp(13px, 0.9vw + 4px, 16px) !important;
+  min-width: max-content !important;
 }
 
 .nav-brand .brand-name {
   font-size: clamp(14px, 0.9vw + 3px, 17px) !important;
-  font-weight: 800 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
   letter-spacing: -0.2px !important;
+  flex-shrink: 0 !important;
 }
 
 .nav-streak {
@@ -8451,6 +8530,16 @@ body.is-offline [data-requires-network="true"] {
   padding: clamp(3px, 0.35vw, 6px) clamp(6px, 0.6vw, 11px) !important;
   font-size: clamp(10px, 0.6vw + 3px, 12px) !important;
   gap: clamp(4px, 0.4vw, 7px) !important;
+}
+
+@media (min-width: 769px) {
+  .nav-streak {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
 }
 
 .streak-count {
@@ -8610,6 +8699,20 @@ body.is-offline [data-requires-network="true"] {
 }
 
 @media (max-width: 768px) {
+  .brand-icon,
+  .brand-logo-img {
+    display: none !important;
+  }
+
+  .nav-brand {
+    gap: 0 !important;
+  }
+
+  .nav-brand .brand-name {
+    font-size: clamp(12px, 3.2vw, 13.5px) !important;
+    letter-spacing: -0.1px !important;
+  }
+
   .nav-brand-group {
     position: static !important;
     margin-right: 0 !important;
