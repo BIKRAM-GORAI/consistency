@@ -15,8 +15,8 @@ router.get('/leaderboard', authenticateTokenOptional, userController.getLeaderbo
 
 // Get public profile
 router.get('/:username', authenticateTokenOptional, userController.getPublicProfile);
-router.get('/:username/days', userController.getPublicProfileDays);
-router.get('/:username/achievements', userController.getPublicProfileAchievements);
+router.get('/:username/days', authenticateTokenOptional, userController.getPublicProfileDays);
+router.get('/:username/achievements', authenticateTokenOptional, userController.getPublicProfileAchievements);
 
 // Log profile share
 router.post('/log-share', authenticateToken, userController.logProfileShare);

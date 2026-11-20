@@ -390,6 +390,21 @@ exports.generateProductivityBio = async (req, res) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
+    // Weekly Cooldown Check: AI Bio can only be recalculated once every 7 days
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    if (user.lastBioGeneratedAt) {
+      const elapsed = Date.now() - new Date(user.lastBioGeneratedAt).getTime();
+      if (elapsed < ONE_WEEK_MS) {
+        const remainingMs = ONE_WEEK_MS - elapsed;
+        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        return res.status(429).json({
+          message: `AI Productivity Bio can only be recalculated once per week. Available again in ${remainingDays} day${remainingDays === 1 ? '' : 's'}.`,
+          nextAvailableAt: new Date(new Date(user.lastBioGeneratedAt).getTime() + ONE_WEEK_MS),
+          lastBioGeneratedAt: user.lastBioGeneratedAt
+        });
+      }
+    }
+
     // Compile historical metrics
     let totalTasks = 0;
     let completedTasks = 0;
@@ -465,13 +480,15 @@ exports.generateProductivityBio = async (req, res) => {
       return res.status(502).json({ message: 'Failed to retrieve bio content from AI service.' });
     }
 
-    // Save bio in MongoDB
+    // Save bio and update lastBioGeneratedAt in MongoDB
     user.productivityBio = bioText;
+    user.lastBioGeneratedAt = new Date();
     await user.save();
 
     res.status(200).json({
       username: user.username,
-      productivityBio: bioText
+      productivityBio: bioText,
+      lastBioGeneratedAt: user.lastBioGeneratedAt
     });
 
   } catch (error) {

@@ -1760,6 +1760,10 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    lastBioGeneratedAt: {
+      type: Date,
+      default: null,
+    },
     // AI Daily Generation tracking
     aiGenerationCount: {
       type: Number,

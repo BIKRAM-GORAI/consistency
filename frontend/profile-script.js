@@ -6,6 +6,7 @@ const API = isAndroidNative
       : '');
 
 let currentUser = null;
+let shareCode = null;
 let currentDaysPage = 0;
 let currentAchPage = 0;
 let totalDays = 0;
@@ -13,6 +14,7 @@ let totalDays = 0;
 document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const username = urlParams.get('u');
+  shareCode = urlParams.get('code') || null;
 
   if (!username) {
     showError('No username provided. Please check the link and try again.');
@@ -40,8 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const code = urlParams.get('code');
-    const data = await fetchPublicProfile(username, code);
+    const data = await fetchPublicProfile(username, shareCode);
     renderProfile(data);
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('profile-layout').style.display = 'flex';
@@ -246,9 +247,12 @@ async function loadMoreDaysOffline() {
 
 async function fetchPublicProfile(username, code = null) {
   const url = code 
-    ? `${API}/api/users/${username}?code=${code}` 
-    : `${API}/api/users/${username}`;
-  const res = await fetch(url);
+    ? `${API}/api/users/${encodeURIComponent(username)}?code=${encodeURIComponent(code)}` 
+    : `${API}/api/users/${encodeURIComponent(username)}`;
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(url, { headers });
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.message || 'Profile not found');
@@ -688,12 +692,20 @@ async function viewProgress() {
   }
 
   try {
-    // Fetch first page (page 1)
     currentDaysPage = 1;
-    const res = await fetch(`${API}/api/users/${currentUser}/days?page=${currentDaysPage}`);
+    const codeParam = shareCode ? `&code=${encodeURIComponent(shareCode)}` : '';
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API}/api/users/${encodeURIComponent(currentUser)}/days?page=${currentDaysPage}${codeParam}`, { headers });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to load progress cards');
+    }
     const data = await res.json();
     
-    if (data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       ctaBox.style.display = 'none';
       daysList.style.display = 'flex';
       renderDays(data);
@@ -701,13 +713,19 @@ async function viewProgress() {
       if (totalDays > 7) {
         document.getElementById('load-more-days').style.display = 'block';
       }
+    } else {
+      ctaBox.innerHTML = `
+        <div style="font-size: 40px; margin-bottom: 12px;">📋</div>
+        <h4 style="margin: 0 0 8px 0; font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 800; text-transform: uppercase;">No Recent Days Logged</h4>
+        <p style="margin: 0; font-size: 13px; font-weight: 600; color: var(--text-muted); line-height: 1.5;">This user hasn't logged any daily progress cards yet.</p>
+      `;
     }
     if (window.lucide) lucide.createIcons({ root: daysList });
   } catch (err) {
-    console.error(err);
+    console.error('viewProgress error:', err);
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i data-lucide="eye"></i> Try Again';
+      btn.innerHTML = `<i data-lucide="refresh-cw"></i> <span>${escapeHTML(err.message || 'Failed')} - Try Again</span>`;
       if (window.lucide) lucide.createIcons({ root: btn });
     }
   }
@@ -718,12 +736,18 @@ async function loadMoreDays() {
   const btn = document.getElementById('load-more-days');
   btn.disabled = true; btn.textContent = 'Loading...';
   try {
-    const res = await fetch(`${API}/api/users/${currentUser}/days?page=${currentDaysPage}`);
+    const codeParam = shareCode ? `&code=${encodeURIComponent(shareCode)}` : '';
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API}/api/users/${encodeURIComponent(currentUser)}/days?page=${currentDaysPage}${codeParam}`, { headers });
+    if (!res.ok) throw new Error('Failed to load more days');
     const data = await res.json();
-    if (data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       renderDays(data, true);
     }
-    if (data.length < 7 || currentDaysPage * 7 >= totalDays) {
+    if (!Array.isArray(data) || data.length < 7 || currentDaysPage * 7 >= totalDays) {
       btn.style.display = 'none';
     }
     if (window.lucide) lucide.createIcons();
@@ -739,12 +763,18 @@ async function loadMoreAchievements() {
   const btn = document.getElementById('load-more-ach');
   btn.disabled = true; btn.textContent = 'Loading...';
   try {
-    const res = await fetch(`${API}/api/users/${currentUser}/achievements?page=${currentAchPage}`);
+    const codeParam = shareCode ? `&code=${encodeURIComponent(shareCode)}` : '';
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API}/api/users/${encodeURIComponent(currentUser)}/achievements?page=${currentAchPage}${codeParam}`, { headers });
+    if (!res.ok) throw new Error('Failed to load more achievements');
     const data = await res.json();
-    if (data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       renderAchievements(data, true);
     }
-    if (data.length < 10) {
+    if (!Array.isArray(data) || data.length < 10) {
       btn.style.display = 'none';
     }
   } catch (err) {
@@ -762,35 +792,43 @@ function showError(msg) {
 }
 
 /**
- * Cooldown UI update logic for biography refreshes
+ * Updates the AI Productivity Bio cooldown button and label.
+ * Enforces the strict 1-week (7-day) limit.
  */
 function updateBioCooldownUI(lastGeneratedAt) {
   const btn = document.getElementById('btn-refresh-bio');
   const cooldownMsg = document.getElementById('bio-cooldown-message');
-  if (!btn || !cooldownMsg) return;
+  if (!btn) return;
 
-  if (!lastGeneratedAt) {
-    btn.disabled = false;
-    btn.style.display = 'inline-flex';
-    cooldownMsg.style.display = 'none';
-    return;
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+  if (lastGeneratedAt) {
+    const elapsed = Date.now() - new Date(lastGeneratedAt).getTime();
+    if (elapsed < ONE_WEEK_MS) {
+      const remainingMs = ONE_WEEK_MS - elapsed;
+      const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+
+      btn.disabled = true;
+      btn.style.opacity = '0.55';
+      btn.style.cursor = 'not-allowed';
+      btn.title = `Available in ${remainingDays} day${remainingDays === 1 ? '' : 's'}`;
+
+      if (cooldownMsg) {
+        cooldownMsg.style.display = 'block';
+        cooldownMsg.style.marginTop = '10px';
+        cooldownMsg.style.color = 'var(--text-muted)';
+        cooldownMsg.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;">⏱ Available in ${remainingDays} day${remainingDays === 1 ? '' : 's'} (1x/week limit)</span>`;
+      }
+      return;
+    }
   }
 
-  const lastGenTime = new Date(lastGeneratedAt).getTime();
-  const cooldownMs = 24 * 60 * 60 * 1000; // 24-hour window
-  const elapsed = Date.now() - lastGenTime;
-
-  if (elapsed < cooldownMs) {
-    btn.disabled = true;
-    btn.style.display = 'none';
-    cooldownMsg.style.display = 'block';
-    
-    const remainingMs = cooldownMs - elapsed;
-    const hoursLeft = Math.ceil(remainingMs / (1000 * 60 * 60));
-    cooldownMsg.innerHTML = `<span style="font-size: 13px;">⏳</span> Cooldown active. Refresh in <strong>${hoursLeft} hours</strong>`;
-  } else {
-    btn.disabled = false;
-    btn.style.display = 'inline-flex';
+  // Ready to generate/refresh
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+  btn.title = 'Recalculate your AI Productivity Bio';
+  if (cooldownMsg) {
     cooldownMsg.style.display = 'none';
   }
 }
@@ -823,6 +861,13 @@ async function refreshProductivityBio() {
       headers
     });
 
+    if (res.status === 429) {
+      const rateLimitData = await res.json().catch(() => ({}));
+      updateBioCooldownUI(rateLimitData.lastBioGeneratedAt || new Date().toISOString());
+      alert(rateLimitData.message || 'AI Bio can only be recalculated once per week.');
+      return;
+    }
+
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.message || 'Failed to refresh bio.');
@@ -833,7 +878,7 @@ async function refreshProductivityBio() {
       bioText.textContent = resData.productivityBio;
       
       // Update cooldown timestamp dynamically
-      updateBioCooldownUI(new Date().toISOString());
+      updateBioCooldownUI(resData.lastBioGeneratedAt || new Date().toISOString());
       
       // GSAP smooth recalculation zoom entrance
       if (window.gsap) {

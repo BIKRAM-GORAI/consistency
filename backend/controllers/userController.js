@@ -186,7 +186,8 @@ async function getPublicProfileDays(req, res) {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Privacy Check
-    let canView = user.isPublicProfile !== false;
+    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
+    let canView = user.isPublicProfile !== false || isOwner;
     let validShare = false;
     if (!canView && code) {
       const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
@@ -195,8 +196,7 @@ async function getPublicProfileDays(req, res) {
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
 
-    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    const canViewAchievements = user.achievementsPublic !== false || validShare;
+    const canViewAchievements = user.achievementsPublic !== false || validShare || isOwner;
 
     const page = parseInt(req.query.page) || 1;
     const limit = 7;
@@ -237,7 +237,8 @@ async function getPublicProfileAchievements(req, res) {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Privacy Check
-    let canView = user.isPublicProfile !== false;
+    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
+    let canView = user.isPublicProfile !== false || isOwner;
     let validShare = false;
     if (!canView && code) {
       const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
@@ -246,7 +247,7 @@ async function getPublicProfileAchievements(req, res) {
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
 
-    if (user.achievementsPublic === false && !validShare) {
+    if (user.achievementsPublic === false && !validShare && !isOwner) {
       return res.status(403).json({ message: 'Achievements are private', achievementsPublic: false });
     }
 
