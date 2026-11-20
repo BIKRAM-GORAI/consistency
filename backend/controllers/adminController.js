@@ -307,10 +307,11 @@ async function getAdminUsers(req, res) {
 
     const sortOrder = sort === 'asc' ? 1 : -1;
     
-    let filter = {};
+    let filter = { isBot: { $ne: true } };
     if (query && typeof query === 'string' && query.trim()) {
       const sanitized = escapeRegex(query.trim());
       filter = {
+        isBot: { $ne: true },
         $or: [
           { name: { $regex: sanitized, $options: 'i' } },
           { email: { $regex: sanitized, $options: 'i' } },

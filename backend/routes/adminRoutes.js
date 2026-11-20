@@ -117,4 +117,13 @@ router.post('/motivation-quotes', authenticateAdmin, motivationController.create
 router.put('/motivation-quotes/:id', authenticateAdmin, motivationController.updateQuote);
 router.delete('/motivation-quotes/:id', authenticateAdmin, motivationController.deleteQuote);
 
+// Competitor Bots Management
+const botController = require('../controllers/botController');
+router.get('/bots', authenticateAdmin, botController.getAdminBots);
+router.post('/bots/seed', authenticateAdmin, botController.seedBots);
+router.post('/bots/run', authenticateAdmin, botController.runBotSimulation);
+router.patch('/bots/:id', authenticateAdmin, botController.updateBot);
+router.delete('/bots/:id', authenticateAdmin, botController.deleteBot);
+router.get('/bots/:id/days', authenticateAdmin, botController.getBotDays);
+
 module.exports = router;

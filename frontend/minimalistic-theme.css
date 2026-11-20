@@ -1122,6 +1122,126 @@ body:has(#modal-profile.open) #central-voice-btn-container,
   background: #ffffff !important;
 }
 
+/* ── Podium Minimalist Overrides ── */
+[data-theme="minimalistic"] .podium-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02) !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+}
+
+[data-theme="minimalistic"] .podium-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.03) !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="minimalistic"] .podium-card.podium-rank-1 {
+  border-color: #f59e0b !important;
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-theme="minimalistic"] .podium-card.podium-rank-1:hover {
+  transform: translateY(-20px) !important;
+  box-shadow: 0 16px 32px -4px rgba(245, 158, 11, 0.18), 0 4px 8px -2px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="minimalistic"] .podium-card.podium-rank-2 {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 6px 18px -3px rgba(148, 163, 184, 0.12) !important;
+}
+
+[data-theme="minimalistic"] .podium-card.podium-rank-3 {
+  border-color: #f87171 !important;
+  box-shadow: 0 6px 18px -3px rgba(248, 113, 113, 0.1) !important;
+}
+
+[data-theme="minimalistic"] .podium-crown {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="minimalistic"] .podium-crown.gold {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
+}
+
+[data-theme="minimalistic"] .podium-crown.silver {
+  background: #64748b !important;
+  color: #ffffff !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="minimalistic"] .podium-crown.bronze {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+}
+
+[data-theme="minimalistic"] .podium-avatar {
+  border: 2px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="minimalistic"] .podium-badge {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalistic"] .podium-badge.leader {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+
+[data-theme="minimalistic"] .podium-badge.runner-up {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="minimalistic"] .podium-badge.third {
+  background: #fff7ed !important;
+  color: #c2410c !important;
+  border-color: #ffedd5 !important;
+}
+
+[data-theme="minimalistic"] .podium-name {
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .podium-username {
+  color: #64748b !important;
+}
+
+[data-theme="minimalistic"] .podium-score-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="minimalistic"] .podium-streak-num {
+  color: #0f172a !important;
+}
+
+[data-theme="minimalistic"] .podium-streak-lbl {
+  color: #64748b !important;
+}
+
+[data-theme="minimalistic"] .podium-sub-stat {
+  color: #64748b !important;
+}
+
+[data-theme="minimalistic"] .podium-sub-stat strong {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  padding: 1px 8px !important;
+  border-radius: 999px !important;
+}
+
 /* ── 14. Pomodoro Page Minimalism ── */
 [data-theme="minimalistic"] #page-pomodoro .pomo-tabs {
   background: #f1f5f9 !important;

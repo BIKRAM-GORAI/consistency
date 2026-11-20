@@ -8,7 +8,14 @@
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
-  <script defer src="/_vercel/insights/script.js"></script>
+  <script>
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const s = document.createElement('script');
+      s.defer = true;
+      s.src = '/_vercel/insights/script.js';
+      document.head.appendChild(s);
+    }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
   <script src="/js/libs/lucide/lucide.min.js"></script>
   <style>
@@ -446,12 +453,42 @@
       margin-bottom: 6px;
     }
 
-    textarea, input[type="text"], input[type="email"], input[type="datetime-local"], select {
+    textarea, input[type="text"], input[type="email"], input[type="datetime-local"], input[type="number"], input[type="url"], input[type="password"], select {
       width: 100%;
       padding: 10px 12px;
       border: var(--border);
       font-family: inherit;
       font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .modal-close-btn {
+      background: #f1f5f9;
+      border: 2px solid var(--black);
+      box-shadow: 2px 2px 0 var(--black);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      max-width: 32px;
+      max-height: 32px;
+      box-sizing: border-box;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+      flex: none !important;
+      padding: 0;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .modal-close-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--black);
+      background: var(--yellow);
     }
 
     .badge-selection {
@@ -1283,6 +1320,7 @@
       <button class="nav-link" id="nav-motivation" onclick="showSection('motivation')">🔥 Motivation</button>
       <button class="nav-link" id="nav-bulk-email" onclick="showSection('bulk-email')">📧 Bulk Email</button>
       <button class="nav-link" id="nav-cron-logs" onclick="showSection('cron-logs')">⏰ Cron Logs</button>
+      <button class="nav-link" id="nav-bots" onclick="showSection('bots')">🤖 Competitor Bots</button>
     </div>
   </nav>
 
@@ -1796,6 +1834,46 @@
       <div id="cron-logs-pagination" style="margin-top: 28px; display: flex; justify-content: center; align-items: center; gap: 12px;"></div>
     </div>
 
+    <!-- Competitor Bots Simulation Hub -->
+    <div id="section-bots" class="admin-section" style="display:none;">
+      <div class="dashboard-header">
+        <div>
+          <h2>🤖 Competitor Bots Simulation Hub</h2>
+          <p style="font-weight: 800; color: #666; margin-top: 4px;">Manage automated competitor personas, streak schedules, custom daily task pools, and leaderboard visibility.</p>
+        </div>
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <button class="btn-control" onclick="runBotsSimulationNow()" style="background: #22c55e; color: #fff;"><i data-lucide="play"></i> Run Today's Simulation</button>
+          <button class="btn-control" onclick="reseedBotsConfirm()" style="background: #eab308; color: #111;"><i data-lucide="sparkles"></i> Re-seed 5 Bots</button>
+          <button class="btn-control" onclick="loadAdminBots()" style="background: var(--black); color: var(--white);"><i data-lucide="refresh-cw"></i> Refresh</button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Summary -->
+      <div class="cron-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 18px; border-radius: 8px;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #666;">Total Personas</div>
+          <div id="bots-metric-total" style="font-size: 28px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin-top: 4px;">0</div>
+        </div>
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 18px; border-radius: 8px;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #666;">Active Bots</div>
+          <div id="bots-metric-active" style="font-size: 28px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin-top: 4px; color: #16a34a;">0</div>
+        </div>
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 18px; border-radius: 8px;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #666;">On Leaderboard</div>
+          <div id="bots-metric-leaderboard" style="font-size: 28px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin-top: 4px; color: #d97706;">0</div>
+        </div>
+        <div style="background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 18px; border-radius: 8px;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #666;">Completed Today</div>
+          <div id="bots-metric-today" style="font-size: 28px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; margin-top: 4px; color: #2563eb;">0</div>
+        </div>
+      </div>
+
+      <!-- Bots Container / Grid -->
+      <div id="bots-list-container" class="review-grid">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; font-weight: 800; color: #666;">Loading competitor bots...</div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Email HTML Preview Modal -->
@@ -2058,6 +2136,124 @@
       <div class="modal-footer" style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 14px; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;">
         <button type="button" class="btn-control" id="btn-copy-cron-emails" onclick="copyCronEmails()" style="background: var(--yellow);"><i data-lucide="copy"></i> Copy All Emails</button>
         <button type="button" class="btn-cancel" onclick="closeCronDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bot Edit Modal -->
+  <div id="bot-edit-modal" class="modal-overlay" onclick="if(event.target === this) closeBotEditModal()" style="z-index: 2000;">
+    <div class="modal" style="max-width: 620px; max-height: 90vh; overflow-y: auto; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--black); padding-bottom: 12px;">
+        <h3 id="bot-modal-title" style="margin: 0; font-family: 'Space Grotesk', sans-serif;">🤖 Edit Competitor Bot</h3>
+        <button type="button" class="modal-close-btn" onclick="closeBotEditModal()">✕</button>
+      </div>
+
+      <form id="bot-edit-form" onsubmit="saveBotModal(event)">
+        <input type="hidden" id="bot-form-id">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Display Name</label>
+            <input type="text" id="bot-form-name" required placeholder="e.g. Vikram Malhotra">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Username</label>
+            <input type="text" id="bot-form-username" required placeholder="e.g. vikram_m">
+          </div>
+        </div>
+
+        <!-- Direct DP Upload + URL Input -->
+        <div class="form-group" style="background: var(--bg-muted, #f8fafc); border: 2px solid var(--black); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <label style="margin-bottom: 8px;">Profile Picture (DP)</label>
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 10px;">
+            <img id="bot-form-avatar-preview" src="" style="width: 58px; height: 58px; border-radius: 50%; border: 2.5px solid var(--black); object-fit: cover; background: #eee;" alt="DP Preview">
+            <div>
+              <button type="button" class="btn-control" onclick="document.getElementById('bot-form-file-input').click()" style="background: var(--yellow); font-size: 13px;">
+                <i data-lucide="upload"></i> Upload Direct Photo
+              </button>
+              <input type="file" id="bot-form-file-input" accept="image/*" style="display:none;" onchange="handleBotDirectPhotoUpload(this)">
+              <div id="bot-form-upload-status" style="font-size: 11px; font-weight: 700; color: #16a34a; margin-top: 4px;"></div>
+            </div>
+          </div>
+          <input type="url" id="bot-form-avatar" placeholder="Or paste image URL (https://...)" oninput="document.getElementById('bot-form-avatar-preview').src = this.value">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Strategy</label>
+            <select id="bot-form-strategy" style="font-weight: 700;">
+              <option value="continuous">Continuous (100% Consistent Grinder)</option>
+              <option value="fluctuating">Fluctuating (Realistic Drops & Rebuilds)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Drop Probability (Fluctuating)</label>
+            <input type="number" id="bot-form-drop-prob" step="0.01" min="0" max="0.5" placeholder="e.g. 0.08">
+          </div>
+        </div>
+
+        <!-- Streaks & Targets Grid (2x2) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Current Streak</label>
+            <input type="number" id="bot-form-current-streak" min="0" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Highest Streak</label>
+            <input type="number" id="bot-form-highest-streak" min="0" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Min Target Streak</label>
+            <input type="number" id="bot-form-target-min" min="0" placeholder="20">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Max Target Streak</label>
+            <input type="number" id="bot-form-target-max" min="0" placeholder="50">
+          </div>
+        </div>
+
+        <!-- Leaderboard Visibility & Active Toggles -->
+        <div style="background: var(--bg-muted); border: var(--border); padding: 14px; border-radius: 8px; margin: 16px 0; display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; align-items: center; justify-content: space-between; font-weight: 800; cursor: pointer;">
+            <span>🏆 Showcase on Leaderboard</span>
+            <input type="checkbox" id="bot-form-leaderboard" style="width: 20px; height: 20px; accent-color: var(--black);">
+          </label>
+          <label style="display: flex; align-items: center; justify-content: space-between; font-weight: 800; cursor: pointer;">
+            <span>⚡ Bot Active (Logs Daily Tasks)</span>
+            <input type="checkbox" id="bot-form-active" style="width: 20px; height: 20px; accent-color: var(--black);">
+          </label>
+        </div>
+
+        <!-- Task Pool Editor -->
+        <div class="form-group">
+          <label>Task Pool (JSON Format - Categories & Tasks)</label>
+          <textarea id="bot-form-task-pool" rows="6" style="width: 100%; font-family: monospace; font-size: 12px; padding: 10px; border: var(--border); box-shadow: var(--shadow);"></textarea>
+          <p style="font-size: 11px; color: #666; margin-top: 4px;">Bot randomly completes at least one task per day (never all 100%) from this pool.</p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn-cancel" onclick="closeBotEditModal()">Cancel</button>
+          <button type="submit" class="btn-save" style="background: var(--yellow);">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bot Days Task History Modal -->
+  <div id="bot-days-modal" class="modal-overlay" onclick="if(event.target === this) closeBotDaysModal()" style="z-index: 2000;">
+    <div class="modal" style="max-width: 720px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 2px solid var(--black); padding-bottom: 12px;">
+        <h3 id="bot-days-modal-title" style="margin: 0; font-family: 'Space Grotesk', sans-serif;">📋 Bot Task Logs</h3>
+        <button type="button" class="modal-close-btn" onclick="closeBotDaysModal()">✕</button>
+      </div>
+      <div id="bot-days-content" style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 12px;">
+        <p style="text-align: center; color: #666; font-weight: 800; padding: 20px;">Loading task history...</p>
+      </div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+        <button type="button" class="btn-cancel" onclick="closeBotDaysModal()">Close</button>
       </div>
     </div>
   </div>

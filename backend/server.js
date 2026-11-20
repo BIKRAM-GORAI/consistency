@@ -385,7 +385,10 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/landing.html'));
 });
 
-
+// ── Mock Vercel Insights scripts for local development (prevents MIME errors) ──
+app.get('/_vercel/*', (req, res) => {
+  res.type('application/javascript').send('/* vercel analytics local mock */');
+});
 
 // ── SPA fallback: return landing.html for unknown routes ───
 app.get('*', (req, res) => {

@@ -1212,6 +1212,174 @@ app.get('/api/cron/sync-leetcode', async (req, res) => {
   })();
 });
 
+// ══════════════════════════════════════════════════════════
+//  GET /api/cron/simulate-bots
+//  Hosted on Render — runs daily simulation for competitor bots.
+//  Scheduled at 5:00 PM IST (11:30 AM UTC / 30 11 * * *)
+// ══════════════════════════════════════════════════════════
+function getBotTodayString() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function generateRealisticBotTasks(taskPool) {
+  const pool = taskPool && taskPool.length > 0 ? taskPool : [
+    { category: 'Deep Work', tasks: ['Code Review & Core Architecture', 'System Design Document draft', 'Optimize slow queries'] },
+    { category: 'Fitness & Health', tasks: ['5km Morning Run', 'Meditation (15m)', '100 pushups'] }
+  ];
+
+  const allTasks = [];
+  pool.forEach((cat, cIdx) => {
+    (cat.tasks || []).forEach(t => {
+      allTasks.push({ catName: cat.category, cIdx, taskTitle: t });
+    });
+  });
+
+  if (allTasks.length === 0) {
+    allTasks.push({ catName: 'Daily Focus', cIdx: 0, taskTitle: 'Consistent Deep Work Session' });
+  }
+
+  // Determine how many tasks are completed: at least 1, but NEVER 100% of tasks!
+  const total = allTasks.length;
+  let targetCompletedCount = 1;
+  if (total > 1) {
+    targetCompletedCount = 1 + Math.floor(Math.random() * (total - 1));
+  }
+
+  // Shuffle task indices to randomly select which ones are completed
+  const indices = allTasks.map((_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const completedIndicesSet = new Set(indices.slice(0, targetCompletedCount));
+
+  // Re-group into category structure
+  const categoriesMap = {};
+  pool.forEach((cat, cIdx) => {
+    categoriesMap[cat.category] = {
+      name: cat.category,
+      color: cIdx === 0 ? '#ffea79' : '#a855f7',
+      tasks: []
+    };
+  });
+
+  allTasks.forEach((item, globalIdx) => {
+    const isCompleted = completedIndicesSet.has(globalIdx);
+    if (!categoriesMap[item.catName]) {
+      categoriesMap[item.catName] = {
+        name: item.catName,
+        color: '#ffea79',
+        tasks: []
+      };
+    }
+    categoriesMap[item.catName].tasks.push({
+      title: item.taskTitle,
+      text: item.taskTitle,
+      completed: isCompleted,
+      time: '08:30'
+    });
+  });
+
+  return Object.values(categoriesMap).filter(cat => cat.tasks.length > 0);
+}
+
+app.get('/api/cron/simulate-bots', async (req, res) => {
+  const cronSecret = process.env.CRON_SECRET;
+  const sharedSecret = process.env.AI_SERVICE_SECRET;
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Unauthorized: Authorization header missing' });
+  }
+
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const validCron = cronSecret && safeCompareSecrets(token, cronSecret);
+  const validShared = sharedSecret && safeCompareSecrets(token, sharedSecret);
+
+  if (!validCron && !validShared) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid cron authorization token' });
+  }
+
+  try {
+    await getMongoose();
+    const { User, Day } = getModels();
+
+    const todayStr = getBotTodayString();
+    console.log(`[Bot Simulation] Running daily simulation for date: ${todayStr} (5:00 PM IST slot)`);
+
+    const bots = await User.find({ isBot: true });
+    const results = [];
+
+    for (const bot of bots) {
+      const config = bot.botConfig || {};
+      if (config.isActive === false) {
+        results.push({ username: bot.username, status: 'skipped', reason: 'Bot is disabled' });
+        continue;
+      }
+
+      // Check if already completed today
+      const alreadyLogged = await Day.findOne({ userId: bot._id, date: todayStr });
+      if (alreadyLogged) {
+        results.push({ username: bot.username, status: 'already_completed', streak: bot.currentStreak });
+        continue;
+      }
+
+      const isContinuous = config.strategy === 'continuous';
+      let shouldLogToday = true;
+
+      if (!isContinuous) {
+        const minStreak = config.targetStreakMin || 20;
+        const dropProb = config.dropProbability || 0.08;
+
+        if ((bot.currentStreak || 0) >= minStreak && Math.random() < dropProb) {
+          shouldLogToday = false;
+        }
+      }
+
+      if (shouldLogToday) {
+        const categories = generateRealisticBotTasks(config.taskPool);
+
+        await Day.create({
+          userId: bot._id,
+          date: todayStr,
+          summary: `Consistency session on ${todayStr}`,
+          categories
+        });
+
+        bot.currentStreak = (bot.currentStreak || 0) + 1;
+        if (bot.currentStreak > (bot.highestStreak || 0)) {
+          bot.highestStreak = bot.currentStreak;
+        }
+        bot.lastCompletedDate = todayStr;
+        bot.lastActiveAt = new Date();
+        await bot.save();
+
+        results.push({ username: bot.username, status: 'logged', newStreak: bot.currentStreak });
+      } else {
+        // Rest day: Streak resets to 1 to rebuild, but highestStreak is preserved
+        bot.currentStreak = 1;
+        bot.lastActiveAt = new Date();
+        await bot.save();
+
+        results.push({ username: bot.username, status: 'rest_day', newStreak: bot.currentStreak });
+      }
+    }
+
+    console.log(`[Bot Simulation] Completed for ${bots.length} competitor bots. Logged: ${results.filter(r => r.status === 'logged').length}`);
+    return res.json({
+      success: true,
+      service: 'render-ai-service',
+      message: 'Competitor bots daily simulation finished successfully on Render',
+      today: todayStr,
+      results
+    });
+  } catch (err) {
+    console.error('[Bot Simulation] Fatal error:', err);
+    return res.status(500).json({ success: false, message: 'Bot simulation failed on Render', error: err.message });
+  }
+});
+
 // ── Centralized AI Voice Assistant Endpoint ──
 /**
  * Centralized AI Voice Assistant Endpoint
@@ -1563,4 +1731,5 @@ app.listen(PORT, () => {
   console.log(`👉 Centralized Voice Assistant active at POST http://localhost:${PORT}/process-voice-command`);
   console.log(`👉 Group moderation endpoint active at POST http://localhost:${PORT}/api/ai/moderate-group`);
   console.log(`👉 LeetCode sync cron active at GET http://localhost:${PORT}/api/cron/sync-leetcode`);
+  console.log(`👉 Competitor Bot Simulation cron active at GET http://localhost:${PORT}/api/cron/simulate-bots`);
 });

@@ -1,5 +1,27 @@
 const API = '';
 const token = localStorage.getItem('adminToken');
+
+/**
+ * Standard Authenticated Admin Fetcher
+ */
+async function adminFetch(endpoint, options = {}) {
+  const currentToken = localStorage.getItem('adminToken') || token;
+  const headers = {
+    'Authorization': `Bearer ${currentToken}`,
+    ...(options.headers || {})
+  };
+  if (options.body && typeof options.body === 'string' && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const url = endpoint.startsWith('http') ? endpoint : `${API}${endpoint}`;
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401 || res.status === 403) {
+    if (typeof logout === 'function') logout();
+    throw new Error('Unauthorized or session expired');
+  }
+  return res.json();
+}
+window.adminFetch = adminFetch;
 let allReviews = []; // Global store to avoid JSON-in-attribute issues
 let currentPages = {
   reviews: 1,
@@ -138,6 +160,7 @@ function showSection(section) {
   if (section === 'motivation') loadAdminMotivationQuotes();
   if (section === 'bulk-email') loadUserEmailsOnly('desc');
   if (section === 'cron-logs') loadCronLogs();
+  if (section === 'bots') loadAdminBots();
 }
 
 /**
@@ -3996,5 +4019,512 @@ window.openCronDetailModal = openCronDetailModal;
 window.closeCronDetailModal = closeCronDetailModal;
 window.copyCronEmails = copyCronEmails;
 window.filterModalRecipients = filterModalRecipients;
+
+// ============================================================
+// COMPETITOR BOTS MANAGEMENT
+// ============================================================
+let _adminBotsCache = [];
+
+async function loadAdminBots() {
+  const container = document.getElementById('bots-list-container');
+  if (!container) return;
+
+  container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; font-weight: 800; color: #666;">Fetching competitor bots...</div>`;
+
+  try {
+    const res = await adminFetch('/api/admin/bots');
+    if (!res || !res.success) {
+      container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; font-weight: 800; color: var(--red);">Failed to load bots.</div>`;
+      return;
+    }
+
+    _adminBotsCache = res.bots || [];
+
+    // Metrics
+    const total = _adminBotsCache.length;
+    const active = _adminBotsCache.filter(b => b.botConfig?.isActive !== false).length;
+    const onLeaderboard = _adminBotsCache.filter(b => b.showOnLeaderboard !== false).length;
+    const completedToday = _adminBotsCache.filter(b => b.loggedToday).length;
+
+    const elTotal = document.getElementById('bots-metric-total');
+    const elActive = document.getElementById('bots-metric-active');
+    const elLb = document.getElementById('bots-metric-leaderboard');
+    const elToday = document.getElementById('bots-metric-today');
+
+    if (elTotal) elTotal.textContent = total;
+    if (elActive) elActive.textContent = active;
+    if (elLb) elLb.textContent = onLeaderboard;
+    if (elToday) elToday.textContent = completedToday;
+
+    if (_adminBotsCache.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; background: var(--white); border: var(--border); box-shadow: var(--shadow); padding: 40px; text-align: center; border-radius: 8px;">
+          <h3 style="margin-bottom: 8px;">No Competitor Bots Found</h3>
+          <p style="color: #666; font-weight: 700; margin-bottom: 20px;">Initialize the 5 standard competitor bots with realistic past history to activate competitive atmosphere.</p>
+          <button class="btn-control" onclick="reseedBotsConfirm()" style="background: var(--yellow); font-size: 14px; padding: 12px 24px;">
+            ⚡ Initialize 5 Competitor Bots Now
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = _adminBotsCache.map(b => {
+      const isContinuous = b.botConfig?.strategy === 'continuous';
+      const strategyBadge = isContinuous
+        ? `<span style="background: #dcfce7; color: #15803d; border: 1.5px solid var(--black); border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 900; text-transform: uppercase;">Continuous Grinder</span>`
+        : `<span style="background: #fef3c7; color: #b45309; border: 1.5px solid var(--black); border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 900; text-transform: uppercase;">Fluctuating</span>`;
+
+      const todayBadge = b.loggedToday
+        ? `<span style="background: #22c55e; color: #fff; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">✓ Completed Today</span>`
+        : `<span style="background: #94a3b8; color: #fff; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Pending</span>`;
+
+      const avatarHtml = b.profilePicture 
+        ? `<img src="${b.profilePicture}" style="width: 48px; height: 48px; border-radius: 50%; border: 2.5px solid var(--black); object-fit: cover;" alt="${escapeHTML(b.username)}">`
+        : `<div style="width: 48px; height: 48px; border-radius: 50%; border: 2.5px solid var(--black); background: #eee; display: flex; align-items: center; justify-content: center; font-weight: 900;">${(b.username || '?').charAt(0).toUpperCase()}</div>`;
+
+      return `
+        <div class="review-card" style="padding: 20px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+          <!-- Top Row -->
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                ${avatarHtml}
+                <div>
+                  <h4 style="margin: 0; font-size: 16px; font-weight: 900;">${escapeHTML(b.name)}</h4>
+                  <div style="font-size: 12px; font-weight: 700; color: #666;">@${escapeHTML(b.username)}</div>
+                </div>
+              </div>
+              <div>${strategyBadge}</div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+              ${todayBadge}
+              <span style="font-size: 11px; font-weight: 700; color: #666;">Total: ${b.totalDaysLogged} logs</span>
+            </div>
+
+            <!-- Streaks Box -->
+            <div style="background: var(--bg-muted, #f8fafc); border: 2px solid var(--black); border-radius: 8px; padding: 12px; display: flex; justify-content: space-around; text-align: center; margin-bottom: 16px;">
+              <div>
+                <div style="font-size: 24px; font-weight: 900; font-family: 'Space Grotesk', sans-serif;">${b.currentStreak}</div>
+                <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #666;">Current Streak</div>
+              </div>
+              <div style="width: 1px; background: var(--black); opacity: 0.2;"></div>
+              <div>
+                <div style="font-size: 24px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: #d97706;">${b.highestStreak}</div>
+                <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #666;">Highest Streak</div>
+              </div>
+            </div>
+
+            <!-- Toggles (Leaderboard & Active) -->
+            <div style="background: #fff; border: 1.5px solid var(--black); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+              <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; cursor: pointer;">
+                <span>🏆 Show on Leaderboard</span>
+                <input type="checkbox" ${b.showOnLeaderboard ? 'checked' : ''} onchange="toggleBotLeaderboard('${b._id}', this.checked)" style="width: 17px; height: 17px; accent-color: var(--black); cursor: pointer;">
+              </label>
+              <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; cursor: pointer;">
+                <span>⚡ Bot Active (Simulation)</span>
+                <input type="checkbox" ${b.botConfig?.isActive !== false ? 'checked' : ''} onchange="toggleBotActive('${b._id}', this.checked)" style="width: 17px; height: 17px; accent-color: var(--black); cursor: pointer;">
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <button class="btn-control" style="flex: 1; padding: 8px 6px; font-size: 11px;" onclick="openEditBotModal('${b._id}')">
+              <i data-lucide="edit-3"></i> Edit
+            </button>
+            <button class="btn-control" style="flex: 1; padding: 8px 6px; font-size: 11px; background: var(--yellow);" onclick="triggerQuickBotDpUpload('${b._id}')" title="Upload Photo Directly">
+              <i data-lucide="upload"></i> Upload DP
+            </button>
+            <button class="btn-control" style="flex: 1; padding: 8px 6px; font-size: 11px; background: var(--bg-muted);" onclick="viewBotDays('${b._id}')">
+              <i data-lucide="list"></i> Logs
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons({ root: container });
+  } catch (err) {
+    console.error('loadAdminBots error:', err);
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; font-weight: 800; color: var(--red);">Error loading competitor bots: ${err.message}</div>`;
+  }
+}
+
+async function toggleBotLeaderboard(botId, showOnLeaderboard) {
+  try {
+    const res = await adminFetch(`/api/admin/bots/${botId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ showOnLeaderboard })
+    });
+    if (res && res.success) {
+      const bot = _adminBotsCache.find(b => b._id === botId);
+      if (bot) bot.showOnLeaderboard = showOnLeaderboard;
+      const elLb = document.getElementById('bots-metric-leaderboard');
+      if (elLb) {
+        elLb.textContent = _adminBotsCache.filter(b => b.showOnLeaderboard !== false).length;
+      }
+    } else {
+      alert('Failed to update leaderboard visibility');
+      loadAdminBots();
+    }
+  } catch (err) {
+    alert('Error updating leaderboard visibility: ' + err.message);
+    loadAdminBots();
+  }
+}
+
+async function toggleBotActive(botId, isActive) {
+  try {
+    const res = await adminFetch(`/api/admin/bots/${botId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ botConfig: { isActive } })
+    });
+    if (res && res.success) {
+      const bot = _adminBotsCache.find(b => b._id === botId);
+      if (bot) {
+        if (!bot.botConfig) bot.botConfig = {};
+        bot.botConfig.isActive = isActive;
+      }
+      const elActive = document.getElementById('bots-metric-active');
+      if (elActive) {
+        elActive.textContent = _adminBotsCache.filter(b => b.botConfig?.isActive !== false).length;
+      }
+    } else {
+      alert('Failed to update bot active status');
+      loadAdminBots();
+    }
+  } catch (err) {
+    alert('Error updating active status: ' + err.message);
+    loadAdminBots();
+  }
+}
+
+async function runBotsSimulationNow() {
+  if (!confirm("Run today's automated task logging simulation across all active bots now?")) return;
+  try {
+    const res = await adminFetch('/api/admin/bots/run', { method: 'POST' });
+    if (res && res.success) {
+      const summary = (res.results || []).map(r => `${r.username}: ${r.status}${r.newStreak ? ` (streak ${r.newStreak})` : ''}`).join('\n');
+      alert(`Simulation completed for ${res.today}!\n\n${summary}`);
+      loadAdminBots();
+    } else {
+      alert('Simulation failed: ' + (res?.message || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Error triggering simulation: ' + err.message);
+  }
+}
+
+async function reseedBotsConfirm() {
+  const proceed = confirm("This will seed or re-seed the 5 competitor bots and generate realistic past task histories up to their initial streak. Proceed?");
+  if (!proceed) return;
+
+  try {
+    const res = await adminFetch('/api/admin/bots/seed', { method: 'POST' });
+    if (res && res.success) {
+      alert(res.message || 'Competitor bots seeded successfully!');
+      loadAdminBots();
+    } else {
+      alert('Seeding failed: ' + (res?.message || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Error seeding bots: ' + err.message);
+  }
+}
+
+function openEditBotModal(botId) {
+  const bot = _adminBotsCache.find(b => b._id === botId);
+  if (!bot) return;
+
+  document.getElementById('bot-form-id').value = bot._id;
+  document.getElementById('bot-form-name').value = bot.name || '';
+  document.getElementById('bot-form-username').value = bot.username || '';
+  document.getElementById('bot-form-avatar').value = bot.profilePicture || '';
+  const preview = document.getElementById('bot-form-avatar-preview');
+  if (preview) preview.src = bot.profilePicture || '';
+  const statusEl = document.getElementById('bot-form-upload-status');
+  if (statusEl) statusEl.textContent = '';
+  document.getElementById('bot-form-strategy').value = bot.botConfig?.strategy || 'fluctuating';
+  document.getElementById('bot-form-drop-prob').value = bot.botConfig?.dropProbability !== undefined ? bot.botConfig.dropProbability : 0.08;
+  document.getElementById('bot-form-current-streak').value = bot.currentStreak || 0;
+  document.getElementById('bot-form-highest-streak').value = bot.highestStreak || 0;
+  document.getElementById('bot-form-target-min').value = bot.botConfig?.targetStreakMin || 20;
+  document.getElementById('bot-form-target-max').value = bot.botConfig?.targetStreakMax || 50;
+  document.getElementById('bot-form-leaderboard').checked = bot.showOnLeaderboard !== false;
+  document.getElementById('bot-form-active').checked = bot.botConfig?.isActive !== false;
+
+  const taskPool = bot.botConfig?.taskPool || [];
+  document.getElementById('bot-form-task-pool').value = JSON.stringify(taskPool, null, 2);
+
+  document.getElementById('bot-modal-title').textContent = `🤖 Edit ${escapeHTML(bot.name)}`;
+  document.getElementById('bot-edit-modal').style.display = 'flex';
+}
+
+function closeBotEditModal() {
+  document.getElementById('bot-edit-modal').style.display = 'none';
+}
+
+async function handleBotDirectPhotoUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const botId = document.getElementById('bot-form-id').value;
+  const statusEl = document.getElementById('bot-form-upload-status');
+  const previewImg = document.getElementById('bot-form-avatar-preview');
+  const urlInput = document.getElementById('bot-form-avatar');
+
+  if (statusEl) statusEl.textContent = '⏳ Processing and compressing image...';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const MAX_SIZE = 400;
+      let width = img.width;
+      let height = img.height;
+      if (width > height) {
+        if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+      } else {
+        if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+      if (previewImg) previewImg.src = dataUrl;
+      if (urlInput) urlInput.value = dataUrl;
+
+      if (botId) {
+        if (statusEl) statusEl.textContent = '☁ Uploading picture to cloud...';
+        try {
+          const res = await fetch(`${API}/api/admin/users/${botId}/profile-picture`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token || localStorage.getItem('adminToken')}`
+            },
+            body: JSON.stringify({ profilePicture: dataUrl })
+          });
+          const data = await res.json();
+          if (res.ok && data.profilePicture) {
+            if (urlInput) urlInput.value = data.profilePicture;
+            if (previewImg) previewImg.src = data.profilePicture;
+            if (statusEl) statusEl.textContent = '✓ Photo uploaded & saved successfully!';
+            const bot = _adminBotsCache.find(b => b._id === botId);
+            if (bot) bot.profilePicture = data.profilePicture;
+          } else {
+            if (statusEl) statusEl.textContent = 'Photo prepared. Click Save Changes below.';
+          }
+        } catch (err) {
+          if (statusEl) statusEl.textContent = 'Photo prepared. Click Save Changes below.';
+        }
+      } else {
+        if (statusEl) statusEl.textContent = 'Photo prepared. Click Save Changes below.';
+      }
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveBotModal(e) {
+  e.preventDefault();
+  const botId = document.getElementById('bot-form-id').value;
+  if (!botId) return;
+
+  let taskPool = [];
+  try {
+    const rawJson = document.getElementById('bot-form-task-pool').value.trim();
+    if (rawJson) taskPool = JSON.parse(rawJson);
+  } catch (err) {
+    alert('Task Pool must be valid JSON: ' + err.message);
+    return;
+  }
+
+  const payload = {
+    name: document.getElementById('bot-form-name').value.trim(),
+    username: document.getElementById('bot-form-username').value.trim(),
+    profilePicture: document.getElementById('bot-form-avatar').value.trim(),
+    currentStreak: parseInt(document.getElementById('bot-form-current-streak').value) || 0,
+    highestStreak: parseInt(document.getElementById('bot-form-highest-streak').value) || 0,
+    showOnLeaderboard: document.getElementById('bot-form-leaderboard').checked,
+    botConfig: {
+      strategy: document.getElementById('bot-form-strategy').value,
+      dropProbability: parseFloat(document.getElementById('bot-form-drop-prob').value) || 0,
+      targetStreakMin: parseInt(document.getElementById('bot-form-target-min').value) || 20,
+      targetStreakMax: parseInt(document.getElementById('bot-form-target-max').value) || 50,
+      isActive: document.getElementById('bot-form-active').checked,
+      taskPool
+    }
+  };
+
+  try {
+    const res = await adminFetch(`/api/admin/bots/${botId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+    if (res && res.success) {
+      closeBotEditModal();
+      loadAdminBots();
+    } else {
+      alert('Error updating bot: ' + (res?.message || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Network error updating bot: ' + err.message);
+  }
+}
+
+async function viewBotDays(botId) {
+  const content = document.getElementById('bot-days-content');
+  const title = document.getElementById('bot-days-modal-title');
+  if (!content) return;
+
+  content.innerHTML = `<p style="text-align:center; padding:20px; font-weight:800; color:#666;">Loading task history...</p>`;
+  document.getElementById('bot-days-modal').style.display = 'flex';
+
+  try {
+    const res = await adminFetch(`/api/admin/bots/${botId}/days`);
+    if (!res || !res.success) {
+      content.innerHTML = `<p style="text-align:center; padding:20px; font-weight:800; color:var(--red);">Failed to load task logs.</p>`;
+      return;
+    }
+
+    if (title && res.bot) {
+      title.textContent = `📋 Task Logs for ${escapeHTML(res.bot.name)} (@${escapeHTML(res.bot.username)})`;
+    }
+
+    const days = res.days || [];
+    if (days.length === 0) {
+      content.innerHTML = `<p style="text-align:center; padding:20px; font-weight:800; color:#666;">No task records logged yet for this bot.</p>`;
+      return;
+    }
+
+    content.innerHTML = days.map(d => {
+      let totalTasks = 0;
+      let completedTasks = 0;
+
+      const taskListHtml = (d.categories || []).map(cat => {
+        const catTasksHtml = (cat.tasks || []).map(t => {
+          totalTasks++;
+          const isDone = Boolean(t.completed);
+          if (isDone) completedTasks++;
+
+          return isDone ? `
+            <li style="margin-bottom: 4px; display: flex; align-items: center; gap: 8px; color: #166534;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-weight: 900; background: #bbf7d0; color: #15803d; border-radius: 4px; font-size: 11px;">✓</span>
+              <span style="font-weight: 700;">${escapeHTML(t.title || t.text)}</span>
+            </li>
+          ` : `
+            <li style="margin-bottom: 4px; display: flex; align-items: center; gap: 8px; color: #94a3b8; text-decoration: line-through;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-weight: 900; background: #f1f5f9; color: #64748b; border-radius: 4px; font-size: 11px;">✕</span>
+              <span>${escapeHTML(t.title || t.text)}</span>
+            </li>
+          `;
+        }).join('');
+
+        return `
+          <div style="margin-top: 8px;">
+            <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">📁 ${escapeHTML(cat.name)}</div>
+            <ul style="margin: 4px 0 0 4px; padding: 0; list-style: none; font-size: 12px;">
+              ${catTasksHtml}
+            </ul>
+          </div>
+        `;
+      }).join('');
+
+      const percent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      const statusBadge = `
+        <span style="font-size: 11px; font-weight: 800; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; border: 1.5px solid #f59e0b;">
+          ${completedTasks}/${totalTasks} Tasks (${percent}%)
+        </span>
+      `;
+
+      return `
+        <div style="background: var(--bg-muted, #f8fafc); border: 2px solid var(--black); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid var(--black); padding-bottom: 6px; margin-bottom: 8px;">
+            <span style="font-weight: 900; font-family: 'Space Grotesk', sans-serif;">📅 ${d.date}</span>
+            ${statusBadge}
+          </div>
+          ${taskListHtml}
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    content.innerHTML = `<p style="text-align:center; padding:20px; font-weight:800; color:var(--red);">Error loading tasks: ${err.message}</p>`;
+  }
+}
+
+function closeBotDaysModal() {
+  document.getElementById('bot-days-modal').style.display = 'none';
+}
+
+window.loadAdminBots = loadAdminBots;
+window.toggleBotLeaderboard = toggleBotLeaderboard;
+window.toggleBotActive = toggleBotActive;
+window.runBotsSimulationNow = runBotsSimulationNow;
+window.reseedBotsConfirm = reseedBotsConfirm;
+window.openEditBotModal = openEditBotModal;
+window.closeBotEditModal = closeBotEditModal;
+window.saveBotModal = saveBotModal;
+window.viewBotDays = viewBotDays;
+function triggerQuickBotDpUpload(botId) {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.onchange = async () => {
+    if (!fileInput.files || !fileInput.files[0]) return;
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 400;
+        let width = img.width, height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        }
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+        try {
+          const res = await fetch(`${API}/api/admin/users/${botId}/profile-picture`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token || localStorage.getItem('adminToken')}`
+            },
+            body: JSON.stringify({ profilePicture: dataUrl })
+          });
+          const data = await res.json();
+          if (res.ok && data.profilePicture) {
+            alert('Profile picture updated successfully!');
+            loadAdminBots();
+          } else {
+            alert('Failed to update profile picture: ' + (data?.message || 'Error'));
+          }
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+        }
+      };
+    };
+    reader.readAsDataURL(file);
+  };
+  fileInput.click();
+}
+
+window.closeBotDaysModal = closeBotDaysModal;
+window.handleBotDirectPhotoUpload = handleBotDirectPhotoUpload;
+window.triggerQuickBotDpUpload = triggerQuickBotDpUpload;
+
 
 

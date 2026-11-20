@@ -1636,12 +1636,12 @@ async function previewOwnProfile() {
 
 // ── Leaderboard ───────────────────────────────────────────
 let _lastLeaderboardLoad = 0;
+let _lastLeaderboardSort = null;
 
 function setLeaderboardSort(type) {
   if (window.lbSort === type && window.lbPage > 1) return; 
-  if (window.lbSort !== type) {
-    _lastLeaderboardLoad = 0;
-  }
+  _lastLeaderboardLoad = 0;
+  _lastLeaderboardSort = type;
   window.lbSort = type;
   
   // UI feedback for buttons
@@ -1654,14 +1654,106 @@ function setLeaderboardSort(type) {
 }
 
 /** Helper to render leaderboard rows */
+function renderPodiumCard(user, rank) {
+  const card = document.createElement('div');
+  card.className = `podium-card podium-rank-${rank}`;
+  
+  let crownBadge = '';
+  let rankLabel = '';
+  if (rank === 1) {
+    crownBadge = `<div class="podium-crown gold"><i data-lucide="crown"></i><span>1</span></div>`;
+    rankLabel = `<div class="podium-badge leader">CURRENT LEADER</div>`;
+  } else if (rank === 2) {
+    crownBadge = `<div class="podium-crown silver"><span>2</span></div>`;
+    rankLabel = `<div class="podium-badge runner-up">#2</div>`;
+  } else if (rank === 3) {
+    crownBadge = `<div class="podium-crown bronze"><span>3</span></div>`;
+    rankLabel = `<div class="podium-badge third">#3</div>`;
+  }
+
+  const avatarClass = user.isPremium ? 'podium-avatar premium-nav-ring' : 'podium-avatar';
+  const avatarHtml = user.profilePicture 
+    ? `<img src="${user.profilePicture}" class="${avatarClass}" alt="${escapeHTML(user.username)}">`
+    : `<div class="${avatarClass}" style="display:flex; align-items:center; justify-content:center; font-weight:900; font-size:24px; background:var(--bg-muted); color:var(--text);">${(user.username || '?').charAt(0).toUpperCase()}</div>`;
+
+  const isHighest = window.lbSort === 'highest';
+  const mainVal = isHighest ? (user.highestStreak || 0) : (user.currentStreak || 0);
+  const mainLabel = isHighest ? 'highest streak' : 'current streak';
+  const subStatHtml = isHighest
+    ? `<span>Current: <strong>${user.currentStreak || 0}</strong> days</span>`
+    : `<span>Highest: <strong>${user.highestStreak || 0}</strong> days</span>`;
+
+  card.innerHTML = `
+    ${crownBadge}
+    <div class="podium-avatar-wrap">
+      ${avatarHtml}
+    </div>
+    ${rankLabel}
+    <div class="podium-user-info">
+      <div class="podium-name">${escapeHTML(user.name || user.username)} ${user.isPremium ? '👑' : ''}</div>
+      <div class="podium-username">@${escapeHTML(user.username)}</div>
+    </div>
+    <div class="podium-score-box">
+      <div class="podium-streak-num">${mainVal}</div>
+      <div class="podium-streak-lbl">${mainLabel}</div>
+    </div>
+    <div class="podium-sub-stat">
+      ${subStatHtml}
+    </div>
+  `;
+
+  card.onclick = () => {
+    openQuickView(user.username);
+  };
+
+  return card;
+}
+
 function renderLeaderboardData(users, reset) {
   const listContainer = document.getElementById('leaderboard-list');
+  const podiumContainer = document.getElementById('leaderboard-podium');
   if (!listContainer) return;
   
-  if (reset) listContainer.innerHTML = '';
+  if (reset) {
+    listContainer.innerHTML = '';
+    if (podiumContainer) {
+      podiumContainer.innerHTML = '';
+      podiumContainer.style.display = 'none';
+    }
+  }
   
   if (users.length === 0 && reset) {
     listContainer.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:700;">No legends found yet. Be the first!</div>`;
+    return;
+  }
+
+  const isMobile = window.innerWidth <= 640;
+
+  if (reset) {
+    if (!isMobile && podiumContainer && users.length >= 3) {
+      // Desktop: Olympic Top 3 Podium (Left: #2, Center: #1, Right: #3)
+      podiumContainer.style.display = 'flex';
+      const top3 = users.slice(0, 3);
+      const rest = users.slice(3);
+
+      top3.forEach((user, idx) => {
+        const rank = idx + 1;
+        podiumContainer.appendChild(renderPodiumCard(user, rank));
+      });
+      if (window.lucide) lucide.createIcons({ root: podiumContainer });
+
+      rest.forEach((user, index) => {
+        const rank = index + 4;
+        listContainer.appendChild(renderLeaderboardItem(user, rank));
+      });
+    } else {
+      // Mobile View: Render all users sequentially (1st, 2nd, 3rd, 4th, 5th...) in exact theme styling
+      if (podiumContainer) podiumContainer.style.display = 'none';
+      users.forEach((user, index) => {
+        const rank = index + 1;
+        listContainer.appendChild(renderLeaderboardItem(user, rank));
+      });
+    }
   } else {
     users.forEach((user, index) => {
       const rank = ((window.lbPage - 1) * 10) + index + 1;
@@ -1677,9 +1769,19 @@ async function loadLeaderboard(reset = false) {
     lbBanner.style.display = isEmailVerified ? 'none' : 'flex';
   }
 
+  // Ensure sort button visuals always reflect current state
+  const btnCurrent = document.getElementById('btn-sort-current');
+  const btnHighest = document.getElementById('btn-sort-highest');
+  if (btnCurrent) btnCurrent.classList.toggle('active', window.lbSort === 'current');
+  if (btnHighest) btnHighest.classList.toggle('active', window.lbSort === 'highest');
+
   if (window.lbIsLoading) return;
   if (reset) {
     const now = Date.now();
+    if (window.lbSort !== _lastLeaderboardSort) {
+      _lastLeaderboardLoad = 0;
+      _lastLeaderboardSort = window.lbSort;
+    }
     // Throttle leaderboard queries to once every 30 seconds to prevent unnecessary API calls on tab switch
     if (now - _lastLeaderboardLoad < 30000 && document.getElementById('leaderboard-list')?.children.length > 0) {
       return;
@@ -1689,6 +1791,11 @@ async function loadLeaderboard(reset = false) {
     window.lbPage = 1;
     const listContainer = document.getElementById('leaderboard-list');
     if (listContainer) listContainer.innerHTML = '';
+    const podiumContainer = document.getElementById('leaderboard-podium');
+    if (podiumContainer) {
+      podiumContainer.innerHTML = '';
+      podiumContainer.style.display = 'none';
+    }
     const myRankArea = document.getElementById('lb-my-rank-area');
     if (myRankArea) myRankArea.innerHTML = '';
   }
@@ -1783,12 +1890,42 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
   } else if (rank === 3) {
     rankClass = 'rank-3';
     card.classList.add('card-rank-3');
+  } else {
+    // For ranks 4 and below, assign repeating creamy pastel themes 0-5
+    const rankNum = typeof rank === 'number' ? rank : 4;
+    const colorIdx = ((rankNum - 4) % 6 + 6) % 6;
+    card.classList.add(`clay-row-${colorIdx}`);
   }
 
   const avatarClass = user.isPremium ? 'lb-avatar premium-nav-ring' : 'lb-avatar';
   const avatarHtml = user.profilePicture 
     ? `<img src="${user.profilePicture}" class="${avatarClass}" onclick="event.stopPropagation(); openLightbox('${user.profilePicture}')" alt="${escapeHTML(user.username)}">`
     : `<div class="${avatarClass}" style="display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; background:var(--bg-muted); color:var(--text-muted);">${(user.username || '?').charAt(0).toUpperCase()}</div>`;
+
+  const isHighest = window.lbSort === 'highest';
+  const statsBoxesHtml = isHighest ? `
+    <div class="lb-stats">
+      <div class="lb-streak-box highest" title="Highest Streak">
+        <span class="lb-streak-val">${user.highestStreak || 0}</span>
+        <span class="lb-streak-label"><span class="lb-label-main">Highest</span><span class="lb-label-extra"> Streak</span></span>
+      </div>
+      <div class="lb-streak-box current" title="Current Streak">
+        <span class="lb-streak-val">${user.currentStreak || 0}</span>
+        <span class="lb-streak-label"><span class="lb-label-main">Current</span><span class="lb-label-extra"> Streak</span></span>
+      </div>
+    </div>
+  ` : `
+    <div class="lb-stats">
+      <div class="lb-streak-box current" title="Current Streak">
+        <span class="lb-streak-val">${user.currentStreak || 0}</span>
+        <span class="lb-streak-label"><span class="lb-label-main">Current</span><span class="lb-label-extra"> Streak</span></span>
+      </div>
+      <div class="lb-streak-box highest" title="Highest Streak">
+        <span class="lb-streak-val">${user.highestStreak || 0}</span>
+        <span class="lb-streak-label"><span class="lb-label-main">Highest</span><span class="lb-label-extra"> Streak</span></span>
+      </div>
+    </div>
+  `;
 
   card.innerHTML = `
     <div class="lb-rank ${rankClass}">
@@ -1802,16 +1939,7 @@ function renderLeaderboardItem(user, rank, isSpotlight = false) {
       </div>
       <div class="lb-username">@${escapeHTML(user.username)}</div>
     </div>
-    <div class="lb-stats">
-      <div class="lb-streak-box current" title="Current Streak">
-        <span class="lb-streak-val">${user.currentStreak}</span>
-        <span class="lb-streak-label"><span class="lb-label-main">Current</span><span class="lb-label-extra"> Streak</span></span>
-      </div>
-      <div class="lb-streak-box highest" title="Highest Streak">
-        <span class="lb-streak-val">${user.highestStreak || 0}</span>
-        <span class="lb-streak-label"><span class="lb-label-main">Highest</span><span class="lb-label-extra"> Streak</span></span>
-      </div>
-    </div>
+    ${statsBoxesHtml}
   `;
 
   card.onclick = () => {

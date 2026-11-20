@@ -1357,6 +1357,27 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isBot: {
+      type: Boolean,
+      default: false,
+    },
+    botConfig: {
+      strategy: {
+        type: String,
+        enum: ["continuous", "fluctuating"],
+        default: "fluctuating",
+      },
+      targetStreakMin: { type: Number, default: 20 },
+      targetStreakMax: { type: Number, default: 50 },
+      dropProbability: { type: Number, default: 0.1 },
+      isActive: { type: Boolean, default: true },
+      taskPool: [
+        {
+          category: { type: String, default: "Daily Tasks" },
+          tasks: [{ type: String }],
+        },
+      ],
+    },
     theme: {
       type: String,
       enum: ["light", "dark", "premium-aurora", "minimalistic", "claymorphism"],

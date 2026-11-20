@@ -384,8 +384,44 @@
 [data-theme="claymorphism"] .lb-card.card-rank-1 { background: #fcd34d !important; } /* Gold */
 [data-theme="claymorphism"] .lb-card.card-rank-2 { background: #cbd5e1 !important; } /* Silver */
 [data-theme="claymorphism"] .lb-card.card-rank-3 { background: #fca5a5 !important; } /* Rose */
+/* Earthy creamy pastel palette cycling for rows below top 3 (both explicit class and nth-child fallback) */
+[data-theme="claymorphism"] .lb-card.clay-row-0 { background: #fef3c7 !important; } /* Warm Butter */
+[data-theme="claymorphism"] .lb-card.clay-row-1 { background: #e0f2fe !important; } /* Soft Mineral Sky */
+[data-theme="claymorphism"] .lb-card.clay-row-2 { background: #ede9fe !important; } /* Creamy Lavender */
+[data-theme="claymorphism"] .lb-card.clay-row-3 { background: #fed7aa !important; } /* Warm Earthy Peach */
+[data-theme="claymorphism"] .lb-card.clay-row-4 { background: #ffe4e6 !important; } /* Soft Dusty Rose */
+[data-theme="claymorphism"] .lb-card.clay-row-5 { background: #d1fae5 !important; } /* Soft Sage Mint */
+
+/* Nth-child fallbacks for rows below rank 3 */
+[data-theme="claymorphism"] .leaderboard-list .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3):nth-child(6n + 1) {
+  background: #fef3c7 !important; /* Creamy Warm Butter */
+}
+[data-theme="claymorphism"] .leaderboard-list .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3):nth-child(6n + 2) {
+  background: #e0f2fe !important; /* Soft Mineral Sky */
+}
+[data-theme="claymorphism"] .leaderboard-list .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3):nth-child(6n + 3) {
+  background: #ede9fe !important; /* Creamy Lavender */
+}
+[data-theme="claymorphism"] .leaderboard-list .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3):nth-child(6n + 4) {
+  background: #fed7aa !important; /* Warm Earthy Peach */
+}
+[data-theme="claymorphism"] .leaderboard-list .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3):nth-child(6n + 5) {
+  background: #ffe4e6 !important; /* Dusty Rose / Almond */
+}
+[data-theme="claymorphism"] .leaderboard-list .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3):nth-child(6n + 6) {
+  background: #d1fae5 !important; /* Soft Sage Mint */
+}
+
+/* Fallback if nth-child does not apply */
 [data-theme="claymorphism"] .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3) {
-  background: #d1fae5 !important; /* Light Mint */
+  background: #fef3c7 !important;
+}
+
+[data-theme="claymorphism"] .lb-card:not(.card-rank-1):not(.card-rank-2):not(.card-rank-3) .lb-rank {
+  background: rgba(255, 255, 255, 0.65) !important;
+  color: #1f2937 !important;
+  box-shadow: inset 1px 1px 3px rgba(255, 255, 255, 0.8),
+              inset -1px -1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Rank badge */
@@ -431,6 +467,94 @@
 [data-theme="claymorphism"] .lb-card.my-rank-card {
   outline: 3px solid #27a55a !important;
   outline-offset: 2px !important;
+}
+
+/* Podium Claymorphism Overrides */
+[data-theme="claymorphism"] .podium-card {
+  border: none !important;
+  border-radius: 26px !important;
+  box-shadow: 0 10px 24px rgba(20, 50, 35, 0.16),
+              inset 3px 3px 6px rgba(255, 255, 255, 0.55),
+              inset -3px -3px 6px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+[data-theme="claymorphism"] .podium-card:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 14px 28px rgba(20, 50, 35, 0.22),
+              inset 3px 3px 6px rgba(255, 255, 255, 0.6),
+              inset -3px -3px 6px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="claymorphism"] .podium-card.podium-rank-1 {
+  background: #fcd34d !important; /* Gold */
+}
+
+[data-theme="claymorphism"] .podium-card.podium-rank-2 {
+  background: #cbd5e1 !important; /* Silver / Lavender */
+}
+
+[data-theme="claymorphism"] .podium-card.podium-rank-3 {
+  background: #fca5a5 !important; /* Rose */
+}
+
+[data-theme="claymorphism"] .podium-crown {
+  border: none !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15),
+              inset 1px 1px 2px rgba(255, 255, 255, 0.6) !important;
+  border-radius: 999px !important;
+}
+
+[data-theme="claymorphism"] .podium-crown.gold {
+  background: #f59e0b !important;
+  color: #fff !important;
+}
+
+[data-theme="claymorphism"] .podium-crown.silver {
+  background: #94a3b8 !important;
+  color: #fff !important;
+}
+
+[data-theme="claymorphism"] .podium-crown.bronze {
+  background: #fb7185 !important;
+  color: #fff !important;
+}
+
+[data-theme="claymorphism"] .podium-avatar {
+  border: 3.5px solid rgba(255, 255, 255, 0.75) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 10px rgba(20, 50, 35, 0.15) !important;
+}
+
+[data-theme="claymorphism"] .podium-badge {
+  border: none !important;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.7),
+              0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="claymorphism"] .podium-badge.leader {
+  background: #bbf7d0 !important;
+  color: #064e3b !important;
+}
+
+[data-theme="claymorphism"] .podium-score-box {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+              inset -2px -2px 4px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="claymorphism"] .podium-sub-stat {
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+
+[data-theme="claymorphism"] .podium-sub-stat strong {
+  background: #f9a8d4 !important;
+  color: #831843 !important;
+  padding: 1px 8px !important;
+  border-radius: 999px !important;
+  font-weight: 900 !important;
 }
 
 /* Leaderboard sort buttons */

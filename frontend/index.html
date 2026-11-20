@@ -54,7 +54,14 @@
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
-  <script defer src="/_vercel/insights/script.js"></script>
+  <script>
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const s = document.createElement('script');
+      s.defer = true;
+      s.src = '/_vercel/insights/script.js';
+      document.head.appendChild(s);
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="icon" href="/checklist.png">
@@ -1174,6 +1181,9 @@
     </div>
 
     <div class="leaderboard-wrapper">
+      <!-- Top 3 Podium (Desktop: 2nd, 1st, 3rd | Mobile: 1st, 2nd, 3rd) -->
+      <div id="leaderboard-podium" class="lb-podium" style="display:none;"></div>
+
       <div id="leaderboard-list" class="leaderboard-list">
         <!-- Leaderboard items injected here -->
       </div>
