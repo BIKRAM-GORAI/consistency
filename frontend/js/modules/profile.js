@@ -1458,6 +1458,78 @@ function renderContributionGraph(data, targetId = 'public-profile-graph', isPrem
   svg += rectsHtml;
   svg += '</svg></div>';
   container.innerHTML = svg;
+
+  const scrollEl = (container.scrollWidth > container.clientWidth)
+    ? container
+    : (container.closest('[style*="overflow-x"]') || container.parentElement || container);
+  if (scrollEl) {
+    animateGraphScrollRight(scrollEl, 2000, 350);
+  }
+}
+
+/**
+ * Smoothly scrolls the contribution graph from left to right over ~2 seconds
+ * so recent activity and current streaks on the right side are revealed with an engaging animation.
+ */
+function animateGraphScrollRight(scrollEl, durationMs = 2000, initialDelayMs = 350) {
+  if (!scrollEl) return;
+
+  const runAnimation = () => {
+    const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
+    if (maxScroll <= 10) return;
+
+    // Reset to leftmost edge (1 year ago)
+    scrollEl.scrollLeft = 0;
+
+    const prevScrollBehavior = scrollEl.style.scrollBehavior;
+    scrollEl.style.scrollBehavior = 'auto';
+
+    const startTime = performance.now();
+    let isInterrupted = false;
+
+    const stop = () => {
+      isInterrupted = true;
+      scrollEl.style.scrollBehavior = prevScrollBehavior;
+      scrollEl.removeEventListener('wheel', stop);
+      scrollEl.removeEventListener('touchstart', stop);
+      scrollEl.removeEventListener('pointerdown', stop);
+    };
+
+    scrollEl.addEventListener('wheel', stop, { passive: true });
+    scrollEl.addEventListener('touchstart', stop, { passive: true });
+    scrollEl.addEventListener('pointerdown', stop, { passive: true });
+
+    function tick(now) {
+      if (isInterrupted) return;
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+
+      // Smooth easeInOutCubic: slow start, fast middle, gentle settle onto today's contributions
+      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      scrollEl.scrollLeft = ease * maxScroll;
+
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        scrollEl.scrollLeft = maxScroll;
+        stop();
+      }
+    }
+
+    requestAnimationFrame(tick);
+  };
+
+  let attempts = 0;
+  const checkAndRun = () => {
+    if (scrollEl.clientWidth > 0 && scrollEl.scrollWidth > scrollEl.clientWidth) {
+      runAnimation();
+    } else if (attempts < 20) {
+      attempts++;
+      setTimeout(checkAndRun, 100);
+    }
+  };
+
+  setTimeout(checkAndRun, initialDelayMs);
 }
 
 function buildReadOnlyDayCard(day, allAchievements = []) {
@@ -1987,6 +2059,7 @@ window.openQuickView = openQuickView;
 window.previewFullProfile = previewFullProfile;
 window.previewMinimalProfile = previewMinimalProfile;
 window.renderContributionGraph = renderContributionGraph;
+window.animateGraphScrollRight = animateGraphScrollRight;
 window.buildReadOnlyDayCard = buildReadOnlyDayCard;
 window.buildReadOnlyAchievementCard = buildReadOnlyAchievementCard;
 
