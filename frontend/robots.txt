@@ -2,40 +2,76 @@
 
 User-agent: *
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 # Dedicated Directives for AI Search & LLM Crawlers
 User-agent: GPTBot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: anthropic-ai
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: Googlebot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: Applebot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: cohere-ai
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /admin-login.html
+Disallow: /api/admin/
 
 # LLM Context Feeds (Markdown Documentation for AI Agents)
 # Specification: https://llmstxt.org
