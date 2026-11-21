@@ -1,4 +1,45 @@
+# Robots.txt for Consistency Daily (https://consistency-daily.vercel.app)
+
 User-agent: *
 Allow: /
+
+# Dedicated Directives for AI Search & LLM Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+# LLM Context Feeds (Markdown Documentation for AI Agents)
+# Specification: https://llmstxt.org
+# Index: https://consistency-daily.vercel.app/llms.txt
+# Full Knowledge Base: https://consistency-daily.vercel.app/llms-full.txt
 
 Sitemap: https://consistency-daily.vercel.app/sitemap.xml

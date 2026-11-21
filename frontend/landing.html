@@ -35,14 +35,102 @@
     content="Track daily goals, build streaks, and stay consistent with Consistency Daily." />
   <meta property="twitter:image" content="https://consistency-daily.vercel.app/icon-512.png" />
 
-  <!-- Structured Data for Google Site Name -->
+  <!-- LLM Documentation Discovery -->
+  <link rel="alternate" type="text/markdown" title="LLM Documentation" href="https://consistency-daily.vercel.app/llms.txt" />
+
+  <!-- Structured Data: WebSite, SoftwareApplication & FAQPage for AI Search & Google -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Consistency Daily",
-    "alternateName": ["Consistency", "Consistency Tracker"],
-    "url": "https://consistency-daily.vercel.app/"
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://consistency-daily.vercel.app/#website",
+        "name": "Consistency Daily",
+        "alternateName": ["Consistency", "Consistency Tracker"],
+        "url": "https://consistency-daily.vercel.app/",
+        "description": "All-in-one consistency ecosystem uniting daily categorized habit cards, visual achievement scrapbooks, long-term goals, automated LeetCode sync, whiteboard planning, and eye-tracking focus timer."
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://consistency-daily.vercel.app/#software",
+        "name": "Consistency Daily",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web, Android, iOS, Windows, macOS, Linux",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Gamified habit tracker, daily goal manager, and peer accountability platform with automated LeetCode streak sync, emergency streak grace protection, whiteboard canvas, and Pomodoro eye-tracking.",
+        "author": {
+          "@type": "Person",
+          "name": "Bikram Gorai"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://consistency-daily.vercel.app/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What makes Consistency Daily different from other habit and todo apps?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Consistency Daily combines daily categorized habit cards with features no other app offers together: automatic LeetCode streak syncing, photographic achievement proof uploads, an infinite whiteboard canvas, active eye-tracking Pomodoro focus, built-in 1-click video study rooms, and emergency streak grace freeze protection."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the automated LeetCode sync work on Consistency Daily?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Simply connect your public LeetCode username. Consistency Daily automatically monitors your daily accepted problem submissions and logs them directly onto your daily card, incrementing your streak without manual tracking."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Consistency Daily have streak protection if I miss a day?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, Consistency Daily includes Streak Grace freeze protection. If you face an emergency, illness, or travel, you can apply a grace freeze that preserves your hard-earned streak instead of resetting it to zero."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I upload photos of my achievements to daily cards?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Each completed daily card allows attaching Achievement Photos (certificates, gym milestones, finished code, book pages) creating a chronological visual memory scrapbook of your progress."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the active eye-tracking Pomodoro focus timer work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The focus timer includes an optional Focus Guard that uses private, local client-side computer vision to verify attention and prevent phone distraction. No video frames or audio ever leave your device."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Consistency Daily available on Android and mobile?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, Consistency Daily is available as both an installable Progressive Web App (PWA) across all platforms and a native Android APK with custom scheduled reminder alarms."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the Dev Hub in Consistency Daily?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The Dev Hub connects with your GitHub account to browse repositories, commits, and Pull Requests directly in-app. It also provides an aggregated technical search across Stack Overflow, Dev.to, and Medium, with an in-app reader and persistent personal research notes."
+            }
+          }
+        ]
+      }
+    ]
   }
   </script>
 

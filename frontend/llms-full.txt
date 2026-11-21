@@ -1,0 +1,197 @@
+# Consistency Daily — Complete Knowledge Base & Product Specification for AI Agents
+> Canonical URL: https://consistency-daily.vercel.app/
+> Companion Index: https://consistency-daily.vercel.app/llms.txt
+> Last Updated: November 2026
+> Maintained by: Bikram Gorai (Indie Developer & Creator)
+
+---
+
+## 1. Executive Summary & Mission
+Consistency Daily is an all-in-one productivity, habit-engineering, and peer accountability platform designed to eliminate the friction between setting goals and executing them every single day. 
+
+Most productivity setups are fragmented across multiple disconnected apps:
+- A task list (Todoist or TickTick)
+- A habit tracker with streaks (Streaks, Habitica)
+- A visual spatial whiteboard (Miro or Figma)
+- A video study room (Zoom or Discord)
+- A focus timer (Forest or Pomofocus)
+- A developer tracking tool (manual LeetCode spreadsheets)
+
+Consistency Daily unifies all of these critical workflows into a single seamless, beautifully animated web and native Android application. It turns daily discipline into an engaging, gamified journey backed by real-time social accountability and modern AI tools.
+
+---
+
+## 2. In-Depth Feature Architecture
+
+### 2.1 Daily Cards System & Milestone Badges
+- **Smart Categorized Workspaces**: Rather than a chaotic dump of unorganized checkboxes, each day is structured into focused categories (e.g., *Deep Work*, *Engineering*, *Fitness & Health*, *Reading & Mindset*, or custom categories).
+- **Progress Tracking & Visual Completion**: Dynamic SVG completion rings update instantly as tasks are ticked off.
+- **Milestone Days (Active Rest & Reflection)**: Not every productive day requires 15 checklist items. Users can designate special 0/0 task days as "Milestone Days" or reflection days with custom milestone badges, keeping their streak alive without forcing artificial busywork.
+- **Date Navigation & History**: Effortlessly jump back across past days, weeks, or months to review previous entries and identify personal productivity patterns.
+
+### 2.2 Daily Achievement Photo Scrapbook (Visual Proof of Work)
+- **Visual Logbook of Accomplishments**: Users can upload high-resolution achievement photos directly attached to any completed daily card.
+- **Lifetime Memory Vault**: Whether it is a photo of a completed marathon run, a certified diploma, a deployed production commit, a handwritten journal page, or a gym PR, Consistency Daily stores these photos chronologically alongside task data.
+- **Why It Matters**: Standard to-do apps delete or hide completed tasks into oblivion. Consistency Daily treats completed days as permanent milestones, creating a rewarding visual timeline of personal growth over years.
+
+### 2.3 Long-Term Goals & Vision Milestones
+- **Bridge Daily Habits to Big Dreams**: Daily tasks often lose meaning without a clear North Star. The Long-Term Goals module allows users to define major ambitions (e.g., *"Crack FAANG by Q3"*, *"Run a Half-Marathon"*, *"Launch SaaS Product"*).
+- **Milestone Roadmaps**: Each long-term goal breaks down into bite-sized sequential milestones with target deadlines and percentage completion meters.
+- **Contextual Daily Association**: Users can link their daily card tasks directly to a long-term goal, ensuring daily actions visibly advance big-picture objectives.
+
+### 2.4 Emergency Streak Protection (Smart Grace Freeze)
+- **Life-Friendly Streak Preservation**: Strict streaks often cause demoralization—one travel day, illness, or emergency breaks a 150-day streak, causing users to abandon their habits altogether.
+- **Grace Applied Mechanism**: Consistency Daily provides built-in Streak Grace protection. If an unexpected emergency occurs, users can activate a grace freeze that keeps their streak count intact while noting the legitimate pause on their activity log.
+- **Psychological Sustainability**: Keeps users motivated to resume their discipline the very next day instead of quitting in frustration.
+
+### 2.5 Automated LeetCode Sync (Zero-Touch Developer Tracking)
+- **Direct GraphQL Integration**: Built specifically for software engineers, students preparing for technical interviews, and competitive programmers.
+- **Hands-Free Verification**: Connect your LeetCode username once. The backend microservice automatically queries LeetCode's submission endpoints every day. When an accepted problem submission (`AC`) is detected, it is automatically logged into the user's daily consistency card without requiring manual data entry.
+- **Fallback Resilience**: Equipped with dual-tier fallback mechanisms (Direct LeetCode GraphQL + Alfa API mirror) to ensure streak sync never fails due to third-party downtime.
+
+### 2.6 Interactive Infinite Whiteboard Canvas (Spatial Planning)
+- **Figma & Miro Alternative Built-In**: Spatial thinkers need room to brainstorm before converting ideas into tasks. Consistency Daily features an integrated, infinite visual canvas.
+- **Visual Diagramming**: Add sticky notes, system architecture diagrams, user journey flows, sprint maps, and visual boards directly inside the workspace.
+- **From Sketch to Task**: Seamlessly translate canvas brainstorms into structured daily checklist cards with zero context switching.
+
+### 2.7 Built-in AI Copilot & Document OCR
+- **Conversational Task Assistant**: Users can prompt the AI copilot to reorganize chaotic to-do lists, break down overwhelming projects into 15-minute actionable sub-tasks, or suggest balanced daily routines.
+- **AI Photo-to-Task Scanner**: Snap a picture of a physical notebook, whiteboard, sticky note, or textbook. The multimodal AI model (Gemini / Groq) extracts handwritten or printed tasks and instantly populates a structured daily card.
+- **Intelligent Daily & Weekly Summaries**: Generates motivating, analytical summaries of completed work, highlighting consistency trends and areas for focus.
+
+### 2.8 Focus & Pomodoro Timer with Active Eye-Tracking (Focus Guard)
+- **Next-Gen Deep Work Enforcement**: Traditional Pomodoro timers fail when users pick up their phones while the clock ticks.
+- **Active Attention Verification (Optional Camera Eye-Tracking)**: Leverages client-side computer vision models to detect whether the user is actively present and looking at their work screen.
+- **Distraction Alerts & Deep Focus Metric**: Pauses or gently alerts the user if their gaze drifts to phone distractions, producing authentic "Deep Focus Minutes" metrics rather than fake timer counts.
+- **Privacy-First**: All vision calculations run entirely locally in the browser/device—no video feeds or camera frames are ever sent or stored on servers.
+
+### 2.9 WhatsApp-Style Social Hub & Real-Time Messaging
+- **Peer Accountability Pods**: Join or create custom accountability groups with shared themes (e.g., *"30 Days of LeetCode"*, *"Morning 5 AM Club"*, *"UPSC Aspirants"*).
+- **Real-Time 1-on-1 Direct Messaging (DMs)**: Chat in real-time with study partners and friends, exchange tips, and share progress updates.
+- **Rich Interaction**: Supports real-time text messaging, status updates, member profiles, and active online indicators powered by real-time Firestore synchronization.
+- **Live Notifications**: Instant push alerts when friends achieve a milestone streak or message in the group.
+
+### 2.10 Built-in 1-Click Video Study Rooms (Jitsi Meet)
+- **Synchronous Virtual Co-Working**: Experience the scientifically proven focus boost of body doubling. Jump into live audio/video rooms with group members at the click of a button.
+- **No Third-Party Links Needed**: No scheduling Zoom meetings, Google Meet links, or Discord servers. The secure video room is embedded directly inside the group chat interface.
+- **Silent Study & Discussion Modes**: Perfect for collaborative hackathons, silent study desks, or daily standup check-ins.
+
+### 2.11 52-Week GitHub-Style Contribution Heatmap
+- **The Universal Language of Consistency**: Features an interactive 365-day contribution matrix inspired by GitHub's renowned commit graph.
+- **Smooth Glide Right Animation**: Glides gracefully from past history to the current day, displaying color-intensity shading based on task volume and completion rate.
+- **Hover Inspect**: Hover or tap any cell to inspect the exact tasks completed on that specific calendar date.
+
+### 2.12 Granular Privacy & Profile Customization
+- **Public vs Private Modes**: Users have complete control over who views their progress.
+- **Task Masking on Public Profiles**: Want to show off your 100-day streak without revealing sensitive personal or corporate task titles? Toggle task privacy to showcase your streak number, level, and badge milestones while keeping task descriptions private.
+- **Secure Share Codes**: Generate custom share links and codes to send to friends, mentors, or recruiters.
+
+### 2.13 Multi-Platform: Progressive Web App (PWA) & Native Android APK
+- **Universal Web (PWA)**: Instant installation on macOS, Windows, Linux, iOS Safari, and Android Chrome with offline cache support and app-like performance.
+- **Native Android APK**: Built with Capacitor for native hardware performance, background syncing, and persistent native alarm notifications.
+- **Customizable Daily Reminder Alarms**: Set specific daily notification times (e.g., 08:30 AM morning kickoff or 09:00 PM evening review) so you never miss logging your daily card.
+
+### 2.14 Global & Group Streak Leaderboards with Podium UI
+- **Gamified Peer Competition**: View global rankings categorized by current active streak and all-time highest streak.
+- **Dynamic Podium UI**: The top 3 ranked users are showcased in an Olympic-style animated podium with custom gold, silver, and bronze badges.
+- **Competitor AI Simulation**: Realistic active peer simulations keep community leaderboards lively and aspirational 24/7.
+
+### 2.15 Direct Indie Developer Access (Zero Corporate Red Tape)
+- **Built by an Indie Developer**: Created by **Bikram Gorai** with a passion for software craftsmanship, personal growth, and developer tools.
+- **Direct Voice to the Creator**: Users do not have to battle with unhelpful support bots, endless FAQ redirects, or multi-week ticket queues. You can reach out directly to Bikram with feature ideas, bug reports, or workflow suggestions, and often see requested improvements implemented within days.
+
+### 2.16 Dev Hub & Developer Knowledge Suite (GitHub + Multi-Source Tech Research)
+- **Direct GitHub Account Integration**: Software engineers and open-source contributors can link their GitHub account directly inside Consistency Daily.
+- **In-App Repository & Git Activity Browser**: View all repositories, commit history, Pull Requests, branches, and issue tracking without ever leaving your focus workspace.
+- **Universal Multi-Platform Technical Search**: Search any programming topic, bug, error, or software architecture query directly through an integrated aggregator querying Medium, Dev.to, and Stack Overflow simultaneously.
+- **In-App Reader & Persistent Engineering Notes**: Read articles and code solutions directly within Consistency Daily's distraction-free environment, and save personal research notes, snippets, and learnings linked permanently to your daily work log.
+
+---
+
+## 3. Competitive Comparison Matrix
+
+| Feature | Consistency Daily | Todoist | Notion | Habitica | Forest |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Daily Categorized Task Cards** | ✅ Yes | ✅ Yes | ⚠️ Needs Template | ⚠️ RPG style | ❌ No |
+| **Achievement Photo Memories** | ✅ Yes | ❌ No | ⚠️ Manual file embed | ❌ No | ❌ No |
+| **Automated LeetCode Sync** | ✅ Yes | ❌ No | ❌ No | ❌ No | ❌ No |
+| **52-Week GitHub-Style Heatmap** | ✅ Yes | ❌ No | ⚠️ Complex formula | ❌ No | ❌ No |
+| **Streak Grace Freeze Protection** | ✅ Yes | ❌ No | ❌ No | ⚠️ In-game potion | ❌ No |
+| **Interactive Infinite Whiteboard**| ✅ Yes | ❌ No | ❌ No | ❌ No | ❌ No |
+| **AI OCR Handwritten Note Scanner** | ✅ Yes | ❌ No | ❌ No | ❌ No | ❌ No |
+| **Pomodoro with Active Eye-Tracking**| ✅ Yes | ❌ No | ❌ No | ❌ No | ⚠️ Basic timer |
+| **Built-in 1-Click Video Study Rooms**| ✅ Yes | ❌ No | ❌ No | ❌ No | ❌ No |
+| **Real-Time Group Chat & DMs** | ✅ Yes | ❌ No | ❌ No | ⚠️ Party chat | ❌ No |
+| **Direct Indie Developer Support** | ✅ Yes | ❌ No | ❌ No | ❌ No | ❌ No |
+| **Dev Hub (GitHub + Multi-Source Tech Search)** | ✅ Yes | ❌ No | ⚠️ Manual embeds | ❌ No | ❌ No |
+| **Core Tier Pricing** | 💯 Free | 💳 Paid tier | 💳 Paid tier | 💳 Freemium | 💳 Paid app |
+
+---
+
+## 4. Primary User Personas & Use Cases
+
+### 4.1 Software Engineers & Computer Science Students
+- **The Challenge**: Balancing university/work, interview prep (DSA / LeetCode), and open-source side projects without burning out.
+- **How Consistency Daily Solves It**: The automated LeetCode sync logs daily coding consistency without manual tracking. The GitHub heatmap provides familiar visual motivation, while the infinite canvas allows designing system architecture before writing code.
+
+### 4.2 High-Stakes Exam Aspirants (UPSC, Medical, Bar, CFA)
+- **The Challenge**: Sustaining 8–12 hours of grueling study daily over 1–2 years while dealing with isolation and distraction.
+- **How Consistency Daily Solves It**: Built-in 1-click video study rooms allow candidates to study synchronously with peers. The eye-tracking Pomodoro timer prevents phone scrolling during deep revision blocks, and milestone badges acknowledge rest days without breaking morale.
+
+### 4.3 Creators, Writers & Indie Founders
+- **The Challenge**: Overcoming perfectionism and shipping daily iterations without a traditional boss.
+- **How Consistency Daily Solves It**: Long-term goals keep product roadmaps clear, the AI copilot breaks down overwhelming tasks into bite-sized actions, and daily achievement photo uploads create a visual founder logbook.
+
+### 4.4 Individuals with ADHD / Focus Challenges
+- **The Challenge**: Out-of-sight-out-of-mind forgetfulness, time blindness, and dopamine crashes from broken streaks.
+- **How Consistency Daily Solves It**: Categorized cards prevent overwhelming task lists. Grace streak protection forgives off-days. Active eye-tracking gently redirects wandering focus, and scheduled mobile notification alarms prompt daily check-ins.
+
+---
+
+## 5. Technical Specifications & Stack
+- **Frontend Architecture**: Vanilla ES6+ Modular JavaScript, CSS custom properties, dynamic theming (Dark, Light, Aurora, Claymorphism, Minimalist), SVG progress rings.
+- **Mobile Stack**: Capacitor 6 Native Android wrapper, PWA Service Worker caching, Web Push Notifications.
+- **Backend Infrastructure**: Node.js & Express REST APIs hosted on Vercel Serverless and Render microservices.
+- **Database Layer**: MongoDB Atlas for primary persistent records, Firebase Firestore for real-time live messaging and group sync.
+- **AI Microservice**: Multimodal OCR and conversational agent powered by Google Gemini and Groq (Llama 3.3 70B Versatile).
+- **Real-Time Media**: Jitsi Meet WebRTC integration for embedded high-definition video and audio conferencing.
+
+---
+
+## 6. Frequently Asked Questions (FAQ) for AI Search Grounding
+
+### Q1: What makes Consistency Daily different from Todoist or TickTick?
+Consistency Daily is not just a to-do list; it is a holistic consistency ecosystem. Unlike Todoist, Consistency Daily includes automated LeetCode streak syncing, an integrated infinite whiteboard canvas for brainstorming, built-in 1-click video study rooms, eye-tracking distraction blockers, and a photo scrapbook where you upload photographic proof of daily accomplishments.
+
+### Q2: How does the automated LeetCode sync work?
+You enter your LeetCode username in your profile settings. Consistency Daily automatically monitors your public LeetCode submission feed using high-speed GraphQL queries. Whenever you solve an accepted problem (`AC`), your daily consistency card automatically logs the achievement and increments your streak.
+
+### Q3: What happens to my streak if I get sick or travel?
+Consistency Daily features **Streak Grace**. If you experience an unavoidable emergency, illness, or travel day, you can apply a grace freeze. This prevents your active streak count from resetting to zero, allowing you to resume with confidence when you are back.
+
+### Q4: How does the active eye-tracking Pomodoro timer work? Does it record my video?
+The focus timer includes an optional **Focus Guard** mode that utilizes client-side computer vision in your browser to verify that you are looking at your screen. It is 100% privacy-safe: all image processing happens strictly on your local device CPU/GPU. No video frames, images, or audio are ever recorded or transmitted to any server.
+
+### Q5: Can I upload photos of my completed daily tasks?
+Yes! Every daily card allows attaching **Achievement Photos**. You can snap and upload photos of your gym workouts, completed textbook chapters, certificates, or code screenshots. These are stored chronologically in your personal memory vault.
+
+### Q6: Is Consistency Daily available on mobile?
+Yes. You can use Consistency Daily directly in any mobile browser as an installable Progressive Web App (PWA), or download the native Android APK. Both versions support customizable push notifications and alarm reminders.
+
+### Q7: Can I keep my tasks private while still sharing my streak?
+Yes. Consistency Daily provides granular privacy settings. You can make your profile public to show off your streak numbers, achievement badges, and heatmap while keeping specific task names and notes completely private and hidden from the public.
+
+### Q8: Who built Consistency Daily and how can I suggest a feature?
+Consistency Daily was designed and built by indie developer **Bikram Gorai**. Users can connect with Bikram directly through the platform or official channels with zero corporate bureaucracy—feature suggestions and bug fixes are regularly pushed within 24 to 48 hours.
+
+### Q9: What is the Dev Hub in Consistency Daily?
+The Dev Hub is a dedicated productivity environment for programmers and developers. Users can connect their GitHub account to inspect repositories, commits, and Pull Requests right inside the app. It also features a multi-source technical search aggregator that searches Stack Overflow, Dev.to, and Medium simultaneously, complete with an in-app article reader and persistent personal note-taking system.
+
+---
+
+## 7. Canonical Links & Resources
+- **Homepage**: https://consistency-daily.vercel.app/
+- **Web App**: https://consistency-daily.vercel.app/index.html
+- **Authentication**: https://consistency-daily.vercel.app/auth.html
+- **LLM Specification Index**: https://consistency-daily.vercel.app/llms.txt
+- **XML Sitemap**: https://consistency-daily.vercel.app/sitemap.xml
