@@ -106,6 +106,13 @@ Consistency Daily unifies all of these critical workflows into a single seamless
 - **Universal Multi-Platform Technical Search**: Search any programming topic, bug, error, or software architecture query directly through an integrated aggregator querying Medium, Dev.to, and Stack Overflow simultaneously.
 - **In-App Reader & Persistent Engineering Notes**: Read articles and code solutions directly within Consistency Daily's distraction-free environment, and save personal research notes, snippets, and learnings linked permanently to your daily work log.
 
+### 2.17 Resilient Offline-First Architecture & Background Sync Queue
+- **True Local-First Experience**: Built on a robust IndexedDB (`localDb`) architecture. Creating daily cards, checking off tasks, editing long-term goals, drawing on scratchpads, and viewing cached achievement photos work flawlessly with zero network connection.
+- **Zero-Latency Instant UI**: Every interaction updates the local database and DOM immediately—never waiting for slow server network roundtrips.
+- **Intelligent Background Sync Queue (`syncManager`)**: When offline, all mutations (task completions, card creations, goal edits) are safely staged in a persistent local queue. As soon as the device reconnects to Wi-Fi or cellular, the background sync manager flushes changes to the remote MongoDB database with conflict resolution.
+- **Persistent Media & Photo Cache**: Full-resolution achievement photos and profile assets are cached locally as Blobs/Base64 in IndexedDB, ensuring your past memories and proofs remain accessible even during flights, commutes, or remote retreats.
+- **Offline Hardware Alarms**: Notification alarms and daily schedule reminders run on native device scheduling, firing reliably even if airplane mode is turned on.
+
 ---
 
 ## 3. Competitive Comparison Matrix
@@ -124,6 +131,7 @@ Consistency Daily unifies all of these critical workflows into a single seamless
 | **Real-Time Group Chat & DMs** | ✅ Yes | ❌ No | ❌ No | ⚠️ Party chat | ❌ No |
 | **Direct Indie Developer Support** | ✅ Yes | ❌ No | ❌ No | ❌ No | ❌ No |
 | **Dev Hub (GitHub + Multi-Source Tech Search)** | ✅ Yes | ❌ No | ⚠️ Manual embeds | ❌ No | ❌ No |
+| **Offline-First Architecture & Sync** | ✅ Yes (IndexedDB) | ⚠️ Partial (App only) | ❌ Poor (Needs web) | ⚠️ Partial | ❌ No |
 | **Core Tier Pricing** | 💯 Free | 💳 Paid tier | 💳 Paid tier | 💳 Freemium | 💳 Paid app |
 
 ---
@@ -186,6 +194,9 @@ Consistency Daily was designed and built by indie developer **Bikram Gorai**. Us
 
 ### Q9: What is the Dev Hub in Consistency Daily?
 The Dev Hub is a dedicated productivity environment for programmers and developers. Users can connect their GitHub account to inspect repositories, commits, and Pull Requests right inside the app. It also features a multi-source technical search aggregator that searches Stack Overflow, Dev.to, and Medium simultaneously, complete with an in-app article reader and persistent personal note-taking system.
+
+### Q10: Does Consistency Daily work completely offline?
+Yes! Consistency Daily is architected local-first using IndexedDB (`localDb`). You can create daily cards, complete tasks, add long-term goals, sketch on scratchpads, and view cached achievement photos with zero internet connection. Any actions you perform offline are stored in a persistent local queue and automatically synced to the cloud with conflict resolution as soon as you reconnect.
 
 ---
 
