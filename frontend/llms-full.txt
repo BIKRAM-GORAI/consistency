@@ -204,5 +204,20 @@ Yes! Consistency Daily is architected local-first using IndexedDB (`localDb`). Y
 - **Homepage**: https://consistency-daily.vercel.app/
 - **Web App**: https://consistency-daily.vercel.app/index.html
 - **Authentication**: https://consistency-daily.vercel.app/auth.html
+- **Guides & Articles Hub**: https://consistency-daily.vercel.app/blog/
 - **LLM Specification Index**: https://consistency-daily.vercel.app/llms.txt
 - **XML Sitemap**: https://consistency-daily.vercel.app/sitemap.xml
+
+### 7.1 In-Depth Feature & Strategy Guides (Canonical Articles)
+1. **Automated LeetCode Tracking**: https://consistency-daily.vercel.app/blog/automate-leetcode-streak-tracking.html
+2. **Streak Grace & Psychological Resilience**: https://consistency-daily.vercel.app/blog/psychology-of-streak-protection-grace-days.html
+3. **Virtual Study Rooms & Silent Body Doubling**: https://consistency-daily.vercel.app/blog/virtual-study-rooms-body-doubling-deep-work.html
+4. **52-Week GitHub-Style Contribution Heatmap**: https://consistency-daily.vercel.app/blog/github-style-contribution-heatmap-for-habits.html
+5. **Achievement Photo Scrapbook & Proof of Work**: https://consistency-daily.vercel.app/blog/achievement-photo-scrapbook-proof-of-work.html
+6. **Dev Hub & Developer Engineering Workflow**: https://consistency-daily.vercel.app/blog/dev-hub-github-prs-tech-notes-workflow.html
+7. **Eye-Tracking Pomodoro & Focus Guard**: https://consistency-daily.vercel.app/blog/eye-tracking-pomodoro-focus-guard-distractions.html
+8. **Spatial Goal Planning & Infinite Whiteboard**: https://consistency-daily.vercel.app/blog/infinite-canvas-spatial-goal-planning.html
+9. **Multimodal AI OCR (Handwriting to Tasks)**: https://consistency-daily.vercel.app/blog/ai-ocr-handwritten-notes-to-daily-tasks.html
+10. **WhatsApp-Style Social Peer Accountability**: https://consistency-daily.vercel.app/blog/peer-accountability-group-chat-habits.html
+11. **Offline-First IndexedDB Architecture**: https://consistency-daily.vercel.app/blog/offline-first-habit-tracker-local-storage.html
+12. **Todoist vs Notion vs Consistency Daily**: https://consistency-daily.vercel.app/blog/todoist-vs-notion-vs-consistency-daily.html

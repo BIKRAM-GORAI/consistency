@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Automate Your LeetCode Streak Tracking (Without Manual Checklists) | Consistency Daily</title>
+  <meta name="description" content="Learn how to automatically track your daily LeetCode submissions and streaks without manual check-ins. Connect your username and build consistent coding discipline.">
+  <link rel="canonical" href="https://consistency-daily.vercel.app/blog/automate-leetcode-streak-tracking.html">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How to Automate Your LeetCode Streak Tracking (Without Manual Checklists)">
+  <meta property="og:description" content="Learn how to automatically track your daily LeetCode submissions and streaks without manual check-ins. Connect your username and build consistent coding discipline.">
+  <meta property="og:url" content="https://consistency-daily.vercel.app/blog/automate-leetcode-streak-tracking.html">
+  <meta property="og:site_name" content="Consistency Daily">
+  <meta property="og:image" content="https://consistency-daily.vercel.app/icon-512.png">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to Automate Your LeetCode Streak Tracking (Without Manual Checklists)">
+  <meta name="twitter:description" content="Learn how to automatically track your daily LeetCode submissions and streaks without manual check-ins. Connect your username and build consistent coding discipline.">
+  <meta name="twitter:image" content="https://consistency-daily.vercel.app/icon-512.png">
+
+  <!-- Fonts & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="blog.css">
+
+  <!-- Structured Data: Article & FAQPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Automate Your LeetCode Streak Tracking (Without Manual Checklists)",
+    "description": "Learn how to automatically track your daily LeetCode submissions and streaks without manual check-ins. Connect your username and build consistent coding discipline.",
+    "author": {
+      "@type": "Person",
+      "name": "Bikram Gorai"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Consistency Daily",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://consistency-daily.vercel.app/icon-512.png"
+      }
+    },
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-23",
+    "mainEntityOfPage": "https://consistency-daily.vercel.app/blog/automate-leetcode-streak-tracking.html"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="blog-nav">
+    <div class="blog-nav-inner">
+      <a href="../landing.html" class="blog-logo">
+        <span>⚡</span> Consistency Daily
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">All Guides</a>
+        <a href="../landing.html#features">Features</a>
+        <a href="../auth.html" class="nav-cta">Get Started Free</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Article Container -->
+  <main class="blog-container">
+    <nav class="breadcrumbs" aria-label="Breadcrumbs">
+      <a href="../landing.html">Home</a>
+      <span>/</span>
+      <a href="index.html">Guides & Blog</a>
+      <span>/</span>
+      <span style="color: #fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:300px;">How to Automate Your LeetCode Streak Tracking (Without Manual Checklists)</span>
+    </nav>
+
+    <article>
+      <header class="article-header">
+        <span class="article-badge">Developer Productivity</span>
+        <h1 class="article-title">How to Automate Your LeetCode Streak Tracking (Without Manual Checklists)</h1>
+        <div class="article-meta">
+          <span class="article-meta-item">✍️ Bikram Gorai</span>
+          <span class="article-meta-item">⏱️ 5 min read</span>
+          <span class="article-meta-item">📅 November 2026</span>
+        </div>
+      </header>
+
+      <div class="article-content">
+        
+      <p>Every software engineer and computer science student knows the pain: you finish a grueling 45-minute LeetCode problem, celebrate the green "Accepted" screen, and then forget to manually log it into your habit tracker or spreadsheet. A few days later, your streak tracker claims you quit, even though you coded every single day.</p>
+      
+      <p>Manual tracking introduces friction. In behavioral psychology, <strong>friction is the number one killer of habit formation</strong>. If logging a habit takes effort after the work is done, you will eventually abandon the habit tracker.</p>
+
+      <h2>The Problem with Manual Coding Checklists</h2>
+      <p>Most developers use generic to-do apps like Todoist or Notion. While these are fine for buying groceries, they fail for software engineering discipline:</p>
+      <ul>
+        <li><strong>Honor-System Temptation:</strong> Checking a box without actually solving a problem is too easy on tired days.</li>
+        <li><strong>Duplicate Effort:</strong> LeetCode already records your accepted submission timestamps. Why should you re-type it into another app?</li>
+        <li><strong>Fragmented Stats:</strong> Your coding practice stays on LeetCode, your gym habits stay in another app, and your daily tasks live in a third place.</li>
+      </ul>
+
+      <h2>The Zero-Friction Solution: Direct GraphQL Sync</h2>
+      <p>What if your habit tracker talked directly to LeetCode? That is the exact problem <strong>Consistency Daily</strong> solves. By leveraging LeetCode's public GraphQL API, the platform checks your public profile daily. When an accepted problem (<code>AC</code>) is detected, it automatically checks off your daily engineering card and increments your consistency streak.</p>
+
+      <div class="article-callout">
+        <p><strong>How to set it up in 30 seconds:</strong></p>
+        <p>1. Open your Consistency Daily profile settings.<br>
+        2. Enter your public LeetCode username.<br>
+        3. Toggle <em>LeetCode Auto-Sync</em> to ON. That's it! Your accepted problems now count toward your daily consistency streak automatically.</p>
+      </div>
+
+      <h2>How This Transforms Interview Preparation</h2>
+      <p>When you're preparing for technical interviews at FAANG or top startups, maintaining a 90-day daily problem-solving habit is more valuable than cramming 100 problems the weekend before. Automated syncing gives you:</p>
+      <ul>
+        <li><strong>Unbroken Momentum:</strong> See your LeetCode consistency displayed side-by-side with your fitness and reading goals on an interactive 52-week heatmap.</li>
+        <li><strong>Streak Protection:</strong> Paired with Consistency Daily's <em>Streak Grace</em> feature, an unexpected interview travel day won't wipe out your hard-earned 60-day streak.</li>
+        <li><strong>Public Proof:</strong> Share your verified streak on your public profile link to show recruiters your relentless daily work ethic.</li>
+      </ul>
+
+      <h2>Frequently Asked Questions</h2>
+      <h3>Does Consistency Daily require my LeetCode password?</h3>
+      <p>No, never. It only requires your public username to inspect public submission logs via read-only GraphQL endpoints. Your account credentials remain 100% private.</p>
+
+      <h3>What if LeetCode servers are slow or down?</h3>
+      <p>Consistency Daily utilizes a dual-tier fallback mechanism (Direct GraphQL + mirror API) with retries, ensuring your streak is captured accurately throughout the 24-hour cycle.</p>
+    
+      </div>
+    </article>
+
+    <!-- Call To Action Banner -->
+    <section class="cta-banner">
+      <h3>Ready to Build Relentless Consistency?</h3>
+      <p>Join thousands of software engineers, students, and ambitious creators building unbreakable daily habits with automated LeetCode sync, streak grace, and visual proof.</p>
+      <a href="../auth.html" class="cta-btn">Start Tracking Today — 100% Free</a>
+    </section>
+
+    <!-- More Articles -->
+    <section style="margin-top: 60px;">
+      <h3 style="font-family: var(--font-heading); font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 24px;">Explore More Guides</h3>
+      <div class="articles-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+        
+          <a href="psychology-of-streak-protection-grace-days.html" class="article-card">
+            <span class="article-card-tag">Habit Psychology</span>
+            <h4 class="article-card-title" style="font-size: 16px;">The Psychology of Streak Protection: Why Grace Days Prevent Habit Burnout</h4>
+            <span style="font-size: 12px; color: var(--text-muted); margin-top: auto;">6 min read</span>
+          </a>
+        
+          <a href="virtual-study-rooms-body-doubling-deep-work.html" class="article-card">
+            <span class="article-card-tag">Focus & Community</span>
+            <h4 class="article-card-title" style="font-size: 16px;">Virtual Study Rooms & Silent Body Doubling: How to Deep Work Together Online</h4>
+            <span style="font-size: 12px; color: var(--text-muted); margin-top: auto;">5 min read</span>
+          </a>
+        
+          <a href="github-style-contribution-heatmap-for-habits.html" class="article-card">
+            <span class="article-card-tag">Productivity Systems</span>
+            <h4 class="article-card-title" style="font-size: 16px;">How to Use a 52-Week Contribution Heatmap for Everyday Life & Habits</h4>
+            <span style="font-size: 12px; color: var(--text-muted); margin-top: auto;">5 min read</span>
+          </a>
+        
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="blog-footer">
+    <p>© 2026 Consistency Daily. Built with passion by <a href="https://github.com/BIKRAM-GORAI" target="_blank" rel="noopener">Bikram Gorai</a>.</p>
+    <div style="margin-top: 14px;">
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Service</a>
+      <a href="../compliance.html">Compliance</a>
+      <a href="../llms.txt">LLMs.txt</a>
+    </div>
+  </footer>
+
+</body>
+</html>

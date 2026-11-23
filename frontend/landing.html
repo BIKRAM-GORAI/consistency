@@ -153,8 +153,13 @@
   <!-- Vercel Web Analytics -->
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      var vs = document.createElement('script');
+      vs.defer = true;
+      vs.src = '/_vercel/insights/script.js';
+      document.head.appendChild(vs);
+    }
   </script>
-  <script defer src="/_vercel/insights/script.js"></script>
   <link rel="icon" href="/checklist.png">
   <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -207,13 +212,14 @@
       outline: none !important;
     }
 
-    /* ── Promo Ticker Bar (Always Visible; docks under top navigation bar on scroll) ── */
+    /* ── Promo Ticker Bar (Visible only at the very top of the page; scrolls away on scroll) ── */
     .promo-ticker-bar {
-      position: fixed;
-      top: 0; /* Anchored directly to top of viewport with zero gap */
+      position: absolute;
+      top: 0;
       left: 0;
       right: 0;
-      z-index: 999;
+      width: 100%;
+      z-index: 90;
       background: #FF6B35; /* Vibrant warm coral */
       color: #3D0C02; /* Deep warm mahogany text — soft and legible */
       height: 34px;
@@ -281,7 +287,7 @@
       justify-content: space-between;
       padding: 0 36px;
       position: fixed;
-      top: 48px; /* Floats below the top promo ticker bar */
+      top: 16px; /* Floats near top when scrolled */
       left: 0;
       right: 0;
       z-index: 1000;
@@ -1281,10 +1287,6 @@
         pointer-events: auto;
       }
 
-      .landing-nav.scrolled ~ .promo-ticker-bar {
-        top: 56px;
-      }
-
       .landing-nav-brand {
         background: none;
         border: none;
@@ -1413,19 +1415,95 @@
       background: var(--yellow);
       border: var(--border);
       border-radius: 12px;
-      padding: 30px;
+      padding: 28px 20px;
       margin: 40px auto;
       max-width: 400px;
+      width: 100%;
+      min-height: 295px; /* Locked fixed space */
       box-shadow: 8px 8px 0 var(--black);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
+      box-sizing: border-box;
+      contain: layout paint;
     }
 
     .streak-flame {
-      font-size: 64px;
+      font-size: 54px;
+      line-height: 1;
+      height: 54px;
       animation: pulse 1.5s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .streak-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--black);
+      text-align: center;
+      line-height: 1.2;
+      margin-top: 6px;
+    }
+
+    .stat-number.streak-stat-number {
+      font-size: clamp(38px, 9.5vw, 56px);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      color: var(--black);
+      margin: 8px 0;
+      height: 64px;
+      min-height: 64px;
+      max-height: 64px;
+      line-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+    }
+
+    .streak-counting-label {
+      font-size: 13.5px;
+      color: #555;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      height: 18px;
+      line-height: 18px;
+    }
+
+    .streak-quote-label {
+      font-size: 13px;
+      color: #444;
+      font-weight: 600;
+      margin-top: 8px;
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 480px) {
+      .streak-flex-container {
+        padding: 22px 16px;
+        min-height: 275px;
+        margin: 28px auto;
+        box-shadow: 6px 6px 0 var(--black);
+      }
+      .streak-title {
+        font-size: 22px;
+      }
+      .stat-number.streak-stat-number {
+        font-size: clamp(34px, 9vw, 46px);
+        height: 56px;
+        min-height: 56px;
+        max-height: 56px;
+        line-height: 56px;
+      }
     }
 
     @keyframes pulse {
@@ -2136,31 +2214,96 @@
 
     /* ── Footer ── */
     .landing-footer {
-      padding: 32px 24px;
+      padding: 36px 20px 84px; /* Clearance so floating button never covers links */
       background: var(--black);
       color: #fff;
       text-align: center;
+    }
+    .landing-footer-copy {
+      font-family: 'Space Grotesk', sans-serif;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.8px;
+      line-height: 1.4;
+      color: #fff;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+    .landing-footer-links {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+    .footer-legal-link {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: #FFD60A;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      line-height: 1.25;
+      letter-spacing: 0.6px;
+      padding: 0 16px;
+      transition: color 0.15s ease, transform 0.15s ease;
+    }
+    .footer-legal-link:hover {
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .landing-footer-sep {
+      color: #555;
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 1;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    @media (max-width: 480px) {
+      .landing-footer-copy {
+        font-size: 11.5px;
+        letter-spacing: 0.5px;
+      }
+      .footer-legal-link {
+        font-size: 10px;
+        padding: 0 10px;
+        letter-spacing: 0.4px;
+      }
+      .landing-footer-sep {
+        font-size: 16px;
+      }
     }
 
     /* ── Reviews ── */
     .landing-reviews {
-      padding: 80px 24px;
+      padding: 70px 0;
       background: var(--lime);
       border-top: var(--border);
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
+      overflow: hidden;
+      width: 100%;
+    }
+    .landing-reviews > .landing-section-title,
+    .landing-reviews > p,
+    .landing-reviews > .reviews-actions {
+      padding-left: 20px;
+      padding-right: 20px;
     }
 
     .reviews-actions {
       display: flex;
       gap: 16px;
-      margin-top: 32px;
+      margin-top: 28px;
       flex-wrap: wrap;
       justify-content: center;
     }
@@ -2175,6 +2318,15 @@
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-review i {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.3;
     }
 
     .btn-review-primary {
@@ -2197,6 +2349,376 @@
     .btn-review-secondary:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0 var(--black);
+    }
+
+    /* ── Continuous Marquee Reviews (Infinite Loop, No Scrollbar) ── */
+    .reviews-horizontal-wrapper {
+      width: 100%;
+      max-width: 100vw;
+      overflow: hidden;
+      margin: 20px 0 16px;
+      padding: 14px 0 22px;
+      position: relative;
+      mask-image: linear-gradient(to right, transparent 0%, black 1.5%, black 98.5%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 1.5%, black 98.5%, transparent 100%);
+    }
+    .reviews-horizontal-track {
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
+      width: max-content;
+      animation: reviewsMarquee 48s linear infinite;
+      will-change: transform;
+    }
+    .reviews-horizontal-wrapper:hover .reviews-horizontal-track {
+      animation-play-state: paused;
+    }
+    @keyframes reviewsMarquee {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+    .horizontal-review-card {
+      width: 290px;
+      flex-shrink: 0;
+      background: #fff;
+      border: 3px solid var(--black);
+      border-radius: 14px;
+      box-shadow: 4px 4px 0 var(--black);
+      padding: 18px 20px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      user-select: none;
+    }
+    .horizontal-review-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 6px 6px 0 var(--black);
+    }
+    .review-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .review-user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--black);
+      background: var(--yellow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      color: #000;
+      flex-shrink: 0;
+    }
+    .review-user-info {
+      min-width: 0;
+    }
+    .review-user-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--black);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .review-card-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1.5px solid var(--black);
+      margin-top: 2px;
+    }
+    .review-card-body {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+      font-weight: 600;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 12px;
+      flex-grow: 1;
+    }
+    .review-card-date {
+      font-size: 11px;
+      color: #777;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .reviews-skeleton-card {
+      width: 290px;
+      height: 160px;
+      border: 3px dashed rgba(0,0,0,0.25);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: rgba(0,0,0,0.5);
+      background: rgba(255,255,255,0.4);
+      padding: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Mobile adjustments for reviews marquee (end-to-end flow with subtle blur on extreme edges & reduced box size) */
+    @media (max-width: 768px) {
+      .reviews-horizontal-wrapper {
+        mask-image: linear-gradient(to right, transparent 0%, black 1%, black 99%, transparent 100%) !important;
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 1%, black 99%, transparent 100%) !important;
+        padding: 8px 0 16px;
+        margin: 12px 0 8px;
+      }
+      .horizontal-review-card {
+        width: 215px !important;
+        padding: 12px 14px !important;
+        border-width: 2.5px !important;
+        border-radius: 12px !important;
+        box-shadow: 3px 3px 0 var(--black) !important;
+      }
+      .review-card-header {
+        gap: 8px !important;
+        margin-bottom: 8px !important;
+      }
+      .review-user-avatar {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 13px !important;
+      }
+      .review-user-name {
+        font-size: 12px !important;
+      }
+      .review-card-badge {
+        font-size: 8.5px !important;
+        padding: 1px 6px !important;
+      }
+      .review-card-body {
+        font-size: 11.5px !important;
+        line-height: 1.4 !important;
+        -webkit-line-clamp: 3 !important;
+        margin-bottom: 8px !important;
+      }
+      .review-card-date {
+        font-size: 10px !important;
+      }
+      .reviews-skeleton-card {
+        width: 215px !important;
+        height: 125px !important;
+        font-size: 11px !important;
+        padding: 12px !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .horizontal-review-card {
+        width: 195px !important;
+        padding: 10px 12px !important;
+      }
+      .reviews-skeleton-card {
+        width: 195px !important;
+        height: 115px !important;
+      }
+    }
+
+    /* ── Compact Knowledge Articles Showcase (Paginated 4-per-row, Light Gradient) ── */
+    .landing-articles {
+      padding: 28px 20px 32px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(245, 243, 235, 0.8) 100%);
+      border-top: var(--border);
+    }
+    .landing-articles-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+    .landing-articles-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .landing-articles-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16.5px;
+      font-weight: 800;
+      color: var(--black);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .landing-articles-title i {
+      width: 19px;
+      height: 19px;
+      stroke-width: 2.2;
+    }
+    .landing-articles-all-link {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--black);
+      text-decoration: underline;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.15s ease;
+    }
+    .landing-articles-all-link:hover {
+      color: #d97706;
+    }
+    .landing-articles-page {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      width: 100%;
+    }
+    .landing-articles-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .articles-nav-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 2px solid var(--black);
+      background: #fff;
+      box-shadow: 2px 2px 0 var(--black);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--black);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease, opacity 0.15s ease;
+      padding: 0;
+    }
+    .articles-nav-btn:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--black);
+      background: var(--yellow);
+    }
+    .articles-nav-btn:active:not(:disabled) {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+    .articles-nav-btn:disabled,
+    .articles-nav-btn.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+      background: #f1f1f1;
+    }
+    .articles-nav-btn i {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.5;
+    }
+    .articles-page-indicator {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--black);
+      letter-spacing: 0.5px;
+      min-width: 36px;
+      text-align: center;
+      user-select: none;
+    }
+    .landing-articles-page {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      width: 100%;
+    }
+    .landing-article-mini {
+      background: linear-gradient(135deg, #ffffff 0%, #f7f9fa 100%);
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--black);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--black);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      min-width: 0;
+    }
+    .landing-article-mini:hover {
+      transform: translateY(-2px);
+      box-shadow: 4px 4px 0 var(--black);
+      background: #ffffff;
+    }
+    .landing-article-mini-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1.5px solid rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--black);
+    }
+    .landing-article-mini-icon i {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2.2;
+    }
+    .landing-article-mini-text {
+      min-width: 0;
+      flex: 1;
+    }
+    .landing-article-mini-tag {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #d97706;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-bottom: 2px;
+    }
+    .landing-article-mini-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--black);
+      line-height: 1.25;
+      font-family: 'Space Grotesk', sans-serif;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (max-width: 960px) {
+      .landing-articles-page {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 520px) {
+      .landing-articles-page {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* Modals for Reviews */
@@ -2442,7 +2964,7 @@
 
     /* ── FAQ Section ── */
     .landing-faq {
-      padding: 80px 24px;
+      padding: 56px 20px;
       background: var(--bg);
       border-top: var(--border);
       display: flex;
@@ -2454,25 +2976,25 @@
     .faq-grid {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 10px;
       width: 100%;
-      max-width: 800px;
-      margin-top: 40px;
+      max-width: 720px;
+      margin-top: 24px;
     }
 
     .faq-card {
       background: #fff;
-      border: 3px solid var(--black);
-      border-radius: 12px;
+      border: 2.5px solid var(--black);
+      border-radius: 10px;
       padding: 0; /* Let header and content handle padding */
       text-align: left;
-      box-shadow: 6px 6px 0 var(--black);
+      box-shadow: 4px 4px 0 var(--black);
       overflow: hidden;
       transition: all 0.2s ease;
     }
 
     .faq-header {
-      padding: 24px;
+      padding: 13px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -2482,18 +3004,21 @@
 
     .faq-question {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 18px;
-      font-weight: 900;
+      font-size: 14.5px;
+      font-weight: 800;
       text-transform: uppercase;
       color: var(--black);
       margin: 0;
-      padding-right: 20px;
+      padding-right: 14px;
+      line-height: 1.35;
+      letter-spacing: 0.3px;
     }
 
     .faq-icon {
-      font-size: 24px;
+      font-size: 17px;
       font-weight: 900;
       transition: transform 0.3s ease;
+      flex-shrink: 0;
     }
 
     .faq-content {
@@ -2505,9 +3030,9 @@
 
     .faq-card.active .faq-content {
       max-height: 500px;
-      padding: 0 24px 24px;
-      border-top: 2px dashed rgba(0,0,0,0.1);
-      padding-top: 20px;
+      padding: 0 18px 14px;
+      border-top: 1.5px dashed rgba(0,0,0,0.1);
+      padding-top: 10px;
     }
 
     .faq-card.active .faq-icon {
@@ -2516,9 +3041,37 @@
 
     .faq-answer {
       font-weight: 600;
-      line-height: 1.6;
+      line-height: 1.5;
       color: #333;
-      font-size: 15px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      .landing-faq {
+        padding: 40px 16px;
+      }
+      .faq-grid {
+        gap: 9px;
+        margin-top: 18px;
+      }
+      .faq-card {
+        border-width: 2px;
+        border-radius: 8px;
+        box-shadow: 2.5px 2.5px 0 var(--black);
+      }
+      .faq-header {
+        padding: 11px 14px;
+      }
+      .faq-question {
+        font-size: 13px;
+      }
+      .faq-answer {
+        font-size: 12px;
+      }
+      .faq-card.active .faq-content {
+        padding: 0 14px 12px;
+        padding-top: 8px;
+      }
     }
 
     /* FAQ Card Variations */
@@ -2988,10 +3541,10 @@
     
     <div class="streak-flex-container reveal">
       <div class="streak-flame">🔥</div>
-      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 900; text-transform: uppercase;">Build Your Streak</div>
-      <div class="stat-number" data-target="365" data-duration="50000" style="font-size: 64px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; color: var(--black); margin: 10px 0;">0</div>
-      <div class="stat-label" style="font-size: 14px; color: #666; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">and Counting...</div>
-      <div class="stat-label" style="font-size: 14px; color: #666; margin-top: 10px;">Consistency is the only shortcut to success</div>
+      <div class="streak-title">Build Your Streak</div>
+      <div class="stat-number streak-stat-number" data-target="365" data-duration="50000">0</div>
+      <div class="stat-label streak-counting-label">and Counting...</div>
+      <div class="stat-label streak-quote-label">Consistency is the only shortcut to success</div>
     </div>
 
     <!-- Interactive Demo Habit Card -->
@@ -3386,8 +3939,7 @@
         <div class="team-links">
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gamingwithdeoxy@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
-          <a href="https://www.instagram.com/cooked.developer/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="instagram"></i> Instagram</a>
+          <a href="https://www.instagram.com/cooked.developer/" target="_blank" class="btn-team btn-ig"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg> Instagram</a>
           <a href="https://github.com/Debjeet-Dey" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -3401,8 +3953,7 @@
         <div class="team-links">
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=bikram77620@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
-          <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="instagram"></i> Instagram</a>
+          <a href="https://www.instagram.com/bikram____776/" target="_blank" class="btn-team btn-ig"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg> Instagram</a>
           <a href="https://github.com/BIKRAM-GORAI" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -3416,8 +3967,7 @@
         <div class="team-links">
           <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tanjirokamado777555@gmail.com" target="_blank"
             class="btn-team btn-email"><i data-lucide="mail"></i> Email Me</a>
-          <a href="https://www.instagram.com/let.him.coode/" target="_blank" class="btn-team btn-ig"><i
-              data-lucide="instagram"></i> Instagram</a>
+          <a href="https://www.instagram.com/let.him.coode/" target="_blank" class="btn-team btn-ig"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg> Instagram</a>
           <a href="https://github.com/abhishekadhikari-247" target="_blank" class="btn-team btn-github"><i
               data-lucide="code"></i> GitHub</a>
         </div>
@@ -3428,19 +3978,160 @@
 
   <!-- Reviews Section -->
   <section class="landing-reviews reveal">
-    <h2 class="landing-section-title">User Reviews💖</h2>
+    <h2 class="landing-section-title">User Reviews <i data-lucide="heart" style="stroke:#e11d48; fill:#fb7185; width:26px; height:26px; display:inline-block; vertical-align:-3px;"></i></h2>
     <p style="font-weight: 700; font-size: 16px; max-width: 600px; margin-bottom: 20px;">
       Got ideas, feedback, or want to share your experience? We'd love to hear from you!
     </p>
+
+    <!-- Horizontal Carousel for Top 10 Community Reviews -->
+    <div class="reviews-horizontal-wrapper" id="reviews-horizontal-wrapper" aria-label="Community reviews carousel">
+      <div class="reviews-horizontal-track" id="reviews-horizontal-track">
+        <div class="reviews-skeleton-card">Loading top community reviews...</div>
+        <div class="reviews-skeleton-card">Loading top community reviews...</div>
+        <div class="reviews-skeleton-card">Loading top community reviews...</div>
+        <div class="reviews-skeleton-card">Loading top community reviews...</div>
+      </div>
+    </div>
+
     <div class="reviews-actions">
-      <button class="btn-review btn-review-primary" onclick="openSubmitReviewModal()">📝 Write a Review</button>
-      <button class="btn-review btn-review-secondary" onclick="openViewReviewsModal()">👀 Read All Reviews</button>
+      <button class="btn-review btn-review-primary" onclick="openSubmitReviewModal()"><i data-lucide="pen-tool"></i> Write a Review</button>
+      <button class="btn-review btn-review-secondary" onclick="openViewReviewsModal()"><i data-lucide="message-square"></i> Read All Reviews</button>
+    </div>
+  </section>
+
+  <!-- Guides & Articles Section (Compact 4-Card Paginated Showcase) -->
+  <section class="landing-articles">
+    <div class="landing-articles-inner">
+      <div class="landing-articles-topline">
+        <h3 class="landing-articles-title">
+          <i data-lucide="book-open"></i> Knowledge Hub &amp; Guides
+        </h3>
+        <a href="blog/index.html" class="landing-articles-all-link">Browse All 12 Guides</a>
+      </div>
+
+      <div class="landing-articles-container">
+        <!-- Page 0: Cards 1 to 4 -->
+        <div class="landing-articles-page" id="articles-page-0">
+          <a href="blog/automate-leetcode-streak-tracking.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="code-2"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">LeetCode Sync</div>
+              <div class="landing-article-mini-name">Automating Coding Streaks</div>
+            </div>
+          </a>
+
+          <a href="blog/psychology-of-streak-protection-grace-days.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="shield-check"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Habit Psychology</div>
+              <div class="landing-article-mini-name">Streak Grace &amp; Rest Days</div>
+            </div>
+          </a>
+
+          <a href="blog/virtual-study-rooms-body-doubling-deep-work.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="video"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Deep Work</div>
+              <div class="landing-article-mini-name">Silent Virtual Study Rooms</div>
+            </div>
+          </a>
+
+          <a href="blog/github-style-contribution-heatmap-for-habits.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="calendar"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">52-Week Heatmap</div>
+              <div class="landing-article-mini-name">Visual GitHub-Style Habits</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Page 1: Cards 5 to 8 -->
+        <div class="landing-articles-page" id="articles-page-1" style="display: none;">
+          <a href="blog/eye-tracking-pomodoro-focus-guard-distractions.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="eye"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Focus Guard</div>
+              <div class="landing-article-mini-name">Eye-Tracking Distraction Shield</div>
+            </div>
+          </a>
+
+          <a href="blog/dev-hub-github-prs-tech-notes-workflow.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="git-pull-request"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Dev Hub</div>
+              <div class="landing-article-mini-name">GitHub PRs &amp; Tech Notes</div>
+            </div>
+          </a>
+
+          <a href="blog/achievement-photo-scrapbook-proof-of-work.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="camera"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Proof of Work</div>
+              <div class="landing-article-mini-name">Achievement Photo Scrapbook</div>
+            </div>
+          </a>
+
+          <a href="blog/infinite-canvas-spatial-goal-planning.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="layout"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Spatial Canvas</div>
+              <div class="landing-article-mini-name">Infinite Mind-Mapping</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Page 2: Cards 9 to 12 -->
+        <div class="landing-articles-page" id="articles-page-2" style="display: none;">
+          <a href="blog/ai-ocr-handwritten-notes-to-daily-tasks.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="sparkles"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">AI OCR</div>
+              <div class="landing-article-mini-name">Handwritten Notes to Tasks</div>
+            </div>
+          </a>
+
+          <a href="blog/peer-accountability-group-chat-habits.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="users"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Accountability</div>
+              <div class="landing-article-mini-name">Peer Squads &amp; Group Chat</div>
+            </div>
+          </a>
+
+          <a href="blog/offline-first-habit-tracker-local-storage.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="database"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Offline-First</div>
+              <div class="landing-article-mini-name">Zero-Latency IndexedDB</div>
+            </div>
+          </a>
+
+          <a href="blog/todoist-vs-notion-vs-consistency-daily.html" class="landing-article-mini">
+            <span class="landing-article-mini-icon"><i data-lucide="check-circle-2"></i></span>
+            <div class="landing-article-mini-text">
+              <div class="landing-article-mini-tag">Comparison</div>
+              <div class="landing-article-mini-name">Todoist vs Notion vs CD</div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Symmetric Pagination Bar -->
+      <div class="landing-articles-pagination">
+        <button id="articles-prev-btn" class="articles-nav-btn" onclick="prevArticlesPage()" aria-label="Previous articles" disabled>
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <span class="articles-page-indicator" id="articles-page-indicator">1 / 3</span>
+        <button id="articles-next-btn" class="articles-nav-btn" onclick="nextArticlesPage()" aria-label="Next articles">
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
     </div>
   </section>
 
   <!-- FAQ Section -->
   <section class="landing-faq reveal">
-    <h2 class="landing-section-title">Common Questions ❓</h2>
+    <h2 class="landing-section-title">FAQ</h2>
     <div class="faq-grid">
       <!-- FAQ 1 -->
       <div class="faq-card">
@@ -3545,13 +4236,24 @@
 
   <!-- Footer -->
   <footer class="landing-footer">
-    &copy; <span id="year"></span> Consistency Daily. All rights reserved by the owner.
-    <div style="margin-top: 10px; font-size: 11px; display: flex; justify-content: center; gap: 15px; text-transform: uppercase;">
-      <a href="terms.html" style="color: #FFD60A; text-decoration: none; font-weight: 700;">Terms & Conditions</a>
-      <span style="color: #555;">|</span>
-      <a href="privacy.html" style="color: #FFD60A; text-decoration: none; font-weight: 700;">Privacy Policy</a>
-      <span style="color: #555;">|</span>
-      <a href="compliance.html" style="color: #FFD60A; text-decoration: none; font-weight: 700;">Data Compliance</a>
+    <div class="landing-footer-copy">
+      &copy; <span id="year"></span> Consistency Daily. All rights reserved by the owner.
+    </div>
+    <div class="landing-footer-links">
+      <a href="terms.html" class="footer-legal-link">
+        <span>Terms &amp;</span>
+        <span>Conditions</span>
+      </a>
+      <span class="landing-footer-sep">|</span>
+      <a href="privacy.html" class="footer-legal-link">
+        <span>Privacy</span>
+        <span>Policy</span>
+      </a>
+      <span class="landing-footer-sep">|</span>
+      <a href="compliance.html" class="footer-legal-link">
+        <span>Data</span>
+        <span>Compliance</span>
+      </a>
     </div>
   </footer>
 
@@ -3790,6 +4492,164 @@
         `;
         container.appendChild(card);
       });
+    }
+
+    // ── Horizontal Top Reviews Lazy Loading (at 50% Scroll) ──
+    let horizontalReviewsLoaded = false;
+    function escapeHtmlReview(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    async function loadHorizontalReviews() {
+      if (horizontalReviewsLoaded) return;
+      horizontalReviewsLoaded = true;
+
+      const track = document.getElementById('reviews-horizontal-track');
+      if (!track) return;
+
+      try {
+        const res = await fetch(`${API}/api/reviews?page=1&limit=15`);
+        const data = await res.json();
+        const reviews = Array.isArray(data) ? data : (data.reviews || []);
+
+        if (!reviews || reviews.length === 0) {
+          track.innerHTML = '<div style="color:var(--black); font-weight:700; padding:20px;">No reviews yet. Be the first to share your experience!</div>';
+          return;
+        }
+
+        const badgeColors = {
+          'Verified Account': '#4ade80',
+          'Considered by Developer': '#facc15',
+          'Helpful Review': '#60a5fa',
+          'Early / Beta Tester': '#a78bfa',
+          'Thanks from developer': '#fb923c',
+          'Peak Productivity': '#4ade80',
+          'Chaos Coordinator': '#fb7185',
+          'Feature Hunter': '#f472b6',
+          'Certified G.O.A.T': '#facc15',
+          'Vibe Checker': '#22d3ee',
+          'Professional Procrastinator': '#94a3b8',
+          'Big Brain Energy': '#818cf8',
+          'Hidden Genius': '#34d399',
+          'Feature Now Live!': '#22d3ee',
+          'Fixed': '#4ade80'
+        };
+
+        const cardBgColors = ['#fdf2f2', '#f0fdf4', '#eff6ff', '#fffbeb', '#faf5ff'];
+
+        // Duplicate reviews array to create an infinite continuous marquee loop
+        const loopReviews = [...reviews, ...reviews];
+
+        track.innerHTML = loopReviews.map((r, idx) => {
+          const initial = (r.name || 'U').charAt(0).toUpperCase();
+          const firstBadge = (r.userBadges && r.userBadges.length > 0) ? r.userBadges[0] : null;
+          const badgeColor = firstBadge ? (badgeColors[firstBadge] || '#facc15') : '#facc15';
+          const bg = cardBgColors[idx % cardBgColors.length];
+          const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          const cleanDesc = escapeHtmlReview(r.description || '');
+
+          return `
+            <div class="horizontal-review-card" style="background: ${bg};">
+              <div>
+                <div class="review-card-header">
+                  <div class="review-user-avatar">${initial}</div>
+                  <div class="review-user-info">
+                    <div class="review-user-name">${escapeHtmlReview(r.name || 'Anonymous')}</div>
+                    ${firstBadge ? `<span class="review-card-badge" style="background:${badgeColor}; color:#000;">${escapeHtmlReview(firstBadge)}</span>` : ''}
+                  </div>
+                </div>
+                <div class="review-card-body">"${cleanDesc}"</div>
+              </div>
+              ${dateStr ? `<div class="review-card-date">${dateStr}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+      } catch (err) {
+        console.warn('Failed to load landing horizontal reviews:', err);
+      }
+    }
+
+    function checkScrollForReviews() {
+      if (horizontalReviewsLoaded) {
+        window.removeEventListener('scroll', checkScrollForReviews);
+        return;
+      }
+      const scrollPos = window.scrollY || window.pageYOffset;
+      const totalDoc = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalDoc > 0 && (scrollPos / totalDoc) >= 0.45) {
+        window.removeEventListener('scroll', checkScrollForReviews);
+        loadHorizontalReviews();
+      }
+    }
+
+    window.addEventListener('scroll', checkScrollForReviews, { passive: true });
+
+    const reviewsSection = document.querySelector('.landing-reviews');
+    if (reviewsSection && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          observer.disconnect();
+          loadHorizontalReviews();
+        }
+      }, { rootMargin: '350px' });
+      observer.observe(reviewsSection);
+    }
+
+    // ── Knowledge Hub Articles Carousel Navigation (4 Per Page) ──
+    let currentArticlesPage = 0;
+    const totalArticlesPages = 3;
+
+    function showArticlesPage(page) {
+      if (page < 0 || page >= totalArticlesPages) return;
+      currentArticlesPage = page;
+
+      for (let i = 0; i < totalArticlesPages; i++) {
+        const pageEl = document.getElementById(`articles-page-${i}`);
+        if (pageEl) {
+          pageEl.style.display = (i === currentArticlesPage) ? 'grid' : 'none';
+        }
+      }
+
+      const prevBtn = document.getElementById('articles-prev-btn');
+      const nextBtn = document.getElementById('articles-next-btn');
+      const indicator = document.getElementById('articles-page-indicator');
+
+      if (prevBtn) {
+        prevBtn.disabled = (currentArticlesPage === 0);
+      }
+      if (nextBtn) {
+        nextBtn.disabled = (currentArticlesPage === totalArticlesPages - 1);
+      }
+      if (indicator) {
+        indicator.textContent = `${currentArticlesPage + 1} / ${totalArticlesPages}`;
+      }
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    function nextArticlesPage() {
+      if (currentArticlesPage < totalArticlesPages - 1) {
+        showArticlesPage(currentArticlesPage + 1);
+      }
+    }
+
+    function prevArticlesPage() {
+      if (currentArticlesPage > 0) {
+        showArticlesPage(currentArticlesPage - 1);
+      }
     }
 
     // ── Lightbox Logic ──
