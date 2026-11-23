@@ -1,11 +1,10 @@
-name: Secure MongoDB Backup to Google Drive
+name: MongoDB Backup (Morning)
 
 on:
   schedule:
-    # Runs twice daily (matching your previous schedule: 5:30 AM IST and 9:00 PM IST)
+    # Runs daily at 00:00 UTC (5:30 AM IST)
     - cron: '0 0 * * *'
-    - cron: '30 15 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -32,27 +31,24 @@ jobs:
           MONGO_URI: ${{ secrets.MONGO_URI }}
           PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
-          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+          TIMESTAMP=$(date +"%Y-%m-%d_morning")
           DUMP_FILE="mongodb_backup_${TIMESTAMP}.archive.gz"
           
-          echo "Starting mongodump..."
+          echo "Starting morning mongodump..."
           mongodump --uri="$MONGO_URI" --archive="$DUMP_FILE" --gzip
           
           echo "Encrypting backup archive with GPG AES-256..."
           gpg --batch --yes --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 "$DUMP_FILE"
           
-          # Delete the unencrypted file immediately
           rm -f "$DUMP_FILE"
-          
           echo "BACKUP_FILE=${DUMP_FILE}.gpg" >> $GITHUB_ENV
 
-      - name: Upload Encrypted Backup to Google Drive
+      - name: Upload to Google Drive (Zero GitHub Artifacts)
         run: |
           echo "Uploading $BACKUP_FILE to Google Drive folder 'MongoDB_Backups'..."
           rclone copy "$BACKUP_FILE" drive:MongoDB_Backups/
-          echo "Upload complete! Zero artifacts stored on GitHub."
+          echo "Morning backup successfully uploaded to Google Drive!"
 
       - name: Prune Backups Older Than 30 Days
         run: |
-          # Automatically keep storage clean by removing backups older than 30 days
           rclone delete --min-age 30d drive:MongoDB_Backups/
