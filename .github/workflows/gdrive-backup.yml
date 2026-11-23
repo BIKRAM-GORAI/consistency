@@ -1,0 +1,58 @@
+name: Secure MongoDB Backup to Google Drive
+
+on:
+  schedule:
+    # Runs twice daily (matching your previous schedule: 5:30 AM IST and 9:00 PM IST)
+    - cron: '0 0 * * *'
+    - cron: '30 15 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Dependencies (MongoDB Tools & Rclone)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnupg rclone
+          wget -q https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+          sudo apt-get install -y ./mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+          rm -f ./mongodb-database-tools-ubuntu2204-x86_64-100.9.4.deb
+
+      - name: Configure Rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          cat << 'EOF' > ~/.config/rclone/rclone.conf
+          ${{ secrets.RCLONE_CONFIG_DATA }}
+          EOF
+
+      - name: Export and Encrypt MongoDB
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+          DUMP_FILE="mongodb_backup_${TIMESTAMP}.archive.gz"
+          
+          echo "Starting mongodump..."
+          mongodump --uri="$MONGO_URI" --archive="$DUMP_FILE" --gzip
+          
+          echo "Encrypting backup archive with GPG AES-256..."
+          gpg --batch --yes --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 "$DUMP_FILE"
+          
+          # Delete the unencrypted file immediately
+          rm -f "$DUMP_FILE"
+          
+          echo "BACKUP_FILE=${DUMP_FILE}.gpg" >> $GITHUB_ENV
+
+      - name: Upload Encrypted Backup to Google Drive
+        run: |
+          echo "Uploading $BACKUP_FILE to Google Drive folder 'MongoDB_Backups'..."
+          rclone copy "$BACKUP_FILE" drive:MongoDB_Backups/
+          echo "Upload complete! Zero artifacts stored on GitHub."
+
+      - name: Prune Backups Older Than 30 Days
+        run: |
+          # Automatically keep storage clean by removing backups older than 30 days
+          rclone delete --min-age 30d drive:MongoDB_Backups/
