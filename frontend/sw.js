@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v144'; // Bumped for unified Claymorphism greeting screen across all themes
+const CACHE_NAME = 'consistency-cache-v145'; // Bumped for instant Canvas return without splash/greeting reload
 const STATIC_ASSETS = [
   '/',
   'index.html',

@@ -9,7 +9,29 @@
     // Initial Theme (Default: Claymorphism for new users)
     const initialTheme = localStorage.getItem('theme') || 'claymorphism';
     document.documentElement.setAttribute('data-theme', initialTheme);
+
+    // Skip splash & greeting overlay when returning from Canvas tab (unless user explicitly reloaded)
+    (function() {
+      try {
+        const navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+        const isReload = navEntry && navEntry.type === 'reload';
+        const fromCanvasFlag = sessionStorage.getItem('returningFromCanvas') === '1';
+        const fromCanvasRef = !isReload && document.referrer && document.referrer.includes('canvas.html');
+        if (!isReload && (fromCanvasFlag || fromCanvasRef)) {
+          sessionStorage.removeItem('returningFromCanvas');
+          document.documentElement.classList.add('skip-intro-splash');
+        }
+      } catch (e) {}
+    })();
   </script>
+  <style>
+    html.skip-intro-splash #web-splash,
+    html.skip-intro-splash #greeting-mist-overlay {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content" />
   <meta name="description" content="Consistency Daily — The ultimate Habit & Goal Tracker. Build unbreakable routines, maintain streaks, and manage long-term goals. Your personal consistency hub." />
@@ -5159,6 +5181,7 @@
     lucide.createIcons();
 
     function navigateToCanvas() {
+      try { sessionStorage.setItem('returningFromCanvas', '1'); } catch (e) {}
       window.location.href = 'canvas.html';
     }
     window.navigateToCanvas = navigateToCanvas;
@@ -5563,6 +5586,13 @@
     (function() {
       const splashEl = document.getElementById('web-splash');
       const greetingEl = document.getElementById('greeting-mist-overlay');
+
+      if (document.documentElement.classList.contains('skip-intro-splash')) {
+        if (splashEl) splashEl.remove();
+        if (greetingEl) greetingEl.remove();
+        document.documentElement.classList.remove('skip-intro-splash');
+        return;
+      }
 
       // Populate personalized greeting & warm daily quote
       if (greetingEl) {
