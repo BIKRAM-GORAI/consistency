@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v143'; // Bumped for iframe sandbox security hardening
+const CACHE_NAME = 'consistency-cache-v144'; // Bumped for unified Claymorphism greeting screen across all themes
 const STATIC_ASSETS = [
   '/',
   'index.html',
