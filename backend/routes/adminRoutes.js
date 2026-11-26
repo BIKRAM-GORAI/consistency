@@ -101,7 +101,10 @@ router.delete('/changelogs/:id', authenticateAdmin, adminController.deleteAdminC
 // Email Management
 router.get('/user-emails', authenticateAdmin, adminController.getUserEmailsOnly);
 router.post('/users/:id/send-email', authenticateAdmin, adminController.sendEmailToUser);
+router.get('/users/:id/email-logs', authenticateAdmin, adminController.getUserEmailLogs);
 router.post('/bulk-email', authenticateAdmin, adminController.sendBulkEmail);
+router.get('/bulk-email/logs', authenticateAdmin, adminController.getBulkEmailLogs);
+router.get('/bulk-email/logs/:batchId', authenticateAdmin, adminController.getBulkEmailBatchDetails);
 
 // Deleted Account Logs
 router.get('/deleted-logs', authenticateAdmin, adminController.getDeletedUserLogs);

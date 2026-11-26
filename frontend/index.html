@@ -71,9 +71,9 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=83" />
+  <link rel="stylesheet" href="style.css?v=87" />
   <link rel="stylesheet" href="aurora-theme.css?v=6" />
-  <link rel="stylesheet" href="minimalistic-theme.css?v=3" />
+  <link rel="stylesheet" href="minimalistic-theme.css?v=6" />
   <link rel="stylesheet" href="claymorphism-theme.css?v=18" />
   <style>
     /* ── Offline mode: disable all network-dependent buttons instantly via body class ── */
@@ -768,6 +768,7 @@
           <span id="user-chip-avatar">U</span>
           <img class="user-chip-img" id="user-chip-img" src="" alt="Profile" style="position:absolute; display:none; width:100%; height:100%; border-radius:50%; object-fit:cover; z-index:1;" />
           <div id="profile-red-dot" class="profile-red-dot" style="display: none;"></div>
+          <div id="profile-notif-dot" class="profile-notif-dot" style="display: none;"></div>
           <div id="email-verify-warning-dot" class="email-verify-warning-dot" style="display: none;"></div>
         </div>
       </div>
@@ -3827,10 +3828,19 @@
         </div>
 
         <!-- FEATURE CHANGELOG BUTTON -->
-        <div style="margin-bottom: 20px; position: relative;">
+        <div style="margin-bottom: 12px; position: relative;">
           <button class="btn-primary ripple" id="btn-feature-changelog" style="width: 100%; justify-content: center; background: #3b82f6; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: #fff; position: relative;" onclick="openChangelogModal()">
             <span><i data-lucide="megaphone"></i> Feature Changelog</span>
             <div id="changelog-btn-red-dot" class="changelog-btn-red-dot" style="display: none;"></div>
+          </button>
+        </div>
+
+        <!-- PERSONAL NOTIFICATIONS BUTTON -->
+        <div style="margin-bottom: 20px; position: relative;">
+          <button class="btn-primary ripple" id="btn-personal-notifications" style="width: 100%; justify-content: center; background: #f59e0b; border-color: var(--black); box-shadow: 4px 4px 0 var(--black); font-size: 15px; text-transform: uppercase; font-weight: 800; color: #111; position: relative;" onclick="openPersonalNotificationsModal()">
+            <span><i data-lucide="bell"></i> Notifications</span>
+            <span id="notif-unread-pill" style="display: none; margin-left: 8px; background: #111; color: #fff; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 999px;">0</span>
+            <div id="notif-btn-red-dot" class="changelog-btn-red-dot" style="display: none;"></div>
           </button>
         </div>
 
@@ -5098,6 +5108,40 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: Personal Notifications ===== -->
+  <div class="modal-overlay" id="modal-personal-notifications" onclick="closeModalOnOverlay(event, 'modal-personal-notifications')">
+    <div class="modal modal-wide" style="max-width: 580px;">
+      <div class="modal-header" style="background: #f59e0b; color: #111;">
+        <h2 style="color: #111;"><i data-lucide="bell" class="no-theme"></i> Notifications</h2>
+        <button class="modal-close notif-red-close-btn" onclick="closeModal('modal-personal-notifications')" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="personal-notifications-body" style="padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; max-height: 70dvh;">
+        <!-- Personal notifications rendered dynamically -->
+      </div>
+      <div id="personal-notifications-pagination" style="display: none; padding: 10px 20px; border-top: 1px dashed var(--border-color, #ddd); justify-content: space-between; align-items: center; gap: 10px;"></div>
+      <div class="modal-footer" style="padding: 12px 16px; border-top: var(--border-2); justify-content: flex-end; display: flex;">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-personal-notifications')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Notification Message Reader ===== -->
+  <div class="modal-overlay" id="modal-notification-reader" onclick="closeModalOnOverlay(event, 'modal-notification-reader')" style="z-index: 10005;">
+    <div class="modal notif-reader-modal">
+      <div class="modal-header" style="background: #f59e0b; color: #111; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <button class="btn-ghost ripple" onclick="closeModal('modal-notification-reader')" style="padding: 6px 12px; font-size: 12px; background: rgba(255,255,255,0.9); color: #111; border: 2px solid #111; flex-shrink: 0;">← Back</button>
+        <div style="min-width: 0; flex: 1; text-align: center;">
+          <h2 id="notif-reader-subject" style="color: #111; font-size: 16px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: center;">Message</h2>
+          <div id="notif-reader-date" style="font-size: 11px; font-weight: 800; color: rgba(17,17,17,0.78); margin-top: 2px;"></div>
+        </div>
+        <button class="modal-close notif-red-close-btn" onclick="closeModal('modal-notification-reader')" aria-label="Close" style="flex-shrink: 0;"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="notif-reader-body" style="padding: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff;">
+        <!-- Full HTML iframe or plain text injected here -->
+      </div>
+    </div>
+  </div>
+
   <script src="libs/clmtrackr.min.js"></script>
   <script src="libs/model_pca_20_svm.js"></script>
 
@@ -5118,10 +5162,10 @@
   <script type="module" src="js/modules/devHub.js"></script>
   <script type="module" src="js/modules/achievements.js?v=77"></script>
   <script type="module" src="js/modules/scratchpad.js"></script>
-  <script type="module" src="js/modules/profile.js?v=2"></script>
+  <script type="module" src="js/modules/profile.js?v=7"></script>
   <script type="module" src="js/modules/pomodoro.js"></script>
   <script type="module" src="js/modules/dm.js"></script>
-  <script type="module" src="js/modules/app.js?v=74"></script>
+  <script type="module" src="js/modules/app.js?v=75"></script>
 
   <script src="script.js?v=69"></script>
   <script>

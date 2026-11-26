@@ -626,6 +626,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       }
+      if (typeof window.checkPersonalNotifications === 'function') {
+        window.checkPersonalNotifications();
+      }
     } catch (err) {
       console.warn("Failed to sync reminders on startup:", err);
     }

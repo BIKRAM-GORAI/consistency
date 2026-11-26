@@ -9,6 +9,7 @@ const Badge = require('../models/Badge');
 const Changelog = require('../models/Changelog');
 const DeletedUserLog = require('../models/DeletedUserLog');
 const CronLog = require('../models/CronLog');
+const AdminMessageLog = require('../models/AdminMessageLog');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ProfileShare = require('../models/ProfileShare');
@@ -863,9 +864,16 @@ async function sendEmailToUser(req, res) {
 
     const { sendEmail, htmlToPlainText, wrapHtml } = require('../utils/email');
 
-    // Build the HTML body — plain text mode gets a simple <pre> wrapper, HTML mode uses as-is
+function escapeHtmlText(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+    // Build the HTML body — plain text mode gets an HTML-escaped <pre> wrapper, HTML mode uses as-is
     const rawHtml = mode === 'text'
-      ? `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:14px;line-height:1.6;">${body}</pre>`
+      ? `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:14px;line-height:1.6;">${escapeHtmlText(body)}</pre>`
       : body;
 
     // Always derive a plain-text alternative (critical for inbox delivery)
@@ -886,6 +894,19 @@ async function sendEmailToUser(req, res) {
       html: htmlBody,
       text: plainText,
       attachments: mailAttachments.length ? mailAttachments : undefined,
+    });
+
+    await AdminMessageLog.create({
+      batchId: `personal_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+      type: 'personal',
+      recipientId: user._id,
+      recipientEmail: user.email,
+      recipientName: user.name || '',
+      subject,
+      bodyHtml: rawHtml,
+      bodyText: plainText,
+      mode: mode === 'html' ? 'html' : 'text',
+      deliveryStatus: 'sent',
     });
 
     console.log(`[Admin Email] Sent to ${user.email} | Subject: ${subject}`);
@@ -916,17 +937,28 @@ async function sendBulkEmail(req, res) {
 
     // Build once — reuse for all recipients
     const rawHtml = mode === 'text'
-      ? `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:14px;line-height:1.6;">${body}</pre>`
+      ? `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:14px;line-height:1.6;">${escapeHtmlText(body)}</pre>`
       : body;
     const plainText = mode === 'text' ? body : htmlToPlainText(body);
     const htmlBody  = wrapHtml(rawHtml, subject);
 
+    const normalizedEmails = emails.map(e => String(e).toLowerCase().trim());
+    const matchedUsers = await User.find({ email: { $in: normalizedEmails } })
+      .select('_id email name')
+      .lean();
+    const userByEmail = new Map(matchedUsers.map(u => [u.email.toLowerCase().trim(), u]));
+
+    const batchId = `bulk_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const logMode = mode === 'html' ? 'html' : 'text';
     const results = [];
+    const logsToInsert = [];
 
     // Send sequentially with a small delay between each email.
     // 300 ms gap prevents Gmail from treating this as a spam burst,
     // which is the #1 reason subsequent bulk emails land in spam.
     for (const email of emails) {
+      const normalized = String(email).toLowerCase().trim();
+      const matchedUser = userByEmail.get(normalized);
       try {
         await sendEmail({
           to: email,
@@ -935,13 +967,42 @@ async function sendBulkEmail(req, res) {
           text: plainText,
         });
         results.push({ email, status: 'sent' });
+        logsToInsert.push({
+          batchId,
+          type: 'bulk',
+          recipientId: matchedUser ? matchedUser._id : null,
+          recipientEmail: normalized,
+          recipientName: matchedUser ? (matchedUser.name || '') : '',
+          subject,
+          bodyHtml: rawHtml,
+          bodyText: plainText,
+          mode: logMode,
+          deliveryStatus: 'sent',
+        });
         console.log(`[Admin Bulk Email] Sent to ${email}`);
       } catch (emailErr) {
         console.error(`[Admin Bulk Email] Failed for ${email}:`, emailErr.message);
         results.push({ email, status: 'failed', error: emailErr.message });
+        logsToInsert.push({
+          batchId,
+          type: 'bulk',
+          recipientId: matchedUser ? matchedUser._id : null,
+          recipientEmail: normalized,
+          recipientName: matchedUser ? (matchedUser.name || '') : '',
+          subject,
+          bodyHtml: rawHtml,
+          bodyText: plainText,
+          mode: logMode,
+          deliveryStatus: 'failed',
+          error: emailErr.message,
+        });
       }
       // Small inter-message pause — avoids triggering Gmail's burst-spam detector
       await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    if (logsToInsert.length > 0) {
+      await AdminMessageLog.insertMany(logsToInsert, { ordered: false });
     }
 
     const sent   = results.filter(r => r.status === 'sent').length;
@@ -951,11 +1012,177 @@ async function sendBulkEmail(req, res) {
       message: `Bulk email complete. Sent: ${sent}, Failed: ${failed}`,
       sent,
       failed,
+      batchId,
       results,
     });
   } catch (err) {
     console.error('[Admin sendBulkEmail Error]', err);
     res.status(500).json({ message: 'Failed to send bulk emails.', error: err.message });
+  }
+}
+
+/**
+ * GET /api/admin/bulk-email/logs?page=1&limit=10&search=...
+ * Returns paginated bulk email campaigns grouped by batchId.
+ */
+async function getBulkEmailLogs(req, res) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const search = (req.query.search || '').trim();
+
+    const matchStage = { type: 'bulk' };
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), 'i');
+      matchStage.$or = [{ subject: regex }, { recipientEmail: regex }];
+    }
+
+    const pipeline = [
+      { $match: matchStage },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$batchId',
+          batchId: { $first: '$batchId' },
+          subject: { $first: '$subject' },
+          mode: { $first: '$mode' },
+          bodyHtml: { $first: '$bodyHtml' },
+          bodyText: { $first: '$bodyText' },
+          createdAt: { $first: '$createdAt' },
+          totalRecipients: { $sum: 1 },
+          totalSent: {
+            $sum: { $cond: [{ $eq: ['$deliveryStatus', 'sent'] }, 1, 0] },
+          },
+          totalFailed: {
+            $sum: { $cond: [{ $eq: ['$deliveryStatus', 'failed'] }, 1, 0] },
+          },
+          readCount: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$deliveryStatus', 'sent'] }, { $eq: ['$readInApp', true] }] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        },
+      },
+    ];
+
+    const [aggResult] = await AdminMessageLog.aggregate(pipeline);
+    const total = aggResult?.metadata?.[0]?.total || 0;
+    const logs = aggResult?.data || [];
+
+    res.json({
+      logs,
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
+  } catch (err) {
+    console.error('[Admin getBulkEmailLogs Error]', err);
+    res.status(500).json({ message: 'Failed to load bulk email logs.' });
+  }
+}
+
+/**
+ * GET /api/admin/bulk-email/logs/:batchId?page=1&limit=20&filter=all|read|unread&search=...
+ * Returns paginated recipients and read status for a specific bulk email batch.
+ */
+async function getBulkEmailBatchDetails(req, res) {
+  try {
+    const { batchId } = req.params;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const filterParam = req.query.filter || 'all';
+    const search = (req.query.search || '').trim();
+
+    const query = { batchId };
+    if (filterParam === 'read') {
+      query.deliveryStatus = 'sent';
+      query.readInApp = true;
+    } else if (filterParam === 'unread') {
+      query.deliveryStatus = 'sent';
+      query.readInApp = false;
+    } else if (filterParam === 'failed') {
+      query.deliveryStatus = 'failed';
+    }
+
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), 'i');
+      query.$or = [{ recipientEmail: regex }, { recipientName: regex }];
+    }
+
+    const [recipients, total] = await Promise.all([
+      AdminMessageLog.find(query)
+        .sort({ readInApp: -1, recipientEmail: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select('recipientId recipientEmail recipientName deliveryStatus error readInApp readInAppAt createdAt')
+        .lean(),
+      AdminMessageLog.countDocuments(query),
+    ]);
+
+    res.json({
+      recipients,
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
+  } catch (err) {
+    console.error('[Admin getBulkEmailBatchDetails Error]', err);
+    res.status(500).json({ message: 'Failed to load batch recipient details.' });
+  }
+}
+
+/**
+ * GET /api/admin/users/:id/email-logs?page=1&limit=10
+ * Returns paginated personalized + bulk messages sent to a specific user.
+ */
+async function getUserEmailLogs(req, res) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID.' });
+    }
+    const user = await User.findById(req.params.id).select('email').lean();
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+
+    const query = {
+      $or: [
+        { recipientId: req.params.id },
+        { recipientEmail: user.email.toLowerCase().trim() },
+      ],
+    };
+
+    const [logs, total] = await Promise.all([
+      AdminMessageLog.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select('type subject bodyHtml bodyText mode deliveryStatus error readInApp readInAppAt createdAt')
+        .lean(),
+      AdminMessageLog.countDocuments(query),
+    ]);
+
+    res.json({
+      logs,
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
+  } catch (err) {
+    console.error('[Admin getUserEmailLogs Error]', err);
+    res.status(500).json({ message: 'Failed to load user email logs.' });
   }
 }
 
@@ -990,6 +1217,9 @@ module.exports = {
   getUserEmailsOnly,
   sendEmailToUser,
   sendBulkEmail,
+  getBulkEmailLogs,
+  getBulkEmailBatchDetails,
+  getUserEmailLogs,
   // Badge Management
   getAdminBadges: async (req, res) => {
     try {

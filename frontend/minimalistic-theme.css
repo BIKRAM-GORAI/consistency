@@ -247,8 +247,8 @@
   color: #0f172a !important;
 }
 
-/* Primary & Action Buttons (Soft charcoal black with crisp white text) */
-[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn),
+/* Primary & Action Buttons (Muted, understated minimalistic gradients with crisp white text & icons) */
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):not(#btn-personal-notifications),
 [data-theme="minimalistic"] .add-day-inline-btn,
 [data-theme="minimalistic"] .btn-add-cat,
 [data-theme="minimalistic"] .btn-save-template,
@@ -258,14 +258,48 @@
 [data-theme="minimalistic"] .btn-add-ach,
 [data-theme="minimalistic"] #submit-ach-btn,
 [data-theme="minimalistic"] #submit-profile-btn {
-  background: #272e38 !important;
+  background: linear-gradient(135deg, #475569 0%, #5b6b82 100%) !important;
   color: #ffffff !important;
-  border: 1px solid #333c48 !important;
+  border: 1px solid #3f4c5e !important;
   border-radius: 8px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12) !important;
 }
 
-[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn) *,
+[data-theme="minimalistic"] #btn-create-private-team {
+  background: linear-gradient(135deg, #52588c 0%, #656ca3 100%) !important;
+  border-color: #474c7a !important;
+  box-shadow: 0 1px 4px rgba(82, 88, 140, 0.15) !important;
+}
+
+[data-theme="minimalistic"] #btn-create-public-group {
+  background: linear-gradient(135deg, #2d6a64 0%, #3b827b 100%) !important;
+  border-color: #255853 !important;
+  box-shadow: 0 1px 4px rgba(45, 106, 100, 0.15) !important;
+}
+
+[data-theme="minimalistic"] .group-open-chat-btn {
+  background: linear-gradient(135deg, #624f82 0%, #766199 100%) !important;
+  border-color: #544370 !important;
+  box-shadow: 0 1px 4px rgba(98, 79, 130, 0.15) !important;
+}
+
+[data-theme="minimalistic"] #btn-feature-changelog {
+  background: linear-gradient(135deg, #3b6088 0%, #4d75a1 100%) !important;
+  border-color: #325275 !important;
+}
+
+[data-theme="minimalistic"] button[onclick="openBadgesModal()"] {
+  background: linear-gradient(135deg, #6a5285 0%, #7e649c 100%) !important;
+  border-color: #5a4573 !important;
+}
+
+[data-theme="minimalistic"] #submit-profile-btn {
+  background: linear-gradient(135deg, #2f6f58 0%, #3d876c 100%) !important;
+  border-color: #275c49 !important;
+}
+
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):not(#btn-personal-notifications) *,
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):not(#btn-personal-notifications) svg,
 [data-theme="minimalistic"] .add-day-inline-btn *,
 [data-theme="minimalistic"] .btn-add-cat *,
 [data-theme="minimalistic"] .btn-save-template *,
@@ -276,9 +310,22 @@
 [data-theme="minimalistic"] #submit-ach-btn *,
 [data-theme="minimalistic"] #submit-profile-btn * {
   color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
-[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):hover,
+[data-theme="minimalistic"] #btn-personal-notifications,
+[data-theme="minimalistic"] #btn-personal-notifications * {
+  color: #111111 !important;
+  stroke: #111111 !important;
+}
+
+[data-theme="minimalistic"] #btn-personal-notifications {
+  background: linear-gradient(135deg, #e5a93c 0%, #eeb955 100%) !important;
+  border: 1px solid #cc9129 !important;
+  box-shadow: 0 1px 4px rgba(204, 145, 41, 0.18) !important;
+}
+
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):not(#btn-personal-notifications):hover,
 [data-theme="minimalistic"] .add-day-inline-btn:hover,
 [data-theme="minimalistic"] .btn-add-cat:hover,
 [data-theme="minimalistic"] .btn-save-template:hover,
@@ -288,12 +335,12 @@
 [data-theme="minimalistic"] .btn-add-ach:hover,
 [data-theme="minimalistic"] #submit-ach-btn:hover,
 [data-theme="minimalistic"] #submit-profile-btn:hover {
-  background: #384353 !important;
-  border-color: #384353 !important;
+  filter: brightness(0.94);
   color: #ffffff !important;
 }
 
-[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):hover *,
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):not(#btn-personal-notifications):hover *,
+[data-theme="minimalistic"] .btn-primary:not(#scan-list-btn):not(#scan-camera-btn):not(#voice-record-btn):not(#btn-personal-notifications):hover svg,
 [data-theme="minimalistic"] .add-day-inline-btn:hover *,
 [data-theme="minimalistic"] .btn-add-cat:hover *,
 [data-theme="minimalistic"] .btn-save-template:hover *,
@@ -304,6 +351,7 @@
 [data-theme="minimalistic"] #submit-ach-btn:hover *,
 [data-theme="minimalistic"] #submit-profile-btn:hover * {
   color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 /* Remove / Delete Buttons in Minimalist Theme */

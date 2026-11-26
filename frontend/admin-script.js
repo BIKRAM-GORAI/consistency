@@ -1076,42 +1076,56 @@ function showUserTab(tab) {
     case 'email':
       html = `
         <div style="padding: 4px 0 20px;">
-          <div style="background: #fffbeb; border: 2px dashed var(--yellow); padding: 12px 16px; margin-bottom: 20px; font-size: 13px; font-weight: 700; color: #92400e;">
-            📧 Sending to: <strong>${user.email}</strong> &mdash; from <strong>${'(your Gmail)'}</strong>
+          <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px dashed #eee; padding-bottom: 12px;">
+            <button class="btn-control active" id="user-email-subtab-compose" onclick="switchUserEmailSubtab('compose', '${user._id}')">✉️ Send Email</button>
+            <button class="btn-control" id="user-email-subtab-logs" onclick="switchUserEmailSubtab('logs', '${user._id}')">📜 Message Logs</button>
           </div>
 
-          <div class="form-group">
-            <label>Subject *</label>
-            <input type="text" id="user-email-subject" placeholder="e.g. Hello from Consistency Tracker" style="border: var(--border);">
+          <div id="user-email-compose-pane">
+            <div style="background: #fffbeb; border: 2px dashed var(--yellow); padding: 12px 16px; margin-bottom: 20px; font-size: 13px; font-weight: 700; color: #92400e;">
+              📧 Sending to: <strong>${user.email}</strong> &mdash; from <strong>${'(your Gmail)'}</strong>
+            </div>
+
+            <div class="form-group">
+              <label>Subject *</label>
+              <input type="text" id="user-email-subject" placeholder="e.g. Hello from Consistency Tracker" style="border: var(--border);">
+            </div>
+
+            <!-- Mode Toggle -->
+            <div style="margin-bottom: 14px; display: flex; gap: 0; border: var(--border); width: fit-content;">
+              <button id="user-email-mode-plain" onclick="setUserEmailMode('text')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: var(--yellow); cursor: pointer; border-right: 2px solid #000;">Plain Text</button>
+              <button id="user-email-mode-html" onclick="setUserEmailMode('html')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: #eee; cursor: pointer;">HTML</button>
+            </div>
+
+            <div class="form-group">
+              <label id="user-email-body-label">Message *</label>
+              <textarea id="user-email-body" rows="10" onpaste="handleEmailPasteClean(event)" placeholder="Type your message here..." style="border: var(--border); resize: vertical; font-family: inherit;"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Attachment (optional &bull; max ~5 MB)</label>
+              <input type="file" id="user-email-attachment" onchange="handleAdminEmailAttachment(event)" style="border: var(--border); padding: 10px; width: 100%; font-family: inherit;">
+              <div id="user-email-attach-info" style="font-size: 11px; color: #666; font-weight: 700; margin-top: 6px;"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+              <button id="user-email-preview-btn" onclick="previewUserEmail()" style="display:none; flex:1; padding: 10px; background: var(--blue); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
+                👁 Preview HTML
+              </button>
+              <button id="btn-send-user-email" onclick="sendAdminEmailToUser('${user._id}')" style="flex:2; padding: 12px; background: var(--black); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
+                📤 Send Email
+              </button>
+            </div>
+
+            <div id="user-email-result" style="display:none; margin-top: 16px; padding: 14px; border: var(--border); font-weight: 700; font-size: 13px;"></div>
           </div>
 
-          <!-- Mode Toggle -->
-          <div style="margin-bottom: 14px; display: flex; gap: 0; border: var(--border); width: fit-content;">
-            <button id="user-email-mode-plain" onclick="setUserEmailMode('text')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: var(--yellow); cursor: pointer; border-right: 2px solid #000;">Plain Text</button>
-            <button id="user-email-mode-html" onclick="setUserEmailMode('html')" style="padding: 8px 16px; font-family: inherit; font-weight: 900; font-size: 12px; text-transform: uppercase; border: none; background: #eee; cursor: pointer;">HTML</button>
+          <div id="user-email-logs-pane" style="display: none;">
+            <div id="user-email-logs-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <p style="font-weight: 700; color: #888; font-size: 13px;">Loading message logs...</p>
+            </div>
+            <div id="user-email-logs-pagination" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 2px dashed #eee; justify-content: space-between; align-items: center;"></div>
           </div>
-
-          <div class="form-group">
-            <label id="user-email-body-label">Message *</label>
-            <textarea id="user-email-body" rows="10" placeholder="Type your message here..." style="border: var(--border); resize: vertical; font-family: inherit;"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Attachment (optional &bull; max ~5 MB)</label>
-            <input type="file" id="user-email-attachment" onchange="handleAdminEmailAttachment(event)" style="border: var(--border); padding: 10px; width: 100%; font-family: inherit;">
-            <div id="user-email-attach-info" style="font-size: 11px; color: #666; font-weight: 700; margin-top: 6px;"></div>
-          </div>
-
-          <div style="display: flex; gap: 10px; margin-top: 8px;">
-            <button id="user-email-preview-btn" onclick="previewUserEmail()" style="display:none; flex:1; padding: 10px; background: var(--blue); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
-              👁 Preview HTML
-            </button>
-            <button id="btn-send-user-email" onclick="sendAdminEmailToUser('${user._id}')" style="flex:2; padding: 12px; background: var(--black); color: white; border: var(--border); box-shadow: var(--shadow); font-family: inherit; font-weight: 900; text-transform: uppercase; font-size: 13px; cursor: pointer;">
-              📤 Send Email
-            </button>
-          </div>
-
-          <div id="user-email-result" style="display:none; margin-top: 16px; padding: 14px; border: var(--border); font-weight: 700; font-size: 13px;"></div>
         </div>
       `;
       break;
@@ -2860,8 +2874,36 @@ function handleAdminEmailAttachment(event) {
   reader.readAsDataURL(file);
 }
 
+function stripCodeFences(str) {
+  if (typeof str !== 'string') return '';
+  let cleaned = str.trim();
+  // Remove leading ```html / ``` and trailing ``` markdown code fences
+  cleaned = cleaned.replace(/^```[a-zA-Z0-9_-]*\s*\r?\n?/, '').replace(/\r?\n?```\s*$/, '');
+  if (cleaned.startsWith('`') && cleaned.endsWith('`') && cleaned.length >= 2) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  return cleaned.trim();
+}
+
+function handleEmailPasteClean(event) {
+  try {
+    const pasted = (event.clipboardData || window.clipboardData)?.getData('text');
+    if (!pasted) return;
+    if (/^\s*```/.test(pasted) || (/^\s*`/.test(pasted) && /`\s*$/.test(pasted))) {
+      event.preventDefault();
+      const cleaned = stripCodeFences(pasted);
+      const ta = event.target;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      ta.value = ta.value.slice(0, start) + cleaned + ta.value.slice(end);
+      ta.selectionStart = ta.selectionEnd = start + cleaned.length;
+    }
+  } catch (e) {}
+}
+
 function previewUserEmail() {
-  const body = document.getElementById('user-email-body')?.value || '';
+  const rawBody = document.getElementById('user-email-body')?.value || '';
+  const body = _userEmailMode === 'html' ? stripCodeFences(rawBody) : rawBody;
   const iframe = document.getElementById('email-preview-iframe');
   if (!iframe) return;
   const modal = document.getElementById('email-preview-modal');
@@ -2871,7 +2913,10 @@ function previewUserEmail() {
 
 async function sendAdminEmailToUser(userId) {
   const subject = document.getElementById('user-email-subject')?.value?.trim();
-  const body    = document.getElementById('user-email-body')?.value?.trim();
+  let body      = document.getElementById('user-email-body')?.value?.trim();
+  if (_userEmailMode === 'html' && body) {
+    body = stripCodeFences(body);
+  }
   const resultEl = document.getElementById('user-email-result');
   const btn      = document.getElementById('btn-send-user-email');
 
@@ -3049,7 +3094,8 @@ function setBulkMode(mode) {
 }
 
 function previewBulkEmail() {
-  const body = document.getElementById('bulk-body')?.value || '';
+  const rawBody = document.getElementById('bulk-body')?.value || '';
+  const body = _bulkMode === 'html' ? stripCodeFences(rawBody) : rawBody;
   const iframe = document.getElementById('email-preview-iframe');
   if (!iframe) return;
   iframe.srcdoc = body;
@@ -3072,7 +3118,10 @@ document.addEventListener('keydown', (e) => {
 
 async function sendBulkEmailFromAdmin() {
   const subject   = document.getElementById('bulk-subject')?.value?.trim();
-  const body      = document.getElementById('bulk-body')?.value?.trim();
+  let body        = document.getElementById('bulk-body')?.value?.trim();
+  if (_bulkMode === 'html' && body) {
+    body = stripCodeFences(body);
+  }
   const emails    = Array.from(_bulkSelectedSet);
   const resultEl  = document.getElementById('bulk-email-results');
   const btn       = document.getElementById('btn-send-bulk');
@@ -3142,6 +3191,352 @@ window.setUserEmailMode     = setUserEmailMode;
 window.handleAdminEmailAttachment = handleAdminEmailAttachment;
 window.previewUserEmail     = previewUserEmail;
 window.sendAdminEmailToUser = sendAdminEmailToUser;
+
+// ── Admin Personalized & Bulk Email Logs (Paginated) ─────────
+let _bulkLogsPage = 1;
+let _currentBatchId = null;
+let _currentBatchFilter = 'all';
+let _bulkLogsCache = [];
+
+function switchBulkEmailSubtab(tab) {
+  const composePanel = document.getElementById('bulk-compose-panel');
+  const logsPanel = document.getElementById('bulk-logs-panel');
+  const sortControls = document.getElementById('bulk-sort-controls');
+  const btnCompose = document.getElementById('bulk-subtab-compose');
+  const btnLogs = document.getElementById('bulk-subtab-logs');
+
+  if (tab === 'logs') {
+    if (composePanel) composePanel.style.display = 'none';
+    if (logsPanel) logsPanel.style.display = 'block';
+    if (sortControls) sortControls.style.display = 'none';
+    btnCompose?.classList.remove('active');
+    btnLogs?.classList.add('active');
+    loadBulkEmailLogs(1);
+  } else {
+    if (composePanel) composePanel.style.display = 'grid';
+    if (logsPanel) logsPanel.style.display = 'none';
+    if (sortControls) sortControls.style.display = 'flex';
+    btnCompose?.classList.add('active');
+    btnLogs?.classList.remove('active');
+  }
+}
+
+async function loadBulkEmailLogs(page = 1) {
+  _bulkLogsPage = page;
+  const listEl = document.getElementById('bulk-logs-list');
+  const pagEl = document.getElementById('bulk-logs-pagination');
+  const search = (document.getElementById('bulk-logs-search')?.value || '').trim();
+  if (listEl) listEl.innerHTML = '<p style="font-weight:700; color:#888; font-size:13px;">Loading sent logs...</p>';
+
+  try {
+    const params = new URLSearchParams({ page, limit: 8 });
+    if (search) params.set('search', search);
+
+    const res = await fetch(`${API}/api/admin/bulk-email/logs?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to load bulk logs');
+    const data = await res.json();
+    _bulkLogsCache = data.logs || [];
+
+    if (!listEl) return;
+    if (_bulkLogsCache.length === 0) {
+      listEl.innerHTML = '<p style="font-weight:800; color:#888; padding:24px; text-align:center;">No bulk email logs found yet.</p>';
+      if (pagEl) pagEl.style.display = 'none';
+      return;
+    }
+
+    listEl.innerHTML = _bulkLogsCache.map((b, idx) => {
+      const dateStr = new Date(b.createdAt).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+      });
+      const unread = Math.max(0, (b.totalSent || 0) - (b.readCount || 0));
+      return `
+        <div style="border: var(--border); padding: 16px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 240px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+              <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; background: #fef3c7; color: #92400e; padding: 2px 8px; border: 1.5px solid #000;">${b.mode === 'html' ? 'HTML' : 'Plain Text'}</span>
+              <span style="font-size: 11px; font-weight: 700; color: #666;">${dateStr}</span>
+            </div>
+            <div style="font-size: 15px; font-weight: 900; color: #000; margin-bottom: 8px;">${escapeHtmlSafe(b.subject)}</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; font-weight: 800;">
+              <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border: 1.5px solid #000;">📤 Sent: ${b.totalSent}</span>
+              <span style="background: #dcfce7; color: #166534; padding: 3px 8px; border: 1.5px solid #000;">📱 Read in App: ${b.readCount}</span>
+              <span style="background: #fef9c3; color: #854d0e; padding: 3px 8px; border: 1.5px solid #000;">⏳ Unread: ${unread}</span>
+              ${b.totalFailed > 0 ? `<span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border: 1.5px solid #000;">❌ Failed: ${b.totalFailed}</span>` : ''}
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-control" style="background: var(--blue); color: #fff;" onclick="previewBulkLogMessage(${idx})">👁 Message</button>
+            <button class="btn-control" style="background: var(--yellow); color: #000;" onclick="openBulkBatchModalByIndex(${idx})">👥 Recipients (${b.totalRecipients})</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (pagEl) {
+      if (data.totalPages > 1) {
+        pagEl.style.display = 'flex';
+        pagEl.innerHTML = `
+          <button class="btn-control" ${data.page <= 1 ? 'disabled' : ''} onclick="loadBulkEmailLogs(${data.page - 1})">← Prev</button>
+          <span style="font-weight: 800; font-size: 12px;">Page ${data.page} of ${data.totalPages} (${data.total} campaigns)</span>
+          <button class="btn-control" ${data.page >= data.totalPages ? 'disabled' : ''} onclick="loadBulkEmailLogs(${data.page + 1})">Next →</button>
+        `;
+      } else {
+        pagEl.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    if (listEl) listEl.innerHTML = `<p style="color:#ef4444; font-weight:800;">Error: ${err.message}</p>`;
+  }
+}
+
+function previewBulkLogMessage(idx) {
+  const item = _bulkLogsCache[idx];
+  if (!item) return;
+  const modal = document.getElementById('email-preview-modal');
+  const frame = document.getElementById('email-preview-iframe');
+  if (frame) {
+    frame.srcdoc = item.mode === 'html'
+      ? item.bodyHtml
+      : `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;padding:20px;font-size:14px;line-height:1.6;">${escapeHtmlSafe(item.bodyText || '')}</pre>`;
+  }
+  if (modal) modal.classList.add('open');
+}
+
+function openBulkBatchModalByIndex(idx) {
+  const item = _bulkLogsCache[idx];
+  if (!item) return;
+  const dateStr = new Date(item.createdAt).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+  });
+  openBulkBatchModal(item.batchId, item.subject, dateStr);
+}
+
+function openBulkBatchModal(batchId, subject, dateStr) {
+  _currentBatchId = batchId;
+  _currentBatchFilter = 'all';
+  const modal = document.getElementById('bulk-batch-detail-modal');
+  const subjEl = document.getElementById('bulk-batch-modal-subject');
+  const metaEl = document.getElementById('bulk-batch-modal-meta');
+  const searchEl = document.getElementById('batch-recipient-search');
+  if (subjEl) subjEl.textContent = subject;
+  if (metaEl) metaEl.textContent = `Sent on ${dateStr}`;
+  if (searchEl) searchEl.value = '';
+  ['all', 'read', 'unread', 'failed'].forEach(f => {
+    document.getElementById(`batch-filter-${f}`)?.classList.toggle('active', f === 'all');
+  });
+  if (modal) modal.classList.add('open');
+  loadBulkBatchDetails(1);
+}
+
+function closeBulkBatchModal() {
+  document.getElementById('bulk-batch-detail-modal')?.classList.remove('open');
+}
+
+function setBulkBatchFilter(filter) {
+  _currentBatchFilter = filter;
+  ['all', 'read', 'unread', 'failed'].forEach(f => {
+    document.getElementById(`batch-filter-${f}`)?.classList.toggle('active', f === filter);
+  });
+  loadBulkBatchDetails(1);
+}
+
+async function loadBulkBatchDetails(page = 1) {
+  if (!_currentBatchId) return;
+  const listEl = document.getElementById('bulk-batch-recipients-list');
+  const pagEl = document.getElementById('bulk-batch-pagination');
+  const search = (document.getElementById('batch-recipient-search')?.value || '').trim();
+  if (listEl) listEl.innerHTML = '<p style="font-weight:700; color:#888;">Loading recipients...</p>';
+
+  try {
+    const params = new URLSearchParams({ page, limit: 15, filter: _currentBatchFilter });
+    if (search) params.set('search', search);
+
+    const res = await fetch(`${API}/api/admin/bulk-email/logs/${_currentBatchId}?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to load recipients');
+    const data = await res.json();
+    const recipients = data.recipients || [];
+
+    if (!listEl) return;
+    if (recipients.length === 0) {
+      listEl.innerHTML = '<p style="font-weight:800; color:#888; text-align:center; padding:20px;">No matching recipients.</p>';
+      if (pagEl) pagEl.style.display = 'none';
+      return;
+    }
+
+    listEl.innerHTML = recipients.map(r => {
+      let badge = '<span style="background:#fef9c3; color:#854d0e; border:1.5px solid #000; padding:2px 8px; font-size:11px; font-weight:900;">⏳ Unread</span>';
+      if (r.deliveryStatus === 'failed') {
+        badge = '<span style="background:#fee2e2; color:#991b1b; border:1.5px solid #000; padding:2px 8px; font-size:11px; font-weight:900;">❌ Failed</span>';
+      } else if (r.readInApp) {
+        const readTime = r.readInAppAt ? new Date(r.readInAppAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+        badge = `<span style="background:#dcfce7; color:#166534; border:1.5px solid #000; padding:2px 8px; font-size:11px; font-weight:900;">📱 Read ${readTime ? `(${readTime})` : ''}</span>`;
+      }
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border:2px solid #000; background:#fff;">
+          <div>
+            <div style="font-size:13px; font-weight:800;">${escapeHtmlSafe(r.recipientEmail)}</div>
+            ${r.recipientName ? `<div style="font-size:11px; color:#666; font-weight:700;">${escapeHtmlSafe(r.recipientName)}</div>` : ''}
+          </div>
+          <div>${badge}</div>
+        </div>
+      `;
+    }).join('');
+
+    if (pagEl) {
+      if (data.totalPages > 1) {
+        pagEl.style.display = 'flex';
+        pagEl.innerHTML = `
+          <button class="btn-control" ${data.page <= 1 ? 'disabled' : ''} onclick="loadBulkBatchDetails(${data.page - 1})">← Prev</button>
+          <span style="font-weight: 800; font-size: 12px;">Page ${data.page} of ${data.totalPages} (${data.total})</span>
+          <button class="btn-control" ${data.page >= data.totalPages ? 'disabled' : ''} onclick="loadBulkBatchDetails(${data.page + 1})">Next →</button>
+        `;
+      } else {
+        pagEl.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    if (listEl) listEl.innerHTML = `<p style="color:#ef4444; font-weight:800;">Error: ${err.message}</p>`;
+  }
+}
+
+function switchUserEmailSubtab(tab, userId) {
+  const composePane = document.getElementById('user-email-compose-pane');
+  const logsPane = document.getElementById('user-email-logs-pane');
+  const btnCompose = document.getElementById('user-email-subtab-compose');
+  const btnLogs = document.getElementById('user-email-subtab-logs');
+
+  if (tab === 'logs') {
+    if (composePane) composePane.style.display = 'none';
+    if (logsPane) logsPane.style.display = 'block';
+    btnCompose?.classList.remove('active');
+    btnLogs?.classList.add('active');
+    loadAdminUserEmailLogs(userId, 1);
+  } else {
+    if (composePane) composePane.style.display = 'block';
+    if (logsPane) logsPane.style.display = 'none';
+    btnCompose?.classList.add('active');
+    btnLogs?.classList.remove('active');
+  }
+}
+
+let _userEmailLogsCache = [];
+
+function previewUserLogMessage(idx) {
+  const log = _userEmailLogsCache[idx];
+  if (!log) return;
+  const modal = document.getElementById('email-preview-modal');
+  const frame = document.getElementById('email-preview-iframe');
+  if (frame) {
+    frame.srcdoc = log.mode === 'html'
+      ? log.bodyHtml
+      : `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;padding:20px;font-size:14px;line-height:1.6;">${escapeHtmlSafe(log.bodyText || '')}</pre>`;
+  }
+  if (modal) modal.classList.add('open');
+}
+
+async function loadAdminUserEmailLogs(userId, page = 1) {
+  const listEl = document.getElementById('user-email-logs-list');
+  const pagEl = document.getElementById('user-email-logs-pagination');
+  if (listEl) listEl.innerHTML = '<p style="font-weight:700; color:#888; font-size:13px;">Loading message logs...</p>';
+
+  try {
+    const res = await fetch(`${API}/api/admin/users/${userId}/email-logs?page=${page}&limit=6`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to load user message logs');
+    const data = await res.json();
+    const logs = data.logs || [];
+    _userEmailLogsCache = logs;
+
+    if (!listEl) return;
+    if (logs.length === 0) {
+      listEl.innerHTML = '<p style="font-weight:800; color:#888; text-align:center; padding:24px;">No personalized or bulk messages sent to this user yet.</p>';
+      if (pagEl) pagEl.style.display = 'none';
+      return;
+    }
+
+    listEl.innerHTML = logs.map((log, idx) => {
+      const dateStr = new Date(log.createdAt).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+      });
+      const typeBadge = log.type === 'personal'
+        ? '<span style="background:#dbeafe; color:#1e40af; border:1.5px solid #000; padding:2px 7px; font-size:10px; font-weight:900; text-transform:uppercase;">Personal</span>'
+        : '<span style="background:#fef3c7; color:#92400e; border:1.5px solid #000; padding:2px 7px; font-size:10px; font-weight:900; text-transform:uppercase;">Bulk</span>';
+      const modeBadge = `<span style="background:#f3f4f6; color:#374151; border:1.5px solid #000; padding:2px 7px; font-size:10px; font-weight:900; text-transform:uppercase;">${log.mode === 'html' ? 'HTML' : 'Text'}</span>`;
+
+      let statusBadge = '<span style="background:#fef9c3; color:#854d0e; border:1.5px solid #000; padding:2px 7px; font-size:10px; font-weight:900;">⏳ Unread</span>';
+      if (log.deliveryStatus === 'failed') {
+        statusBadge = '<span style="background:#fee2e2; color:#991b1b; border:1.5px solid #000; padding:2px 7px; font-size:10px; font-weight:900;">❌ Failed</span>';
+      } else if (log.readInApp) {
+        const readTime = log.readInAppAt ? new Date(log.readInAppAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+        statusBadge = `<span style="background:#dcfce7; color:#166534; border:1.5px solid #000; padding:2px 7px; font-size:10px; font-weight:900;">📱 Read in App ${readTime ? `(${readTime})` : ''}</span>`;
+      }
+
+      const previewText = (log.bodyText || '').trim().slice(0, 140) + ((log.bodyText || '').length > 140 ? '...' : '');
+
+      return `
+        <div style="border: 2px solid #000; padding: 12px 14px; background: #fff; box-shadow: 2px 2px 0 #000;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              ${typeBadge}
+              ${modeBadge}
+              ${statusBadge}
+            </div>
+            <span style="font-size:11px; font-weight:700; color:#666;">${dateStr}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:180px;">
+              <div style="font-size:14px; font-weight:900; color:#000; margin-bottom:4px;">${escapeHtmlSafe(log.subject)}</div>
+              <div style="font-size:12px; color:#555; line-height:1.45; white-space:pre-wrap;">${escapeHtmlSafe(previewText)}</div>
+            </div>
+            <button class="btn-control" style="background: var(--blue); color: #fff; flex-shrink:0;" onclick="previewUserLogMessage(${idx})">👁 View Message</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (pagEl) {
+      if (data.totalPages > 1) {
+        pagEl.style.display = 'flex';
+        pagEl.innerHTML = `
+          <button class="btn-control" ${data.page <= 1 ? 'disabled' : ''} onclick="loadAdminUserEmailLogs('${userId}', ${data.page - 1})">← Prev</button>
+          <span style="font-weight: 800; font-size: 12px;">Page ${data.page} of ${data.totalPages} (${data.total})</span>
+          <button class="btn-control" ${data.page >= data.totalPages ? 'disabled' : ''} onclick="loadAdminUserEmailLogs('${userId}', ${data.page + 1})">Next →</button>
+        `;
+      } else {
+        pagEl.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    if (listEl) listEl.innerHTML = `<p style="color:#ef4444; font-weight:800;">Error: ${err.message}</p>`;
+  }
+}
+
+function escapeHtmlSafe(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+window.switchBulkEmailSubtab = switchBulkEmailSubtab;
+window.loadBulkEmailLogs = loadBulkEmailLogs;
+window.previewBulkLogMessage = previewBulkLogMessage;
+window.openBulkBatchModal = openBulkBatchModal;
+window.openBulkBatchModalByIndex = openBulkBatchModalByIndex;
+window.closeBulkBatchModal = closeBulkBatchModal;
+window.setBulkBatchFilter = setBulkBatchFilter;
+window.loadBulkBatchDetails = loadBulkBatchDetails;
+window.switchUserEmailSubtab = switchUserEmailSubtab;
+window.loadAdminUserEmailLogs = loadAdminUserEmailLogs;
+window.previewUserLogMessage = previewUserLogMessage;
+window.handleEmailPasteClean = handleEmailPasteClean;
 
 // ── Motivation Quote Management ──────────────────────────────
 let allAdminMotivationQuotes = [];

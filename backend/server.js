@@ -254,6 +254,7 @@ const motivationController = require('./controllers/motivationController');
 app.get('/api/motivation/quotes', motivationController.getPublicQuotes);
 app.use('/api/integrations',  integrationRoutes);
 app.use('/api/devhub',        require('./routes/devHubRoutes'));
+app.use('/api/notifications', authenticateToken, readOnlyLimiter, require('./routes/notificationRoutes'));
 
 // ── Generic server-side HTTP proxy helper with SSRF Protection ─────────────
 const ALLOWED_PROXY_DOMAINS = ['dev.to', 'medium.com'];

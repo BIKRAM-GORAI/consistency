@@ -30,6 +30,10 @@ async function openProfileModal() {
   const pwdIcon = document.getElementById('toggle-pwd-icon');
   if (pwdIcon) pwdIcon.textContent = '▼';
 
+  if (typeof checkPersonalNotifications === 'function') {
+    checkPersonalNotifications();
+  }
+
   // Initialize temporary state for app limits and theme select dropdown
   window.tempAppLimits = JSON.parse(JSON.stringify(window.currentAppLimits || { enabled: false, apps: [] }));
   const themeSelect = document.getElementById('theme-select');
@@ -216,6 +220,9 @@ function renderProfileData(user) {
 
   if (typeof checkChangelogNotifications === 'function') {
     checkChangelogNotifications(user);
+  }
+  if (typeof checkPersonalNotifications === 'function') {
+    checkPersonalNotifications();
   }
   
   if (user.profilePicture) {
@@ -2794,6 +2801,224 @@ window.loadProfileLimitsInline = loadProfileLimitsInline;
 
 window.checkChangelogNotifications = checkChangelogNotifications;
 window.openChangelogModal = openChangelogModal;
+
+// ── Personal Admin Notifications (Silent Read Tracking) ────────
+let _personalNotifPage = 1;
+let _personalNotifTotalPages = 1;
+let _personalNotifCache = [];
+let _personalNotifUnreadCount = 0;
+
+function updatePersonalNotifIndicators(unreadCount) {
+  _personalNotifUnreadCount = unreadCount || 0;
+  const hasUnread = _personalNotifUnreadCount > 0;
+
+  const navChip = document.getElementById('nav-user-chip');
+  const avatarDot = document.getElementById('profile-notif-dot');
+  const btn = document.getElementById('btn-personal-notifications');
+  const btnDot = document.getElementById('notif-btn-red-dot');
+  const pill = document.getElementById('notif-unread-pill');
+
+  if (navChip) navChip.classList.toggle('has-unread-notif', hasUnread);
+  if (avatarDot) avatarDot.style.display = hasUnread ? 'block' : 'none';
+  if (btn) btn.classList.toggle('has-unread-notif', hasUnread);
+  if (btnDot) btnDot.style.display = hasUnread ? 'block' : 'none';
+  if (pill) {
+    pill.style.display = hasUnread ? 'inline-flex' : 'none';
+    pill.textContent = _personalNotifUnreadCount > 99 ? '99+' : String(_personalNotifUnreadCount);
+  }
+}
+
+async function checkPersonalNotifications(page = 1) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const apiBase = window.API || '';
+    let data;
+    if (typeof window.apiFetch === 'function') {
+      data = await window.apiFetch(`${apiBase}/api/notifications?page=${page}&limit=15`);
+    } else {
+      const res = await fetch(`${apiBase}/api/notifications?page=${page}&limit=15`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      data = await res.json();
+    }
+    if (!data) return;
+    _personalNotifCache = data.notifications || [];
+    _personalNotifPage = data.page || 1;
+    _personalNotifTotalPages = data.totalPages || 1;
+    updatePersonalNotifIndicators(data.unreadCount || 0);
+    return data;
+  } catch (err) {
+    // Silent fail on network/offline
+  }
+}
+
+function markPersonalNotificationsReadSilently(ids) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const apiBase = window.API || '';
+    const payload = JSON.stringify(ids && ids.length ? { notificationIds: ids } : {});
+    if (typeof window.apiFetch === 'function') {
+      window.apiFetch(`${apiBase}/api/notifications/mark-read`, {
+        method: 'POST',
+        body: payload,
+        keepalive: true
+      }).catch(() => {});
+    } else {
+      fetch(`${apiBase}/api/notifications/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: payload,
+        keepalive: true
+      }).catch(() => {});
+    }
+  } catch (e) {
+    // Silent background tracking
+  }
+}
+
+function renderPersonalNotifications(list, page, totalPages) {
+  const container = document.getElementById('personal-notifications-body');
+  const pagEl = document.getElementById('personal-notifications-pagination');
+  if (!container) return;
+
+  if (!list || list.length === 0) {
+    container.innerHTML = '<p style="text-align:center; padding:28px 16px; font-weight:800; color:var(--text-muted);">No notifications yet.</p>';
+    if (pagEl) pagEl.style.display = 'none';
+    return;
+  }
+
+  container.innerHTML = '';
+  list.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = `personal-notif-card${item.readInApp ? '' : ' unread'}`;
+    card.onclick = () => openNotificationReader(idx);
+
+    const dateStr = new Date(item.createdAt).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+
+    const snippet = (item.bodyText || '').replace(/\s+/g, ' ').trim();
+
+    card.innerHTML = `
+      <div class="personal-notif-meta">
+        <div>${!item.readInApp ? '<span class="personal-notif-badge new-tag">NEW</span>' : '<span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Read</span>'}</div>
+        <span style="font-size:11px; font-weight:700; color:var(--text-muted); flex-shrink:0;">${dateStr}</span>
+      </div>
+      <div style="font-size:15.5px; font-weight:900; color:var(--text); line-height:1.35; word-break:break-word;">${window.escapeHTML(item.subject || '(No Subject)')}</div>
+      <div class="personal-notif-snippet">${window.escapeHTML(snippet || 'Tap to view full message')}</div>
+      <div style="display:flex; justify-content:flex-end; margin-top:4px;">
+        <span class="notif-view-more">View More →</span>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  if (pagEl) {
+    if (totalPages > 1) {
+      pagEl.style.display = 'flex';
+      pagEl.innerHTML = `
+        <button class="btn-ghost ripple" style="padding:6px 12px; font-size:12px;" ${page <= 1 ? 'disabled' : ''} onclick="loadPersonalNotificationsPage(${page - 1})">← Prev</button>
+        <span style="font-size:12px; font-weight:800; color:var(--text-muted);">Page ${page} of ${totalPages}</span>
+        <button class="btn-ghost ripple" style="padding:6px 12px; font-size:12px;" ${page >= totalPages ? 'disabled' : ''} onclick="loadPersonalNotificationsPage(${page + 1})">Next →</button>
+      `;
+    } else {
+      pagEl.style.display = 'none';
+    }
+  }
+}
+
+function openNotificationReader(idx) {
+  const item = _personalNotifCache[idx];
+  if (!item) return;
+
+  const subjectEl = document.getElementById('notif-reader-subject');
+  const dateEl = document.getElementById('notif-reader-date');
+  const bodyEl = document.getElementById('notif-reader-body');
+
+  const dateStr = new Date(item.createdAt).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+
+  if (subjectEl) subjectEl.textContent = item.subject || '(No Subject)';
+  if (dateEl) dateEl.textContent = dateStr;
+
+  if (bodyEl) {
+    bodyEl.innerHTML = '';
+    if (item.mode === 'html' && item.bodyHtml) {
+      const iframe = document.createElement('iframe');
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.flex = '1';
+      iframe.style.border = 'none';
+      iframe.style.background = '#ffffff';
+      iframe.sandbox = '';
+      iframe.srcdoc = item.bodyHtml;
+      bodyEl.appendChild(iframe);
+    } else {
+      const pre = document.createElement('div');
+      pre.style.padding = '22px';
+      pre.style.fontSize = '14.5px';
+      pre.style.lineHeight = '1.65';
+      pre.style.color = '#111827';
+      pre.style.whiteSpace = 'pre-wrap';
+      pre.style.overflowY = 'auto';
+      pre.style.flex = '1';
+      pre.textContent = item.bodyText || '';
+      bodyEl.appendChild(pre);
+    }
+  }
+
+  openModal('modal-notification-reader');
+
+  // Silently mark this notification as read in the background
+  if (!item.readInApp) {
+    item.readInApp = true;
+    markPersonalNotificationsReadSilently([item._id]);
+    const newUnread = Math.max(0, _personalNotifUnreadCount - 1);
+    updatePersonalNotifIndicators(newUnread);
+    renderPersonalNotifications(_personalNotifCache, _personalNotifPage, _personalNotifTotalPages);
+  }
+}
+
+async function loadPersonalNotificationsPage(page = 1) {
+  const data = await checkPersonalNotifications(page);
+  if (data) {
+    renderPersonalNotifications(data.notifications, data.page, data.totalPages);
+  }
+}
+
+async function openPersonalNotificationsModal() {
+  openModal('modal-personal-notifications');
+
+  // Render cached notifications immediately so modal opens instantaneously
+  renderPersonalNotifications(_personalNotifCache, _personalNotifPage, _personalNotifTotalPages);
+
+  // Refresh page 1 silently to ensure latest messages are displayed
+  const data = await checkPersonalNotifications(1);
+  if (data) {
+    renderPersonalNotifications(data.notifications, data.page, data.totalPages);
+  }
+}
+
+window.checkPersonalNotifications = checkPersonalNotifications;
+window.openPersonalNotificationsModal = openPersonalNotificationsModal;
+window.loadPersonalNotificationsPage = loadPersonalNotificationsPage;
+window.openNotificationReader = openNotificationReader;
 
 function renderProfileActions(u, status) {
   const container = document.getElementById('qp-actions-container');

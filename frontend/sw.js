@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v133'; // Bumped for Cloudinary photo cleanup on day deletion
+const CACHE_NAME = 'consistency-cache-v143'; // Bumped for iframe sandbox security hardening
 const STATIC_ASSETS = [
   '/',
   'index.html',
