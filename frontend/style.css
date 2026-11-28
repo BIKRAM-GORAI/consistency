@@ -8128,6 +8128,195 @@ html #modal-notification-reader .modal-header .btn-ghost {
   html #modal-notification-reader.modal-overlay .modal.notif-reader-modal::before {
     display: none !important;
   }
+
+  #desktop-notif-popup {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   DESKTOP UNREAD NOTIFICATION POPUP (Unique per Theme)
+   ============================================================ */
+.desktop-notif-popup {
+  position: fixed;
+  top: 76px;
+  right: 20px;
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 270px;
+  max-width: 340px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #0a0a0a;
+  border: 3px solid #0a0a0a;
+  box-shadow: 5px 5px 0 #0a0a0a;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px) scale(0.97);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desktop-notif-popup.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.desktop-notif-popup:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.desktop-notif-popup-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #111111;
+  border: 2px solid #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.desktop-notif-popup-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: #111111;
+}
+
+.desktop-notif-popup-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.desktop-notif-popup-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.desktop-notif-popup-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0.78;
+  margin-top: 2px;
+}
+
+.desktop-notif-popup-close {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.desktop-notif-popup-close:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* Dark Brutalist */
+[data-theme="dark"] .desktop-notif-popup {
+  background: #18181b;
+  color: #f9fafb;
+  border: 2.5px solid #fbbf24;
+  box-shadow: 5px 5px 0 #fbbf24;
+}
+
+[data-theme="dark"] .desktop-notif-popup-icon {
+  background: #fbbf24;
+  color: #111111;
+  border-color: #111111;
+}
+
+[data-theme="dark"] .desktop-notif-popup-close {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Claymorphism */
+[data-theme="claymorphism"] .desktop-notif-popup {
+  background: #e8f7ef;
+  color: #143625;
+  border: none;
+  border-radius: 22px;
+  box-shadow:
+    0 12px 28px rgba(20, 60, 40, 0.18),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.72),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="claymorphism"] .desktop-notif-popup-icon {
+  background: #27a55a;
+  color: #ffffff;
+  border: none;
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.35),
+    0 4px 10px rgba(39, 165, 90, 0.28);
+}
+
+[data-theme="claymorphism"] .desktop-notif-popup-icon svg {
+  stroke: #ffffff;
+}
+
+/* Aurora Glass */
+[data-theme="premium-aurora"] .desktop-notif-popup {
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  color: #1e1b2e;
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  border-radius: 18px;
+  box-shadow:
+    0 16px 38px rgba(109, 40, 217, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="premium-aurora"] .desktop-notif-popup-icon {
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+[data-theme="premium-aurora"] .desktop-notif-popup-icon svg {
+  stroke: #ffffff;
+}
+
+/* Minimalistic */
+[data-theme="minimalistic"] .desktop-notif-popup {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.09);
+}
+
+[data-theme="minimalistic"] .desktop-notif-popup-icon {
+  background: linear-gradient(135deg, #475569 0%, #5b6b82 100%);
+  color: #ffffff;
+  border: none;
+}
+
+[data-theme="minimalistic"] .desktop-notif-popup-icon svg {
+  stroke: #ffffff;
 }
 
 .changelog-btn-red-dot {

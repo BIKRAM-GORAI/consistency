@@ -314,9 +314,14 @@
 }
 
 [data-theme="minimalistic"] #btn-personal-notifications,
-[data-theme="minimalistic"] #btn-personal-notifications * {
+[data-theme="minimalistic"] #btn-personal-notifications *:not(#notif-unread-pill) {
   color: #111111 !important;
   stroke: #111111 !important;
+}
+
+[data-theme="minimalistic"] #btn-personal-notifications #notif-unread-pill {
+  background: #111111 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="minimalistic"] #btn-personal-notifications {

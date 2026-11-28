@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 });
 
-const CACHE_NAME = 'consistency-cache-v145'; // Bumped for instant Canvas return without splash/greeting reload
+const CACHE_NAME = 'consistency-cache-v149'; // Bumped for async Activity Graph & strict private profile fix
 const STATIC_ASSETS = [
   '/',
   'index.html',

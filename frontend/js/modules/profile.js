@@ -997,15 +997,27 @@ async function cacheProfileImagesOffline(profile) {
  * Opens the high-fidelity Quick View modal for a user.
  * This is the standard "In-App" profile view.
  */
+let _activeQuickViewUsername = null;
+let _quickViewAbortController = null;
+const _publicProfileCache = new Map();
+const PUBLIC_PROFILE_CACHE_TTL_MS = 60 * 1000;
+
 async function openQuickView(username) {
   if (!username) {
     showToast('Username not set for this user.', 'warn');
     return;
   }
 
+  const normalizedTarget = String(username).toLowerCase().trim();
   const myUsername = localStorage.getItem('userUsername');
   const myId = window.userId;
   const isMe = (username === myUsername);
+
+  // Guard against rapid duplicate clicks on the same profile while loading
+  if (_activeQuickViewUsername === normalizedTarget) {
+    openModal('modal-public-profile');
+    return;
+  }
 
   // 1. OFFLINE HANDLING
   if (!navigator.onLine) {
@@ -1118,10 +1130,47 @@ async function openQuickView(username) {
     }
   }
 
-  // 2. ONLINE HANDLING (Original logic)
+  // 2. ONLINE HANDLING — Open modal immediately with skeleton & in-flight lock
+  if (_quickViewAbortController) {
+    _quickViewAbortController.abort();
+  }
+  _quickViewAbortController = new AbortController();
+  _activeQuickViewUsername = normalizedTarget;
+
+  // Immediately show modal in skeleton/loading state so user doesn't multi-click
+  const qpNamePre = document.getElementById('qp-name');
+  const qpUsernamePre = document.getElementById('qp-username');
+  const qpCurrPre = document.getElementById('qp-current-streak');
+  const qpHighPre = document.getElementById('qp-highest-streak');
+  const qpActPre = document.getElementById('qp-activity-list');
+  const qpActionsPre = document.getElementById('qp-actions-container');
+  if (qpNamePre) qpNamePre.textContent = 'Loading profile...';
+  if (qpUsernamePre) qpUsernamePre.textContent = `@${username}`;
+  if (qpCurrPre) qpCurrPre.textContent = '—';
+  if (qpHighPre) qpHighPre.textContent = '—';
+  if (qpActPre) qpActPre.innerHTML = '<div style="text-align:center; padding:24px; color:var(--text-muted); font-weight:700;">Loading activity...</div>';
+  if (qpActionsPre) {
+    qpActionsPre.style.display = isMe ? 'none' : 'flex';
+    qpActionsPre.innerHTML = isMe ? '' : '<div class="loading-spinner-small" style="margin:0 auto; width:20px; height:20px; border:3px solid var(--black); border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div>';
+  }
+  openModal('modal-public-profile');
+
   try {
-    const u = await apiFetch(`${window.API}/api/users/${encodeURIComponent(username)}`);
+    const cachedEntry = _publicProfileCache.get(normalizedTarget);
+    let u;
+    if (cachedEntry && (Date.now() - cachedEntry.ts) < PUBLIC_PROFILE_CACHE_TTL_MS) {
+      u = cachedEntry.data;
+    } else {
+      u = await apiFetch(`${window.API}/api/users/${encodeURIComponent(username)}`, {
+        signal: _quickViewAbortController.signal
+      });
+      if (u && u.username) {
+        _publicProfileCache.set(normalizedTarget, { data: u, ts: Date.now() });
+      }
+    }
+
     if (!u || !u.username) {
+      closeModal('modal-public-profile');
       showToast('Profile not found or private.', 'error');
       return;
     }
@@ -1244,8 +1293,29 @@ async function openQuickView(username) {
       }
     }
 
-    // 3. Graph
-    renderContributionGraph(u.contributionData, 'qp-graph-container', u.isPremium);
+    // 3. Graph — load asynchronously in the background so profile identity/streaks/badges show immediately
+    const graphContainer = document.getElementById('qp-graph-container');
+    if (Array.isArray(u.contributionData)) {
+      renderContributionGraph(u.contributionData, 'qp-graph-container', u.isPremium);
+    } else if (graphContainer) {
+      graphContainer.innerHTML = '<div style="padding: 28px 16px; text-align: center; color: var(--text-muted); font-weight: 700; font-size: 13px;">Loading activity graph...</div>';
+      const targetUsername = u.username;
+      apiFetch(`${window.API}/api/users/${encodeURIComponent(targetUsername)}/graph`, {
+        signal: _quickViewAbortController.signal
+      })
+        .then(graphRes => {
+          if (window._currentMemberUsername !== targetUsername) return;
+          const data = (graphRes && graphRes.contributionData) || [];
+          u.contributionData = data;
+          renderContributionGraph(data, 'qp-graph-container', u.isPremium);
+        })
+        .catch(err => {
+          if (err.name === 'AbortError') return;
+          if (graphContainer && window._currentMemberUsername === targetUsername) {
+            graphContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 12px;">Unable to load activity graph.</div>';
+          }
+        });
+    }
 
     // 4. Feed (Mixed Days & Achievements)
     const activityList = document.getElementById('qp-activity-list');
@@ -1325,8 +1395,13 @@ async function openQuickView(username) {
     }
 
   } catch (err) {
+    if (err.name === 'AbortError') return;
     console.error('Quick view error:', err);
     showToast('Failed to load profile summary.', 'error');
+  } finally {
+    if (_activeQuickViewUsername === normalizedTarget) {
+      _activeQuickViewUsername = null;
+    }
   }
 }
 
@@ -2807,8 +2882,78 @@ let _personalNotifPage = 1;
 let _personalNotifTotalPages = 1;
 let _personalNotifCache = [];
 let _personalNotifUnreadCount = 0;
+let _notifPopupShownThisLoad = false;
+let _notifPopupTimer = null;
+
+function dismissDesktopNotifPopup(event) {
+  if (event) event.stopPropagation();
+  if (_notifPopupTimer) {
+    clearTimeout(_notifPopupTimer);
+    _notifPopupTimer = null;
+  }
+  const popup = document.getElementById('desktop-notif-popup');
+  if (popup) popup.classList.remove('show');
+}
+
+function handleDesktopNotifPopupClick() {
+  dismissDesktopNotifPopup();
+  openPersonalNotificationsModal();
+}
+
+function triggerDesktopNotifPopup(unreadCount) {
+  if (window.innerWidth <= 768 || !unreadCount || unreadCount <= 0) return;
+
+  const popup = document.getElementById('desktop-notif-popup');
+  if (!popup) return;
+
+  let attempts = 0;
+  const waitUntilReady = () => {
+    attempts++;
+    const splash = document.getElementById('web-splash');
+    const greeting = document.getElementById('greeting-mist-overlay');
+    const splashVisible = splash && splash.style.display !== 'none' && !splash.classList.contains('hide');
+    const greetingVisible = greeting && greeting.style.display !== 'none';
+
+    if ((splashVisible || greetingVisible) && attempts < 40) {
+      setTimeout(waitUntilReady, 250);
+      return;
+    }
+
+    if (window.innerWidth <= 768 || _personalNotifUnreadCount <= 0) return;
+
+    const titleEl = document.getElementById('desktop-notif-popup-title');
+    if (titleEl) {
+      const c = _personalNotifUnreadCount;
+      titleEl.textContent = `${c} New Notification${c === 1 ? '' : 's'}`;
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    popup.classList.add('show');
+
+    if (_notifPopupTimer) clearTimeout(_notifPopupTimer);
+    _notifPopupTimer = setTimeout(() => dismissDesktopNotifPopup(), 4000);
+
+    if (!popup.dataset.hoverBound) {
+      popup.dataset.hoverBound = '1';
+      popup.addEventListener('mouseenter', () => {
+        if (_notifPopupTimer) {
+          clearTimeout(_notifPopupTimer);
+          _notifPopupTimer = null;
+        }
+      });
+      popup.addEventListener('mouseleave', () => {
+        if (popup.classList.contains('show')) {
+          _notifPopupTimer = setTimeout(() => dismissDesktopNotifPopup(), 2500);
+        }
+      });
+    }
+  };
+
+  waitUntilReady();
+}
 
 function updatePersonalNotifIndicators(unreadCount) {
+  const prevUnread = _personalNotifUnreadCount;
   _personalNotifUnreadCount = unreadCount || 0;
   const hasUnread = _personalNotifUnreadCount > 0;
 
@@ -2825,6 +2970,13 @@ function updatePersonalNotifIndicators(unreadCount) {
   if (pill) {
     pill.style.display = hasUnread ? 'inline-flex' : 'none';
     pill.textContent = _personalNotifUnreadCount > 99 ? '99+' : String(_personalNotifUnreadCount);
+  }
+
+  if (hasUnread && (!_notifPopupShownThisLoad || _personalNotifUnreadCount > prevUnread)) {
+    _notifPopupShownThisLoad = true;
+    triggerDesktopNotifPopup(_personalNotifUnreadCount);
+  } else if (!hasUnread) {
+    dismissDesktopNotifPopup();
   }
 }
 
@@ -3019,6 +3171,8 @@ window.checkPersonalNotifications = checkPersonalNotifications;
 window.openPersonalNotificationsModal = openPersonalNotificationsModal;
 window.loadPersonalNotificationsPage = loadPersonalNotificationsPage;
 window.openNotificationReader = openNotificationReader;
+window.handleDesktopNotifPopupClick = handleDesktopNotifPopupClick;
+window.dismissDesktopNotifPopup = dismissDesktopNotifPopup;
 
 function renderProfileActions(u, status) {
   const container = document.getElementById('qp-actions-container');

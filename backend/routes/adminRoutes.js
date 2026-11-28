@@ -49,6 +49,10 @@ router.delete('/reviews/:id', authenticateAdmin, adminController.deleteReview);
 // Protected Admin User Routes
 router.get('/users', authenticateAdmin, adminController.getAdminUsers);
 router.get('/users/:id', authenticateAdmin, adminController.getAdminUserDetails);
+router.get('/users/:id/days', authenticateAdmin, adminController.getAdminUserDays);
+router.get('/users/:id/goals', authenticateAdmin, adminController.getAdminUserGoals);
+router.get('/users/:id/achievements', authenticateAdmin, adminController.getAdminUserAchievements);
+router.get('/users/:id/groups', authenticateAdmin, adminController.getAdminUserGroups);
 router.patch('/users/:id', authenticateAdmin, adminController.updateAdminUser);
 router.patch('/users/:id/profile-picture', authenticateAdmin, adminController.updateAdminUserProfilePicture);
 router.post('/users/:id/preview-link', authenticateAdmin, adminController.generateAdminPreviewLink);

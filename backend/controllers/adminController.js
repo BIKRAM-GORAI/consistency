@@ -355,53 +355,104 @@ async function getAdminUsers(req, res) {
 
 /**
  * GET /api/admin/users/:id
+ * Lightweight user summary for instant Manage User modal opening.
+ * Heavy collections (days, goals, achievements, groups) are lazy-loaded per tab.
  */
 async function getAdminUserDetails(req, res) {
   try {
-    const user = await User.findById(req.params.id)
-      .populate('claimedBadges')
-      .populate('referredBy', 'name username email');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    
-    const days = await Day.find({ userId: user._id }).sort({ date: -1 });
-    const goals = await Goal.find({ userId: user._id }).sort({ createdAt: -1 });
-    const achievements = await Achievement.find({ userId: user._id }).sort({ date: -1 });
-    const groups = await Group.find({ members: user._id })
-      .populate('owner', 'name profilePicture username')
-      .populate('members', 'name profilePicture username');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
 
-    // Calculate effective last active time across all user activity streams
+    const userId = req.params.id;
+    const [user, latestDay, latestGoal, latestAch] = await Promise.all([
+      User.findById(userId)
+        .populate('claimedBadges')
+        .populate('referredBy', 'name username email')
+        .lean(),
+      Day.findOne({ userId }).sort({ updatedAt: -1, date: -1 }).select('updatedAt createdAt date').lean(),
+      Goal.findOne({ userId }).sort({ updatedAt: -1, createdAt: -1 }).select('updatedAt createdAt').lean(),
+      Achievement.findOne({ userId }).sort({ createdAt: -1, date: -1 }).select('createdAt date').lean(),
+    ]);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     const candidateTimestamps = [];
     if (user.lastActiveAt) candidateTimestamps.push(new Date(user.lastActiveAt).getTime());
     if (user.updatedAt) candidateTimestamps.push(new Date(user.updatedAt).getTime());
     if (user.createdAt) candidateTimestamps.push(new Date(user.createdAt).getTime());
-    if (days && days.length > 0) {
-      if (days[0].updatedAt) candidateTimestamps.push(new Date(days[0].updatedAt).getTime());
-      if (days[0].createdAt) candidateTimestamps.push(new Date(days[0].createdAt).getTime());
-      if (days[0].date) candidateTimestamps.push(new Date(days[0].date).getTime());
+    if (latestDay) {
+      if (latestDay.updatedAt) candidateTimestamps.push(new Date(latestDay.updatedAt).getTime());
+      if (latestDay.createdAt) candidateTimestamps.push(new Date(latestDay.createdAt).getTime());
+      if (latestDay.date) candidateTimestamps.push(new Date(latestDay.date).getTime());
     }
-    if (goals && goals.length > 0) {
-      if (goals[0].updatedAt) candidateTimestamps.push(new Date(goals[0].updatedAt).getTime());
-      if (goals[0].createdAt) candidateTimestamps.push(new Date(goals[0].createdAt).getTime());
+    if (latestGoal) {
+      if (latestGoal.updatedAt) candidateTimestamps.push(new Date(latestGoal.updatedAt).getTime());
+      if (latestGoal.createdAt) candidateTimestamps.push(new Date(latestGoal.createdAt).getTime());
     }
-    if (achievements && achievements.length > 0) {
-      if (achievements[0].createdAt) candidateTimestamps.push(new Date(achievements[0].createdAt).getTime());
-      if (achievements[0].date) candidateTimestamps.push(new Date(achievements[0].date).getTime());
+    if (latestAch) {
+      if (latestAch.createdAt) candidateTimestamps.push(new Date(latestAch.createdAt).getTime());
+      if (latestAch.date) candidateTimestamps.push(new Date(latestAch.date).getTime());
     }
 
     const maxTimestamp = candidateTimestamps.length > 0 ? Math.max(...candidateTimestamps.filter(t => !isNaN(t))) : null;
-    const effectiveLastActiveAt = maxTimestamp ? new Date(maxTimestamp) : (user.lastActiveAt || user.createdAt);
-
-    const userObj = user.toObject();
-    userObj.effectiveLastActiveAt = effectiveLastActiveAt;
+    user.effectiveLastActiveAt = maxTimestamp ? new Date(maxTimestamp) : (user.lastActiveAt || user.createdAt);
 
     res.json({
-      user: userObj,
-      days,
-      goals,
-      achievements,
-      groups
+      user,
+      lazy: true
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function getAdminUserDays(req, res) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    const days = await Day.find({ userId: req.params.id }).sort({ date: -1 }).lean();
+    res.json({ days });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function getAdminUserGoals(req, res) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    const goals = await Goal.find({ userId: req.params.id }).sort({ createdAt: -1 }).lean();
+    res.json({ goals });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function getAdminUserAchievements(req, res) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    const achievements = await Achievement.find({ userId: req.params.id }).sort({ date: -1 }).lean();
+    res.json({ achievements });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+async function getAdminUserGroups(req, res) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    const groups = await Group.find({ members: req.params.id })
+      .populate('owner', 'name profilePicture username')
+      .populate('members', 'name profilePicture username')
+      .lean();
+    res.json({ groups });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -1196,6 +1247,10 @@ module.exports = {
   deleteReview,
   getAdminUsers,
   getAdminUserDetails,
+  getAdminUserDays,
+  getAdminUserGoals,
+  getAdminUserAchievements,
+  getAdminUserGroups,
   toggleUserBlacklist,
   updateAdminUser,
   deleteUser,

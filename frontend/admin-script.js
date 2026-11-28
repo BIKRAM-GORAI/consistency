@@ -644,19 +644,41 @@ function renderUsers(users, page = 1, limit = 10) {
   });
 }
 
+let _activeAdminUserModalId = null;
+
 async function openUserModal(userId) {
+  if (_activeAdminUserModalId === userId) return;
+  _activeAdminUserModalId = userId;
   try {
     const res = await fetch(`${API}/api/admin/users/${userId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      currentUserDetail = await res.json();
+      const data = await res.json();
+      currentUserDetail = {
+        user: data.user,
+        days: data.days || [],
+        goals: data.goals || [],
+        achievements: data.achievements || [],
+        groups: data.groups || [],
+        _loaded: {
+          days: Array.isArray(data.days),
+          goals: Array.isArray(data.goals),
+          ach: Array.isArray(data.achievements),
+          groups: Array.isArray(data.groups),
+        },
+        _loading: {}
+      };
       document.getElementById('user-detail-title').textContent = `Manage: ${currentUserDetail.user.name}`;
       document.getElementById('user-detail-modal').classList.add('open');
       showUserTab('info');
     }
   } catch (err) {
     console.error('Error fetching user detail:', err);
+  } finally {
+    if (_activeAdminUserModalId === userId) {
+      _activeAdminUserModalId = null;
+    }
   }
 }
 
@@ -771,6 +793,49 @@ function generateHeatmapHtml(days) {
   `;
 }
 
+async function lazyLoadAdminUserTab(tab) {
+  if (!currentUserDetail || !currentUserDetail.user) return;
+  const userId = currentUserDetail.user._id;
+  if (!currentUserDetail._loaded) currentUserDetail._loaded = {};
+  if (!currentUserDetail._loading) currentUserDetail._loading = {};
+  if (currentUserDetail._loaded[tab] || currentUserDetail._loading[tab]) return;
+
+  const endpointMap = {
+    days: 'days',
+    ach: 'achievements',
+    goals: 'goals',
+    groups: 'groups'
+  };
+  const endpoint = endpointMap[tab];
+  if (!endpoint) return;
+
+  currentUserDetail._loading[tab] = true;
+  try {
+    const res = await fetch(`${API}/api/admin/users/${userId}/${endpoint}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (currentUserDetail.user._id !== userId) return;
+      if (tab === 'days') currentUserDetail.days = data.days || [];
+      if (tab === 'ach') currentUserDetail.achievements = data.achievements || [];
+      if (tab === 'goals') currentUserDetail.goals = data.goals || [];
+      if (tab === 'groups') currentUserDetail.groups = data.groups || [];
+      currentUserDetail._loaded[tab] = true;
+      const activeBtn = document.querySelector('#user-detail-modal .nav-link.active');
+      if (activeBtn && activeBtn.id === `tab-${tab}`) {
+        showUserTab(tab);
+      }
+    }
+  } catch (err) {
+    console.error(`Error lazy loading ${tab}:`, err);
+  } finally {
+    if (currentUserDetail && currentUserDetail._loading) {
+      currentUserDetail._loading[tab] = false;
+    }
+  }
+}
+
 function showUserTab(tab) {
   const container = document.getElementById('user-modal-content');
   document.querySelectorAll('#user-detail-modal .nav-link').forEach(btn => {
@@ -779,6 +844,12 @@ function showUserTab(tab) {
 
   if (!currentUserDetail) return;
   const { user, days, achievements, goals, groups } = currentUserDetail;
+
+  if (['days', 'ach', 'goals', 'groups'].includes(tab) && currentUserDetail._loaded && !currentUserDetail._loaded[tab]) {
+    container.innerHTML = '<div style="padding: 36px 20px; text-align: center; font-weight: 800; color: #666;">Loading section data...</div>';
+    lazyLoadAdminUserTab(tab);
+    return;
+  }
 
   let html = '';
   switch (tab) {

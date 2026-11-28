@@ -343,8 +343,17 @@ function renderProfile(data) {
     };
   }
 
-  // Graph
-  renderContributionGraph(data.contributionData, data.isPremium);
+  // Graph (immediate if provided offline, otherwise background fetch)
+  if (Array.isArray(data.contributionData)) {
+    renderContributionGraph(data.contributionData, data.isPremium);
+  } else if (data.username) {
+    const codeParam = new URLSearchParams(window.location.search).get('code');
+    const graphUrl = `${API}/api/users/${encodeURIComponent(data.username)}/graph${codeParam ? `?code=${encodeURIComponent(codeParam)}` : ''}`;
+    fetch(graphUrl)
+      .then(r => r.ok ? r.json() : { contributionData: [] })
+      .then(g => renderContributionGraph(g.contributionData || [], data.isPremium))
+      .catch(() => renderContributionGraph([], data.isPremium));
+  }
 
   // Achievements
   if (data.achievements && data.achievements.length > 0) {

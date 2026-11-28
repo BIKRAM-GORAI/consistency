@@ -15,6 +15,7 @@ router.get('/leaderboard', authenticateTokenOptional, userController.getLeaderbo
 
 // Get public profile
 router.get('/:username', authenticateTokenOptional, userController.getPublicProfile);
+router.get('/:username/graph', authenticateTokenOptional, userController.getPublicProfileGraph);
 router.get('/:username/days', authenticateTokenOptional, userController.getPublicProfileDays);
 router.get('/:username/achievements', authenticateTokenOptional, userController.getPublicProfileAchievements);
 

@@ -6,6 +6,7 @@ const Group = require('../models/Group');
 const Badge = require('../models/Badge');
 const ProfileShare = require('../models/ProfileShare');
 const crypto = require('crypto');
+const usernameTrie = require('../utils/usernameTrie');
 
 
 // Helper to count completed tasks
@@ -21,43 +22,17 @@ function countTasks(categories) {
 
 /**
  * GET /api/users/search?q=...
- * Searches for users by username (prefix match).
- * Only returns users with isPublicProfile = true.
+ * Searches for users by username using an in-memory Prefix Tree (Trie)
+ * backed by an indexed lowercase query on cold start.
  */
 async function searchUsers(req, res) {
   try {
     const q = (req.query.q || '').trim();
     if (q.length < 1) return res.json([]);
 
-    // Escape regex special characters to prevent regex injection or syntax crashes
-    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp('^' + escapeRegex(q), 'i');
-
-    const users = await User.find({
-      $or: [
-        { username: regex },
-        { email: regex }
-      ],
-      isBlacklisted: { $ne: true }
-    })
-    .select('username name email profilePicture currentStreak highestStreak subscriptionTier subscriptionExpiresAt')
-    .limit(10);
-
-    const usersMapped = users.map(user => {
-      const isPremium = user.subscriptionTier === 'premium' && 
-        (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
-      const username = user.username || user.name || (user.email ? user.email.split('@')[0] : 'User');
-      return {
-        _id: user._id,
-        username,
-        profilePicture: user.profilePicture,
-        currentStreak: user.currentStreak,
-        highestStreak: user.highestStreak,
-        isPremium
-      };
-    });
-
-    res.json(usersMapped);
+    await usernameTrie.ensureLoaded(User);
+    const matches = usernameTrie.searchPrefix(q, 10);
+    res.json(matches);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -65,13 +40,15 @@ async function searchUsers(req, res) {
 
 /**
  * GET /api/users/:username
- * Returns the public profile of a user.
+ * Fast profile summary (identity, streaks, badges, groupCount).
+ * Activity graph is loaded asynchronously via GET /api/users/:username/graph.
+ * Strictly omits private achievements when showPrivateDetails === false.
  */
 async function getPublicProfile(req, res) {
   try {
     const username = req.params.username.toLowerCase();
-    
-    const user = await User.findOne({ username }).populate('claimedBadges');
+
+    const user = await User.findOne({ username }).populate('claimedBadges').lean();
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -80,45 +57,103 @@ async function getPublicProfile(req, res) {
     let showPrivateDetails = user.isPublicProfile !== false;
 
     if (!showPrivateDetails && code) {
-      // If a code is provided, it MUST be valid for this user
-      const validShare = await ProfileShare.findOne({ 
-        userId: user._id, 
+      const validShare = await ProfileShare.findOne({
+        userId: user._id,
         shareCode: code,
         expiresAt: { $gt: new Date() }
-      });
+      }).lean();
       if (validShare) {
         showPrivateDetails = true;
       }
     }
 
-    // Fetch only dates and task counts for the contribution graph (performance optimization)
-    const daysRaw = await Day.find({ userId: user._id }).select('date categories graceApplied').lean();
-    
-    // Recalculate streak fresh to correct any stale values in the DB (e.g. from parallel sync race conditions)
-    const clientDate = req.headers['x-client-date'];
-    const computedCurrent = calculateCurrentStreak(daysRaw, clientDate);
-    const computedHighest = calculateHighestStreak(daysRaw, clientDate);
+    // Strict privacy: never query or return achievements when profile is private
+    const canViewAchievements = showPrivateDetails && (user.achievementsPublic !== false || Boolean(code));
 
-    if (user.currentStreak !== computedCurrent || (user.highestStreak || 0) !== computedHighest) {
-      user.currentStreak = computedCurrent;
-      user.highestStreak = computedHighest;
-      await User.findByIdAndUpdate(user._id, {
-        currentStreak: computedCurrent,
-        highestStreak: computedHighest
-      });
+    const [rawAchs, groupCount] = await Promise.all([
+      canViewAchievements
+        ? Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10).lean()
+        : Promise.resolve([]),
+      Group.countDocuments({ members: user._id }),
+    ]);
+
+    const achievements = rawAchs.map(obj => {
+      if (obj.photos && obj.photos.length > 0) {
+        obj.photos = obj.photos.map(p => ({
+          ...p,
+          thumbnailUrl: (p.thumbnailUrl || p.url || '').replace(/\/upload\/c_fill,w_\d+,h_\d+[^/]*\//, '/upload/c_limit,w_800,q_auto,f_auto/')
+        }));
+      }
+      return obj;
+    });
+
+    const isPremium = user.subscriptionTier === 'premium' &&
+      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
+
+    res.json({
+      _id: user._id,
+      username: user.username,
+      name: user.name,
+      profilePicture: user.profilePicture,
+      currentStreak: user.currentStreak || 0,
+      highestStreak: user.highestStreak || 0,
+      groupCount: groupCount,
+      days: [],
+      achievements: achievements,
+      achievementsPublic: showPrivateDetails && user.achievementsPublic !== false,
+      claimedBadges: user.claimedBadges || [],
+      isPublicProfile: user.isPublicProfile !== false,
+      showPrivateDetails: showPrivateDetails,
+      productivityBio: user.productivityBio || '',
+      lastBioGeneratedAt: user.lastBioGeneratedAt || null,
+      subscriptionTier: user.subscriptionTier || 'free',
+      isPremium: isPremium
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+/**
+ * GET /api/users/:username/graph
+ * Asynchronous endpoint for the Activity Graph (contribution counts only).
+ * Visible on both public and private profiles without exposing task/goal text.
+ */
+async function getPublicProfileGraph(req, res) {
+  try {
+    const username = req.params.username.toLowerCase();
+    const { code } = req.query;
+
+    const user = await User.findOne({ username })
+      .select('_id isPublicProfile achievementsPublic')
+      .lean();
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    const canViewAchievements = user.achievementsPublic !== false || (code && showPrivateDetails);
+    let showPrivateDetails = user.isPublicProfile !== false;
+    if (!showPrivateDetails && code) {
+      const validShare = await ProfileShare.findOne({
+        userId: user._id,
+        shareCode: code,
+        expiresAt: { $gt: new Date() }
+      }).lean();
+      if (validShare) showPrivateDetails = true;
+    }
 
-    // Map contribution data (anonymized dates & completion counts for the activity graph)
+    const canViewAchievements = showPrivateDetails && (user.achievementsPublic !== false || Boolean(code));
+
+    const daysRaw = await Day.find({ userId: user._id })
+      .select('date categories.name categories.tasks.completed')
+      .lean();
+
     const contributionData = [];
     for (const day of daysRaw) {
       let completedCount = 0;
       if (day.categories) {
         for (const cat of day.categories) {
           if (cat.name && cat.name.startsWith('🎯 Goal:') && !canViewAchievements) {
-            continue; // Hide goal categories from public/group member views if achievements are private
+            continue;
           }
           if (cat.tasks) {
             for (const task of cat.tasks) {
@@ -130,49 +165,10 @@ async function getPublicProfile(req, res) {
       contributionData.push({ date: day.date, completedCount });
     }
 
-    // Fetch Achievements only if permitted by user's achievementsPublic privacy setting or owner
-    let achievements = [];
-    if (canViewAchievements) {
-      const rawAchs = await Achievement.find({ userId: user._id }).sort({ date: -1 }).limit(10);
-      achievements = rawAchs.map(a => {
-        const obj = a.toObject ? a.toObject() : { ...a };
-        if (obj.photos && obj.photos.length > 0) {
-          obj.photos = obj.photos.map(p => ({
-            ...p,
-            thumbnailUrl: (p.thumbnailUrl || p.url || '').replace(/\/upload\/c_fill,w_\d+,h_\d+[^/]*\//, '/upload/c_limit,w_800,q_auto,f_auto/')
-          }));
-        }
-        return obj;
-      });
-    }
-
-    const groupCount = await Group.countDocuments({ members: user._id });
-    
-    const isPremium = user.subscriptionTier === 'premium' && 
-      (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
-
     res.json({
-      _id: user._id,
-      username: user.username,
-      name: user.name,
-      profilePicture: user.profilePicture,
-      currentStreak: user.currentStreak,
-      highestStreak: user.highestStreak || 0,
-      groupCount: groupCount,
-      days: [], // Now empty, fetched on demand
-      contributionData: contributionData, // Full graph
-      achievements: achievements,
-      achievementsPublic: user.achievementsPublic !== false,
-      totalDays: daysRaw.length,
-      claimedBadges: user.claimedBadges || [],
-      isPublicProfile: user.isPublicProfile !== false,
-      showPrivateDetails: showPrivateDetails,
-      productivityBio: user.productivityBio || '',
-      lastBioGeneratedAt: user.lastBioGeneratedAt || null,
-      subscriptionTier: user.subscriptionTier || 'free',
-      isPremium: isPremium
+      contributionData,
+      totalDays: daysRaw.length
     });
-
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -185,18 +181,17 @@ async function getPublicProfileDays(req, res) {
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Privacy Check
-    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    let canView = user.isPublicProfile !== false || isOwner;
+    // Strict Privacy Check (no isOwner exception)
+    let canView = user.isPublicProfile !== false;
     let validShare = false;
     if (!canView && code) {
-      const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
+      const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } }).lean();
       if (shareDoc) { canView = true; validShare = true; }
     }
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
 
-    const canViewAchievements = user.achievementsPublic !== false || validShare || isOwner;
+    const canViewAchievements = user.achievementsPublic !== false || validShare;
 
     const page = parseInt(req.query.page) || 1;
     const limit = 7;
@@ -236,18 +231,17 @@ async function getPublicProfileAchievements(req, res) {
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Privacy Check
-    const isOwner = req.user && req.user.userId && req.user.userId.toString() === user._id.toString();
-    let canView = user.isPublicProfile !== false || isOwner;
+    // Strict Privacy Check (no isOwner exception)
+    let canView = user.isPublicProfile !== false;
     let validShare = false;
     if (!canView && code) {
-      const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } });
+      const shareDoc = await ProfileShare.findOne({ userId: user._id, shareCode: code, expiresAt: { $gt: new Date() } }).lean();
       if (shareDoc) { canView = true; validShare = true; }
     }
 
     if (!canView) return res.status(403).json({ message: 'This profile is private' });
 
-    if (user.achievementsPublic === false && !validShare && !isOwner) {
+    if (user.achievementsPublic === false && !validShare) {
       return res.status(403).json({ message: 'Achievements are private', achievementsPublic: false });
     }
 
@@ -310,56 +304,47 @@ async function getLeaderboard(req, res) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const clientDate = req.headers['x-client-date'];
 
-    // 1. Decay stale streaks of inactive users atomically in MongoDB
-    // CRITICAL: We strictly use authoritative server date, NEVER client-supplied headers,
-    // to prevent malicious or malformed client dates from wiping database-wide streaks.
+    // 1. Read-only leaderboard query (streaks are already maintained by dayController on task changes)
     const d = new Date();
     const serverToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-    // Calculate "yesterday" YYYY-MM-DD based solely on authoritative server time
     const [y, m, dayNum] = serverToday.split('-').map(Number);
     const prev = new Date(y, m - 1, dayNum - 1);
     const yesterday = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
 
-    await User.updateMany(
-      {
-        currentStreak: { $gt: 0 },
-        $or: [
-          { lastCompletedDate: { $lt: yesterday } },
-          { lastCompletedDate: null }
-        ]
-      },
-      { $set: { currentStreak: 0 } }
-    );
-
-    // 2. Fetch the perfectly sorted and fresh paginated list
     const query = {
       showOnLeaderboard: { $ne: false },
       username: { $exists: true, $ne: null },
       isBlacklisted: { $ne: true },
       isEmailVerified: true
     };
+    if (sortField === 'currentStreak') {
+      query.lastCompletedDate = { $gte: yesterday };
+    }
 
-    const usersRaw = await User.find(query)
-      .select('name username profilePicture currentStreak highestStreak lastActiveAt subscriptionTier subscriptionExpiresAt')
-      .sort({ [sortField]: -1, lastActiveAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const [usersRaw, realTotal, activeUser] = await Promise.all([
+      User.find(query)
+        .select('name username profilePicture currentStreak highestStreak lastActiveAt subscriptionTier subscriptionExpiresAt')
+        .sort({ [sortField]: -1, lastActiveAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(query),
+      (req.user && req.user.userId)
+        ? User.findById(req.user.userId).select('username isBlacklisted currentStreak highestStreak lastCompletedDate lastActiveAt').lean()
+        : Promise.resolve(null),
+    ]);
 
     const maxRankings = parseInt(process.env.MAX_RANKINGS_SHOWN) || 100;
-    const realTotal = await User.countDocuments(query);
     const cappedTotal = Math.min(realTotal, maxRankings);
-    
-    // Capping the users list if it exceeds maxRankings
+
     let usersList = usersRaw;
     if (skip + usersList.length > maxRankings) {
       usersList = usersList.slice(0, Math.max(0, maxRankings - skip));
     }
 
     const usersMapped = usersList.map(user => {
-      const isPremium = user.subscriptionTier === 'premium' && 
+      const isPremium = user.subscriptionTier === 'premium' &&
         (!user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) > new Date());
       return {
         _id: user._id,
@@ -373,53 +358,29 @@ async function getLeaderboard(req, res) {
       };
     });
 
-    // 3. Calculate active user's rank and fresh streaks if authenticated and they are on the leaderboard
+    // 2. Compute active user's rank using stored streak fields (no Day collection scan)
     let myRank = null;
     let myCurrentStreak = null;
     let myHighestStreak = null;
-    if (req.user && req.user.userId) {
-      const activeUser = await User.findById(req.user.userId);
-      if (activeUser && activeUser.username && !activeUser.isBlacklisted) {
-        // Recalculate active user's streak first to ensure their rank calculation is accurate!
-        const myDays = await Day.find({ userId: activeUser._id }).select('date categories graceApplied');
-        myCurrentStreak = calculateCurrentStreak(myDays, clientDate);
-        myHighestStreak = calculateHighestStreak(myDays, clientDate);
-        
-        const mostRecentCompletedDay = myDays
-          .filter(d => countTasks(d.categories) > 0)
-          .sort((a, b) => b.date.localeCompare(a.date))[0];
-        const lastCompletedDate = mostRecentCompletedDay ? mostRecentCompletedDay.date : null;
+    if (activeUser && activeUser.username && !activeUser.isBlacklisted) {
+      const isStreakFresh = activeUser.lastCompletedDate && activeUser.lastCompletedDate >= yesterday;
+      myCurrentStreak = isStreakFresh ? (activeUser.currentStreak || 0) : 0;
+      myHighestStreak = activeUser.highestStreak || 0;
 
-        if (activeUser.currentStreak !== myCurrentStreak || activeUser.highestStreak !== myHighestStreak || activeUser.lastCompletedDate !== lastCompletedDate) {
-          activeUser.currentStreak = myCurrentStreak;
-          activeUser.highestStreak = myHighestStreak;
-          activeUser.lastCompletedDate = lastCompletedDate;
-          await User.findByIdAndUpdate(activeUser._id, {
-            currentStreak: myCurrentStreak,
-            highestStreak: myHighestStreak,
-            lastCompletedDate
-          });
-        }
+      const scoreVal = sortField === 'currentStreak' ? myCurrentStreak : myHighestStreak;
+      const lastActive = activeUser.lastActiveAt || new Date(0);
 
-        const scoreVal = activeUser[sortField] || 0;
-        const lastActive = activeUser.lastActiveAt || new Date(0);
-        
-        // Count users ahead of the active user
-        const aheadCount = await User.countDocuments({
-          showOnLeaderboard: { $ne: false },
-          username: { $exists: true, $ne: null },
-          isBlacklisted: { $ne: true },
-          isEmailVerified: true,
-          $or: [
-            { [sortField]: { $gt: scoreVal } },
-            {
-              [sortField]: scoreVal,
-              lastActiveAt: { $gt: lastActive }
-            }
-          ]
-        });
-        myRank = aheadCount + 1;
-      }
+      const aheadCount = await User.countDocuments({
+        ...query,
+        $or: [
+          { [sortField]: { $gt: scoreVal } },
+          {
+            [sortField]: scoreVal,
+            lastActiveAt: { $gt: lastActive }
+          }
+        ]
+      });
+      myRank = aheadCount + 1;
     }
 
     res.json({
@@ -450,6 +411,7 @@ async function getPublicConfig(req, res) {
 module.exports = {
   searchUsers,
   getPublicProfile,
+  getPublicProfileGraph,
   getPublicProfileDays,
   getPublicProfileAchievements,
   logProfileShare,

@@ -29,6 +29,12 @@ const UserSchema = new mongoose.Schema(
         "Username can only contain letters, numbers, and underscores",
       ],
     },
+    usernameLower: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
 
     // ! sparse: true — Quick Notes
     // `sparse: true` is used with a MongoDB index (commonly `unique`) so that documents missing this field are ignored by the index. This allows multiple users to have no `username`, while ensuring that any username that is provided remains unique. It is useful for optional fields like username, phone number, or referral code.
@@ -2018,9 +2024,18 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Optimize leaderboard queries with compound indexes
-UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, currentStreak: -1 });
-UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, highestStreak: -1 });
+// Keep usernameLower synced for indexed prefix lookups
+UserSchema.pre('save', function (next) {
+  if (this.isModified('username')) {
+    this.usernameLower = this.username ? this.username.toLowerCase().trim() : undefined;
+  }
+  next();
+});
+
+UserSchema.index({ usernameLower: 1, isBlacklisted: 1, isPublicProfile: 1 });
+// Optimize leaderboard queries with compound indexes matching query & sort fields
+UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, isEmailVerified: 1, currentStreak: -1, lastActiveAt: -1 });
+UserSchema.index({ showOnLeaderboard: 1, isBlacklisted: 1, isEmailVerified: 1, highestStreak: -1, lastActiveAt: -1 });
 // Enforce global uniqueness on payment IDs to prevent double processing & race conditions
 UserSchema.index({ 'paymentHistory.paymentId': 1 }, { unique: true, sparse: true });
 module.exports = mongoose.model("User", UserSchema);

@@ -93,9 +93,9 @@
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FF6B35" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=87" />
+  <link rel="stylesheet" href="style.css?v=88" />
   <link rel="stylesheet" href="aurora-theme.css?v=6" />
-  <link rel="stylesheet" href="minimalistic-theme.css?v=6" />
+  <link rel="stylesheet" href="minimalistic-theme.css?v=7" />
   <link rel="stylesheet" href="claymorphism-theme.css?v=18" />
   <style>
     /* ── Offline mode: disable all network-dependent buttons instantly via body class ── */
@@ -783,6 +783,18 @@
       </div>
     </div>
   </nav>
+
+  <!-- ===== DESKTOP UNREAD NOTIFICATION POPUP (Bigger screens only) ===== -->
+  <div id="desktop-notif-popup" class="desktop-notif-popup" role="button" tabindex="0" aria-label="Open Notifications" onclick="handleDesktopNotifPopupClick()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();handleDesktopNotifPopupClick();}">
+    <div class="desktop-notif-popup-icon">
+      <i data-lucide="bell"></i>
+    </div>
+    <div class="desktop-notif-popup-text">
+      <div id="desktop-notif-popup-title" class="desktop-notif-popup-title">1 New Notification</div>
+      <div class="desktop-notif-popup-sub">Click to view your messages</div>
+    </div>
+    <button type="button" class="desktop-notif-popup-close" aria-label="Dismiss" onclick="dismissDesktopNotifPopup(event)">✕</button>
+  </div>
 
   <!-- ===== HOME PAGE ===== -->
   <main class="page active" id="page-home">
@@ -5171,10 +5183,10 @@
   <script type="module" src="js/modules/devHub.js"></script>
   <script type="module" src="js/modules/achievements.js?v=77"></script>
   <script type="module" src="js/modules/scratchpad.js"></script>
-  <script type="module" src="js/modules/profile.js?v=7"></script>
+  <script type="module" src="js/modules/profile.js?v=10"></script>
   <script type="module" src="js/modules/pomodoro.js"></script>
   <script type="module" src="js/modules/dm.js"></script>
-  <script type="module" src="js/modules/app.js?v=75"></script>
+  <script type="module" src="js/modules/app.js?v=76"></script>
 
   <script src="script.js?v=69"></script>
   <script>

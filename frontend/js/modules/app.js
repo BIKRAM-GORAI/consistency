@@ -1024,7 +1024,7 @@ if (searchInput) {
       searchDropdown.style.display = 'none';
       return;
     }
-    searchTimeout = setTimeout(() => performSearch(query), 350);
+    searchTimeout = setTimeout(() => performSearch(query), 250);
   });
 
   searchInput.addEventListener('focus', () => {
@@ -1201,16 +1201,29 @@ window.collapseSearchInput = function() {
   }
 };
 
+let _searchAbortController = null;
+
 async function performSearch(query) {
   if (!query || query.trim().length < 2) {
+    if (_searchAbortController) {
+      _searchAbortController.abort();
+      _searchAbortController = null;
+    }
     if (searchDropdown) {
       searchDropdown.innerHTML = '';
       searchDropdown.style.display = 'none';
     }
     return;
   }
+
+  if (_searchAbortController) {
+    _searchAbortController.abort();
+  }
+  _searchAbortController = new AbortController();
+  const signal = _searchAbortController.signal;
+
   try {
-    const res = await fetch(`${window.API}/api/users/search?q=${encodeURIComponent(query.trim())}`);
+    const res = await fetch(`${window.API}/api/users/search?q=${encodeURIComponent(query.trim())}`, { signal });
     const users = await res.json().catch(() => []);
     
     searchDropdown.innerHTML = '';
@@ -1262,6 +1275,7 @@ async function performSearch(query) {
     }
     searchDropdown.style.display = 'flex';
   } catch (err) {
+    if (err.name === 'AbortError') return;
     console.error('Search failed', err);
   }
 }
